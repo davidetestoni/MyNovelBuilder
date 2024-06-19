@@ -1,0 +1,6 @@
+@MyNovelBuilder.WebApi_HostAddress = http://localhost:5113
+
+GET {{MyNovelBuilder.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
