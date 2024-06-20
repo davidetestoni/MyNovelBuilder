@@ -1,48 +1,33 @@
-﻿using MyNovelBuilder.WebApi.Data.Entities;
-using MyNovelBuilder.WebApi.Interfaces;
+﻿using MyNovelBuilder.WebApi.Data.Repositories;
 
 namespace MyNovelBuilder.WebApi.Data;
 
 /// <summary>
 /// Implementation of the Unit of Work pattern.
 /// </summary>
-public class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
+public class UnitOfWork : IUnitOfWork
 {
+    private readonly AppDbContext _context;
     private bool _disposed;
-    private readonly Dictionary<Type, object> _repositories = new();
-    
-    /// <inheritdoc />
-    public AppDbContext DbContext { get; }
 
     /// <summary></summary>
-    public UnitOfWork(AppDbContext dbContext)
+    public UnitOfWork(AppDbContext context)
     {
-        DbContext = dbContext;
+        _context = context;
+        Novels = new NovelRepository(_context);
+        Compendiums = new CompendiumRepository(_context);
     }
+    
+    /// <inheritdoc />
+    public INovelRepository Novels { get; private set; }
+    
+    /// <inheritdoc />
+    public ICompendiumRepository Compendiums { get; set; }
 
     /// <inheritdoc />
-    public IRepository<T> GetRepository<T>() where T : Entity
+    public async Task<int> SaveChangesAsync()
     {
-        if (_repositories.ContainsKey(typeof(T)))
-        {
-            return (IRepository<T>) _repositories[typeof(T)];
-        }
-
-        var repository = new Repository<T>(DbContext);
-        _repositories.Add(typeof(T), repository);
-        return repository;
-    }
-
-    /// <inheritdoc />
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
-    {
-        return DbContext.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <inheritdoc />
-    public Task ReloadAsync<T>(T entity, CancellationToken cancellationToken = default) where T : Entity
-    {
-        return DbContext.Entry(entity).ReloadAsync(cancellationToken);
+        return await _context.SaveChangesAsync();
     }
 
     /// <summary>
@@ -52,7 +37,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
     {
         if (!_disposed && disposing)
         {
-            DbContext.Dispose();
+            _context.Dispose();
         }
         
         _disposed = true;
@@ -69,7 +54,7 @@ public class UnitOfWork : IUnitOfWork, IDisposable, IAsyncDisposable
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        await DbContext.DisposeAsync();
+        await _context.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 }

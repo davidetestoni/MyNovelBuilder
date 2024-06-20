@@ -17,12 +17,30 @@ public class AppDbContext : DbContext
     /// <summary>
     /// The novels in the database.
     /// </summary>
-    public DbSet<NovelEntity> Novels { get; init; }
+    public DbSet<Novel> Novels { get; init; }
+    
+    /// <summary>
+    /// The compendiums in the database.
+    /// </summary>
+    public DbSet<Compendium> Compendiums { get; init; }
+    
+    /// <summary>
+    /// The compendium records in the database.
+    /// </summary>
+    public DbSet<CompendiumRecord> CompendiumRecords { get; init; }
+    
+    /// <summary>
+    /// The prompts in the database.
+    /// </summary>
+    public DbSet<Prompt> Prompts { get; init; }
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Prompt>().OwnsMany(
+            prompt => prompt.Messages, builder => builder.ToJson());
         
         // Use UTC for DateTime
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

@@ -10,9 +10,10 @@ using Microsoft.EntityFrameworkCore;
 using MyNovelBuilder.WebApi;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Helpers;
-using MyNovelBuilder.WebApi.Interfaces;
+using MyNovelBuilder.WebApi.Data.Repositories;
 using MyNovelBuilder.WebApi.Middleware;
 using MyNovelBuilder.WebApi.Models.Errors;
+using MyNovelBuilder.WebApi.Services;
 using Serilog;
 using Serilog.Events;
 
@@ -79,7 +80,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+builder.Services.AddScoped<INovelRepository, NovelRepository>();
+builder.Services.AddScoped<ICompendiumRepository, CompendiumRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<INovelService, NovelService>();
+builder.Services.AddScoped<ICompendiumService, CompendiumService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();

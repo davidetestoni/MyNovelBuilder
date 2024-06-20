@@ -24,4 +24,14 @@ public static class ErrorCodes
     /// Unmanaged error.
     /// </summary>
     public const string InternalServerError = "internal_server_error";
+    
+    /// <summary>
+    /// The novel was not found.
+    /// </summary>
+    public const string NovelNotFound = "novel_not_found";
+    
+    /// <summary>
+    /// The compendium was not found.
+    /// </summary>
+    public const string CompendiumNotFound = "compendium_not_found";
 }
