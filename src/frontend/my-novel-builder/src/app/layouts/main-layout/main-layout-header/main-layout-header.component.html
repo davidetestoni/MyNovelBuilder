@@ -1,0 +1,43 @@
+<div class="header">
+  <div class="logo" [routerLink]="['/']">
+    <img
+      src="../../../assets/images/logo/logo-greyscale-128.png"
+      alt="My Novel Builder Logo"
+    />
+    <div class="logo-text">My Novel Builder</div>
+  </div>
+  <nav class="navigation">
+    <div
+      class="nav-item"
+      [routerLink]="['/novels']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-novels"></i>
+      <span>Novels</span>
+    </div>
+    <div
+      class="nav-item"
+      [routerLink]="['/compendiums']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-compendium"></i>
+      <span>Compendiums</span>
+    </div>
+    <div
+      class="nav-item"
+      [routerLink]="['/prompts']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-prompt"></i>
+      <span>Prompts</span>
+    </div>
+    <div
+      class="nav-item"
+      [routerLink]="['/integrations']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-integration"></i>
+      <span>Integrations</span>
+    </div>
+  </nav>
+</div>

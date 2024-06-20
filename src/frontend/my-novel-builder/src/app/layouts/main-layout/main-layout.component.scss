@@ -1,0 +1,19 @@
+@import "variables";
+
+.main-layout-container {
+  main-layout-header {
+    position: fixed;
+    width: 100%;
+    z-index: 10;
+  }
+  .page-content {
+    padding-top: calc($mainLayoutHeaderHeight);
+
+    .page-with-padding {
+      padding: 2rem;
+    }
+    .page-with-horizontal-padding {
+      padding: 0 2rem 2rem 2rem;
+    }
+  }
+}

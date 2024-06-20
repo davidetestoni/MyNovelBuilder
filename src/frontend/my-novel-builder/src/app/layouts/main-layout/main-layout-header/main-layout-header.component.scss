@@ -1,0 +1,56 @@
+@import "variables.scss";
+@import "colors.scss";
+
+.header {
+  display: flex;
+  align-items: center;
+  background-color: $grey3;
+  padding: 10px 20px;
+  color: $grey13;
+  position: fixed;
+  width: 100dvw;
+  height: $mainLayoutHeaderHeight;
+  user-select: none;
+
+  .logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.5em;
+    font-weight: 200;
+    cursor: pointer;
+
+    img {
+      height: 60px;
+      margin-right: 10px;
+    }
+  }
+
+  .navigation {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+    margin-right: 30px;
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+
+      &.active {
+        background-color: $grey2;
+        border-radius: 5px;
+      }
+
+      i {
+        margin-right: 5px;
+      }
+
+      &:hover {
+        background-color: $grey2;
+        border-radius: 5px;
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+.icon {
+  display: inline-block;
+  width: 1.3rem;
+  height: 1.3rem;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: brightness(0) invert(1); // Turn to white
+}
+
+/* Icons from https://www.svgrepo.com/ */
+
+.icon-novels {
+  background-image: url("../assets/images/icons/novels.svg");
+}
+
+.icon-compendium {
+  background-image: url("../assets/images/icons/compendium.svg");
+}
+
+.icon-prompt {
+  background-image: url("../assets/images/icons/prompt.svg");
+}
+
+.icon-integration {
+  background-image: url("../assets/images/icons/integration.svg");
+}
