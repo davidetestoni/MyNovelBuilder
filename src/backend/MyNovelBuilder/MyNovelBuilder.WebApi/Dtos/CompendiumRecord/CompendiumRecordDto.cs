@@ -2,8 +2,21 @@
 
 namespace MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
 
+/// <summary>
+/// Data transfer object for a compendium record.
+/// </summary>
 public class CompendiumRecordDto
 {
+    /// <summary>
+    /// The date and time the compendium record was created.
+    /// </summary>
+    public required DateTime CreatedAt { get; set; }
+    
+    /// <summary>
+    /// The date and time the compendium record was last updated.
+    /// </summary>
+    public required DateTime UpdatedAt { get; set; }
+    
     /// <summary>
     /// The record's name.
     /// </summary>
@@ -18,6 +31,11 @@ public class CompendiumRecordDto
     /// The record type.
     /// </summary>
     public required CompendiumRecordType Type { get; set; }
+    
+    /// <summary>
+    /// The record's context.
+    /// </summary>
+    public string Context { get; set; } = string.Empty;
     
     /// <summary>
     /// The current image ID.

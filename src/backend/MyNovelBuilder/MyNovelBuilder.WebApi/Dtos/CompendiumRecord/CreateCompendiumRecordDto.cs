@@ -24,6 +24,11 @@ public class CreateCompendiumRecordDto
     public CompendiumRecordType Type { get; set; }
     
     /// <summary>
+    /// The record's context.
+    /// </summary>
+    public string Context { get; set; } = string.Empty;
+    
+    /// <summary>
     /// The ID of the compendium to which the record belongs.
     /// </summary>
     public Guid CompendiumId { get; set; }

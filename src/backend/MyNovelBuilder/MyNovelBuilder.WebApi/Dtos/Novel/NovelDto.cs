@@ -9,6 +9,16 @@ namespace MyNovelBuilder.WebApi.Dtos.Novel;
 public class NovelDto
 {
     /// <summary>
+    /// The date and time the novel was created.
+    /// </summary>
+    public required DateTime CreatedAt { get; set; }
+    
+    /// <summary>
+    /// The date and time the novel was last updated.
+    /// </summary>
+    public required DateTime UpdatedAt { get; set; }
+    
+    /// <summary>
     /// The novel's title.
     /// </summary>
     public required string Title { get; set; }

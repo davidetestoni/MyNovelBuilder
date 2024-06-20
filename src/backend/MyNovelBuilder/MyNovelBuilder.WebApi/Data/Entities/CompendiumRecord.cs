@@ -18,6 +18,7 @@ public class CompendiumRecord : TimestampedEntity
     /// <summary>
     /// The record's aliases, i.e. other names by which it is known.
     /// </summary>
+    [Required]
     [MaxLength(500)]
     public string Aliases { get; init; } = string.Empty;
     
@@ -26,6 +27,13 @@ public class CompendiumRecord : TimestampedEntity
     /// </summary>
     [Required]
     public CompendiumRecordType Type { get; init; }
+    
+    /// <summary>
+    /// The record's context.
+    /// </summary>
+    [Required]
+    [MaxLength(10000)]
+    public string Context { get; init; } = string.Empty;
     
     /// <summary>
     /// The current image ID.

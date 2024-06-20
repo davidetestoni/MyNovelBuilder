@@ -57,4 +57,38 @@ public class AppDbContext : DbContext
             }
         }
     }
+    
+    /// <inheritdoc />
+    public override int SaveChanges()
+    {
+        UpdateTimestamps();
+        return base.SaveChanges();
+    }
+
+    /// <inheritdoc />
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        UpdateTimestamps();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void UpdateTimestamps()
+    {
+        var entries = ChangeTracker
+            .Entries()
+            .Where(e => e is { Entity: TimestampedEntity, State: EntityState.Added or EntityState.Modified });
+
+        foreach (var entry in entries)
+        {
+            var entity = (TimestampedEntity)entry.Entity;
+            var now = DateTime.UtcNow;
+
+            if (entry.State == EntityState.Added)
+            {
+                entity.CreatedAt = now;
+            }
+            
+            entity.UpdatedAt = now;
+        }
+    }
 }

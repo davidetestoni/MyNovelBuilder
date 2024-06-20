@@ -37,6 +37,13 @@ public class CreateNovelDto
     /// The novel's writing language.
     /// </summary>
     public WritingLanguage Language { get; set; } = WritingLanguage.English;
+    
+    /// <summary>
+    /// The id of the main character of the novel, if any.
+    /// If present, it must be the id of a <see cref="CompendiumRecord"/>
+    /// of type <see cref="CompendiumRecordType.Character"/>.
+    /// </summary>
+    public Guid? MainCharacterId { get; set; }
 }
 
 internal class CreateNovelDtoValidator : AbstractValidator<CreateNovelDto>

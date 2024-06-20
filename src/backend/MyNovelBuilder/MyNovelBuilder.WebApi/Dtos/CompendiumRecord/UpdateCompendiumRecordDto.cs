@@ -27,6 +27,11 @@ public class UpdateCompendiumRecordDto
     /// The record type.
     /// </summary>
     public CompendiumRecordType Type { get; set; }
+    
+    /// <summary>
+    /// The record's context.
+    /// </summary>
+    public string Context { get; set; } = string.Empty;
 }
 
 internal class UpdateCompendiumRecordDtoValidator : AbstractValidator<UpdateCompendiumRecordDto>

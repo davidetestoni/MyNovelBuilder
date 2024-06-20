@@ -16,7 +16,7 @@ public enum PromptType
     SummarizeText,
     
     /// <summary>
-    /// A prompt to replace text, that takes the existing text as input.
+    /// A prompt to transform text, that takes the existing text as input.
     /// </summary>
     ReplaceText,
     
