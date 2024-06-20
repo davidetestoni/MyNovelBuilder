@@ -34,4 +34,14 @@ public static class ErrorCodes
     /// The compendium was not found.
     /// </summary>
     public const string CompendiumNotFound = "compendium_not_found";
+    
+    /// <summary>
+    /// The compendium record was not found.
+    /// </summary>
+    public const string CompendiumRecordNotFound = "compendium_record_not_found";
+    
+    /// <summary>
+    /// The prompt was not found.
+    /// </summary>
+    public const string PromptNotFound = "prompt_not_found";
 }

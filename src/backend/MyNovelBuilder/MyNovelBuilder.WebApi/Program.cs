@@ -82,9 +82,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<INovelRepository, NovelRepository>();
 builder.Services.AddScoped<ICompendiumRepository, CompendiumRepository>();
+builder.Services.AddScoped<ICompendiumRecordRepository, CompendiumRecordRepository>();
+builder.Services.AddScoped<IPromptRepository, PromptRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<INovelService, NovelService>();
 builder.Services.AddScoped<ICompendiumService, CompendiumService>();
+builder.Services.AddScoped<ICompendiumRecordService, CompendiumRecordService>();
+builder.Services.AddScoped<IPromptService, PromptService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();

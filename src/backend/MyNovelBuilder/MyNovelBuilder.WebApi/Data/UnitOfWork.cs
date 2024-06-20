@@ -16,6 +16,8 @@ public class UnitOfWork : IUnitOfWork
         _context = context;
         Novels = new NovelRepository(_context);
         Compendiums = new CompendiumRepository(_context);
+        CompendiumRecords = new CompendiumRecordRepository(_context);
+        Prompts = new PromptRepository(_context);
     }
     
     /// <inheritdoc />
@@ -23,6 +25,12 @@ public class UnitOfWork : IUnitOfWork
     
     /// <inheritdoc />
     public ICompendiumRepository Compendiums { get; set; }
+
+    /// <inheritdoc />
+    public ICompendiumRecordRepository CompendiumRecords { get; }
+
+    /// <inheritdoc />
+    public IPromptRepository Prompts { get; }
 
     /// <inheritdoc />
     public async Task<int> SaveChangesAsync()

@@ -4,10 +4,15 @@ using MyNovelBuilder.WebApi.Enums;
 namespace MyNovelBuilder.WebApi.Dtos.Novel;
 
 /// <summary>
-/// Data transfer object for creating a novel.
+/// Data transfer object for updating a novel.
 /// </summary>
-public class CreateNovelDto
+public class UpdateNovelDto
 {
+    /// <summary>
+    /// The novel's ID.
+    /// </summary>
+    public required Guid Id { get; set; }
+    
     /// <summary>
     /// The novel's title.
     /// </summary>
@@ -39,10 +44,11 @@ public class CreateNovelDto
     public WritingLanguage Language { get; set; } = WritingLanguage.English;
 }
 
-internal class CreateNovelDtoValidator : AbstractValidator<CreateNovelDto>
+internal class UpdateNovelDtoValidator : AbstractValidator<UpdateNovelDto>
 {
-    public CreateNovelDtoValidator()
+    public UpdateNovelDtoValidator()
     {
+        RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Title).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Brief).MaximumLength(500);
         RuleFor(x => x.Tense).IsInEnum();

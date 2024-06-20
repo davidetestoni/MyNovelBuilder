@@ -1,4 +1,6 @@
-﻿namespace MyNovelBuilder.WebApi.Data.Repositories;
+﻿using MyNovelBuilder.WebApi.Data.Repositories;
+
+namespace MyNovelBuilder.WebApi.Data;
 
 /// <summary>
 /// Interface for the Unit of Work pattern.
@@ -14,6 +16,16 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
     /// Repository for compendiums.
     /// </summary>
     ICompendiumRepository Compendiums { get; }
+    
+    /// <summary>
+    /// Repository for compendium records.
+    /// </summary>
+    ICompendiumRecordRepository CompendiumRecords { get; }
+    
+    /// <summary>
+    /// Repository for prompts.
+    /// </summary>
+    IPromptRepository Prompts { get; }
     
     /// <summary>
     /// Complete the current transaction.

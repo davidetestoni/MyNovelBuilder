@@ -1,5 +1,5 @@
-﻿using MyNovelBuilder.WebApi.Data.Entities;
-using MyNovelBuilder.WebApi.Data.Repositories;
+﻿using MyNovelBuilder.WebApi.Data;
+using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
 
 namespace MyNovelBuilder.WebApi.Services;
