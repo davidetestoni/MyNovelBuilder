@@ -1,44 +1,121 @@
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using FluentValidation;
+using Mapster;
+using MapsterMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
+using MyNovelBuilder.WebApi;
+using MyNovelBuilder.WebApi.Data;
+using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Interfaces;
+using MyNovelBuilder.WebApi.Middleware;
+using MyNovelBuilder.WebApi.Models.Errors;
+using Serilog;
+using Serilog.Events;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Add the controllers that contain the HTTP endpoints, and also configure
+// the json serializer to use camelCase strings instead of integers for enums.
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+    {
+        // Serialize enums to strings instead of integers
+        var enumConverter = new JsonStringEnumConverter(JsonNamingPolicy.CamelCase);
+        opts.JsonSerializerOptions.Converters.Add(enumConverter);
+        opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+    });
+    
+// Add utilities to easily navigate the APIs via swagger, generating
+// the file from the XML documentation around classes, methods and such.
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(config =>
+{
+    config.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory,
+        $"{Assembly.GetExecutingAssembly().GetName().Name}.xml"));
+});
+
+// Add routing and use lowercase URLs like /api/test instead of
+// /api/Test.
+builder.Services.AddRouting(options => options.LowercaseUrls = true);
+
+// Compress responses with brotli or gzip (if not supported).
+// By default, they use the fastest compression mode.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+
+// Add logging through serilog
+builder.Host.UseSerilog((ctx, options) =>
+{
+    // This will destructure JsonDocument and JsonElement when passed
+    // as structured logs argument
+    options.Destructure.With<JsonDestructuringPolicy>();
+
+    // Do not log full request data
+    options.MinimumLevel.Override("Microsoft.AspNetCore",
+        LogEventLevel.Warning);
+
+    // Log to the console sink, more sinks can be added here if needed
+    options.WriteTo.Console();
+});
+
+// Configure the API error handler to return a JSON response with the
+// error code and message upon validation errors, to make it
+// consistent.
+builder.Services.Configure<ApiBehaviorOptions>(x =>
+{
+    x.InvalidModelStateResponseFactory = ctx => new ApiErrorResult();
+});
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
+
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Mapster configuration
+var config = new TypeAdapterConfig();
+Mapping.ConfigureMapster(config);
+builder.Services.AddSingleton(config);
+builder.Services.AddScoped<IMapper, ServiceMapper>();
+
+// FluentValidation configuration
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Enable swagger
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// Automatically apply migrations
+using var scope = app.Services.CreateScope();
+var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+await dbContext.Database.MigrateAsync();
+
+app.UseMiddleware<ExceptionMiddleware>();
+
+app.UseRouting();
+
+app.MapControllers();
+
+app.UseResponseCompression();
+
+await app.RunAsync();
+
+// This makes Program.cs visible to the test project, so we can use it
+// with the WebApplicationFactory.
+/// <summary></summary>
+#pragma warning disable S1118
+public partial class Program
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
 }
-
-app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi();
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+#pragma warning restore S1118
