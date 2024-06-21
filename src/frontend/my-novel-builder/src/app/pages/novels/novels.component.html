@@ -4,16 +4,25 @@
   <p>Loading...</p>
   } @else {
   <div class="novels-grid">
-    @for (novel of novels; track novel) {
+    @for (novel of novels; track novel;) {
     <div class="novel-card">
       <div class="novel-cover">
+        @if (getNovelCoverImageUrl(novel.id) | async) {
         <img
           [routerLink]="['/novel', novel.id]"
-          src="{{ getNovelCoverImageUrl(novel.id) }}"
+          src="{{ getNovelCoverImageUrl(novel.id) | async }}"
           alt="{{ novel.title }}"
         />
+        } @else {
+        <div
+          class="no-cover"
+          [style]="{ 'background-color': guidToColor(novel.id) }"
+        >
+          <i class="icon icon-novels"></i>
+        </div>
+        }
         <div class="brief-overlay">
-          <p>{{ novel.brief | ellipsis : 50 }}</p>
+          <p>{{ novel.brief | ellipsis : 100 }}</p>
         </div>
       </div>
       <div class="novel-title" [routerLink]="['/novel', novel.id]">

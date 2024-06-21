@@ -62,7 +62,7 @@ public class NovelService : INovelService
     /// <inheritdoc />
     public string? GetCoverImageLocation(Guid id)
     {
-        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
+        var path = Path.Combine("static", "novels", id.ToString(), "cover.png");
         return !File.Exists(path) ? null : path;
     }
 
