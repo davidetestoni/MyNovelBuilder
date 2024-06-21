@@ -8,6 +8,11 @@ namespace MyNovelBuilder.WebApi.Dtos.Prompt;
 public class PromptDto
 {
     /// <summary>
+    /// The prompt's ID.
+    /// </summary>
+    public required Guid Id { get; set; }
+    
+    /// <summary>
     /// The date and time the prompt was created.
     /// </summary>
     public required DateTime CreatedAt { get; set; }

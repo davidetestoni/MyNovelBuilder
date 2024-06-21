@@ -13,9 +13,9 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
     INovelRepository Novels { get; }
     
     /// <summary>
-    /// Repository for compendiums.
+    /// Repository for compendia.
     /// </summary>
-    ICompendiumRepository Compendiums { get; }
+    ICompendiumRepository Compendia { get; }
     
     /// <summary>
     /// Repository for compendium records.

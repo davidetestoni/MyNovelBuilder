@@ -1,7 +1,8 @@
 import { Routes } from '@angular/router';
 import { NovelsComponent } from './pages/novels/novels.component';
 import { LayoutType } from './types/enums/layout-type';
-import { CompendiumsComponent } from './pages/compendiums/compendiums.component';
+import { CompendiaComponent } from './pages/compendia/compendia.component';
+import { NovelEditorComponent } from './pages/novel-editor/novel-editor.component';
 
 export const routes: Routes = [
   // Redirect / to /novels
@@ -18,10 +19,17 @@ export const routes: Routes = [
     },
   },
   {
-    path: 'compendiums',
-    component: CompendiumsComponent,
+    path: 'compendia',
+    component: CompendiaComponent,
     data: {
       layoutType: LayoutType.Main,
+    },
+  },
+  {
+    path: 'novel/:id',
+    component: NovelEditorComponent,
+    data: {
+      layoutType: LayoutType.Main, // TODO: Add a layout type for the editor
     },
   },
 ];

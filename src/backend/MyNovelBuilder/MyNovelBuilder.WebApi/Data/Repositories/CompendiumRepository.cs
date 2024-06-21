@@ -4,7 +4,7 @@ using MyNovelBuilder.WebApi.Data.Entities;
 namespace MyNovelBuilder.WebApi.Data.Repositories;
 
 /// <summary>
-/// Repository for compendiums.
+/// Repository for compendia.
 /// </summary>
 public class CompendiumRepository : Repository<Compendium>, ICompendiumRepository
 {

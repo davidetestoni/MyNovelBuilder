@@ -49,7 +49,7 @@ public class Novel : TimestampedEntity
     public CompendiumRecord? MainCharacter { get; set; }
     
     /// <summary>
-    /// The compendiums used in the novel.
+    /// The compendia used in the novel.
     /// </summary>
-    public IEnumerable<Compendium> Compendiums { get; set; } = new List<Compendium>();
+    public IEnumerable<Compendium> Compendia { get; set; } = new List<Compendium>();
 }

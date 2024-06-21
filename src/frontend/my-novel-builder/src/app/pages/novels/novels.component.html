@@ -1,1 +1,35 @@
-<p>novels works!</p>
+<div class="novels-container">
+  <h1>Novels</h1>
+  @if (novels === null) {
+  <p>Loading...</p>
+  } @else {
+  <div class="novels-grid">
+    @for (novel of novels; track novel) {
+    <div class="novel-card">
+      <div class="novel-cover">
+        <img
+          [routerLink]="['/novel', novel.id]"
+          src="{{ getNovelCoverImageUrl(novel.id) }}"
+          alt="{{ novel.title }}"
+        />
+        <div class="brief-overlay">
+          <p>{{ novel.brief | ellipsis : 50 }}</p>
+        </div>
+      </div>
+      <div class="novel-title" [routerLink]="['/novel', novel.id]">
+        <span>{{ novel.title }}</span>
+      </div>
+      <div class="novel-last-updated">
+        <span>{{ getLastUpdated(novel) }}</span>
+      </div>
+    </div>
+    }
+    <div class="add-novel-card">
+      <div class="add-novel-cover">
+        <i class="icon icon-plus"></i>
+        <span>Add Novel</span>
+      </div>
+    </div>
+  </div>
+  }
+</div>

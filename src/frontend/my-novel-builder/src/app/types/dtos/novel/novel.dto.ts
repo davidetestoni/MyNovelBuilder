@@ -3,6 +3,7 @@ import { WritingPov } from '../../enums/writing-pov';
 import { WritingTense } from '../../enums/writing-tense';
 
 export interface NovelDto {
+  id: string;
   createdAt: string;
   updatedAt: string;
   title: string;

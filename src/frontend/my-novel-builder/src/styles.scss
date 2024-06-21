@@ -3,7 +3,12 @@
 
 body {
   background-color: $grey1;
+  color: $grey17;
   padding: 0;
   margin: 0;
   font-family: Poppins, sans-serif;
+}
+
+h1 {
+  font-weight: 400;
 }

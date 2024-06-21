@@ -18,7 +18,7 @@ public class NovelRepository : Repository<Novel>, INovelRepository
     {
         return await Context.Set<Novel>()
             .Include(n => n.MainCharacter)
-            .Include(n => n.Compendiums)
+            .Include(n => n.Compendia)
             .FirstOrDefaultAsync(n => n.Id == id);
     }
 }

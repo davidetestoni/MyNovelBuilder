@@ -9,6 +9,11 @@ namespace MyNovelBuilder.WebApi.Dtos.Novel;
 public class NovelDto
 {
     /// <summary>
+    /// The novel's ID.
+    /// </summary>
+    public required Guid Id { get; set; }
+    
+    /// <summary>
     /// The date and time the novel was created.
     /// </summary>
     public required DateTime CreatedAt { get; set; }
@@ -56,7 +61,7 @@ public class NovelDto
     public Guid? MainCharacterId { get; set; }
     
     /// <summary>
-    /// The ids of the compendiums used in the novel.
+    /// The ids of the compendia used in the novel.
     /// </summary>
     public required IEnumerable<Guid> CompendiumIds { get; set; }
 }

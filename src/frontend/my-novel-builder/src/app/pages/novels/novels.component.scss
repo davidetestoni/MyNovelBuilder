@@ -1,0 +1,107 @@
+@import "colors.scss";
+
+.novels-container {
+  padding: 20px;
+
+  .novels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-gap: 20px;
+
+    .novel-card {
+      .novel-cover {
+        width: 200px;
+        height: 300px;
+        overflow: hidden;
+        border-radius: 5px;
+        cursor: pointer;
+        position: relative; /* Added position property */
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s;
+
+          &:hover {
+            transform: scale(1.03);
+          }
+        }
+
+        .brief-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          opacity: 0;
+          transition: opacity 0.3s;
+          pointer-events: none; /* Prevent the overlay from blocking the hover effect */
+
+          p {
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+          }
+        }
+
+        &:hover {
+          box-shadow: 0 0 10px rgba(100, 100, 100, 0.1);
+          transition: box-shadow 0.3s;
+
+          .brief-overlay {
+            opacity: 1; /* Show the brief on hover */
+          }
+        }
+      }
+
+      .novel-title {
+        margin-top: 10px;
+        font-size: 1.2rem;
+        font-weight: 500;
+        cursor: pointer;
+
+        &:hover {
+          color: $grey18;
+        }
+      }
+
+      .novel-last-updated {
+        font-size: 0.9rem;
+        color: $grey13;
+      }
+    }
+
+    .add-novel-card {
+      .add-novel-cover {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 200px;
+        height: 300px;
+        color: $grey13;
+        border: 2px dashed $grey13;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+
+        i {
+          width: 50px;
+          height: 50px;
+          filter: $grey13filter;
+          margin-bottom: 10px;
+        }
+
+        &:hover {
+          border-color: $grey18;
+          color: $grey18;
+        }
+      }
+    }
+  }
+}

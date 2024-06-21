@@ -3,7 +3,7 @@
 namespace MyNovelBuilder.WebApi.Data.Repositories;
 
 /// <summary>
-/// Repository for compendiums.
+/// Repository for compendia.
 /// </summary>
 public interface ICompendiumRepository : IRepository<Compendium>
 {

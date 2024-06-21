@@ -3,7 +3,7 @@
 namespace MyNovelBuilder.WebApi.Services;
 
 /// <summary>
-/// Service for compendiums.
+/// Service for compendia.
 /// </summary>
 public interface ICompendiumService
 {
@@ -13,7 +13,7 @@ public interface ICompendiumService
     Task<Compendium> GetByIdAsync(Guid id);
     
     /// <summary>
-    /// Get all compendiums.
+    /// Get all compendia.
     /// </summary>
     Task<IEnumerable<Compendium>> GetAllAsync();
     

@@ -6,6 +6,11 @@
 public class CompendiumDto
 {
     /// <summary>
+    /// The compendium's ID.
+    /// </summary>
+    public required Guid Id { get; set; }
+    
+    /// <summary>
     /// The date and time the compendium was created.
     /// </summary>
     public required DateTime CreatedAt { get; set; }

@@ -15,7 +15,7 @@ public class UnitOfWork : IUnitOfWork
     {
         _context = context;
         Novels = new NovelRepository(_context);
-        Compendiums = new CompendiumRepository(_context);
+        Compendia = new CompendiumRepository(_context);
         CompendiumRecords = new CompendiumRecordRepository(_context);
         Prompts = new PromptRepository(_context);
     }
@@ -24,7 +24,7 @@ public class UnitOfWork : IUnitOfWork
     public INovelRepository Novels { get; private set; }
     
     /// <inheritdoc />
-    public ICompendiumRepository Compendiums { get; set; }
+    public ICompendiumRepository Compendia { get; set; }
 
     /// <inheritdoc />
     public ICompendiumRecordRepository CompendiumRecords { get; }

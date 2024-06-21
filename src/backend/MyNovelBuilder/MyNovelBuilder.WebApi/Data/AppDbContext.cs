@@ -20,9 +20,9 @@ public class AppDbContext : DbContext
     public DbSet<Novel> Novels { get; init; }
     
     /// <summary>
-    /// The compendiums in the database.
+    /// The compendia in the database.
     /// </summary>
-    public DbSet<Compendium> Compendiums { get; init; }
+    public DbSet<Compendium> Compendia { get; init; }
     
     /// <summary>
     /// The compendium records in the database.
