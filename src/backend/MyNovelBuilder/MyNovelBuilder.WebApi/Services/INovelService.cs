@@ -31,4 +31,14 @@ public interface INovelService
     /// Delete a novel by its ID.
     /// </summary>
     Task DeleteAsync(Guid id);
+
+    /// <summary>
+    /// Get the cover image location for a novel.
+    /// </summary>
+    string? GetCoverImageLocation(Guid id);
+    
+    /// <summary>
+    /// Upload a cover image for a novel.
+    /// </summary>
+    Task UploadCoverImageAsync(Guid id, IFormFile file);
 }

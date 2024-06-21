@@ -7,6 +7,7 @@ using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using MyNovelBuilder.WebApi;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Helpers;
@@ -113,6 +114,14 @@ await dbContext.Database.MigrateAsync();
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseRouting();
+
+Directory.CreateDirectory(Globals.StaticFilesRoot);
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Globals.StaticFilesRoot),
+    RequestPath = "/static"
+});
 
 app.MapControllers();
 

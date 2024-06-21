@@ -1,6 +1,62 @@
-@MyNovelBuilder.WebApi_HostAddress = http://localhost:5113
+@MyNovelBuilder.WebApi_HostAddress = http://localhost:5113/api
+@NovelId = c8c0eddf-34ae-485e-a236-da71f8345364
 
-GET {{MyNovelBuilder.WebApi_HostAddress}}/weatherforecast/
+# Get a novel by id
+GET {{MyNovelBuilder.WebApi_HostAddress}}/novel/{{NovelId}}
+Accept: application/json
+
+###
+
+# Get all novels
+GET {{MyNovelBuilder.WebApi_HostAddress}}/novels
+Accept: application/json
+
+###
+
+# Create a new novel
+POST {{MyNovelBuilder.WebApi_HostAddress}}/novel
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "My First Novel",
+  "author": "John Doe",
+  "brief": "This is my first novel",
+  "tense": "present",
+  "pov": "firstPerson",
+  "language": "english",
+  "mainCharacterId": null
+}
+
+###
+
+# Update a novel
+PUT {{MyNovelBuilder.WebApi_HostAddress}}/novel/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": "{{NovelId}}",
+  "title": "My First Novel 2",
+  "author": "John Doe",
+  "brief": "This is my first novel",
+  "tense": "present",
+  "pov": "firstPerson",
+  "language": "english",
+  "mainCharacterId": null
+}
+
+###
+
+# Get cover image
+GET {{MyNovelBuilder.WebApi_HostAddress}}/novel/{{NovelId}}/cover-image
+Accept: application/json
+
+###
+
+# Upload cover image
+POST {{MyNovelBuilder.WebApi_HostAddress}}/novel/{{NovelId}}/cover-image
+Content-Type: multipart/form-data
 Accept: application/json
 
 ###

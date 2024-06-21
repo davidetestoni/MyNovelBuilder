@@ -63,5 +63,5 @@ public class NovelDto
     /// <summary>
     /// The ids of the compendia used in the novel.
     /// </summary>
-    public required IEnumerable<Guid> CompendiumIds { get; set; }
+    public required IEnumerable<Guid> CompendiumIds { get; set; } = Array.Empty<Guid>();
 }

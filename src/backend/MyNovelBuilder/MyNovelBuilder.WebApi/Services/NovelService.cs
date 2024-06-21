@@ -58,4 +58,26 @@ public class NovelService : INovelService
         _unitOfWork.Novels.Remove(novel);
         await _unitOfWork.SaveChangesAsync();
     }
+
+    /// <inheritdoc />
+    public string? GetCoverImageLocation(Guid id)
+    {
+        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
+        return !File.Exists(path) ? null : path;
+    }
+
+    /// <inheritdoc />
+    public async Task UploadCoverImageAsync(Guid id, IFormFile file)
+    {
+        // If not a png file, throw an exception
+        if (file.ContentType != "image/png")
+        {
+            throw new ApiException(ErrorCodes.InvalidCoverImage, "Cover image must be a PNG file.");
+        }
+        
+        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
+        
+        await using var stream = new FileStream(path, FileMode.Create);
+        await file.CopyToAsync(stream);
+    }
 }
