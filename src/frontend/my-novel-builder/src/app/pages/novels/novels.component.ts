@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import { NovelService } from '../../services/novel.service';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { EllipsisPipe } from '../../pipes/ellipsis.pipe';
@@ -7,6 +7,8 @@ import { RouterModule } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
+import { CreateNovelComponent } from '../../components/create-novel/create-novel.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-novels',
@@ -17,8 +19,8 @@ import { ReactiveFormsModule } from '@angular/forms';
 })
 export class NovelsComponent implements OnInit {
   novels: NovelDto[] | null = null;
-
-  constructor(@Inject(NovelService) private novelService: NovelService) {}
+  readonly dialog = inject(MatDialog);
+  readonly novelService = inject(NovelService);
 
   ngOnInit(): void {
     this.getNovels();
@@ -56,5 +58,9 @@ export class NovelsComponent implements OnInit {
     color += '50';
 
     return color;
+  }
+
+  openCreateNovelDialog(): void {
+    this.dialog.open(CreateNovelComponent);
   }
 }

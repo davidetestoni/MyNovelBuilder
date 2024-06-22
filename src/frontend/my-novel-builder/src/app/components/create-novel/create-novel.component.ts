@@ -1,15 +1,40 @@
 import { Component, EventEmitter, Inject, Output } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { WritingTense } from '../../types/enums/writing-tense';
 import { WritingPov } from '../../types/enums/writing-pov';
 import { WritingLanguage } from '../../types/enums/writing-language';
 import { NovelService } from '../../services/novel.service';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
+import { MatButtonModule } from '@angular/material/button';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import {
+  MatDialogActions,
+  MatDialogClose,
+  MatDialogContent,
+  MatDialogTitle,
+} from '@angular/material/dialog';
 
 @Component({
   selector: 'app-create-novel',
   standalone: true,
-  imports: [],
+  imports: [
+    MatFormFieldModule,
+    MatInputModule,
+    FormsModule,
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogTitle,
+    MatDialogContent,
+    MatDialogActions,
+    MatDialogClose,
+  ],
   templateUrl: './create-novel.component.html',
   styleUrl: './create-novel.component.scss',
 })
@@ -63,5 +88,9 @@ export class CreateNovelComponent {
         this.created.emit(novel);
         this.formGroup.reset();
       });
+  }
+
+  onCoverChange($event: Event) {
+    throw new Error('Method not implemented.');
   }
 }

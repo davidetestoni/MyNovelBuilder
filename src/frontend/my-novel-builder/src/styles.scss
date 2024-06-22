@@ -1,5 +1,6 @@
 @import "colors";
 @import "icons";
+@import "overrides";
 
 body {
   background-color: $grey1;
@@ -11,4 +12,27 @@ body {
 
 h1 {
   font-weight: 400;
+}
+
+h2 {
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.modal-container {
+  padding: 20px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }

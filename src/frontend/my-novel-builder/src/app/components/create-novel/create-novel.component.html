@@ -1,1 +1,38 @@
-<p>create-novel works!</p>
+<div class="modal-container">
+  <h2>Create a novel</h2>
+  <!-- TODO: Add styles! -->
+  <form [formGroup]="formGroup">
+    <div class="form-group">
+      <mat-form-field>
+        <mat-label>Title</mat-label>
+        <input matInput type="text" id="title" formControlName="title" />
+      </mat-form-field>
+    </div>
+    <div class="form-group">
+      <mat-form-field>
+        <mat-label>Author</mat-label>
+        <input matInput type="text" id="author" formControlName="author" />
+      </mat-form-field>
+    </div>
+    <div class="form-group">
+      <mat-form-field>
+        <mat-label>Brief</mat-label>
+        <textarea matInput id="brief" formControlName="brief"></textarea>
+      </mat-form-field>
+    </div>
+    <!-- TODO: Add remaining fields -->
+    <div class="form-group">
+      <input type="file" (change)="onCoverChange($event)" />
+    </div>
+    <div class="form-group">
+      <button
+        mat-raised-button
+        color="primary"
+        type="submit"
+        (click)="createNovel()"
+      >
+        Create
+      </button>
+    </div>
+  </form>
+</div>

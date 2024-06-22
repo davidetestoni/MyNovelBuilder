@@ -11,6 +11,7 @@
   width: 100dvw;
   height: $mainLayoutHeaderHeight;
   user-select: none;
+  z-index: 1000;
 
   .logo {
     display: flex;
