@@ -1,6 +1,6 @@
 export const environment = {
   mocked: true,
   api: {
-    baseUrl: 'http://localhost:5113',
+    baseUrl: 'http://localhost:5113/api',
   },
 };

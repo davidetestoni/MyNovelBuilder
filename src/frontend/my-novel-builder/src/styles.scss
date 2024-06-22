@@ -10,6 +10,10 @@ body {
   font-family: Poppins, sans-serif;
 }
 
+* {
+  font-family: Poppins, sans-serif;
+}
+
 h1 {
   font-weight: 400;
 }
@@ -31,8 +35,89 @@ body {
   padding: 20px;
 }
 
-.modal-buttons {
+.form-container {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  width: 100%;
+
+  form {
+    width: 100%;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .form-buttons-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .form-field-label {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+  }
+
+  .form-field {
+    margin: 10px 0;
+  }
+}
+
+input {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid $grey6;
+  background-color: $grey2;
+  color: $grey17;
+
+  &:focus {
+    outline: none;
+    border-color: $grey8;
+  }
+}
+
+textarea {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid $grey6;
+  background-color: $grey2;
+  color: $grey17;
+
+  &:focus {
+    outline: none;
+    border-color: $grey8;
+  }
+}
+
+button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  background-color: $grey17;
+  color: $grey1;
+  cursor: pointer;
+
+  &:hover {
+    background-color: $grey18;
+
+    &:not(:disabled) {
+      transform: scale(1.02);
+      animation: none;
+    }
+  }
+
+  &:disabled {
+    background-color: $grey6;
+    color: $grey13;
+    cursor: auto;
+  }
 }

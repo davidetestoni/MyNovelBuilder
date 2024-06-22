@@ -20,6 +20,8 @@ using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpContextAccessor();
+
 // Add the controllers that contain the HTTP endpoints, and also configure
 // the json serializer to use camelCase strings instead of integers for enums.
 builder.Services.AddControllers()
@@ -101,6 +103,11 @@ builder.Services.AddScoped<IMapper, ServiceMapper>();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 
 var app = builder.Build();
+
+app.UseCors(b => b
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
 
 // Enable swagger
 app.UseSwagger();

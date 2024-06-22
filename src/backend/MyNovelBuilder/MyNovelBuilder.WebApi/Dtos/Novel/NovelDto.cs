@@ -39,6 +39,11 @@ public class NovelDto
     public required string Brief { get; set; }
     
     /// <summary>
+    /// The novel's cover image URL.
+    /// </summary>
+    public required string? CoverImageUrl { get; set; }
+    
+    /// <summary>
     /// The novel's writing tense.
     /// </summary>
     public required WritingTense Tense { get; set; }

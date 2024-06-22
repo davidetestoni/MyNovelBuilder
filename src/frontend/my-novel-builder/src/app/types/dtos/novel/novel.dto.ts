@@ -9,6 +9,7 @@ export interface NovelDto {
   title: string;
   author: string;
   brief: string;
+  coverImageUrl: string | null;
   tense: WritingTense;
   pov: WritingPov;
   language: WritingLanguage;

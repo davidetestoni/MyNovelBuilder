@@ -26,6 +26,21 @@ function indexToGuid(index: number): string {
   ).toString(16)}${hex.slice(15, 18)}-${hex.slice(18, 30)}`.toLowerCase();
 }
 
+export const mockedNovel: NovelDto = {
+  id: indexToGuid(0),
+  createdAt: '2021-01-01T00:00:00Z',
+  updatedAt: '2021-01-01T00:00:00Z',
+  title: 'The Great Novel',
+  author: 'John Doe',
+  brief: 'A novel about nothing',
+  coverImageUrl: `https://picsum.photos/seed/1/200/300`,
+  tense: WritingTense.Present,
+  pov: WritingPov.FirstPerson,
+  language: WritingLanguage.English,
+  mainCharacterId: null,
+  compendiumIds: [],
+};
+
 export const mockedNovels: NovelDto[] = Array(10)
   .fill(0)
   .map((_, index) => ({
@@ -35,6 +50,7 @@ export const mockedNovels: NovelDto[] = Array(10)
     title: 'The Great Novel',
     author: 'John Doe',
     brief: 'A novel about nothing',
+    coverImageUrl: `https://picsum.photos/seed/${index + 1}/200/300`,
     tense: WritingTense.Present,
     pov: WritingPov.FirstPerson,
     language: WritingLanguage.English,

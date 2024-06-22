@@ -10,16 +10,18 @@ import { WritingTense } from '../../types/enums/writing-tense';
 import { WritingPov } from '../../types/enums/writing-pov';
 import { WritingLanguage } from '../../types/enums/writing-language';
 import { NovelService } from '../../services/novel.service';
-import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { ToastrModule, ToastrService } from 'ngx-toastr';
 import {
   MatDialogActions,
   MatDialogClose,
   MatDialogContent,
+  MatDialogRef,
   MatDialogTitle,
 } from '@angular/material/dialog';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 @Component({
   selector: 'app-create-novel',
@@ -34,33 +36,43 @@ import {
     MatDialogContent,
     MatDialogActions,
     MatDialogClose,
+    ToastrModule,
   ],
+  providers: [provideAnimations()],
   templateUrl: './create-novel.component.html',
   styleUrl: './create-novel.component.scss',
 })
 export class CreateNovelComponent {
-  @Output() created = new EventEmitter<NovelDto>();
+  imagePreview: string | ArrayBuffer | null = null;
+  imageFile: File | null = null;
 
   formGroup = new FormGroup({
-    title: new FormControl(''),
-    author: new FormControl(''),
-    brief: new FormControl(''),
-    tense: new FormControl('', [
+    title: new FormControl('', [
+      Validators.required,
+      Validators.maxLength(100),
+    ]),
+    author: new FormControl('', [Validators.maxLength(100)]),
+    brief: new FormControl('', [Validators.maxLength(500)]),
+    tense: new FormControl(WritingTense.Present, [
       Validators.required,
       Validators.pattern(Object.values(WritingTense).join('|')),
     ]),
-    pov: new FormControl('', [
+    pov: new FormControl(WritingPov.FirstPerson, [
       Validators.required,
       Validators.pattern(Object.values(WritingPov).join('|')),
     ]),
-    language: new FormControl('', [
+    language: new FormControl(WritingLanguage.English, [
       Validators.required,
       Validators.pattern(Object.values(WritingLanguage).join('|')),
     ]),
     // TODO: Add compendia and main character id
   });
 
-  constructor(@Inject(NovelService) private novelService: NovelService) {}
+  constructor(
+    @Inject(NovelService) private novelService: NovelService,
+    public dialogRef: MatDialogRef<CreateNovelComponent>,
+    private toastr: ToastrService
+  ) {}
 
   createNovel(): void {
     const tenseValue: string = this.formGroup.get('tense')?.value ?? '';
@@ -76,7 +88,7 @@ export class CreateNovelComponent {
 
     this.novelService
       .createNovel({
-        title: this.formGroup.get('title')?.value ?? '',
+        title: this.formGroup.get('title')!.value!,
         author: this.formGroup.get('author')?.value ?? '',
         brief: this.formGroup.get('brief')?.value ?? '',
         tense,
@@ -85,12 +97,42 @@ export class CreateNovelComponent {
         mainCharacterId: null,
       })
       .subscribe((novel) => {
-        this.created.emit(novel);
-        this.formGroup.reset();
+        if (this.imageFile !== null) {
+          this.novelService
+            .uploadNovelCoverImage(novel.id, this.imageFile)
+            .subscribe(() => {
+              this.toastr.success('Novel created successfully.');
+              this.dialogRef.close(true);
+            });
+        } else {
+          this.toastr.success('Novel created successfully.');
+          this.dialogRef.close(true);
+        }
       });
   }
 
-  onCoverChange($event: Event) {
-    throw new Error('Method not implemented.');
+  onCoverChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      this.imageFile = file;
+
+      // Ensure the file is a PNG
+      if (file.type === 'image/png') {
+        const reader = new FileReader();
+
+        reader.onload = (e: ProgressEvent<FileReader>) => {
+          const target = e.target as FileReader;
+          if (target.result !== undefined) {
+            this.imagePreview = target.result;
+          }
+        };
+
+        reader.readAsDataURL(file);
+      } else {
+        alert('Please select a PNG file.');
+      }
+    }
   }
 }

@@ -14,11 +14,14 @@ namespace MyNovelBuilder.WebApi.Controllers;
 public class NovelController : ControllerBase
 {
     private readonly INovelService _novelService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     /// <summary></summary>
-    public NovelController(INovelService novelService)
+    public NovelController(INovelService novelService,
+        IHttpContextAccessor httpContextAccessor)
     {
         _novelService = novelService;
+        _httpContextAccessor = httpContextAccessor;
     }
     
     /// <summary>
@@ -28,7 +31,10 @@ public class NovelController : ControllerBase
     public async Task<NovelDto> GetNovelById(Guid id)
     {
         var novel = await _novelService.GetByIdAsync(id);
-        return novel.Adapt<NovelDto>();
+        var dto = novel.Adapt<NovelDto>();
+        AddCoverImageUrl(dto);
+        
+        return dto;
     }
 
     /// <summary>
@@ -38,7 +44,12 @@ public class NovelController : ControllerBase
     public async Task<IEnumerable<NovelDto>> GetAllNovels()
     {
         var novels = await _novelService.GetAllAsync();
-        return novels.Adapt<IEnumerable<NovelDto>>();
+        return novels.Adapt<IEnumerable<NovelDto>>()
+            .Select(dto =>
+            {
+                AddCoverImageUrl(dto);
+                return dto;
+            });
     }
     
     /// <summary>
@@ -50,7 +61,10 @@ public class NovelController : ControllerBase
         var novel = createNovelDto.Adapt<Novel>();
         await _novelService.CreateAsync(novel);
         
-        return novel.Adapt<NovelDto>();
+        var dto = novel.Adapt<NovelDto>();
+        AddCoverImageUrl(dto);
+        
+        return dto;
     }
     
     /// <summary>
@@ -62,7 +76,10 @@ public class NovelController : ControllerBase
         var novel = updateNovelDto.Adapt<Novel>();
         await _novelService.UpdateAsync(novel);
         
-        return novel.Adapt<NovelDto>();
+        var dto = novel.Adapt<NovelDto>();
+        AddCoverImageUrl(dto);
+        
+        return dto;
     }
     
     /// <summary>
@@ -75,26 +92,26 @@ public class NovelController : ControllerBase
     }
     
     /// <summary>
-    /// Get a novel's cover image by its ID.
-    /// </summary>
-    [HttpGet("{id:guid}/cover-image")]
-    public NovelCoverImageDto GetCoverImage(Guid id)
-    {
-        var location = _novelService.GetCoverImageLocation(id);
-        
-        return new NovelCoverImageDto
-        {
-            Id = id,
-            CoverImageLocation = location
-        };
-    }
-    
-    /// <summary>
     /// Upload a new cover image for a novel.
     /// </summary>
     [HttpPost("{id:guid}/cover-image")]
     public async Task UploadCoverImage(Guid id, IFormFile file)
     {
         await _novelService.UploadCoverImageAsync(id, file);
+    }
+
+    private void AddCoverImageUrl(NovelDto dto)
+    {
+        var urlPath = _novelService.GetCoverImageLocation(dto.Id);
+        
+        if (urlPath is null)
+        {
+            dto.CoverImageUrl = null;
+            return;
+        }
+        
+        var request = _httpContextAccessor.HttpContext!.Request;
+        var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+        dto.CoverImageUrl = $"{baseUrl}/{urlPath.Replace(Path.DirectorySeparatorChar, '/')}";
     }
 }

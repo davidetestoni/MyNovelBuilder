@@ -51,6 +51,7 @@ internal class CreateNovelDtoValidator : AbstractValidator<CreateNovelDto>
     public CreateNovelDtoValidator()
     {
         RuleFor(x => x.Title).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Author).MaximumLength(100);
         RuleFor(x => x.Brief).MaximumLength(500);
         RuleFor(x => x.Tense).IsInEnum();
         RuleFor(x => x.Pov).IsInEnum();

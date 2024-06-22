@@ -32,10 +32,6 @@ export class NovelsComponent implements OnInit {
     });
   }
 
-  getNovelCoverImageUrl(novelId: string): Observable<string | null> {
-    return this.novelService.getNovelCoverImageUrl(novelId);
-  }
-
   getLastUpdated(novel: NovelDto): string {
     return moment(novel.updatedAt).fromNow();
   }
@@ -61,6 +57,14 @@ export class NovelsComponent implements OnInit {
   }
 
   openCreateNovelDialog(): void {
-    this.dialog.open(CreateNovelComponent);
+    const dialogRef = this.dialog.open(CreateNovelComponent, {
+      minWidth: '50vw',
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.getNovels();
+      }
+    });
   }
 }

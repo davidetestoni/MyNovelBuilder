@@ -7,10 +7,10 @@
     @for (novel of novels; track novel;) {
     <div class="novel-card">
       <div class="novel-cover">
-        @if (getNovelCoverImageUrl(novel.id) | async) {
+        @if (novel.coverImageUrl !== null) {
         <img
           [routerLink]="['/novel', novel.id]"
-          src="{{ getNovelCoverImageUrl(novel.id) | async }}"
+          src="{{ novel.coverImageUrl }}"
           alt="{{ novel.title }}"
         />
         } @else {
