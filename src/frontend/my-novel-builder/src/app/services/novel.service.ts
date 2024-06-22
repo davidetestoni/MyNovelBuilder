@@ -4,7 +4,6 @@ import { NovelDto } from '../types/dtos/novel/novel.dto';
 import { environment } from '../../environment';
 import { mockObservable, mockedNovel, mockedNovels } from './mock';
 import { Injectable } from '@angular/core';
-import { NovelCoverImageDto } from '../types/dtos/novel/novel-cover-image.dto';
 import { CreateNovelDto } from '../types/dtos/novel/create-novel.dto';
 import { UpdateNovelDto } from '../types/dtos/novel/update-novel.dto';
 
@@ -23,16 +22,13 @@ export class NovelService {
       : this.http.get<NovelDto[]>(`${this.baseUrl}/novels`);
   }
 
-  uploadNovelCoverImage(
-    novelId: string,
-    file: File
-  ): Observable<NovelCoverImageDto> {
+  uploadNovelCoverImage(novelId: string, file: File): Observable<void> {
     const formData = new FormData();
     formData.append('file', file);
 
     return this.mocked
-      ? mockObservable({ id: 'mocked', location: '' })
-      : this.http.post<NovelCoverImageDto>(
+      ? mockObservable<void>(undefined)
+      : this.http.post<void>(
           `${this.baseUrl}/novel/${novelId}/cover-image`,
           formData
         );
