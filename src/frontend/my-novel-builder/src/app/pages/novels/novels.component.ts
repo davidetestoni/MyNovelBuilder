@@ -6,13 +6,14 @@ import moment from 'moment';
 import { RouterModule } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AsyncPipe } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-novels',
   standalone: true,
   templateUrl: './novels.component.html',
   styleUrls: ['./novels.component.scss'],
-  imports: [EllipsisPipe, RouterModule, AsyncPipe],
+  imports: [EllipsisPipe, RouterModule, AsyncPipe, ReactiveFormsModule],
 })
 export class NovelsComponent implements OnInit {
   novels: NovelDto[] | null = null;
@@ -20,6 +21,10 @@ export class NovelsComponent implements OnInit {
   constructor(@Inject(NovelService) private novelService: NovelService) {}
 
   ngOnInit(): void {
+    this.getNovels();
+  }
+
+  getNovels(): void {
     this.novelService.getNovels().subscribe((novels) => {
       this.novels = novels;
     });
