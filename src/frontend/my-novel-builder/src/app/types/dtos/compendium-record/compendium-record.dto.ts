@@ -1,4 +1,5 @@
 import { CompendiumRecordType } from '../../enums/compendium-record-type';
+import { CompendiumRecordImageDto } from './compendium-record-image.dto';
 
 export interface CompendiumRecordDto {
   id: string;
@@ -8,6 +9,6 @@ export interface CompendiumRecordDto {
   aliases: string;
   type: CompendiumRecordType;
   context: string;
-  currentImageId: string | null;
+  images: CompendiumRecordImageDto[];
   compendiumId: string;
 }

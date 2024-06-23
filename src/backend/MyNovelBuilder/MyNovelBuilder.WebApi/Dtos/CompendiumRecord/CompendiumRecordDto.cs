@@ -41,11 +41,16 @@ public class CompendiumRecordDto
     /// The record's context.
     /// </summary>
     public string Context { get; set; } = string.Empty;
-    
+
     /// <summary>
-    /// The current image ID.
+    /// The current image ID, if any.
     /// </summary>
     public Guid? CurrentImageId { get; set; }
+    
+    /// <summary>
+    /// The compendium record's images.
+    /// </summary>
+    public IEnumerable<CompendiumRecordImageDto> Images { get; set; } = Array.Empty<CompendiumRecordImageDto>();
     
     /// <summary>
     /// The ID of the compendium to which the record belongs.

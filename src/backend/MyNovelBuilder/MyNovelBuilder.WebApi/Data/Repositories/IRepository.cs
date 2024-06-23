@@ -9,6 +9,11 @@ namespace MyNovelBuilder.WebApi.Data.Repositories;
 public interface IRepository<TEntity> where TEntity : Entity
 {
     /// <summary>
+    /// Check if an entity with a given ID exists.
+    /// </summary>
+    Task<bool> ExistsAsync(Guid id);
+    
+    /// <summary>
     /// Get an entity by its ID. Returns null if not found.
     /// </summary>
     Task<TEntity?> GetByIdAsync(Guid id);

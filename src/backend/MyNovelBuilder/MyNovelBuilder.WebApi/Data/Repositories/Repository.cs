@@ -24,6 +24,14 @@ public class Repository<TEntity> :
         Context = context;
     }
 
+    /// <summary>
+    /// Check if an entity with a given ID exists.
+    /// </summary>
+    public async Task<bool> ExistsAsync(Guid id)
+    {
+        return await Context.Set<TEntity>().AnyAsync(e => e.Id == id);
+    }
+    
     /// <inheritdoc />
     public async Task<TEntity?> GetByIdAsync(Guid id)
     {

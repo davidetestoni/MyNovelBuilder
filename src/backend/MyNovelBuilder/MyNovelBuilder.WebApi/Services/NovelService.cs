@@ -71,7 +71,12 @@ public class NovelService : INovelService
 
     /// <inheritdoc />
     public async Task UploadCoverImageAsync(Guid id, IFormFile file)
-    {
+    {   
+        if (!await _unitOfWork.Novels.ExistsAsync(id))
+        {
+            throw new ApiException(ErrorCodes.NovelNotFound, $"Novel with ID {id} was not found.");
+        }
+        
         // If not a png file, throw an exception
         // TODO: Support other image formats
         if (file.ContentType != "image/png")

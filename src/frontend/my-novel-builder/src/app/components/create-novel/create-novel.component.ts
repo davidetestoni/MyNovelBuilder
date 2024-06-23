@@ -28,7 +28,6 @@ import { provideAnimations } from '@angular/platform-browser/animations';
     MatDialogClose,
     ToastrModule,
   ],
-  providers: [provideAnimations()],
   templateUrl: './create-novel.component.html',
   styleUrl: './create-novel.component.scss',
 })
@@ -65,14 +64,14 @@ export class CreateNovelComponent {
   ) {}
 
   createNovel(): void {
-    const tenseValue: string = this.formGroup.get('tense')?.value ?? '';
+    const tenseValue: string = this.formGroup.get('tense')!.value!;
     const tense: WritingTense =
       WritingTense[tenseValue as keyof typeof WritingTense];
 
-    const povValue: string = this.formGroup.get('pov')?.value ?? '';
+    const povValue: string = this.formGroup.get('pov')!.value!;
     const pov: WritingPov = WritingPov[povValue as keyof typeof WritingPov];
 
-    const languageValue: string = this.formGroup.get('language')?.value ?? '';
+    const languageValue: string = this.formGroup.get('language')!.value!;
     const language: WritingLanguage =
       WritingLanguage[languageValue as keyof typeof WritingLanguage];
 

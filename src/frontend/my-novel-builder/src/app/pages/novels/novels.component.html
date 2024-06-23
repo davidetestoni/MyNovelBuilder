@@ -16,6 +16,7 @@
         } @else {
         <div
           class="no-cover"
+          [routerLink]="['/novel', novel.id]"
           [style]="{ 'background-color': guidToColor(novel.id) }"
         >
           <i class="icon icon-novels"></i>

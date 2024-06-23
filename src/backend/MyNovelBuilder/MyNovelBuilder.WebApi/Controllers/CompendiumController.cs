@@ -59,13 +59,13 @@ public class CompendiumController : ControllerBase
     /// Update a compendium.
     /// </summary>
     [HttpPut]
-    public async Task<CompendiumDto> UpdateCompendium(CompendiumDto compendiumDto)
+    public async Task<CompendiumDto> UpdateCompendium(UpdateCompendiumDto compendiumDto)
     {
         var compendium = await _compendiumService.GetByIdAsync(compendiumDto.Id);
         compendiumDto.Adapt(compendium);
         await _compendiumService.UpdateAsync(compendium);
         
-        return compendiumDto;
+        return compendium.Adapt<CompendiumDto>();
     }
     
     /// <summary>

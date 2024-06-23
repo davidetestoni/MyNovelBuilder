@@ -1,51 +1,58 @@
 <div class="modal-container">
-  <h2>Create a novel</h2>
+  <h2>Create a record</h2>
   <div class="form-container">
     <form [formGroup]="formGroup">
       <div class="form-row">
         <div class="form-column">
           <div class="form-field">
-            <div class="form-field-label">Title *</div>
+            <div class="form-field-label">Type *</div>
+            <select formControlName="type" placeholder="Select a type">
+              @for (type of recordTypes; track type) {
+              <option [value]="type">{{ type | titlecase }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <div class="form-field-label">Name *</div>
             <input
               matInput
               type="text"
-              id="title"
-              formControlName="title"
-              placeholder="My new novel"
+              id="name"
+              formControlName="name"
+              placeholder="My new record"
             />
           </div>
           <div class="form-field">
-            <div class="form-field-label">Author</div>
+            <div class="form-field-label">Aliases</div>
             <input
               matInput
               type="text"
-              id="author"
-              formControlName="author"
-              placeholder="John Doe"
+              id="aliases"
+              formControlName="aliases"
+              placeholder="Awesome record, Best record ever"
             />
           </div>
           <div class="form-field">
-            <div class="form-field-label">Brief</div>
+            <div class="form-field-label">Context</div>
             <textarea
               matInput
-              id="brief"
-              formControlName="brief"
-              placeholder="This story is about..."
+              id="context"
+              formControlName="context"
+              placeholder="This record is about..."
             ></textarea>
           </div>
-          <!-- TODO: Add remaining fields (tense, pov, language, MC) -->
         </div>
         <div class="form-column">
           <div class="form-field">
-            <div class="form-field-label">Cover</div>
+            <div class="form-field-label">Image</div>
             @if (imagePreview !== null) {
-            <div class="novel-cover">
-              <img [src]="imagePreview" alt="Cover Image" />
+            <div class="record-image">
+              <img [src]="imagePreview" alt="Record Image" />
             </div>
             }
             <input
               type="file"
-              (change)="onCoverChange($event)"
+              (change)="onImageChange($event)"
               accept="image/png"
             />
           </div>
@@ -55,7 +62,7 @@
         <div class="form-buttons-container">
           <button
             type="submit"
-            (click)="createNovel()"
+            (click)="createRecord()"
             [disabled]="formGroup.invalid || formGroup.pristine"
           >
             Create

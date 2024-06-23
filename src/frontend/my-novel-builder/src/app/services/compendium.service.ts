@@ -1,11 +1,18 @@
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environment';
-import { mockObservable, mockedCompendia } from './mock';
+import {
+  mockObservable,
+  mockedCompendia,
+  mockedCompendiumRecords,
+} from './mock';
 import { Injectable } from '@angular/core';
 import { CompendiumDto } from '../types/dtos/compendium/compendium.dto';
 import { CreateCompendiumDto } from '../types/dtos/compendium/create-compendium.dto';
 import { UpdateCompendiumDto } from '../types/dtos/compendium/update-compendium.dto';
+import { CompendiumRecordDto } from '../types/dtos/compendium-record/compendium-record.dto';
+import { CreateCompendiumRecordDto } from '../types/dtos/compendium-record/create-compendium-record.dto';
+import { UpdateCompendiumRecordDto } from '../types/dtos/compendium-record/update-compendium-record.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -30,25 +37,50 @@ export class CompendiumService {
         );
   }
 
-  createCompendium(
-    compendium: CreateCompendiumDto
-  ): Observable<CreateCompendiumDto> {
+  getRecords(compendiumId: string): Observable<CompendiumRecordDto[]> {
     return this.mocked
-      ? mockObservable(mockedCompendia[0])
-      : this.http.post<CreateCompendiumDto>(
-          `${this.baseUrl}/compendium`,
-          compendium
+      ? mockObservable(mockedCompendiumRecords)
+      : this.http.get<CompendiumRecordDto[]>(
+          `${this.baseUrl}/compendium-records`,
+          {
+            params: {
+              compendiumId,
+            },
+          }
         );
   }
 
-  updateCompendium(
-    compendium: UpdateCompendiumDto
-  ): Observable<UpdateCompendiumDto> {
+  createCompendium(compendium: CreateCompendiumDto): Observable<CompendiumDto> {
     return this.mocked
       ? mockObservable(mockedCompendia[0])
-      : this.http.put<UpdateCompendiumDto>(
-          `${this.baseUrl}/compendium`,
-          compendium
+      : this.http.post<CompendiumDto>(`${this.baseUrl}/compendium`, compendium);
+  }
+
+  createRecord(
+    record: CreateCompendiumRecordDto
+  ): Observable<CompendiumRecordDto> {
+    return this.mocked
+      ? mockObservable(mockedCompendiumRecords[0])
+      : this.http.post<CompendiumRecordDto>(
+          `${this.baseUrl}/compendium-record`,
+          record
+        );
+  }
+
+  updateCompendium(compendium: UpdateCompendiumDto): Observable<CompendiumDto> {
+    return this.mocked
+      ? mockObservable(mockedCompendia[0])
+      : this.http.put<CompendiumDto>(`${this.baseUrl}/compendium`, compendium);
+  }
+
+  updateRecord(
+    record: UpdateCompendiumRecordDto
+  ): Observable<CompendiumRecordDto> {
+    return this.mocked
+      ? mockObservable(mockedCompendiumRecords[0])
+      : this.http.put<CompendiumRecordDto>(
+          `${this.baseUrl}/compendium-record`,
+          record
         );
   }
 
@@ -58,5 +90,32 @@ export class CompendiumService {
     }
 
     return this.http.delete<void>(`${this.baseUrl}/compendium/${compendiumId}`);
+  }
+
+  deleteRecord(recordId: string): Observable<void> {
+    if (this.mocked) {
+      return mockObservable<void>(undefined);
+    }
+
+    return this.http.delete<void>(
+      `${this.baseUrl}/compendium-record/${recordId}`
+    );
+  }
+
+  uploadRecordImage(
+    recordId: string,
+    file: File,
+    isCurrent: true
+  ): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('isCurrent', isCurrent.toString());
+
+    return this.mocked
+      ? mockObservable<void>(undefined)
+      : this.http.post<void>(
+          `${this.baseUrl}/compendium-record/${recordId}/image`,
+          formData
+        );
   }
 }

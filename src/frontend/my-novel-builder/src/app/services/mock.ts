@@ -6,6 +6,7 @@ import { WritingLanguage } from '../types/enums/writing-language';
 import { CompendiumDto } from '../types/dtos/compendium/compendium.dto';
 import { loremIpsum } from 'lorem-ipsum';
 import { CompendiumRecordType } from '../types/enums/compendium-record-type';
+import { CompendiumRecordDto } from '../types/dtos/compendium-record/compendium-record.dto';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
@@ -81,3 +82,83 @@ export const mockedCompendia: CompendiumDto[] = Array(3)
       },
     ],
   }));
+
+export const mockedCompendiumRecords: CompendiumRecordDto[] = [
+  {
+    id: indexToGuid(1),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'John Doe',
+    aliases: 'Johnny',
+    type: CompendiumRecordType.Character,
+    context: loremIpsum({ count: 3, units: 'sentences' }),
+    images: [
+      {
+        id: indexToGuid(11),
+        url: `https://picsum.photos/seed/11/200/300`,
+        isCurrent: true,
+      },
+      {
+        id: indexToGuid(12),
+        url: `https://picsum.photos/seed/12/200/300`,
+        isCurrent: false,
+      },
+    ],
+    compendiumId: mockedCompendia[0].id,
+  },
+  {
+    id: indexToGuid(2),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'Jane Doe',
+    aliases: 'Janie',
+    type: CompendiumRecordType.Character,
+    context: loremIpsum({ count: 3, units: 'sentences' }),
+    images: [],
+    compendiumId: mockedCompendia[0].id,
+  },
+  {
+    id: indexToGuid(3),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Great City',
+    aliases: 'The City',
+    type: CompendiumRecordType.Place,
+    context: loremIpsum({ count: 3, units: 'sentences' }),
+    images: [
+      {
+        id: indexToGuid(31),
+        url: `https://picsum.photos/seed/31/200/300`,
+        isCurrent: true,
+      },
+      {
+        id: indexToGuid(32),
+        url: `https://picsum.photos/seed/32/200/300`,
+        isCurrent: false,
+      },
+    ],
+    compendiumId: mockedCompendia[0].id,
+  },
+  {
+    id: indexToGuid(4),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Great Concept',
+    aliases: 'The Concept',
+    type: CompendiumRecordType.Concept,
+    context: loremIpsum({ count: 3, units: 'sentences' }),
+    images: [
+      {
+        id: indexToGuid(41),
+        url: `https://picsum.photos/seed/41/200/300`,
+        isCurrent: true,
+      },
+      {
+        id: indexToGuid(42),
+        url: `https://picsum.photos/seed/42/200/300`,
+        isCurrent: false,
+      },
+    ],
+    compendiumId: mockedCompendia[0].id,
+  },
+];

@@ -60,7 +60,7 @@ h2 {
   }
 
   .form-field {
-    margin: 10px 0;
+    margin: 5px 0;
   }
 }
 
@@ -90,6 +90,19 @@ textarea {
   }
 }
 
+select {
+  padding: 10px 10px 10px 5px;
+  border-radius: 5px;
+  border: 1px solid $grey6;
+  background-color: $grey2;
+  color: $grey17;
+
+  &:focus {
+    outline: none;
+    border-color: $grey8;
+  }
+}
+
 button {
   padding: 10px 20px;
   border-radius: 5px;
@@ -97,6 +110,7 @@ button {
   background-color: $grey17;
   color: $grey1;
   cursor: pointer;
+  user-select: none;
 
   &:hover {
     background-color: $grey18;

@@ -43,5 +43,5 @@ public class CompendiumRecord : TimestampedEntity
     /// <summary>
     /// The compendium to which the record belongs.
     /// </summary>
-    public Compendium Compendium { get; init; } = null!;
+    public Compendium Compendium { get; set; } = null!;
 }
