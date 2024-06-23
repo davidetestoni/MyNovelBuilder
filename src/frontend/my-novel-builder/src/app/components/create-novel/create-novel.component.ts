@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, Output } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -10,16 +10,11 @@ import { WritingTense } from '../../types/enums/writing-tense';
 import { WritingPov } from '../../types/enums/writing-pov';
 import { WritingLanguage } from '../../types/enums/writing-language';
 import { NovelService } from '../../services/novel.service';
-import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import {
   MatDialogActions,
   MatDialogClose,
-  MatDialogContent,
   MatDialogRef,
-  MatDialogTitle,
 } from '@angular/material/dialog';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
@@ -27,13 +22,8 @@ import { provideAnimations } from '@angular/platform-browser/animations';
   selector: 'app-create-novel',
   standalone: true,
   imports: [
-    MatFormFieldModule,
-    MatInputModule,
     FormsModule,
     ReactiveFormsModule,
-    MatButtonModule,
-    MatDialogTitle,
-    MatDialogContent,
     MatDialogActions,
     MatDialogClose,
     ToastrModule,
@@ -45,6 +35,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 export class CreateNovelComponent {
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
+  novelService: NovelService = inject(NovelService);
 
   formGroup = new FormGroup({
     title: new FormControl('', [
@@ -69,7 +60,6 @@ export class CreateNovelComponent {
   });
 
   constructor(
-    @Inject(NovelService) private novelService: NovelService,
     public dialogRef: MatDialogRef<CreateNovelComponent>,
     private toastr: ToastrService
   ) {}

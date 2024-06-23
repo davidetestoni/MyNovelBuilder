@@ -1,0 +1,38 @@
+<div class="modal-container">
+  <h2>Create a compendium</h2>
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <div class="form-field-label">Name *</div>
+        <input
+          matInput
+          type="text"
+          id="name"
+          formControlName="name"
+          placeholder="My new compendium"
+        />
+      </div>
+      <div class="form-field">
+        <div class="form-field-label">Description</div>
+        <textarea
+          matInput
+          id="description"
+          formControlName="description"
+          placeholder="This compendium contains information regarding..."
+        ></textarea>
+      </div>
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <button
+            class="create-compendium-button"
+            type="submit"
+            (click)="createCompendium()"
+            [disabled]="formGroup.invalid || formGroup.pristine"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+textarea {
+  height: 100px;
+  width: calc(100% - 20px);
+
+  /* Remove the handle */
+  resize: none;
+}
+
+input {
+  width: calc(100% - 20px);
+}

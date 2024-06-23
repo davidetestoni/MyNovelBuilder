@@ -4,6 +4,8 @@ import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { TitleCasePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
+import { CreateCompendiumComponent } from '../../components/create-compendium/create-compendium.component';
 
 @Component({
   selector: 'app-compendia',
@@ -19,6 +21,7 @@ export class CompendiaComponent implements OnInit {
     CompendiumRecordType.Place,
     CompendiumRecordType.Concept,
   ];
+  readonly dialog = inject(MatDialog);
   readonly compendiumService = inject(CompendiumService);
 
   ngOnInit(): void {
@@ -35,5 +38,17 @@ export class CompendiaComponent implements OnInit {
     return compendium.records
       .filter((record) => record.type === type)
       .slice(0, 5);
+  }
+
+  openCreateCompendiumDialog(): void {
+    const dialogRef = this.dialog.open(CreateCompendiumComponent, {
+      minWidth: '50vw',
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.getCompendia();
+      }
+    });
   }
 }

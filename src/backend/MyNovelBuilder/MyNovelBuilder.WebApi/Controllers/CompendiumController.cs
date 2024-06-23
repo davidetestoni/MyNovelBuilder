@@ -9,7 +9,9 @@ namespace MyNovelBuilder.WebApi.Controllers;
 /// <summary>
 /// Controller for compendia.
 /// </summary>
-public class CompendiumController
+[Route("api/compendium")]
+[ApiController]
+public class CompendiumController : ControllerBase
 {
     private readonly ICompendiumService _compendiumService;
 

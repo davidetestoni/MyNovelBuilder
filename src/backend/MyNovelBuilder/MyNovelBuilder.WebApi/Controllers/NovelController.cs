@@ -9,7 +9,7 @@ namespace MyNovelBuilder.WebApi.Controllers;
 /// <summary>
 /// Controller for novels.
 /// </summary>
-[Route("api/[controller]")]
+[Route("api/novel")]
 [ApiController]
 public class NovelController : ControllerBase
 {
