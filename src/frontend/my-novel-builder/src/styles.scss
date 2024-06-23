@@ -12,6 +12,7 @@ body {
 
 * {
   font-family: Poppins, sans-serif;
+  box-sizing: border-box;
 }
 
 h1 {
@@ -20,15 +21,6 @@ h1 {
 
 h2 {
   margin: 0;
-}
-
-html,
-body {
-  height: 100%;
-}
-body {
-  margin: 0;
-  font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
 .modal-container {

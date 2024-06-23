@@ -8,7 +8,7 @@
   padding: 10px 20px;
   color: $grey13;
   position: fixed;
-  width: 100dvw;
+  width: 100%;
   height: $mainLayoutHeaderHeight;
   user-select: none;
   z-index: 1000;
@@ -30,7 +30,6 @@
     display: flex;
     gap: 10px;
     margin-left: auto;
-    margin-right: 40px;
 
     .nav-item {
       display: flex;
