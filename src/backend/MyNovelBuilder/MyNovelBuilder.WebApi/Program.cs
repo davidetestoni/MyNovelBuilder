@@ -20,6 +20,9 @@ using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
+Globals.DataFolder = Path.GetFullPath(builder.Configuration["DataFolder"]!);
+Directory.CreateDirectory(Globals.DataFolder);
+
 builder.Services.AddHttpContextAccessor();
 
 // Add the controllers that contain the HTTP endpoints, and also configure
@@ -80,7 +83,7 @@ builder.Services.Configure<ApiBehaviorOptions>(x =>
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlite($"Data Source={Globals.DataFolder}/app.db");
 });
 
 builder.Services.AddScoped<INovelRepository, NovelRepository>();
