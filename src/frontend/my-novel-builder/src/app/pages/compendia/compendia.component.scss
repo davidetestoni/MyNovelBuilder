@@ -1,0 +1,97 @@
+@import "colors";
+
+.compendia-container {
+  padding: 20px;
+
+  .compendia-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    .compendium-card {
+      display: grid;
+      grid-template-columns: 3fr 1fr 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+      border-radius: 5px;
+      background-color: $grey3;
+      cursor: pointer;
+      transition: 0.3s;
+
+      .compendium-info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .compendium-name {
+          font-size: 1.2rem;
+          font-weight: 500;
+        }
+
+        .compendium-description {
+          font-size: 0.9rem;
+          color: $grey13;
+        }
+      }
+
+      .compendium-records {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        .compendium-records-title {
+          font-size: 1rem;
+          font-weight: 500;
+        }
+
+        .compendium-records-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+
+          .compendium-record {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+
+            .compendium-record-image {
+              width: 40px;
+              height: 40px;
+              border-radius: 5px;
+              overflow: hidden;
+
+              img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 5px;
+              }
+
+              .no-image {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
+                height: 100%;
+                border-radius: 5px;
+                background-color: $grey5;
+
+                i {
+                  width: 30px;
+                  height: 30px;
+                  filter: $grey13filter;
+                }
+              }
+            }
+
+            .compendium-record-name {
+              font-size: 0.9rem;
+              font-weight: 500;
+            }
+          }
+        }
+      }
+    }
+  }
+}

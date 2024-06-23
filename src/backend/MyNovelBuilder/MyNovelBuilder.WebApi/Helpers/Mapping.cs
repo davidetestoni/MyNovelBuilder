@@ -1,4 +1,6 @@
 ﻿using Mapster;
+using MyNovelBuilder.WebApi.Data.Entities;
+using MyNovelBuilder.WebApi.Dtos.Novel;
 
 namespace MyNovelBuilder.WebApi.Helpers;
 
@@ -12,6 +14,7 @@ public static class Mapping
     /// </summary>
     public static void ConfigureMapster(TypeAdapterConfig config)
     {
-        // Configure mappings here.
+        config.NewConfig<Novel, NovelDto>()
+            .Map(dest => dest.CompendiumIds, src => src.Compendia.Select(c => c.Id).ToList());
     }
 }

@@ -3,6 +3,9 @@ import { NovelDto } from '../types/dtos/novel/novel.dto';
 import { WritingTense } from '../types/enums/writing-tense';
 import { WritingPov } from '../types/enums/writing-pov';
 import { WritingLanguage } from '../types/enums/writing-language';
+import { CompendiumDto } from '../types/dtos/compendium/compendium.dto';
+import { loremIpsum } from 'lorem-ipsum';
+import { CompendiumRecordType } from '../types/enums/compendium-record-type';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
@@ -26,25 +29,10 @@ function indexToGuid(index: number): string {
   ).toString(16)}${hex.slice(15, 18)}-${hex.slice(18, 30)}`.toLowerCase();
 }
 
-export const mockedNovel: NovelDto = {
-  id: indexToGuid(0),
-  createdAt: '2021-01-01T00:00:00Z',
-  updatedAt: '2021-01-01T00:00:00Z',
-  title: 'The Great Novel',
-  author: 'John Doe',
-  brief: 'A novel about nothing',
-  coverImageUrl: `https://picsum.photos/seed/1/200/300`,
-  tense: WritingTense.Present,
-  pov: WritingPov.FirstPerson,
-  language: WritingLanguage.English,
-  mainCharacterId: null,
-  compendiumIds: [],
-};
-
 export const mockedNovels: NovelDto[] = Array(10)
   .fill(0)
   .map((_, index) => ({
-    id: indexToGuid(index),
+    id: indexToGuid(index + 1),
     createdAt: '2021-01-01T00:00:00Z',
     updatedAt: '2021-01-01T00:00:00Z',
     title: 'The Great Novel',
@@ -56,4 +44,40 @@ export const mockedNovels: NovelDto[] = Array(10)
     language: WritingLanguage.English,
     mainCharacterId: null,
     compendiumIds: [],
+  }));
+
+export const mockedCompendia: CompendiumDto[] = Array(3)
+  .fill(0)
+  .map((_, index) => ({
+    id: indexToGuid(index + 1),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Great Compendium',
+    description: loremIpsum({ count: 3, units: 'sentences' }),
+    records: [
+      {
+        id: indexToGuid(index * 100 + 1),
+        name: 'John Doe',
+        type: CompendiumRecordType.Character,
+        imageUrl: `https://picsum.photos/seed/${index * 100 + 1}/200/300`,
+      },
+      {
+        id: indexToGuid(index * 100 + 2),
+        name: 'Jane Doe',
+        type: CompendiumRecordType.Character,
+        imageUrl: null,
+      },
+      {
+        id: indexToGuid(index * 100 + 3),
+        name: 'The Great City',
+        type: CompendiumRecordType.Place,
+        imageUrl: `https://picsum.photos/seed/${index * 100 + 3}/200/300`,
+      },
+      {
+        id: indexToGuid(index * 100 + 4),
+        name: 'The Great Concept',
+        type: CompendiumRecordType.Concept,
+        imageUrl: `https://picsum.photos/seed/${index * 100 + 4}/200/300`,
+      },
+    ],
   }));

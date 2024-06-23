@@ -73,7 +73,8 @@ public class NovelController : ControllerBase
     [HttpPut]
     public async Task<NovelDto> UpdateNovel(UpdateNovelDto updateNovelDto)
     {
-        var novel = updateNovelDto.Adapt<Novel>();
+        var novel = await _novelService.GetByIdAsync(updateNovelDto.Id);
+        updateNovelDto.Adapt(novel);
         await _novelService.UpdateAsync(novel);
         
         var dto = novel.Adapt<NovelDto>();

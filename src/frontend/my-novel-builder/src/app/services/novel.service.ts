@@ -1,8 +1,8 @@
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { NovelDto } from '../types/dtos/novel/novel.dto';
 import { environment } from '../../environment';
-import { mockObservable, mockedNovel, mockedNovels } from './mock';
+import { mockObservable, mockedNovels } from './mock';
 import { Injectable } from '@angular/core';
 import { CreateNovelDto } from '../types/dtos/novel/create-novel.dto';
 import { UpdateNovelDto } from '../types/dtos/novel/update-novel.dto';
@@ -36,13 +36,13 @@ export class NovelService {
 
   createNovel(novel: CreateNovelDto): Observable<NovelDto> {
     return this.mocked
-      ? mockObservable(mockedNovel)
+      ? mockObservable(mockedNovels[0])
       : this.http.post<NovelDto>(`${this.baseUrl}/novel`, novel);
   }
 
   updateNovel(novel: UpdateNovelDto): Observable<NovelDto> {
     return this.mocked
-      ? mockObservable(mockedNovel)
+      ? mockObservable(mockedNovels[0])
       : this.http.put<NovelDto>(`${this.baseUrl}/novel`, novel);
   }
 

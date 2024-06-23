@@ -41,4 +41,9 @@ public interface INovelService
     /// Upload a cover image for a novel.
     /// </summary>
     Task UploadCoverImageAsync(Guid id, IFormFile file);
+    
+    /// <summary>
+    /// Delete a cover image for a novel.
+    /// </summary>
+    void DeleteCoverImage(Guid id);
 }

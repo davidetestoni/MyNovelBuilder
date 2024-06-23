@@ -1,1 +1,46 @@
-<p>compendia works!</p>
+<div class="compendia-container">
+  <h1>Compendia</h1>
+  @if (compendia === null) {
+  <p>Loading...</p>
+  } @else {
+  <div class="compendia-list">
+    @for (compendium of compendia; track compendium;) {
+    <div class="compendium-card" [routerLink]="['/compendium', compendium.id]">
+      <div class="compendium-info">
+        <div class="compendium-name">
+          <span>{{ compendium.name }}</span>
+        </div>
+        <div class="compendium-description">
+          <span>{{ compendium.description }}</span>
+        </div>
+      </div>
+      @for (type of recordTypesToPreview; track type) {
+      <div class="compendium-records">
+        <div class="compendium-records-title">
+          <span>{{ type | titlecase }}s</span>
+        </div>
+        <div class="compendium-records-list">
+          @for (record of getRecordsOfType(compendium, type); track record;) {
+          <div class="compendium-record">
+            <div class="compendium-record-image">
+              @if (record.imageUrl !== null) {
+              <img src="{{ record.imageUrl }}" alt="{{ record.name }}" />
+              } @else {
+              <div class="no-image">
+                <i class="icon icon-compendium"></i>
+              </div>
+              }
+            </div>
+            <div class="compendium-record-name">
+              <span>{{ record.name }}</span>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+  }
+</div>

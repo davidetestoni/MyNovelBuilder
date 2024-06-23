@@ -57,6 +57,8 @@ public class NovelService : INovelService
         
         _unitOfWork.Novels.Remove(novel);
         await _unitOfWork.SaveChangesAsync();
+        
+        DeleteCoverImage(id);
     }
 
     /// <inheritdoc />
@@ -83,5 +85,16 @@ public class NovelService : INovelService
         
         await using var stream = new FileStream(path, FileMode.Create);
         await file.CopyToAsync(stream);
+    }
+
+    /// <inheritdoc />
+    public void DeleteCoverImage(Guid id)
+    {
+        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
+        
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
     }
 }
