@@ -63,8 +63,9 @@ export class CreateCompendiumRecordComponent {
 
   createRecord(): void {
     const typeValue: string = this.formGroup.get('type')!.value!;
-    const type: CompendiumRecordType =
-      CompendiumRecordType[typeValue as keyof typeof CompendiumRecordType];
+    const type: CompendiumRecordType = Object.values(CompendiumRecordType).find(
+      (recordType) => recordType === typeValue
+    )!;
 
     this.compendiumService
       .createRecord({
@@ -109,7 +110,7 @@ export class CreateCompendiumRecordComponent {
 
         reader.readAsDataURL(file);
       } else {
-        alert('Please select a PNG file.');
+        this.toastr.error('Only PNG images are supported');
       }
     }
   }

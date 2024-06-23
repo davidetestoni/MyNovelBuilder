@@ -104,17 +104,17 @@ public class CompendiumController : ControllerBase
         var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
         
         foreach (var record in records)
-        {
-            if (record.CurrentImageId is null)
+        {   
+            var recordDto = record.Adapt<CompendiumRecordOverviewDto>();
+
+            if (record.CurrentImageId is not null)
             {
-                continue;
+                var urlPath = Path.Combine("static", "compendium", record.Compendium.Id.ToString(),
+                    "records", record.Id.ToString(), "gallery", $"{record.CurrentImageId}.png");
+                
+                recordDto.ImageUrl = $"{baseUrl}/{urlPath.Replace(Path.DirectorySeparatorChar, '/')}";
             }
             
-            var urlPath = Path.Combine("static", "compendium", record.Compendium.Id.ToString(),
-                "records", record.Id.ToString(), "gallery", $"{record.CurrentImageId}.png");
-            
-            var recordDto = record.Adapt<CompendiumRecordOverviewDto>();
-            recordDto.ImageUrl = $"{baseUrl}/{urlPath.Replace(Path.DirectorySeparatorChar, '/')}";
             recordDtos.Add(recordDto);
         }
         

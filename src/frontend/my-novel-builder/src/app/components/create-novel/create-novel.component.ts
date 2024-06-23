@@ -65,15 +65,19 @@ export class CreateNovelComponent {
 
   createNovel(): void {
     const tenseValue: string = this.formGroup.get('tense')!.value!;
-    const tense: WritingTense =
-      WritingTense[tenseValue as keyof typeof WritingTense];
+    const tense: WritingTense = Object.values(WritingTense).find(
+      (tense) => tense === tenseValue
+    )!;
 
     const povValue: string = this.formGroup.get('pov')!.value!;
-    const pov: WritingPov = WritingPov[povValue as keyof typeof WritingPov];
+    const pov: WritingPov = Object.values(WritingPov).find(
+      (pov) => pov === povValue
+    )!;
 
     const languageValue: string = this.formGroup.get('language')!.value!;
-    const language: WritingLanguage =
-      WritingLanguage[languageValue as keyof typeof WritingLanguage];
+    const language: WritingLanguage = Object.values(WritingLanguage).find(
+      (language) => language === languageValue
+    )!;
 
     this.novelService
       .createNovel({
@@ -120,7 +124,7 @@ export class CreateNovelComponent {
 
         reader.readAsDataURL(file);
       } else {
-        alert('Please select a PNG file.');
+        this.toastr.error('Only PNG images are supported');
       }
     }
   }
