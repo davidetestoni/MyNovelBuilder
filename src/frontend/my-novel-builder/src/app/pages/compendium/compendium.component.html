@@ -42,7 +42,7 @@
           </div>
           <div class="compendium-records-list">
             @for (record of getRecordsOfType(type); track record.id) {
-            <div class="compendium-record">
+            <div class="compendium-record" (click)="setCurrentRecord(record)">
               <div class="compendium-record-image">
                 @if (getRecordImage(record) !== null) {
                 <img
@@ -66,6 +66,9 @@
       </div>
       }
     </div>
+    @if (currentRecord !== null) {
+    <div class="compendium-record"></div>
+    }
   </div>
   }
 </div>

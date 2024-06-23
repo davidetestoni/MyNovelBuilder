@@ -22,6 +22,7 @@ export class CompendiumComponent implements OnInit {
   readonly dialog = inject(MatDialog);
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   compendiumId!: string;
+  currentRecord: CompendiumRecordDto | null = null;
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -54,6 +55,10 @@ export class CompendiumComponent implements OnInit {
       .subscribe((records) => {
         this.records = records;
       });
+  }
+
+  setCurrentRecord(record: CompendiumRecordDto): void {
+    this.currentRecord = record;
   }
 
   getRecordsOfType(type: CompendiumRecordType) {

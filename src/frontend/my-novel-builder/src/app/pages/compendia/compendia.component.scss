@@ -92,6 +92,10 @@
           }
         }
       }
+
+      &:hover {
+        background-color: $grey5;
+      }
     }
 
     .add-compendium-card {

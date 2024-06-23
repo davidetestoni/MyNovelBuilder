@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Compendium;
+using MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
 using MyNovelBuilder.WebApi.Services;
 
 namespace MyNovelBuilder.WebApi.Controllers;
@@ -14,11 +15,17 @@ namespace MyNovelBuilder.WebApi.Controllers;
 public class CompendiumController : ControllerBase
 {
     private readonly ICompendiumService _compendiumService;
+    private readonly ICompendiumRecordService _compendiumRecordService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     /// <summary></summary>
-    public CompendiumController(ICompendiumService compendiumService)
+    public CompendiumController(ICompendiumService compendiumService,
+        ICompendiumRecordService compendiumRecordService,
+        IHttpContextAccessor httpContextAccessor)
     {
         _compendiumService = compendiumService;
+        _compendiumRecordService = compendiumRecordService;
+        _httpContextAccessor = httpContextAccessor;
     }
     
     /// <summary>
@@ -29,6 +36,7 @@ public class CompendiumController : ControllerBase
     {
         var compendium = await _compendiumService.GetByIdAsync(id);
         var dto = compendium.Adapt<CompendiumDto>();
+        await AddRecordsAsync(dto);
         
         return dto;
     }
@@ -40,7 +48,11 @@ public class CompendiumController : ControllerBase
     public async Task<IEnumerable<CompendiumDto>> GetAllCompendia()
     {
         var compendia = await _compendiumService.GetAllAsync();
-        return compendia.Adapt<IEnumerable<CompendiumDto>>();
+        var dtos = compendia.Adapt<IEnumerable<CompendiumDto>>().ToList();
+        var tasks = dtos.Select(AddRecordsAsync);
+        await Task.WhenAll(tasks);
+        
+        return dtos;
     }
     
     /// <summary>
@@ -52,7 +64,10 @@ public class CompendiumController : ControllerBase
         var compendium = createCompendiumDto.Adapt<Compendium>();
         await _compendiumService.CreateAsync(compendium);
         
-        return compendium.Adapt<CompendiumDto>();
+        var dto = compendium.Adapt<CompendiumDto>();
+        await AddRecordsAsync(dto);
+        
+        return dto;
     }
     
     /// <summary>
@@ -65,7 +80,10 @@ public class CompendiumController : ControllerBase
         compendiumDto.Adapt(compendium);
         await _compendiumService.UpdateAsync(compendium);
         
-        return compendium.Adapt<CompendiumDto>();
+        var dto = compendium.Adapt<CompendiumDto>();
+        await AddRecordsAsync(dto);
+        
+        return dto;
     }
     
     /// <summary>
@@ -75,5 +93,31 @@ public class CompendiumController : ControllerBase
     public async Task DeleteCompendium(Guid id)
     {
         await _compendiumService.DeleteAsync(id);
+    }
+    
+    private async Task AddRecordsAsync(CompendiumDto compendiumDto)
+    {
+        var recordDtos = new List<CompendiumRecordOverviewDto>();
+        var records = await _compendiumRecordService.GetByCompendiumIdAsync(compendiumDto.Id);
+        
+        var request = _httpContextAccessor.HttpContext!.Request;
+        var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+        
+        foreach (var record in records)
+        {
+            if (record.CurrentImageId is null)
+            {
+                continue;
+            }
+            
+            var urlPath = Path.Combine("static", "compendium", record.Compendium.Id.ToString(),
+                "records", record.Id.ToString(), "gallery", $"{record.CurrentImageId}.png");
+            
+            var recordDto = record.Adapt<CompendiumRecordOverviewDto>();
+            recordDto.ImageUrl = $"{baseUrl}/{urlPath.Replace(Path.DirectorySeparatorChar, '/')}";
+            recordDtos.Add(recordDto);
+        }
+        
+        compendiumDto.Records = recordDtos;
     }
 }
