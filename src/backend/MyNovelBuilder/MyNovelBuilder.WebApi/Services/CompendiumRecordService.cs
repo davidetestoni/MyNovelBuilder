@@ -3,6 +3,7 @@ using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.Images;
+using SixLabors.ImageSharp;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -89,21 +90,24 @@ public class CompendiumRecordService : ICompendiumRecordService
     public async Task UploadImageAsync(Guid id, IFormFile file, bool isCurrent = false)
     {
         var record = await GetByIdAsync(id);
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var imageBytes = memoryStream.ToArray();
         
-        // If not a png file, throw an exception
-        // TODO: Support other image formats
+        // If it's not a PNG file, convert it to PNG using ImageSharp.
         if (file.ContentType != "image/png")
         {
-            throw new ApiException(ErrorCodes.InvalidCoverImage, "Cover image must be a PNG file.");
+            using var image = Image.Load(imageBytes);
+            using var outputStream = new MemoryStream();
+            await image.SaveAsPngAsync(outputStream);
+            imageBytes = outputStream.ToArray();
         }
         
         var imageId = Guid.NewGuid();
         var path = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{imageId}.png");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        
-        await using var stream = new FileStream(path, FileMode.Create);
-        await file.CopyToAsync(stream);
+        await File.WriteAllBytesAsync(path, imageBytes);
         
         if (isCurrent)
         {

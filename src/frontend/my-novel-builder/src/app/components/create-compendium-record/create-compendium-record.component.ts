@@ -99,21 +99,16 @@ export class CreateCompendiumRecordComponent {
       const file = input.files[0];
       this.imageFile = file;
 
-      // Ensure the file is a PNG
-      if (file.type === 'image/png') {
-        const reader = new FileReader();
+      const reader = new FileReader();
 
-        reader.onload = (e: ProgressEvent<FileReader>) => {
-          const target = e.target as FileReader;
-          if (target.result !== undefined) {
-            this.imagePreview = target.result;
-          }
-        };
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const target = e.target as FileReader;
+        if (target.result !== undefined) {
+          this.imagePreview = target.result;
+        }
+      };
 
-        reader.readAsDataURL(file);
-      } else {
-        this.toastr.error('Only PNG images are supported');
-      }
+      reader.readAsDataURL(file);
     }
   }
 }

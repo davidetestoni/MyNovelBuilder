@@ -34,6 +34,8 @@ export class CompendiumRecordComponent {
     CompendiumRecordType.Other,
   ];
 
+  CompendiumRecordType = CompendiumRecordType;
+
   onBlur(): void {
     this.updateRecord.emit(this.record);
   }
@@ -59,12 +61,16 @@ export class CompendiumRecordComponent {
   addImage(): void {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = 'image/png';
+    fileInput.accept = 'image/*';
     fileInput.onchange = () => {
       if (fileInput.files && fileInput.files.length > 0) {
         const file = fileInput.files[0];
         this.compendiumService
-          .uploadRecordImage(this.record.id, file, false)
+          .uploadRecordImage(
+            this.record.id,
+            file,
+            this.record.images.length === 0
+          )
           .subscribe(() => {
             // Get the record and update the images
             this.compendiumService
