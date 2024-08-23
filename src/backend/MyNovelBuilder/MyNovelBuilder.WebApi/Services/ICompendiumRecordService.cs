@@ -49,9 +49,9 @@ public interface ICompendiumRecordService
     Task UploadImageAsync(Guid id, IFormFile file, bool isCurrent = false);
     
     /// <summary>
-    /// Set an image as the main image for a compendium record.
+    /// Set an image as the current image for a compendium record.
     /// </summary>
-    Task SetMainImageAsync(Guid id, Guid imageId);
+    Task SetCurrentImageAsync(Guid id, Guid imageId);
     
     /// <summary>
     /// Delete an image for a compendium record.

@@ -74,9 +74,11 @@ public class CompendiumRecordController
     /// Update a compendium record.
     /// </summary>
     [HttpPut]
-    public async Task<CompendiumRecordDto> UpdateCompendiumRecord(CompendiumRecordDto compendiumRecordDto)
+    public async Task<CompendiumRecordDto> UpdateCompendiumRecord(UpdateCompendiumRecordDto compendiumRecordDto)
     {
-        var record = compendiumRecordDto.Adapt<CompendiumRecord>();
+        var existingRecord = await _compendiumRecordService.GetByIdAsync(compendiumRecordDto.Id);
+        
+        var record = compendiumRecordDto.Adapt(existingRecord);
         await _compendiumRecordService.UpdateAsync(record);
         
         var dto = record.Adapt<CompendiumRecordDto>();
@@ -101,6 +103,24 @@ public class CompendiumRecordController
     public async Task UploadImage(Guid id, IFormFile file, [FromForm] bool isCurrent = false)
     {
         await _compendiumRecordService.UploadImageAsync(id, file, isCurrent);
+    }
+    
+    /// <summary>
+    /// Delete an image from a compendium record.
+    /// </summary>
+    [HttpDelete("{id:guid}/image/{imageId:guid}")]
+    public async Task DeleteImage(Guid id, Guid imageId)
+    {
+        await _compendiumRecordService.DeleteImageAsync(id, imageId);
+    }
+    
+    /// <summary>
+    /// Set an image as the current image for a compendium record.
+    /// </summary>
+    [HttpPost("{id:guid}/image/{imageId:guid}/set-current")]
+    public async Task SetCurrentImage(Guid id, Guid imageId)
+    {
+        await _compendiumRecordService.SetCurrentImageAsync(id, imageId);
     }
 
     private async Task AddImagesAsync(CompendiumRecordDto dto)

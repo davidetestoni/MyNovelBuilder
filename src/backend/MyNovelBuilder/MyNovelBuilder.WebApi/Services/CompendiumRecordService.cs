@@ -113,7 +113,7 @@ public class CompendiumRecordService : ICompendiumRecordService
     }
 
     /// <inheritdoc />
-    public async Task SetMainImageAsync(Guid id, Guid imageId)
+    public async Task SetCurrentImageAsync(Guid id, Guid imageId)
     {
         var record = await GetByIdAsync(id);
         record.CurrentImageId = imageId;

@@ -50,6 +50,14 @@ export class CompendiumService {
         );
   }
 
+  getRecord(recordId: string): Observable<CompendiumRecordDto> {
+    return this.mocked
+      ? mockObservable(mockedCompendiumRecords[0])
+      : this.http.get<CompendiumRecordDto>(
+          `${this.baseUrl}/compendium-record/${recordId}`
+        );
+  }
+
   createCompendium(compendium: CreateCompendiumDto): Observable<CompendiumDto> {
     return this.mocked
       ? mockObservable(mockedCompendia[0])
@@ -105,7 +113,7 @@ export class CompendiumService {
   uploadRecordImage(
     recordId: string,
     file: File,
-    isCurrent: true
+    isCurrent: boolean
   ): Observable<void> {
     const formData = new FormData();
     formData.append('file', file);
@@ -116,6 +124,23 @@ export class CompendiumService {
       : this.http.post<void>(
           `${this.baseUrl}/compendium-record/${recordId}/image`,
           formData
+        );
+  }
+
+  deleteRecordImage(recordId: string, imageId: string): Observable<void> {
+    return this.mocked
+      ? mockObservable<void>(undefined)
+      : this.http.delete<void>(
+          `${this.baseUrl}/compendium-record/${recordId}/image/${imageId}`
+        );
+  }
+
+  setCurrentRecordImage(recordId: string, imageId: string): Observable<void> {
+    return this.mocked
+      ? mockObservable<void>(undefined)
+      : this.http.post<void>(
+          `${this.baseUrl}/compendium-record/${recordId}/image/${imageId}/set-current`,
+          {}
         );
   }
 }

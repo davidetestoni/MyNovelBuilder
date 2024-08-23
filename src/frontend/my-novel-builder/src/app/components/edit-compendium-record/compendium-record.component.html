@@ -1,0 +1,75 @@
+<div class="compendium-record-container">
+  <div class="compendium-record-editor">
+    <div class="compendium-record">
+      <div class="compendium-record-name">
+        <div class="label">
+          <span>Name</span>
+        </div>
+        <input
+          ngDefaultControl
+          type="text"
+          [(ngModel)]="record.name"
+          (blur)="onBlur()"
+        />
+      </div>
+      <!-- The type cannot be changed -->
+      <div class="compendium-record-type">
+        <div class="label">
+          <span>Type: {{ record.type | titlecase }}</span>
+        </div>
+      </div>
+      <div class="compendium-record-aliases">
+        <div class="label">
+          <span>Aliases</span>
+        </div>
+        <input
+          ngDefaultControl
+          type="text"
+          [(ngModel)]="record.aliases"
+          (blur)="onBlur()"
+        />
+      </div>
+      <div class="compendium-record-context">
+        <div class="label">
+          <span>Context</span>
+        </div>
+        <textarea
+          ngDefaultControl
+          [(ngModel)]="record.context"
+          (blur)="onBlur()"
+        ></textarea>
+      </div>
+      <div class="compendium-record-images">
+        <div class="label">
+          <span>Images</span>
+        </div>
+        <div class="compendium-record-images-grid">
+          @for (image of record.images; track image.id) {
+          <div
+            [class]="
+              'compendium-record-image' + (image.isCurrent ? ' current' : '')
+            "
+          >
+            <img
+              src="{{ image.url }}"
+              alt="{{ record.name }}"
+              (click)="setCurrentImage(image.id)"
+            />
+
+            <button
+              class="compendium-record-image-remove"
+              (click)="removeImage(image.id)"
+            >
+              Remove
+            </button>
+          </div>
+          }
+          <div class="add-compendium-record-image" (click)="addImage()">
+            <i class="icon icon-plus"></i>
+            <span>Add Image</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -8,11 +8,12 @@ import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { TitleCasePipe } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { CreateCompendiumRecordComponent } from '../../components/create-compendium-record/create-compendium-record.component';
+import { CompendiumRecordComponent } from '../../components/edit-compendium-record/compendium-record.component';
 
 @Component({
   selector: 'app-compendium',
   standalone: true,
-  imports: [FormsModule, TitleCasePipe],
+  imports: [FormsModule, TitleCasePipe, CompendiumRecordComponent],
   templateUrl: './compendium.component.html',
   styleUrl: './compendium.component.scss',
 })
@@ -54,6 +55,14 @@ export class CompendiumComponent implements OnInit {
       .getRecords(this.compendiumId)
       .subscribe((records) => {
         this.records = records;
+
+        // If there was a selected record, update it with the latest data
+        if (this.currentRecord) {
+          this.currentRecord =
+            this.records.find(
+              (record) => record.id === this.currentRecord!.id
+            ) ?? null;
+        }
       });
   }
 
@@ -106,8 +115,13 @@ export class CompendiumComponent implements OnInit {
         type: record.type,
         context: record.context,
       })
-      .subscribe((record) => {
-        this.getRecords();
-      });
+      .subscribe();
+  }
+
+  deleteRecord(record: CompendiumRecordDto): void {
+    this.compendiumService.deleteRecord(record.id).subscribe(() => {
+      this.getRecords();
+      this.currentRecord = null;
+    });
   }
 }

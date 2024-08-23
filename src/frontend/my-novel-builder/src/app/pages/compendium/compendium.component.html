@@ -35,7 +35,8 @@
             Add Record
           </button>
         </div>
-        @for (type of compendiumRecordTypes; track type) {
+        @for (type of compendiumRecordTypes; track type) { @if
+        (getRecordsOfType(type).length > 0) {
         <div class="compendium-records-type">
           <div class="compendium-records-type-name">
             <span>{{ type | titlecase }}s</span>
@@ -62,12 +63,18 @@
             }
           </div>
         </div>
-        }
+        } }
       </div>
       }
     </div>
     @if (currentRecord !== null) {
-    <div class="compendium-record"></div>
+    <div class="compendium-record">
+      <app-compendium-record
+        [record]="currentRecord"
+        (updateRecord)="updateRecord($event)"
+        (deleteRecord)="deleteRecord($event)"
+      />
+    </div>
     }
   </div>
   }
