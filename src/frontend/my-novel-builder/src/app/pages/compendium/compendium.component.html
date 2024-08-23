@@ -41,7 +41,7 @@
           <div class="compendium-records-type-name">
             <span>{{ type | titlecase }}s</span>
           </div>
-          <div class="compendium-records-list">
+          <div class="compendium-records-grid">
             @for (record of getRecordsOfType(type); track record.id) {
             <div class="compendium-record" (click)="setCurrentRecord(record)">
               <div class="compendium-record-image">
