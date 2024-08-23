@@ -118,6 +118,8 @@ public class CompendiumController : ControllerBase
             recordDtos.Add(recordDto);
         }
         
+        recordDtos.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+        
         compendiumDto.Records = recordDtos;
     }
 }
