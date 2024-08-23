@@ -92,6 +92,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'Johnny',
     type: CompendiumRecordType.Character,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    alwaysIncluded: false,
     images: [
       {
         id: indexToGuid(11),
@@ -114,6 +115,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'Janie',
     type: CompendiumRecordType.Character,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    alwaysIncluded: false,
     images: [],
     compendiumId: mockedCompendia[0].id,
   },
@@ -125,6 +127,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'The City',
     type: CompendiumRecordType.Place,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    alwaysIncluded: false,
     images: [
       {
         id: indexToGuid(31),
@@ -147,6 +150,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'The Concept',
     type: CompendiumRecordType.Concept,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    alwaysIncluded: false,
     images: [
       {
         id: indexToGuid(41),

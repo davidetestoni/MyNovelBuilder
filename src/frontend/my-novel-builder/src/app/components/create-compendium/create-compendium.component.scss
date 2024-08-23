@@ -6,6 +6,6 @@ textarea {
   resize: none;
 }
 
-input {
+input:not([type="checkbox"]) {
   width: 100%;
 }

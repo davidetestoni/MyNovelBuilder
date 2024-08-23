@@ -50,6 +50,22 @@
       }
     }
 
+    .compendium-record-always-included {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        font-size: 0.8em;
+      }
+
+      input {
+        margin-left: 10px;
+      }
+    }
+
     .compendium-record-context {
       width: 100%;
       margin-top: 20px;

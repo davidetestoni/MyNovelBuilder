@@ -6,4 +6,5 @@ export interface CreateCompendiumRecordDto {
   type: CompendiumRecordType;
   context: string;
   compendiumId: string;
+  alwaysIncluded: boolean;
 }

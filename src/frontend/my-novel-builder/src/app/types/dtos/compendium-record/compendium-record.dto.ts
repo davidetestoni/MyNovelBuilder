@@ -11,4 +11,5 @@ export interface CompendiumRecordDto {
   context: string;
   images: CompendiumRecordImageDto[];
   compendiumId: string;
+  alwaysIncluded: boolean;
 }

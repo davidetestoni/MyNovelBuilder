@@ -6,4 +6,5 @@ export interface UpdateCompendiumRecordDto {
   aliases: string;
   type: CompendiumRecordType;
   context: string;
+  alwaysIncluded: boolean;
 }

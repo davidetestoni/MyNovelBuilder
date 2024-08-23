@@ -44,6 +44,7 @@ export class CreateCompendiumRecordComponent {
       Validators.pattern(Object.values(CompendiumRecordType).join('|')),
     ]),
     context: new FormControl('', [Validators.maxLength(10000)]),
+    alwaysIncluded: new FormControl(false),
   });
 
   recordTypes: CompendiumRecordType[] = [
@@ -74,6 +75,7 @@ export class CreateCompendiumRecordComponent {
         type,
         context: this.formGroup.get('context')!.value!,
         compendiumId: this.data.compendiumId,
+        alwaysIncluded: this.formGroup.get('alwaysIncluded')!.value!,
       })
       .subscribe((record) => {
         if (this.imageFile !== null) {

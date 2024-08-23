@@ -32,6 +32,11 @@ public class CreateCompendiumRecordDto
     /// The ID of the compendium to which the record belongs.
     /// </summary>
     public Guid CompendiumId { get; set; }
+    
+    /// <summary>
+    /// Whether the record should always be included in the prompts.
+    /// </summary>
+    public bool AlwaysIncluded { get; set; }
 }
 
 internal class CreateCompendiumRecordDtoValidator : AbstractValidator<CreateCompendiumRecordDto>

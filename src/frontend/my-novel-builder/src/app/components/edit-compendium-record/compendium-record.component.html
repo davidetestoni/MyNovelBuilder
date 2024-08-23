@@ -29,6 +29,17 @@
           (blur)="onBlur()"
         />
       </div>
+      <div class="compendium-record-always-included">
+        <div class="label">
+          <span>Always Included</span>
+        </div>
+        <input
+          ngDefaultControl
+          type="checkbox"
+          [(ngModel)]="record.alwaysIncluded"
+          (blur)="onBlur()"
+        />
+      </div>
       <div class="compendium-record-context">
         <div class="label">
           <span>Context</span>

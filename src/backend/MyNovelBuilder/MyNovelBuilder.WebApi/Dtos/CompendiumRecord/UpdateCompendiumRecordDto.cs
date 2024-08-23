@@ -32,6 +32,11 @@ public class UpdateCompendiumRecordDto
     /// The record's context.
     /// </summary>
     public string Context { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Whether the record should always be included in the prompts.
+    /// </summary>
+    public bool AlwaysIncluded { get; set; }
 }
 
 internal class UpdateCompendiumRecordDtoValidator : AbstractValidator<UpdateCompendiumRecordDto>

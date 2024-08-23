@@ -114,6 +114,7 @@ export class CompendiumComponent implements OnInit {
         aliases: record.aliases,
         type: record.type,
         context: record.context,
+        alwaysIncluded: record.alwaysIncluded,
       })
       .subscribe();
   }

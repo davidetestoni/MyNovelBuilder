@@ -56,4 +56,9 @@ public class CompendiumRecordDto
     /// The ID of the compendium to which the record belongs.
     /// </summary>
     public required Guid CompendiumId { get; set; }
+    
+    /// <summary>
+    /// Whether the record should always be included in the prompts.
+    /// </summary>
+    public bool AlwaysIncluded { get; set; }
 }

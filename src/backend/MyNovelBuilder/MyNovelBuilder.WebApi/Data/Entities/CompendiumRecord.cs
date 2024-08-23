@@ -44,4 +44,9 @@ public class CompendiumRecord : TimestampedEntity
     /// The compendium to which the record belongs.
     /// </summary>
     public Compendium Compendium { get; set; } = null!;
+    
+    /// <summary>
+    /// Whether the record should always be included in the prompts.
+    /// </summary>
+    public bool AlwaysIncluded { get; set; }
 }
