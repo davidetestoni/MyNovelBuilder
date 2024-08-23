@@ -76,9 +76,9 @@ public class CompendiumRecordController
     [HttpPut]
     public async Task<CompendiumRecordDto> UpdateCompendiumRecord(UpdateCompendiumRecordDto compendiumRecordDto)
     {
-        var existingRecord = await _compendiumRecordService.GetByIdAsync(compendiumRecordDto.Id);
+        var record = await _compendiumRecordService.GetByIdAsync(compendiumRecordDto.Id);
         
-        var record = compendiumRecordDto.Adapt(existingRecord);
+        compendiumRecordDto.Adapt(record);
         await _compendiumRecordService.UpdateAsync(record);
         
         var dto = record.Adapt<CompendiumRecordDto>();
