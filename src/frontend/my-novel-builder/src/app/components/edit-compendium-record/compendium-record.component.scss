@@ -97,6 +97,10 @@
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         grid-gap: 10px;
 
+        &:has(.place-image) {
+          grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        }
+
         .compendium-record-image {
           width: 200px;
           height: 300px;
@@ -104,6 +108,11 @@
           border-radius: 5px;
           position: relative;
           cursor: pointer;
+
+          &.place-image {
+            width: 400px;
+            height: 250px;
+          }
 
           img {
             width: 100%;
@@ -128,8 +137,8 @@
             background: $grey5;
             border: none;
             border-radius: 5px;
-            opacity: 50%;
-            padding: 5px;
+            opacity: 30%;
+            padding: 5px 10px;
             color: $grey17;
             font-size: 0.8rem;
             transition: opacity 0.3s;
@@ -153,6 +162,11 @@
           cursor: pointer;
           transition: 0.3s;
           user-select: none;
+
+          &.place-image {
+            width: 400px;
+            height: 250px;
+          }
 
           i {
             width: 50px;

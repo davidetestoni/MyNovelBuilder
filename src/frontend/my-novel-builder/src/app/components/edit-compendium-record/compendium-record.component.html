@@ -58,7 +58,9 @@
           @for (image of record.images; track image.id) {
           <div
             [class]="
-              'compendium-record-image' + (image.isCurrent ? ' current' : '')
+              'compendium-record-image' +
+              (image.isCurrent ? ' current' : '') +
+              (record.type === CompendiumRecordType.Place ? ' place-image' : '')
             "
           >
             <img
@@ -75,7 +77,13 @@
             </button>
           </div>
           }
-          <div class="add-compendium-record-image" (click)="addImage()">
+          <div
+            [class]="
+              'add-compendium-record-image' +
+              (record.type === CompendiumRecordType.Place ? ' place-image' : '')
+            "
+            (click)="addImage()"
+          >
             <i class="icon icon-plus"></i>
             <span>Add Image</span>
           </div>
