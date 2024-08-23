@@ -51,6 +51,8 @@ public class CompendiumRecordController
         var tasks = dtos.Select(AddImagesAsync);
         await Task.WhenAll(tasks);
         
+        dtos.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+        
         return dtos;
     }
     
