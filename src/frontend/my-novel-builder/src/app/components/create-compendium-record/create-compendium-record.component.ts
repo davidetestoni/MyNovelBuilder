@@ -83,11 +83,11 @@ export class CreateCompendiumRecordComponent {
             .uploadRecordImage(record.id, this.imageFile, true)
             .subscribe(() => {
               this.toastr.success('Record created successfully');
-              this.dialogRef.close(true);
+              this.dialogRef.close(record);
             });
         } else {
           this.toastr.success('Record created successfully');
-          this.dialogRef.close(true);
+          this.dialogRef.close(record);
         }
       });
   }

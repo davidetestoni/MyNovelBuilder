@@ -85,8 +85,12 @@ export class CompendiumComponent implements OnInit {
       data: { compendiumId: this.compendiumId },
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) {
+    dialogRef.afterClosed().subscribe((record: CompendiumRecordDto) => {
+      if (record) {
+        // Select the newly created record, then refresh the records
+        // (this will also update the current record)
+        this.currentRecord = record;
+
         this.getRecords();
       }
     });
