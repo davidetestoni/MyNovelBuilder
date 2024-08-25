@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Novel;
+using MyNovelBuilder.WebApi.Models.Novels;
 using MyNovelBuilder.WebApi.Services;
 
 namespace MyNovelBuilder.WebApi.Controllers;
@@ -35,6 +36,15 @@ public class NovelController : ControllerBase
         AddCoverImageUrl(dto);
         
         return dto;
+    }
+    
+    /// <summary>
+    /// Get the prose of a novel by its ID.
+    /// </summary>
+    [HttpGet("{id:guid}/prose")]
+    public async Task<Prose> GetNovelProse(Guid id)
+    {
+        return await _novelService.GetProseAsync(id);
     }
 
     /// <summary>
@@ -81,6 +91,15 @@ public class NovelController : ControllerBase
         AddCoverImageUrl(dto);
         
         return dto;
+    }
+    
+    /// <summary>
+    /// Update the prose of a novel.
+    /// </summary>
+    [HttpPut("{id:guid}/prose")]
+    public async Task UpdateNovelProse(Guid id, Prose prose)
+    {
+        await _novelService.UpdateProseAsync(id, prose);
     }
     
     /// <summary>

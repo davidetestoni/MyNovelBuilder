@@ -1,0 +1,33 @@
+@import "colors";
+
+.novel-editor {
+  .novel-editor-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: $grey5;
+
+    .novel-editor-header-cover {
+      height: 50px;
+      width: 50px;
+      margin-right: 1rem;
+
+      img {
+        height: 100%;
+        width: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+    }
+
+    .novel-editor-header-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .novel-editor-header-actions {
+      margin-left: auto;
+    }
+  }
+}

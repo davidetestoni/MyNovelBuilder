@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Novels;
 
 namespace MyNovelBuilder.WebApi.Data.Entities;
 

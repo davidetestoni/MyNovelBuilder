@@ -10,6 +10,7 @@ import { CompendiumRecordDto } from '../types/dtos/compendium-record/compendium-
 import { PromptDto } from '../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../types/enums/prompt-type';
 import { PromptMessageRole } from '../types/enums/prompt-message-role';
+import { Prose, SectionItemType } from '../types/dtos/novel/prose';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
@@ -49,6 +50,25 @@ export const mockedNovels: NovelDto[] = Array(10)
     mainCharacterId: null,
     compendiumIds: [],
   }));
+
+export const mockedProse: Prose = {
+  chapters: Array(3)
+    .fill(0)
+    .map((_, index) => ({
+      title: `Chapter ${index + 1}`,
+      sections: Array(3)
+        .fill(0)
+        .map((_, index) => ({
+          summary: loremIpsum({ count: 1, units: 'sentences' }),
+          items: Array(3)
+            .fill(0)
+            .map((_, index) => ({
+              $type: SectionItemType.Text,
+              text: loremIpsum({ count: 1, units: 'sentences' }),
+            })),
+        })),
+    })),
+};
 
 export const mockedCompendia: CompendiumDto[] = Array(3)
   .fill(0)

@@ -1,6 +1,9 @@
-﻿using MyNovelBuilder.WebApi.Data;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Models.Novels;
 using SixLabors.ImageSharp;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -11,11 +14,18 @@ namespace MyNovelBuilder.WebApi.Services;
 public class NovelService : INovelService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     /// <summary></summary>
     public NovelService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
+        
+        _jsonSerializerOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
+        _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     }
     
     /// <inheritdoc />
@@ -60,6 +70,39 @@ public class NovelService : INovelService
         await _unitOfWork.SaveChangesAsync();
         
         DeleteCoverImage(id);
+    }
+
+    /// <inheritdoc />
+    public async Task<Prose> GetProseAsync(Guid id)
+    {
+        // Prose is stored as a JSON file instead of a database JSON column
+        // to be kinder to the database and to allow for easier editing
+        // through a fully fledged text editor if needed (e.g., batch replace).
+        var path = Path.Combine(Globals.DataFolder, "novels", id.ToString(), "prose.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        
+        string proseJson;
+        
+        if (!File.Exists(path))
+        {
+            var prose = new Prose();
+            proseJson = JsonSerializer.Serialize(prose, _jsonSerializerOptions);
+            await File.WriteAllTextAsync(path, proseJson);
+            return prose;
+        }
+        
+        proseJson = await File.ReadAllTextAsync(path);
+        return JsonSerializer.Deserialize<Prose>(proseJson, _jsonSerializerOptions)!;
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateProseAsync(Guid id, Prose prose)
+    {
+        var path = Path.Combine(Globals.DataFolder, "novels", id.ToString(), "prose.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        
+        var proseJson = JsonSerializer.Serialize(prose, _jsonSerializerOptions);
+        await File.WriteAllTextAsync(path, proseJson);
     }
 
     /// <inheritdoc />

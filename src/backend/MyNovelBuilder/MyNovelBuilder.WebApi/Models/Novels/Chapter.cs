@@ -1,0 +1,17 @@
+﻿namespace MyNovelBuilder.WebApi.Models.Novels;
+
+/// <summary>
+/// A chapter.
+/// </summary>
+public class Chapter
+{
+    /// <summary>
+    /// The title of the chapter.
+    /// </summary>
+    public required string Title { get; set; }
+    
+    /// <summary>
+    /// The sections of the chapter.
+    /// </summary>
+    public IEnumerable<Section> Sections { get; set; } = Array.Empty<Section>();
+}

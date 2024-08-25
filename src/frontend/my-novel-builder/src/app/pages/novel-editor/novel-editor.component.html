@@ -1,1 +1,23 @@
-<p>novel-editor works!</p>
+<div class="novel-editor">
+  @if (novel === null) {
+  <p>Loading...</p>
+  } @else {
+  <div class="novel-editor-header">
+    @if (novel.coverImageUrl !== null) {
+    <div class="novel-editor-header-cover">
+      <img
+        [routerLink]="['/novel', novel.id]"
+        src="{{ novel.coverImageUrl }}"
+        alt="{{ novel.title }}"
+      />
+    </div>
+    }
+    <div class="novel-editor-header-title">
+      <span>{{ novel.title }}</span>
+    </div>
+    <div class="novel-editor-header-actions">
+      <button (click)="openSettingsModal()">Settings</button>
+    </div>
+  </div>
+  }
+</div>
