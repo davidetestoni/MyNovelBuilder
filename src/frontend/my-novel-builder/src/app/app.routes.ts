@@ -4,6 +4,7 @@ import { LayoutType } from './types/enums/layout-type';
 import { CompendiaComponent } from './pages/compendia/compendia.component';
 import { NovelEditorComponent } from './pages/novel-editor/novel-editor.component';
 import { CompendiumComponent } from './pages/compendium/compendium.component';
+import { PromptsComponent } from './pages/prompts/prompts.component';
 
 export const routes: Routes = [
   // Redirect / to /novels
@@ -36,6 +37,13 @@ export const routes: Routes = [
   {
     path: 'compendium/:id',
     component: CompendiumComponent,
+    data: {
+      layoutType: LayoutType.Main,
+    },
+  },
+  {
+    path: 'prompts',
+    component: PromptsComponent,
     data: {
       layoutType: LayoutType.Main,
     },

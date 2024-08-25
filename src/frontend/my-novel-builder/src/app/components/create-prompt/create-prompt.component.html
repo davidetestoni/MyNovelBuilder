@@ -1,0 +1,40 @@
+<div class="modal-container">
+  <h2>Create a prompt</h2>
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-row">
+        <div class="form-column">
+          <div class="form-field">
+            <div class="form-field-label">Type *</div>
+            <select formControlName="type" placeholder="Select a type">
+              @for (type of promptTypes; track type) {
+              <option [value]="type">{{ type | spaced }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <div class="form-field-label">Name *</div>
+            <input
+              matInput
+              type="text"
+              id="name"
+              formControlName="name"
+              placeholder="My new prompt"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <button
+            type="submit"
+            (click)="createPrompt()"
+            [disabled]="formGroup.invalid || formGroup.pristine"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

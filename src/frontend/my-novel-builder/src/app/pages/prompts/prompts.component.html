@@ -1,0 +1,43 @@
+<div class="prompts-container">
+  <h1>Prompts</h1>
+  @if (prompts === null) {
+  <p>Loading...</p>
+  } @else {
+  <div class="prompts-editor">
+    <!-- Left panel with the list of prompts and a button to add a new one -->
+    <div class="prompts">
+      <div class="prompts-actions">
+        <button class="add-prompt" (click)="openCreatePromptDialog()">
+          Add Prompt
+        </button>
+      </div>
+      <div class="prompt-types-list">
+        @for (type of promptTypes; track type) { @if
+        (getPromptsOfType(type).length > 0) {
+        <div class="prompts-type">
+          <div class="prompts-type-name">
+            <span>{{ type | spaced }}</span>
+          </div>
+          <div class="prompts-list">
+            @for (prompt of getPromptsOfType(type); track prompt.id) {
+            <div class="prompt" (click)="setCurrentPrompt(prompt)">
+              <span>{{ prompt.name }}</span>
+            </div>
+            }
+          </div>
+        </div>
+        } }
+      </div>
+    </div>
+    @if (currentPrompt !== null) {
+    <div class="prompt">
+      <app-prompt
+        [prompt]="currentPrompt"
+        (updatePrompt)="updatePrompt($event)"
+        (deletePrompt)="deletePrompt($event)"
+      />
+    </div>
+    }
+  </div>
+  }
+</div>

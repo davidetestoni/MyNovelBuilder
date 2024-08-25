@@ -1,11 +1,4 @@
-import {
-  Component,
-  EventEmitter,
-  Input,
-  OnChanges,
-  Output,
-  inject,
-} from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CompendiumService } from '../../services/compendium.service';
 import { FormsModule } from '@angular/forms';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';

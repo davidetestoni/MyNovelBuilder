@@ -1,0 +1,64 @@
+<div class="prompt-container">
+  <div class="prompt-editor">
+    <div class="prompt">
+      <div class="prompt-name">
+        <div class="label">
+          <span>Name</span>
+        </div>
+        <input
+          ngDefaultControl
+          type="text"
+          [(ngModel)]="prompt.name"
+          (blur)="onBlur()"
+        />
+      </div>
+      <!-- The type cannot be changed -->
+      <div class="prompt-type">
+        <div class="label">
+          <span>Type: {{ prompt.type | spaced }}</span>
+        </div>
+      </div>
+      <div class="prompt-messages-title">
+        <h3>Messages</h3>
+      </div>
+      <div class="prompt-messages">
+        @for (message of prompt.messages; track message.message) {
+        <div class="prompt-message">
+          <div class="label">
+            <span>{{ message.role | titlecase }}</span>
+          </div>
+          <textarea
+            ngDefaultControl
+            [(ngModel)]="message.message"
+            (blur)="onBlur()"
+          ></textarea>
+          <button class="remove-message" (click)="removeMessage(message)">
+            Remove
+          </button>
+        </div>
+        }
+      </div>
+      <div class="prompt-messages-actions">
+        <button
+          class="add-message"
+          (click)="addMessage(PromptMessageRole.System)"
+        >
+          + System
+        </button>
+        <button
+          class="add-message"
+          (click)="addMessage(PromptMessageRole.User)"
+        >
+          + User
+        </button>
+        <button
+          class="add-message"
+          (click)="addMessage(PromptMessageRole.Assistant)"
+        >
+          + Assistant
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- TODO: Add remove button -->
+</div>

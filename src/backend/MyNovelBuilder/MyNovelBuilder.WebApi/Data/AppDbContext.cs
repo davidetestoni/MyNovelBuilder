@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Prompts;
 
 namespace MyNovelBuilder.WebApi.Data;
 
@@ -39,8 +40,8 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Prompt>().OwnsMany(
-            prompt => prompt.Messages, builder => builder.ToJson());
+        modelBuilder.Entity<Prompt>().Property(p => p.Messages)
+            .HasConversion(new JsonValueConverter<IEnumerable<PromptMessage>>());
         
         // Use UTC for DateTime
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

@@ -1,6 +1,7 @@
 ﻿using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
+using SixLabors.ImageSharp;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -77,19 +78,23 @@ public class NovelService : INovelService
             throw new ApiException(ErrorCodes.NovelNotFound, $"Novel with ID {id} was not found.");
         }
         
-        // If not a png file, throw an exception
-        // TODO: Support other image formats
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var imageBytes = memoryStream.ToArray();
+        
+        // If it's not a PNG file, convert it to PNG using ImageSharp.
         if (file.ContentType != "image/png")
         {
-            throw new ApiException(ErrorCodes.InvalidCoverImage, "Cover image must be a PNG file.");
+            using var image = Image.Load(imageBytes);
+            using var outputStream = new MemoryStream();
+            await image.SaveAsPngAsync(outputStream);
+            imageBytes = outputStream.ToArray();
         }
         
         var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        
-        await using var stream = new FileStream(path, FileMode.Create);
-        await file.CopyToAsync(stream);
+        await File.WriteAllBytesAsync(path, imageBytes);
     }
 
     /// <inheritdoc />

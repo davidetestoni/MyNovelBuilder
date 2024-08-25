@@ -7,6 +7,9 @@ import { CompendiumDto } from '../types/dtos/compendium/compendium.dto';
 import { loremIpsum } from 'lorem-ipsum';
 import { CompendiumRecordType } from '../types/enums/compendium-record-type';
 import { CompendiumRecordDto } from '../types/dtos/compendium-record/compendium-record.dto';
+import { PromptDto } from '../types/dtos/prompt/prompt.dto';
+import { PromptType } from '../types/enums/prompt-type';
+import { PromptMessageRole } from '../types/enums/prompt-message-role';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
@@ -164,5 +167,37 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
       },
     ],
     compendiumId: mockedCompendia[0].id,
+  },
+];
+
+export const mockedPrompts: PromptDto[] = [
+  {
+    id: indexToGuid(1),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Great Prompt',
+    type: PromptType.GenerateText,
+    messages: [
+      {
+        id: 0,
+        role: PromptMessageRole.System,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+      {
+        id: 1,
+        role: PromptMessageRole.User,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+      {
+        id: 2,
+        role: PromptMessageRole.Assistant,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+      {
+        id: 3,
+        role: PromptMessageRole.User,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+    ],
   },
 ];
