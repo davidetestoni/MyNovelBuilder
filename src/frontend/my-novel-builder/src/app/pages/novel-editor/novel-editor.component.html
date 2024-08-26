@@ -99,7 +99,7 @@
           [class.place-image]="
             selectedRecord.type === CompendiumRecordType.Place
           "
-          [class.floated]="floatedImages.includes(image)"
+          [class.floated]="isFloatedImage(image)"
         >
           <img src="{{ image.url }}" alt="{{ image.id }}" />
         </div>
@@ -110,6 +110,34 @@
       </div>
     </div>
     }
+    <div class="prose-editor"></div>
+    <div class="floating-images-sidebar">
+      @for (image of floatedImages; track image.id) {
+      <div
+        class="floating-image"
+        (mouseenter)="lastHoveredFloatingImageId = image.id"
+        [class.last-hovered]="lastHoveredFloatingImageId === image.id"
+      >
+        <img
+          src="{{ image.url }}"
+          alt="{{ image.id }}"
+          (click)="zoomImage(image)"
+        />
+        @if (image.id === lastHoveredFloatingImageId) {
+        <i
+          class="floating-image-remove icon icon-close"
+          (click)="floatImage(image)"
+        ></i>
+        }
+      </div>
+      }
+    </div>
   </div>
-  }
+  @if (zoomedImage !== null) {
+  <div class="zoomed-image-overlay" (click)="unzoomImage()">
+    <div class="zoomed-image">
+      <img src="{{ zoomedImage.url }}" alt="{{ zoomedImage.id }}" />
+    </div>
+  </div>
+  } }
 </div>

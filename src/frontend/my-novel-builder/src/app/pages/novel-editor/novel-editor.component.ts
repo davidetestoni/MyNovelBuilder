@@ -31,6 +31,8 @@ export class NovelEditorComponent {
   selectedRecordOverview: CompendiumRecordOverviewDto | null = null;
   selectedRecord: CompendiumRecordDto | null = null;
   floatedImages: CompendiumRecordImageDto[] = [];
+  lastHoveredFloatingImageId: string | null = null;
+  zoomedImage: CompendiumRecordImageDto | null = null;
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -80,8 +82,6 @@ export class NovelEditorComponent {
       return [];
     }
 
-    console.log(JSON.stringify(this.selectedCompendium));
-
     if (this.selectedCompendium === null) {
       return this.compendia
         .map((compendium) => compendium.records)
@@ -114,13 +114,29 @@ export class NovelEditorComponent {
     });
   }
 
+  isFloatedImage(image: CompendiumRecordImageDto): boolean {
+    return this.floatedImages.some(
+      (floatedImage) => floatedImage.id === image.id
+    );
+  }
+
   floatImage(image: CompendiumRecordImageDto): void {
-    // If the image is already floated, unfloat it
-    if (this.floatedImages.includes(image)) {
-      this.floatedImages = this.floatedImages.filter((i) => i !== image);
+    // If the image is already floated, unfloat it (use id instead of object reference)
+    if (this.isFloatedImage(image)) {
+      this.floatedImages = this.floatedImages.filter(
+        (floatedImage) => floatedImage.id !== image.id
+      );
       return;
     }
 
     this.floatedImages = [...this.floatedImages, image];
+  }
+
+  zoomImage(image: CompendiumRecordImageDto): void {
+    this.zoomedImage = image;
+  }
+
+  unzoomImage(): void {
+    this.zoomedImage = null;
   }
 }
