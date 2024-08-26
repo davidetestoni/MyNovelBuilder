@@ -39,7 +39,11 @@
         (getRecordsOfType(type).length > 0) {
         <div class="compendium-records-type">
           <div class="compendium-records-type-name">
-            <span>{{ type | titlecase }}s</span>
+            <span
+              >{{ type | titlecase }}s ({{
+                getRecordsOfType(type).length
+              }})</span
+            >
           </div>
           <div class="compendium-records-grid">
             @for (record of getRecordsOfType(type); track record.id) {

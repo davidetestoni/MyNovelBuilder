@@ -11,4 +11,5 @@ export interface UpdateNovelDto {
   pov: WritingPov;
   language: WritingLanguage;
   mainCharacterId: string | null;
+  compendiumIds: string[];
 }

@@ -1,0 +1,125 @@
+@import "colors";
+
+.novel-settings {
+  .novel-settings-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: $grey5;
+
+    .novel-settings-header-cover {
+      height: 50px;
+      width: 50px;
+      margin-right: 1rem;
+
+      img {
+        height: 100%;
+        width: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+    }
+
+    .novel-settings-header-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .novel-settings-header-actions {
+      margin-left: auto;
+    }
+  }
+
+  .novel-settings-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 1rem;
+    margin: auto;
+
+    .novel-title {
+      width: 300px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      input {
+        width: 100%;
+      }
+    }
+
+    .novel-author {
+      width: 300px;
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      input {
+        width: 100%;
+      }
+    }
+
+    .novel-brief {
+      width: 100%;
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      textarea {
+        width: 100%;
+        height: 150px;
+      }
+    }
+
+    .novel-tense,
+    .novel-pov,
+    .novel-language,
+    .novel-mc {
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+    }
+
+    .novel-compendia {
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      .novel-compendia-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-gap: 20px;
+
+        .novel-compendium {
+          display: flex;
+          flex-direction: column;
+          padding: 0.3rem 0.5rem;
+          border-radius: 5px;
+          background-color: $grey3;
+          color: $grey13;
+          cursor: pointer;
+        }
+
+        .selected {
+          background-color: $grey8;
+          color: unset;
+        }
+      }
+    }
+  }
+}

@@ -16,7 +16,7 @@
       <span>{{ novel.title }}</span>
     </div>
     <div class="novel-editor-header-actions">
-      <button (click)="openSettingsModal()">Settings</button>
+      <button [routerLink]="['/novel', novel.id, 'settings']">Settings</button>
     </div>
   </div>
   }

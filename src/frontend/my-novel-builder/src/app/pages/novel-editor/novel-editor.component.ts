@@ -2,7 +2,6 @@ import { Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { NovelService } from '../../services/novel.service';
-import { MatDialog } from '@angular/material/dialog';
 import { Prose } from '../../types/dtos/novel/prose';
 
 @Component({
@@ -15,7 +14,6 @@ import { Prose } from '../../types/dtos/novel/prose';
 export class NovelEditorComponent {
   novel: NovelDto | null = null;
   prose: Prose | null = null;
-  readonly dialog = inject(MatDialog);
   readonly novelService: NovelService = inject(NovelService);
   novelId!: string;
 
@@ -37,9 +35,5 @@ export class NovelEditorComponent {
     this.novelService.getNovelProse(this.novelId).subscribe((prose) => {
       this.prose = prose;
     });
-  }
-
-  openSettingsModal(): void {
-    // TODO: Implement settings modal
   }
 }

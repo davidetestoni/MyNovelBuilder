@@ -1,0 +1,137 @@
+<div class="novel-settings">
+  @if (novel === null || compendia === null) {
+  <p>Loading...</p>
+  } @else {
+  <div class="novel-settings-header">
+    @if (novel.coverImageUrl !== null) {
+    <div class="novel-settings-header-cover">
+      <img
+        [routerLink]="['/novel', novel.id]"
+        src="{{ novel.coverImageUrl }}"
+        alt="{{ novel.title }}"
+      />
+    </div>
+    }
+    <div class="novel-settings-header-title">
+      <span>{{ novel.title }}</span>
+    </div>
+    <div class="novel-settings-header-actions">
+      <button [routerLink]="['/novel', novel.id]">Prose</button>
+    </div>
+  </div>
+  <div class="novel-settings-body">
+    <div class="novel-title">
+      <div class="label">
+        <span>Title</span>
+      </div>
+      <input
+        ngDefaultControl
+        type="text"
+        [(ngModel)]="novel.title"
+        (blur)="onBlur()"
+      />
+    </div>
+    <div class="novel-author">
+      <div class="label">
+        <span>Author</span>
+      </div>
+      <input
+        ngDefaultControl
+        type="text"
+        [(ngModel)]="novel.author"
+        (blur)="onBlur()"
+      />
+    </div>
+    <div class="novel-brief">
+      <div class="label">
+        <span>Brief</span>
+      </div>
+      <textarea
+        ngDefaultControl
+        [(ngModel)]="novel.brief"
+        (blur)="onBlur()"
+      ></textarea>
+    </div>
+    <div class="novel-tense">
+      <div class="label">
+        <span>Tense</span>
+      </div>
+      <select
+        ngDefaultControl
+        [(ngModel)]="novel.tense"
+        placeholder="Select a tense"
+        (change)="onBlur()"
+      >
+        @for (tense of writingTenses; track tense) {
+        <option [value]="tense">{{ tense | spaced }}</option>
+        }
+      </select>
+    </div>
+    <div class="novel-pov">
+      <div class="label">
+        <span>Point of view</span>
+      </div>
+      <select
+        ngDefaultControl
+        [(ngModel)]="novel.pov"
+        placeholder="Select a point of view"
+        (change)="onBlur()"
+      >
+        @for (pov of writingPovs; track pov) {
+        <option [value]="pov">{{ pov | spaced }}</option>
+        }
+      </select>
+    </div>
+    <!-- TODO: Turn this into a pretty combobox -->
+    <div class="novel-mc">
+      <div class="label">
+        <span>Main character</span>
+      </div>
+      <select
+        ngDefaultControl
+        [(ngModel)]="novel.mainCharacterId"
+        placeholder="Select a main character"
+        (change)="onBlur()"
+      >
+        <option [value]="null">None</option>
+        @for (character of getAvailableCharacters(); track character.id) {
+        <option [value]="character.id">{{ character.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="novel-language">
+      <div class="label">
+        <span>Language</span>
+      </div>
+      <select
+        ngDefaultControl
+        [(ngModel)]="novel.language"
+        placeholder="Select a language"
+        (change)="onBlur()"
+      >
+        @for (language of writingLanguages; track language) {
+        <option [value]="language">{{ language | spaced }}</option>
+        }
+      </select>
+    </div>
+    <div class="novel-compendia">
+      <div class="label">
+        <span>Compendia</span>
+      </div>
+      <div class="novel-compendia-grid">
+        @for (compendium of compendia; track compendium.id) {
+        <div
+          [class]="
+            'novel-compendium' +
+            (novel.compendiumIds.includes(compendium.id) ? ' selected' : '')
+          "
+          (click)="toggleCompendium(compendium.id)"
+        >
+          <span>{{ compendium.name }}</span>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+  }
+</div>
