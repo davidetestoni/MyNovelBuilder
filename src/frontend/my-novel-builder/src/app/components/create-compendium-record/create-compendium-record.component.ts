@@ -63,16 +63,11 @@ export class CreateCompendiumRecordComponent {
   ) {}
 
   createRecord(): void {
-    const typeValue: string = this.formGroup.get('type')!.value!;
-    const type: CompendiumRecordType = Object.values(CompendiumRecordType).find(
-      (recordType) => recordType === typeValue
-    )!;
-
     this.compendiumService
       .createRecord({
         name: this.formGroup.get('name')!.value!,
         aliases: this.formGroup.get('aliases')?.value ?? '',
-        type,
+        type: this.formGroup.get('type')!.value!,
         context: this.formGroup.get('context')!.value!,
         compendiumId: this.data.compendiumId,
         alwaysIncluded: this.formGroup.get('alwaysIncluded')!.value!,

@@ -1,3 +1,4 @@
+$grey0: #151618;
 $grey1: #1c1e22;
 $grey2: #222427;
 $grey3: #28292c;
@@ -19,6 +20,8 @@ $grey18: #c7c9d4;
 $grey19: #d3d6e1;
 $grey20: #e0e2ef;
 $grey21: #eceffc;
+
+$valid: #3c864e;
 
 $grey1filter: brightness(0) saturate(100%) invert(6%) sepia(19%) saturate(589%)
   hue-rotate(181deg) brightness(96%) contrast(86%);

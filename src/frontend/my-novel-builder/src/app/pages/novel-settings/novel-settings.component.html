@@ -63,7 +63,7 @@
         (change)="onBlur()"
       >
         @for (tense of writingTenses; track tense) {
-        <option [value]="tense">{{ tense | spaced }}</option>
+        <option [ngValue]="tense">{{ tense | spaced }}</option>
         }
       </select>
     </div>
@@ -78,7 +78,7 @@
         (change)="onBlur()"
       >
         @for (pov of writingPovs; track pov) {
-        <option [value]="pov">{{ pov | spaced }}</option>
+        <option [ngValue]="pov">{{ pov | spaced }}</option>
         }
       </select>
     </div>
@@ -93,9 +93,9 @@
         placeholder="Select a main character"
         (change)="onBlur()"
       >
-        <option [value]="null">None</option>
+        <option [ngValue]="null">None</option>
         @for (character of getAvailableCharacters(); track character.id) {
-        <option [value]="character.id">{{ character.name }}</option>
+        <option [ngValue]="character.id">{{ character.name }}</option>
         }
       </select>
     </div>
@@ -110,7 +110,7 @@
         (change)="onBlur()"
       >
         @for (language of writingLanguages; track language) {
-        <option [value]="language">{{ language | spaced }}</option>
+        <option [ngValue]="language">{{ language | spaced }}</option>
         }
       </select>
     </div>
@@ -121,10 +121,8 @@
       <div class="novel-compendia-grid">
         @for (compendium of compendia; track compendium.id) {
         <div
-          [class]="
-            'novel-compendium' +
-            (novel.compendiumIds.includes(compendium.id) ? ' selected' : '')
-          "
+          class="novel-compendium"
+          [class.selected]="novel.compendiumIds.includes(compendium.id)"
           (click)="toggleCompendium(compendium.id)"
         >
           <span>{{ compendium.name }}</span>

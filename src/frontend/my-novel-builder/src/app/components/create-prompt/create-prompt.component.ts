@@ -57,15 +57,10 @@ export class CreatePromptComponent {
   ) {}
 
   createPrompt(): void {
-    const typeValue: string = this.formGroup.get('type')!.value!;
-    const type: PromptType = Object.values(PromptType).find(
-      (promptType) => promptType === typeValue
-    )!;
-
     this.promptService
       .createPrompt({
         name: this.formGroup.get('name')!.value!,
-        type,
+        type: this.formGroup.get('type')!.value!,
         messages: [],
       })
       .subscribe((prompt) => {

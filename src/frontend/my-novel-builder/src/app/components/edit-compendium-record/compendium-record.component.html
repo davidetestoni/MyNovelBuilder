@@ -57,11 +57,9 @@
         <div class="compendium-record-images-grid">
           @for (image of record.images; track image.id) {
           <div
-            [class]="
-              'compendium-record-image' +
-              (image.isCurrent ? ' current' : '') +
-              (record.type === CompendiumRecordType.Place ? ' place-image' : '')
-            "
+            class="compendium-record-image"
+            [class.current]="image.isCurrent"
+            [class.place-image]="record.type === CompendiumRecordType.Place"
           >
             <img
               src="{{ image.url }}"
@@ -78,10 +76,8 @@
           </div>
           }
           <div
-            [class]="
-              'add-compendium-record-image' +
-              (record.type === CompendiumRecordType.Place ? ' place-image' : '')
-            "
+            class="add-compendium-record-image"
+            [class.place-image]="record.type === CompendiumRecordType.Place"
             (click)="addImage()"
           >
             <i class="icon icon-plus"></i>

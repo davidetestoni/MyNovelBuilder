@@ -127,3 +127,20 @@ button {
     cursor: auto;
   }
 }
+
+/* Scrollbar (thin and dark) */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: $grey2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $grey6;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: $grey8;
+}

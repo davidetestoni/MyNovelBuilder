@@ -1,3 +1,4 @@
+@import "variables.scss";
 @import "colors";
 
 .novel-editor {
@@ -5,8 +6,9 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding: 0.5rem 1rem;
-    background-color: $grey5;
+    padding: 0 1rem;
+    height: 60px;
+    background-color: $grey0;
 
     .novel-editor-header-cover {
       height: 50px;
@@ -28,6 +30,189 @@
 
     .novel-editor-header-actions {
       margin-left: auto;
+    }
+  }
+
+  .novel-editor-body {
+    display: flex;
+    flex-direction: row;
+
+    .compendia-sidebar {
+      width: 300px;
+      height: calc(100vh - 60px - $mainLayoutHeaderHeight);
+      background-color: $grey2;
+      border-right: 1px solid $grey4;
+      overflow-y: auto;
+
+      .compendium-filters {
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        align-items: center;
+        gap: 0.5rem;
+        margin: auto;
+        border-bottom: 1px solid $grey4;
+
+        select,
+        input {
+          width: 100%;
+        }
+      }
+
+      .compendium-records {
+        display: flex;
+        flex-direction: column;
+
+        .compendium-records-type {
+          padding: 1rem;
+
+          .compendium-records-type-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+          }
+
+          .compendium-records-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+
+            .compendium-record {
+              display: flex;
+              flex-direction: row;
+              align-items: center;
+              border-radius: 0.5rem;
+              background-color: $grey3;
+              cursor: pointer;
+
+              .compendium-record-image {
+                width: 40px;
+                height: 40px;
+                border-radius: 5px;
+                overflow: hidden;
+
+                img {
+                  width: 100%;
+                  height: 100%;
+                  object-fit: cover;
+                  border-radius: 5px;
+                }
+
+                .no-image {
+                  display: flex;
+                  justify-content: center;
+                  align-items: center;
+                  width: 100%;
+                  height: 100%;
+                  border-radius: 5px;
+                  background-color: $grey5;
+
+                  i {
+                    width: 30px;
+                    height: 30px;
+                    filter: $grey13filter;
+                  }
+                }
+              }
+
+              .compendium-record-name {
+                font-size: 0.9rem;
+                font-weight: 500;
+                margin-left: 0.5rem;
+              }
+
+              &:hover {
+                background-color: $grey5;
+              }
+
+              &.selected {
+                background-color: $grey5;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .record-sidebar {
+      width: 300px;
+      height: calc(100vh - 60px - $mainLayoutHeaderHeight);
+      background-color: $grey2;
+      border-right: 1px solid $grey4;
+      overflow-y: auto;
+
+      .record-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid $grey4;
+
+        .record-name {
+          font-size: 1.2rem;
+          font-weight: bold;
+        }
+
+        .record-type {
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+
+        .record-aliases {
+          font-size: 0.7rem;
+          font-weight: 500;
+          margin-top: 5px;
+          color: $grey11;
+          text-align: center;
+        }
+
+        .record-always-included {
+          font-size: 0.7rem;
+          font-weight: 500;
+          margin-top: 5px;
+          color: $valid;
+        }
+      }
+
+      .record-context {
+        padding: 1rem;
+
+        p {
+          width: 100%;
+          white-space: pre-wrap;
+          font-size: 0.8rem;
+          font-weight: 400;
+        }
+      }
+
+      .record-images-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-gap: 10px;
+        padding: 1rem;
+
+        /* If there is only one image or it's a place, make it bigger */
+        &:has(.record-image:only-child, .place-image) {
+          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        }
+
+        .record-image {
+          width: 100%;
+          overflow: hidden;
+          border-radius: 5px;
+          position: relative;
+          cursor: pointer;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          &.floated {
+            border: 1px solid $grey18;
+          }
+        }
+      }
     }
   }
 }

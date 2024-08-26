@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   background-color: $grey3;
-  padding: 10px 20px;
+  padding: 10px;
   color: $grey13;
   position: fixed;
   width: 100%;
@@ -34,7 +34,7 @@
     .nav-item {
       display: flex;
       align-items: center;
-      padding: 10px 15px;
+      padding: 10px;
       cursor: pointer;
       transition: background-color 0.3s;
 

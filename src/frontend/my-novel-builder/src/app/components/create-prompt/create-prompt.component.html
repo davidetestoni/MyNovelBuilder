@@ -8,7 +8,7 @@
             <div class="form-field-label">Type *</div>
             <select formControlName="type" placeholder="Select a type">
               @for (type of promptTypes; track type) {
-              <option [value]="type">{{ type | spaced }}</option>
+              <option [ngValue]="type">{{ type | spaced }}</option>
               }
             </select>
           </div>

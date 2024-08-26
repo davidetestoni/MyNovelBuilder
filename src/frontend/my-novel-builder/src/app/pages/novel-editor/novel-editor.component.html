@@ -1,5 +1,5 @@
 <div class="novel-editor">
-  @if (novel === null) {
+  @if (novel === null || compendia === null) {
   <p>Loading...</p>
   } @else {
   <div class="novel-editor-header">
@@ -18,6 +18,98 @@
     <div class="novel-editor-header-actions">
       <button [routerLink]="['/novel', novel.id, 'settings']">Settings</button>
     </div>
+  </div>
+  <div class="novel-editor-body">
+    <div class="compendia-sidebar">
+      <div class="compendium-filters">
+        <select
+          ngDefaultControl
+          [(ngModel)]="selectedCompendium"
+          placeholder="Select a compendium"
+        >
+          <option [ngValue]="null">All Compendia</option>
+          @for (compendium of compendia; track compendium.id) {
+          <option [ngValue]="compendium">{{ compendium.name }}</option>
+          }
+        </select>
+        <input
+          ngDefaultControl
+          type="text"
+          placeholder="Search records..."
+          [(ngModel)]="recordsFilter"
+        />
+      </div>
+      <div class="compendium-records">
+        @for (type of compendiumRecordTypes; track type) { @if
+        (getCompendiumRecordsByType(type).length > 0) {
+        <div class="compendium-records-type">
+          <div class="compendium-records-type-name">
+            <span>{{ type | spaced }}s</span>
+          </div>
+          <div class="compendium-records-list">
+            @for (record of getCompendiumRecordsByType(type); track record.id) {
+            <div
+              class="compendium-record"
+              [class.selected]="selectedRecordOverview === record"
+              (click)="selectRecord(record)"
+            >
+              <div class="compendium-record-image">
+                @if (record.imageUrl !== null) {
+                <img src="{{ record.imageUrl }}" alt="{{ record.name }}" />
+                } @else {
+                <div class="no-image">
+                  <i class="icon icon-compendium"></i>
+                </div>
+                }
+              </div>
+              <div class="compendium-record-name">
+                <span>{{ record.name }}</span>
+              </div>
+            </div>
+            }
+          </div>
+        </div>
+        } }
+      </div>
+    </div>
+    @if (selectedRecord !== null) {
+    <div class="record-sidebar">
+      <div class="record-header">
+        <div class="record-name">
+          <span>{{ selectedRecord.name }}</span>
+        </div>
+        <div class="record-type">
+          <span>{{ selectedRecord.type | spaced }}</span>
+        </div>
+        @if (selectedRecord.aliases.length > 0) {
+        <div class="record-aliases">
+          <span>Aliases: {{ selectedRecord.aliases }}</span>
+        </div>
+        } @if (selectedRecord.alwaysIncluded) {
+        <div class="record-always-included">
+          <span>Always included</span>
+        </div>
+        }
+      </div>
+      <div class="record-images-grid">
+        @for (image of selectedRecord.images; track image.id) {
+        <div
+          (click)="floatImage(image)"
+          class="record-image"
+          [class.place-image]="
+            selectedRecord.type === CompendiumRecordType.Place
+          "
+          [class.floated]="floatedImages.includes(image)"
+        >
+          <img src="{{ image.url }}" alt="{{ image.id }}" />
+        </div>
+        }
+      </div>
+      <div class="record-context">
+        <p>{{ selectedRecord.context }}</p>
+      </div>
+    </div>
+    }
   </div>
   }
 </div>
