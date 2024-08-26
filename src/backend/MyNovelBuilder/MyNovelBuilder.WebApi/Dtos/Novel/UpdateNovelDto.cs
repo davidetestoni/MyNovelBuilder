@@ -49,6 +49,11 @@ public class UpdateNovelDto
     /// of type <see cref="CompendiumRecordType.Character"/>.
     /// </summary>
     public Guid? MainCharacterId { get; set; }
+    
+    /// <summary>
+    /// The ids of the compendia used in the novel.
+    /// </summary>
+    public IEnumerable<Guid> CompendiumIds { get; set; } = Array.Empty<Guid>();
 }
 
 internal class UpdateNovelDtoValidator : AbstractValidator<UpdateNovelDto>
@@ -61,5 +66,7 @@ internal class UpdateNovelDtoValidator : AbstractValidator<UpdateNovelDto>
         RuleFor(x => x.Tense).IsInEnum();
         RuleFor(x => x.Pov).IsInEnum();
         RuleFor(x => x.Language).IsInEnum();
+        RuleFor(x => x.MainCharacterId).NotEmpty().When(x => x.MainCharacterId.HasValue);
+        RuleForEach(x => x.CompendiumIds).NotEmpty();
     }
 }

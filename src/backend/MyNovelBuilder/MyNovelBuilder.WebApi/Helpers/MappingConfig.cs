@@ -8,14 +8,13 @@ namespace MyNovelBuilder.WebApi.Helpers;
 /// <summary>
 /// Helper class for mapping.
 /// </summary>
-public static class Mapping
+public class MappingConfig : IRegister
 {
-    /// <summary>
-    /// Configure Mapster.
-    /// </summary>
-    public static void ConfigureMapster(TypeAdapterConfig config)
+    /// <inheritdoc />
+    public void Register(TypeAdapterConfig config)
     {
         config.NewConfig<Novel, NovelDto>()
+            .Map(dest => dest.MainCharacterId, src => src.MainCharacter != null ? src.MainCharacter.Id : (Guid?)null)
             .Map(dest => dest.CompendiumIds, src => src.Compendia.Select(c => c.Id).ToList());
         
         config.NewConfig<CompendiumRecord, CompendiumRecordDto>()

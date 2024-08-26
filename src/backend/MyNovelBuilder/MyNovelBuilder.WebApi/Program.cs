@@ -98,7 +98,7 @@ builder.Services.AddScoped<IPromptService, PromptService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();
-Mapping.ConfigureMapster(config);
+TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
 builder.Services.AddSingleton(config);
 builder.Services.AddScoped<IMapper, ServiceMapper>();
 

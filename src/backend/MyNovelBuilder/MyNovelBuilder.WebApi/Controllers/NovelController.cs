@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Novel;
+using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.Novels;
 using MyNovelBuilder.WebApi.Services;
 
@@ -15,13 +16,19 @@ namespace MyNovelBuilder.WebApi.Controllers;
 public class NovelController : ControllerBase
 {
     private readonly INovelService _novelService;
+    private readonly ICompendiumService _compendiumService;
+    private readonly ICompendiumRecordService _compendiumRecordService;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     /// <summary></summary>
     public NovelController(INovelService novelService,
+        ICompendiumService compendiumService,
+        ICompendiumRecordService compendiumRecordService,
         IHttpContextAccessor httpContextAccessor)
     {
         _novelService = novelService;
+        _compendiumService = compendiumService;
+        _compendiumRecordService = compendiumRecordService;
         _httpContextAccessor = httpContextAccessor;
     }
     
@@ -85,6 +92,23 @@ public class NovelController : ControllerBase
     {
         var novel = await _novelService.GetByIdAsync(updateNovelDto.Id);
         updateNovelDto.Adapt(novel);
+        
+        // For each compendium id, asynchronously get the
+        // compendium and check if it exists,
+        // then add it to the novel's compendia.
+        novel.Compendia = await Task.WhenAll(updateNovelDto.CompendiumIds
+            .Select(async id => await _compendiumService.GetByIdAsync(id)));
+
+        // If the main character ID is not null, get the
+        // compendium record and set it as the main character.
+        if (updateNovelDto.MainCharacterId is not null)
+        {
+            novel.MainCharacter = await _compendiumRecordService.GetByIdAsync(updateNovelDto.MainCharacterId.Value);
+        }
+        
+        // TODO: If the main character is from a compendium that
+        // is not in the novel's compendia, throw an exception.
+        
         await _novelService.UpdateAsync(novel);
         
         var dto = novel.Adapt<NovelDto>();
