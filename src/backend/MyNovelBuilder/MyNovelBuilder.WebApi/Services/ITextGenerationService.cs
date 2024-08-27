@@ -10,5 +10,8 @@ public interface ITextGenerationService
     /// <summary>
     /// Generate streamed text.
     /// </summary>
-    IAsyncEnumerable<string> GenerateStreamedAsync(IEnumerable<PromptMessageDto> messages);
+    IAsyncEnumerable<string> GenerateStreamedAsync(
+        string model,
+        IEnumerable<PromptMessageDto> messages,
+        CancellationToken cancellationToken = default);
 }

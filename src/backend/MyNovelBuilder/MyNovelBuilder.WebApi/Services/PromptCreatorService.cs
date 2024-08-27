@@ -24,7 +24,7 @@ public class PromptCreatorService : IPromptCreatorService
             new PromptMessageDto
             {
                 Role = PromptMessageRole.User,
-                Message = "Hi, how are you?",
+                Message = "Hi, please provide a 5 page essay on the diversity of nature.",
             }
         };
     }

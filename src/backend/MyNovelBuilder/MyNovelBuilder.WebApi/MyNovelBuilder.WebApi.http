@@ -75,7 +75,8 @@ Content-Type: application/json
 Accept: application/json
 
 {
+  "model": "undi95/toppy-m-7b:free",
   "instructions": "Hi, how are you?",
   "promptId": "8359f424-3743-4d34-acb2-680faf8cbdb8",
-  "novelId": "b1648988-89d4-4a34-8426-bfb9f5efb858"
+  "novelId": "{{NovelId}}"
 }

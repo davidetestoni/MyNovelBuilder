@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Services;
 
@@ -13,6 +15,7 @@ public class GenerateController : ControllerBase
 {
     private readonly IPromptCreatorService _promptCreatorService;
     private readonly ITextGenerationService _textGenerationService;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     /// <summary></summary>
     public GenerateController(IPromptCreatorService promptCreatorService,
@@ -20,19 +23,36 @@ public class GenerateController : ControllerBase
     {
         _promptCreatorService = promptCreatorService;
         _textGenerationService = textGenerationService;
+        
+        _jsonSerializerOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     }
     
     /// <summary>
     /// Generate streamed text.
     /// </summary>
     [HttpPost("text/streamed")]
-    public async IAsyncEnumerable<string> GenerateStreamedTextAsync(GenerateTextRequestDto dto)
+    public async Task GenerateStreamedTextAsync(GenerateTextRequestDto dto,
+        CancellationToken cancellationToken = default)
     {
+        HttpContext.Response.Headers.Append("Content-Type", "text/event-stream");
+        
         var prompt = await _promptCreatorService.CreatePromptAsync(dto);
         
-        await foreach (var chunk in _textGenerationService.GenerateStreamedAsync(prompt))
+        await foreach (var chunk in _textGenerationService.GenerateStreamedAsync(dto.Model, prompt, cancellationToken))
         {
-            yield return chunk;
+            var responseDto = new GenerateTextResponseChunkDto
+            {
+                Content = chunk
+            };
+            
+            var json = JsonSerializer.Serialize(responseDto, _jsonSerializerOptions);
+            
+            await HttpContext.Response.WriteAsync(json + "\n", cancellationToken);
+            await HttpContext.Response.Body.FlushAsync(cancellationToken);
         }
     }
 }

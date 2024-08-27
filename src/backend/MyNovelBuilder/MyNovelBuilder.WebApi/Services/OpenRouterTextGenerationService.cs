@@ -1,10 +1,11 @@
-﻿using System.Text;
+﻿using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
-using MyNovelBuilder.WebApi.Models.OpenRouter;
+using OpenAI;
+using OpenAI.Chat;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -13,16 +14,13 @@ namespace MyNovelBuilder.WebApi.Services;
 /// </summary>
 public class OpenRouterTextGenerationService : ITextGenerationService
 {
-    private readonly HttpClient _httpClient;
-    private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly OpenAIClient _openAiClient;
 
     /// <summary></summary>
     public OpenRouterTextGenerationService(
         IConfiguration configuration,
         HttpClient httpClient)
     {
-        _httpClient = httpClient;
-        
         var apiKey = configuration["Secrets:OpenRouterApiKey"];
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -31,65 +29,43 @@ public class OpenRouterTextGenerationService : ITextGenerationService
                 "OpenRouter API key is missing.");
         }
         
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-        _httpClient.BaseAddress = new Uri("https://openrouter.ai/api/v1/");
-        
-        _jsonSerializerOptions = new JsonSerializerOptions
+        _openAiClient = new OpenAIClient(apiKey, new OpenAIClientOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        };
-        _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            Endpoint = new Uri("https://openrouter.ai/api")
+        });
     }
     
     /// <inheritdoc />
-    public async IAsyncEnumerable<string> GenerateStreamedAsync(IEnumerable<PromptMessageDto> messages)
+    public async IAsyncEnumerable<string> GenerateStreamedAsync(
+        string model,
+        IEnumerable<PromptMessageDto> messages,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        // Hardcoded model for testing purposes
-        var model = "undi95/toppy-m-7b:free";
+        var chatClient = _openAiClient.GetChatClient(model);
+        
+        var chatMessages = messages.Select(ToChatMessage).ToList();
 
-        var payload = new ChatCompletionRequest
+        await foreach (var update in chatClient.CompleteChatStreamingAsync(chatMessages, cancellationToken: cancellationToken))
         {
-            Model = model,
-            Messages = messages.Select(message => new ChatCompletionMessage
+            foreach (var message in update.ContentUpdate)
             {
-                Role = message.Role switch
+                if (!string.IsNullOrWhiteSpace(message.Refusal))
                 {
-                    PromptMessageRole.System => ChatCompletionMessageRole.System,
-                    PromptMessageRole.User => ChatCompletionMessageRole.User,
-                    PromptMessageRole.Assistant => ChatCompletionMessageRole.Assistant,
-                    _ => throw new ApiException(ErrorCodes.InternalServerError,
-                        $"Invalid enum value: {message.Role}")
-                },
-                Content = message.Message
-            })
-        };
-        
-        using var request = new HttpRequestMessage(HttpMethod.Post, "chat/completions");
-        request.RequestUri = new Uri(_httpClient.BaseAddress!, "chat/completions");
-        request.Content = new StringContent(
-            JsonSerializer.Serialize(payload, _jsonSerializerOptions), Encoding.UTF8, "application/json");
-
-        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-        response.EnsureSuccessStatusCode();
-
-        // Stream the response content asynchronously
-        await using var responseStream = await response.Content.ReadAsStreamAsync();
-
-        // Deserialize asynchronously as the data is streamed
-        using var streamReader = new StreamReader(responseStream);
-        
-        // The response is a newline-delimited JSON stream
-        while (!streamReader.EndOfStream)
-        {
-            var line = await streamReader.ReadLineAsync();
-
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
+                    throw new ApiException(ErrorCodes.ExternalServiceError, 
+                        $"OpenRouter refused to generate text: {message.Refusal}");
+                }
+                
+                yield return message.Text;
             }
-            
-            // TODO: Deserialize the JSON line
-            yield return line!;
         }
     }
+
+    private static ChatMessage ToChatMessage(PromptMessageDto message) =>
+        message.Role switch
+        {
+            PromptMessageRole.User => new UserChatMessage(message.Message),
+            PromptMessageRole.System => new SystemChatMessage(message.Message),
+            PromptMessageRole.Assistant => new AssistantChatMessage(message.Message),
+            _ => throw new NotSupportedException($"Unsupported message role: {message.Role}")
+        };
 }
