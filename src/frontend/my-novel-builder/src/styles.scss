@@ -144,3 +144,27 @@ button {
 ::-webkit-scrollbar-thumb:hover {
   background: $grey8;
 }
+
+/* Quill */
+quill-editor {
+  width: 100%;
+
+  .ql-toolbar {
+    display: none;
+  }
+
+  .ql-container {
+    border: none !important;
+    width: 100%;
+
+    .ql-editor {
+      outline: none;
+
+      &.ql-blank::before {
+        width: 100%;
+        font-size: 1.2rem;
+        color: $grey13;
+      }
+    }
+  }
+}
