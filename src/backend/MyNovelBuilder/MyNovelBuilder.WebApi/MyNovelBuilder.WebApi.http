@@ -1,6 +1,8 @@
 @MyNovelBuilder.WebApi_HostAddress = http://localhost:5113/api
 @NovelId = c8c0eddf-34ae-485e-a236-da71f8345364
 
+# TODO: Update this collection with the new endpoints
+
 # Get a novel by id
 GET {{MyNovelBuilder.WebApi_HostAddress}}/novel/{{NovelId}}
 Accept: application/json
@@ -60,3 +62,20 @@ Content-Type: multipart/form-data
 Accept: application/json
 
 ###
+
+# Get all prompts
+GET {{MyNovelBuilder.WebApi_HostAddress}}/prompts
+Accept: application/json
+
+###
+
+# Generate text (streamed)
+POST {{MyNovelBuilder.WebApi_HostAddress}}/generate/text/streamed
+Content-Type: application/json
+Accept: application/json
+
+{
+  "instructions": "Hi, how are you?",
+  "promptId": "8359f424-3743-4d34-acb2-680faf8cbdb8",
+  "novelId": "b1648988-89d4-4a34-8426-bfb9f5efb858"
+}

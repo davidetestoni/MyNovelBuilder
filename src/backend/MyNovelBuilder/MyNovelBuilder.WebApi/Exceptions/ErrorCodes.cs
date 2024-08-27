@@ -49,4 +49,14 @@ public static class ErrorCodes
     /// The cover image is invalid.
     /// </summary>
     public const string InvalidCoverImage = "invalid_cover_image";
+    
+    /// <summary>
+    /// The service credentials are missing or invalid.
+    /// </summary>
+    public const string MissingOrInvalidServiceCredentials = "missing_or_invalid_service_credentials";
+    
+    /// <summary>
+    /// The external service returned an error.
+    /// </summary>
+    public const string ExternalServiceError = "external_service_error";
 }

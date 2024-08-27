@@ -96,6 +96,10 @@ builder.Services.AddScoped<ICompendiumService, CompendiumService>();
 builder.Services.AddScoped<ICompendiumRecordService, CompendiumRecordService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
+builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
+builder.Services.AddSingleton<ITextGenerationService, OpenRouterTextGenerationService>();
+builder.Services.AddHttpClient<OpenRouterTextGenerationService>();
+
 // Mapster configuration
 var config = new TypeAdapterConfig();
 TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
