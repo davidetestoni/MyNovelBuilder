@@ -39,7 +39,7 @@
 
     .compendia-sidebar {
       width: 300px;
-      height: calc(100vh - 60px - $mainLayoutHeaderHeight);
+      height: calc(100dvh - 60px - $mainLayoutHeaderHeight);
       background-color: $grey2;
       border-right: 1px solid $grey4;
       overflow-y: auto;
@@ -135,7 +135,7 @@
 
     .record-sidebar {
       width: 300px;
-      height: calc(100vh - 60px - $mainLayoutHeaderHeight);
+      height: calc(100dvh - 60px - $mainLayoutHeaderHeight);
       background-color: $grey2;
       border-right: 1px solid $grey4;
       overflow-y: auto;
@@ -215,8 +215,10 @@
       }
     }
 
-    .prose-editor {
+    .prose-editor-wrapper {
       flex: 1;
+      height: calc(100dvh - 60px - $mainLayoutHeaderHeight);
+      overflow-y: auto;
     }
 
     .floating-images-sidebar {
@@ -225,7 +227,7 @@
       gap: 10px;
       padding: 1rem;
       width: 300px;
-      height: calc(100vh - 60px - $mainLayoutHeaderHeight);
+      height: calc(100dvh - 60px - $mainLayoutHeaderHeight);
       overflow-y: auto;
 
       .floating-image {
@@ -278,8 +280,8 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100dvw;
+    height: 100dvh;
     background-color: rgba(0, 0, 0, 0.8);
     display: flex;
     justify-content: center;

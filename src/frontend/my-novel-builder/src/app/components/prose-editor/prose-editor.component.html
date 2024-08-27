@@ -1,0 +1,92 @@
+<div class="prose-editor">
+  <div class="chapters">
+    @for (chapter of prose.chapters; let chapterIndex = $index; track chapter) {
+    <div class="chapter">
+      <div class="chapter-heading">
+        <h2
+          contenteditable="true"
+          (keydown)="preventReturnKey($event)"
+          (blur)="updateChapterTitle(chapterIndex, $event)"
+        >
+          {{ chapter.title }}
+        </h2>
+        <div class="remove-chapter-button-placeholder"></div>
+        <i class="icon icon-close" (click)="removeChapter(chapterIndex)"></i>
+      </div>
+      <div class="sections">
+        @for (section of chapter.sections; let sectionIndex = $index; track
+        section) {
+        <div class="section">
+          <div class="section-items">
+            @for (item of section.items; track item) { @if
+            (isTextSectionItem(item)) {
+            <div class="section-item text-item">
+              <!-- TODO: When there are many WYSIWYG editors, the performance
+              is terrible. We could paginate the chapters or use a virtual
+              scroll. -->
+              <quill-editor
+                [styles]="{
+                width: '100%',
+                textIndent: '3rem',
+                fontSize: '1.2rem',
+                lineHeight: '1.6',
+                fontWeight: '300',
+                fontFamily: 'Source Serif 4, sans-serif',
+                letterSpacing: '0.05rem',
+              }"
+                (onBlur)="updateTextSectionItem(item, $event)"
+                [ngModel]="item.text"
+              ></quill-editor>
+            </div>
+            } @else if (isImageSectionItem(item)) {
+            <div class="section-item image-item">
+              <img
+                src="{{ getImageUrl(item.imageId) }}"
+                alt="{{ item.imageId }}"
+              />
+            </div>
+            } }
+          </div>
+          <div class="section-summary">
+            <div class="section-summary-title">
+              <span>SUMMARY</span>
+            </div>
+            <div
+              class="section-summary-content"
+              contenteditable="true"
+              (keydown)="preventReturnKey($event)"
+              (blur)="updateSectionSummary(section, $event)"
+            >
+              <div>
+                {{ section.summary }}
+              </div>
+            </div>
+            <div class="section-actions">
+              <div class="section-action">
+                <i
+                  class="icon icon-close"
+                  (click)="removeSection(chapterIndex, sectionIndex)"
+                ></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        }
+        <!-- Fake section for padding -->
+        <div class="add-section-card-wrapper">
+          <div class="add-block-card" (click)="addSection(chapterIndex)">
+            <i class="icon icon-plus"></i>
+            <span>Add Section</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    }
+    <div class="add-chapter-card-wrapper">
+      <div class="add-block-card" (click)="addChapter()">
+        <i class="icon icon-plus"></i>
+        <span>Add Chapter</span>
+      </div>
+    </div>
+  </div>
+</div>

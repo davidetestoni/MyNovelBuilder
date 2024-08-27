@@ -110,7 +110,16 @@
       </div>
     </div>
     }
-    <div class="prose-editor"></div>
+    <div class="prose-editor-wrapper">
+      @if (prose !== null) {
+      <app-prose-editor
+        [novelId]="novelId"
+        [prose]="prose"
+        (proseChange)="updateProse($event)"
+      ></app-prose-editor>
+      }
+    </div>
+    @if (floatedImages.length > 0) {
     <div class="floating-images-sidebar">
       @for (image of floatedImages; track image.id) {
       <div
@@ -132,6 +141,7 @@
       </div>
       }
     </div>
+    }
   </div>
   @if (zoomedImage !== null) {
   <div class="zoomed-image-overlay" (click)="unzoomImage()">

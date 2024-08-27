@@ -59,12 +59,13 @@ export const mockedProse: Prose = {
       sections: Array(3)
         .fill(0)
         .map((_, index) => ({
-          summary: loremIpsum({ count: 1, units: 'sentences' }),
+          summary: loremIpsum({ count: 5, units: 'sentences' }),
           items: Array(3)
             .fill(0)
             .map((_, index) => ({
               $type: SectionItemType.Text,
-              text: loremIpsum({ count: 1, units: 'sentences' }),
+              text:
+                '<p>' + loremIpsum({ count: 15, units: 'sentences' }) + '</p>',
             })),
         })),
     })),

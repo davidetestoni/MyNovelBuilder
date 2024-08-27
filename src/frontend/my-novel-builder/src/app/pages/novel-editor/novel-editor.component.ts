@@ -11,11 +11,12 @@ import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendi
 import { SpacedPipe } from '../../pipes/spaced.pipe';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { CompendiumRecordImageDto } from '../../types/dtos/compendium-record/compendium-record-image.dto';
+import { ProseEditorComponent } from '../../components/prose-editor/prose-editor.component';
 
 @Component({
   selector: 'app-novel-editor',
   standalone: true,
-  imports: [FormsModule, RouterModule, SpacedPipe],
+  imports: [FormsModule, RouterModule, SpacedPipe, ProseEditorComponent],
   templateUrl: './novel-editor.component.html',
   styleUrl: './novel-editor.component.scss',
 })
@@ -138,5 +139,9 @@ export class NovelEditorComponent {
 
   unzoomImage(): void {
     this.zoomedImage = null;
+  }
+
+  updateProse(prose: Prose) {
+    this.novelService.updateNovelProse(this.novelId, prose).subscribe();
   }
 }
