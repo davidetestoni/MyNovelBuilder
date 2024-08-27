@@ -12,7 +12,7 @@ public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
-    private readonly JsonSerializerOptions _jsonOptions = new()
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
@@ -58,7 +58,7 @@ public class ExceptionMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
 
-        var json = JsonSerializer.Serialize(error, _jsonOptions);
+        var json = JsonSerializer.Serialize(error, _jsonSerializerOptions);
 
         await context.Response.WriteAsync(json);
     }

@@ -24,6 +24,7 @@ public class NovelService : INovelService
         _jsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
         };
         _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     }
