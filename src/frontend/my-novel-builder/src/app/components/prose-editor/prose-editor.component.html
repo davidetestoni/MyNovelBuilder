@@ -1,4 +1,4 @@
-<div class="prose-editor">
+<div id="prose-editor">
   <div class="chapters">
     @for (chapter of prose.chapters; let chapterIndex = $index; track chapter) {
     <div class="chapter">
@@ -21,17 +21,6 @@
             @for (item of section.items; track item) { @if
             (isTextSectionItem(item)) {
             <div class="section-item text-item">
-              @if (showEditorControls) {
-              <div
-                class="tooltip-controls"
-                [ngStyle]="{
-                  left: editorControlsPosition.x + 'px',
-                  top: editorControlsPosition.y + 'px',
-                }"
-              >
-                <i class="icon icon-ai"></i>
-              </div>
-              }
               <!-- TODO: When there are many WYSIWYG editors, the performance
               is terrible. We could paginate the chapters or use a virtual
               scroll. -->
@@ -107,4 +96,15 @@
       </div>
     </div>
   </div>
+  @if (showEditorControls) {
+  <div
+    class="tooltip-controls"
+    [ngStyle]="{
+        left: editorControlsPosition.x + 'px',
+        top: editorControlsPosition.y + 'px',
+      }"
+  >
+    <i class="icon icon-ai"></i>
+  </div>
+  }
 </div>

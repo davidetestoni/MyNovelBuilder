@@ -195,6 +195,13 @@ export class ProseEditorComponent {
       return;
     }
 
+    const proseEditorBoundingBox = document
+      .querySelector('#prose-editor')!
+      .getBoundingClientRect();
+
+    const quillEditorBoundingBox =
+      event.editor.container.getBoundingClientRect();
+
     const range = event.range;
 
     if (range === null || range.length === 0) {
@@ -210,8 +217,16 @@ export class ProseEditorComponent {
     const rangeBounds = event.editor.getBounds(lastCharRange)!;
 
     this.editorControlsPosition = {
-      x: rangeBounds.right + 10,
-      y: rangeBounds.bottom - 10,
+      x:
+        quillEditorBoundingBox.left -
+        proseEditorBoundingBox.left +
+        rangeBounds.right +
+        10,
+      y:
+        quillEditorBoundingBox.top -
+        proseEditorBoundingBox.top +
+        rangeBounds.bottom -
+        10,
     };
 
     this.showEditorControls = true;

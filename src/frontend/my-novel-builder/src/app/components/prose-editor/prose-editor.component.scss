@@ -1,9 +1,10 @@
 @import "colors";
 
-.prose-editor {
+#prose-editor {
   display: flex;
   flex-direction: column;
   padding: 20px;
+  position: relative;
 
   .chapters {
     display: flex;
@@ -74,8 +75,6 @@
             gap: 1rem;
 
             .section-item {
-              position: relative;
-
               &.text-item {
                 outline: none;
 
@@ -86,25 +85,6 @@
                   font-weight: 300;
                   font-family: "Source Serif 4", sans-serif;
                   letter-spacing: 0.05rem;
-                }
-              }
-
-              .tooltip-controls {
-                z-index: 1;
-                background-color: $grey0;
-                border-radius: 5px;
-                display: flex;
-                flex-direction: row;
-                gap: 5px;
-                align-items: center;
-                padding: 5px;
-                position: absolute;
-
-                i {
-                  width: 20px;
-                  height: 20px;
-                  filter: $grey13filter;
-                  cursor: pointer;
                 }
               }
             }
@@ -159,6 +139,25 @@
           }
         }
       }
+    }
+  }
+
+  .tooltip-controls {
+    z-index: 1;
+    background-color: $grey0;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: center;
+    padding: 5px;
+    position: absolute;
+
+    i {
+      width: 20px;
+      height: 20px;
+      filter: $grey13filter;
+      cursor: pointer;
     }
   }
 }
