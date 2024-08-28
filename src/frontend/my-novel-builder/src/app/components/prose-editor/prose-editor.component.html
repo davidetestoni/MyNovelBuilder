@@ -34,7 +34,9 @@
                 letterSpacing: '0.05rem',
               }"
                 (onEditorCreated)="editorInit($event)"
-                (onEditorChanged)="editorChange($event)"
+                (onEditorChanged)="
+                  editorChange($event, chapterIndex, sectionIndex)
+                "
                 (onBlur)="updateTextSectionItem(item, $event)"
                 [ngModel]="item.text"
               ></quill-editor>
@@ -66,7 +68,9 @@
               <div class="section-action">
                 <i
                   class="icon icon-ai"
-                  (click)="generateSectionSummary(chapterIndex, sectionIndex)"
+                  (click)="
+                    openGenerateSectionSummaryDialog(chapterIndex, sectionIndex)
+                  "
                 ></i>
               </div>
               <div class="section-action">
@@ -104,7 +108,7 @@
         top: editorControlsPosition.y + 'px',
       }"
   >
-    <i class="icon icon-ai"></i>
+    <i class="icon icon-ai" (mousedown)="openGenerateTextDialog()"></i>
   </div>
   }
 </div>

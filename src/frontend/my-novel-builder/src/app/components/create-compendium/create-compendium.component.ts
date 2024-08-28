@@ -28,7 +28,7 @@ import { ToastrModule, ToastrService } from 'ngx-toastr';
   styleUrl: './create-compendium.component.scss',
 })
 export class CreateCompendiumComponent {
-  compendiumService: CompendiumService = inject(CompendiumService);
+  readonly compendiumService: CompendiumService = inject(CompendiumService);
 
   formGroup = new FormGroup({
     name: new FormControl('', [Validators.required, Validators.maxLength(100)]),

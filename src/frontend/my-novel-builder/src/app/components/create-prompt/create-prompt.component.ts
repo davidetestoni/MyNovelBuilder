@@ -32,7 +32,7 @@ import { SpacedPipe } from '../../pipes/spaced.pipe';
   styleUrl: './create-prompt.component.scss',
 })
 export class CreatePromptComponent {
-  promptService: PromptService = inject(PromptService);
+  readonly promptService: PromptService = inject(PromptService);
 
   formGroup = new FormGroup({
     name: new FormControl('', [Validators.required, Validators.maxLength(100)]),

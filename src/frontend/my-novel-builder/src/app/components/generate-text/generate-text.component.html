@@ -1,0 +1,54 @@
+<div class="modal-container">
+  <h2>Generate Text</h2>
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <div class="form-field-label">Prompt *</div>
+        <select formControlName="promptId" placeholder="Select a prompt">
+          @for (prompt of prompts; track prompt.id) {
+          <option [ngValue]="prompt.id">{{ prompt.name }}</option>
+          }
+        </select>
+      </div>
+      @if (instructionsRequired) {
+      <div class="form-field">
+        <div class="form-field-label">Instructions *</div>
+        <textarea
+          matInput
+          id="instructions"
+          formControlName="instructions"
+          placeholder="The instructions to follow..."
+        ></textarea>
+      </div>
+      }
+      <div class="form-field">
+        <div class="form-field-label">Context *</div>
+        <textarea
+          matInput
+          id="context"
+          formControlName="context"
+          placeholder="The context to inject in the prompt template..."
+        ></textarea>
+      </div>
+      <div class="form-field">
+        <div class="form-field-label">Model *</div>
+        <select formControlName="model" placeholder="Select a model">
+          @for (model of models; track model) {
+          <option [ngValue]="model">{{ model }}</option>
+          }
+        </select>
+      </div>
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <button
+            type="submit"
+            (click)="accept()"
+            [disabled]="formGroup.invalid"
+          >
+            Generate
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

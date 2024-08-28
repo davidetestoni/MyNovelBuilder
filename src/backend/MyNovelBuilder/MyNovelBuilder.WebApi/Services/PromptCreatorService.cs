@@ -72,8 +72,13 @@ public class PromptCreatorService : IPromptCreatorService
         // TODO: Think of a better way to do this, maybe using C# scripting
         sb.Replace("{{novel.language}}", novel.Language.ToString());
         sb.Replace("{{novel.pov}}", CreateNovelPovString(novel));
+        sb.Replace("{{novel.tense}}", $"{novel.Tense} tense");
         sb.Replace("{{context}}", request.Context ?? string.Empty);
         sb.Replace("{{instructions}}", request.Instructions ?? string.Empty);
+
+        sb.Replace("{{context.compendia}}", ""); // TODO: Implement this
+        sb.Replace("{{context.storySoFar}}", ""); // TODO: Implement this
+        sb.Replace("{{context.lastWords(2000)}}", ""); // TODO: Implement this
 
         return sb.ToString();
     }

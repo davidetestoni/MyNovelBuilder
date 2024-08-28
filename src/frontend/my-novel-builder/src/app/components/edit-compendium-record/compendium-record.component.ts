@@ -16,7 +16,7 @@ export class CompendiumRecordComponent {
   @Input() record!: CompendiumRecordDto;
   @Output() updateRecord = new EventEmitter<CompendiumRecordDto>();
   @Output() deleteRecord = new EventEmitter<CompendiumRecordDto>();
-  compendiumService: CompendiumService = inject(CompendiumService);
+  readonly compendiumService: CompendiumService = inject(CompendiumService);
 
   recordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,

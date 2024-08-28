@@ -1,0 +1,32 @@
+<div class="modal-container">
+  <h2>Text Generation Result</h2>
+  <div class="result-container">
+    @if (data.textToReplace.length > 0) {
+    <div class="text-to-replace">
+      <div class="text-to-replace-title">
+        <span>Text to Replace</span>
+      </div>
+      <div class="text-to-replace-content">
+        <div [innerHTML]="data.textToReplace"></div>
+      </div>
+    </div>
+    }
+    <div class="generated-text">
+      @if (data.textToReplace.length > 0) {
+      <div class="generated-text-title">
+        <span>Generated Text</span>
+      </div>
+      }
+      <div class="generated-text-content">
+        <div [innerHTML]="generatedText"></div>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button (click)="generateText()" [disabled]="isGenerating">Retry</button>
+      <button (click)="accept()" [disabled]="isGenerating">
+        {{ data.textToReplace.length > 0 ? "Replace" : "Insert" }}
+      </button>
+      <button (click)="discard()" [disabled]="isGenerating">Discard</button>
+    </div>
+  </div>
+</div>

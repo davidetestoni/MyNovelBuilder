@@ -28,6 +28,25 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  GenerateTextComponent,
+  GenerateTextComponentData,
+} from '../generate-text/generate-text.component';
+import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
+import {
+  GenerateTextResultComponent,
+  GenerateTextResultComponentData,
+} from '../generate-text-result/generate-text-result.component';
+import Quill from 'quill';
+
+interface LastSelection {
+  editor: Quill;
+  range: Range;
+  text: string;
+  chapterIndex: number;
+  sectionIndex: number;
+}
 
 @Component({
   selector: 'app-prose-editor',
@@ -41,10 +60,12 @@ export class ProseEditorComponent {
   @Input() prose!: Prose;
   @Input() prompts!: PromptDto[];
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
-  toastr: ToastrService = inject(ToastrService);
-  generateService: GenerateService = inject(GenerateService);
+  readonly dialog = inject(MatDialog);
+  readonly toastr: ToastrService = inject(ToastrService);
+  readonly generateService: GenerateService = inject(GenerateService);
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
+  lastSelection: LastSelection | null = null;
 
   isTextSectionItem(item: SectionItem): item is TextSectionItem {
     return item.$type === SectionItemType.Text;
@@ -190,7 +211,11 @@ export class ProseEditorComponent {
     );
   }
 
-  editorChange(event: EditorChangeContent | EditorChangeSelection) {
+  editorChange(
+    event: EditorChangeContent | EditorChangeSelection,
+    chapterIndex: number,
+    sectionIndex: number
+  ) {
     if (event.event !== 'selection-change') {
       return;
     }
@@ -204,13 +229,13 @@ export class ProseEditorComponent {
 
     const range = event.range;
 
-    if (range === null || range.length === 0) {
+    if (range === null) {
       this.showEditorControls = false;
       return;
     }
 
     const lastCharRange = {
-      index: range.index + range.length - 1,
+      index: range.index + (range.length > 0 ? range.length - 1 : 0),
       length: 1,
     };
 
@@ -230,78 +255,192 @@ export class ProseEditorComponent {
     };
 
     this.showEditorControls = true;
-  }
 
-  generateSectionSummary(chapterIndex: number, sectionIndex: number) {
-    // Get the first summarization prompt
-    // TODO: Let the user choose the prompt
-    const prompt = this.prompts.find(
-      (prompt) => prompt.type === PromptType.SummarizeText
-    );
-
-    if (!prompt) {
-      this.toastr.error('No summarization prompts available');
-      return;
-    }
-
-    // Clear the current summary
-    this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
-      '[Summarizing...]';
-
-    this.generateService
-      .generateText({
-        model: 'undi95/toppy-m-7b:free', // TODO: Let the user choose the model
-        // In this case, the context is the text to summarize
-        context: this.prose.chapters[chapterIndex].sections[sectionIndex].items
-          .filter(this.isTextSectionItem)
-          .map((item) => this.getRawText(item.text))
-          .join(''),
-        instructions: null,
-        novelId: this.novelId,
-        promptId: prompt.id,
-      })
-      .subscribe({
-        next: (event: HttpEvent<string>) => {
-          if (event.type === HttpEventType.DownloadProgress) {
-            const response = (event as HttpDownloadProgressEvent)
-              .partialText as string;
-            const responseChunks = response
-              .split('\n')
-              .filter((item) => item.length > 0)
-              .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-            if (responseChunks.length > 0) {
-              const message = responseChunks
-                .map((item) => item.content)
-                .join('');
-
-              this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
-                message;
-            }
-          } else if (event.type === HttpEventType.Response) {
-            const response = event as HttpResponse<string>;
-            const responseChunks = response
-              .body!.split('\n')
-              .filter((item) => item.length > 0)
-              .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-
-            if (responseChunks.length > 0) {
-              const message = responseChunks
-                .map((item) => item.content)
-                .join('');
-
-              this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
-                message;
-
-              this.saveProse();
-            }
-          }
-        },
-      });
+    this.lastSelection = {
+      editor: event.editor,
+      range: range,
+      chapterIndex: chapterIndex,
+      sectionIndex: sectionIndex,
+      text: range.length > 0 ? event.editor.getText(range) : '',
+    };
   }
 
   private getRawText(html: string): string {
     const div = document.createElement('div');
     div.innerHTML = html;
     return div.innerText;
+  }
+
+  openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {
+    const prompts = this.prompts.filter(
+      (p) => p.type === PromptType.SummarizeText
+    );
+
+    if (prompts.length === 0) {
+      this.toastr.error('No summarization prompts available');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(GenerateTextComponent, {
+      minWidth: '50vw',
+      data: <GenerateTextComponentData>{
+        prompts: prompts,
+        instructions: null,
+        instructionsRequired: false,
+        context: this.prose.chapters[chapterIndex].sections[sectionIndex].items
+          .filter(this.isTextSectionItem)
+          .map((item) => this.getRawText(item.text))
+          .join(''),
+        novelId: this.novelId,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.generateSectionSummary(chapterIndex, sectionIndex, request);
+      }
+    });
+  }
+
+  generateSectionSummary(
+    chapterIndex: number,
+    sectionIndex: number,
+    request: GenerateTextRequestDto
+  ) {
+    // Clear the current summary
+    this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
+      '[Summarizing...]';
+
+    this.generateService.generateText(request).subscribe({
+      next: (event: HttpEvent<string>) => {
+        if (event.type === HttpEventType.DownloadProgress) {
+          const response = (event as HttpDownloadProgressEvent)
+            .partialText as string;
+          const responseChunks = response
+            .split('\n')
+            .filter((item) => item.length > 0)
+            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+          if (responseChunks.length > 0) {
+            const message = responseChunks.map((item) => item.content).join('');
+
+            this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
+              message;
+          }
+        } else if (event.type === HttpEventType.Response) {
+          const response = event as HttpResponse<string>;
+          const responseChunks = response
+            .body!.split('\n')
+            .filter((item) => item.length > 0)
+            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+
+          if (responseChunks.length > 0) {
+            const message = responseChunks.map((item) => item.content).join('');
+
+            this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
+              message;
+
+            this.saveProse();
+          }
+        }
+      },
+    });
+  }
+
+  openGenerateTextDialog() {
+    const prompts = this.prompts.filter(
+      (p) =>
+        p.type === PromptType.GenerateText ||
+        p.type === PromptType.ReplaceTextGuided
+    );
+
+    if (prompts.length === 0) {
+      this.toastr.error('No summarization prompts available');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(GenerateTextComponent, {
+      minWidth: '50vw',
+      data: <GenerateTextComponentData>{
+        prompts: prompts,
+        instructions: null,
+        instructionsRequired: true, // This should be defined by the prompt
+        context: this.assembleGenerateTextContext(),
+        novelId: this.novelId,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.openGenerateTextResultDialog(request);
+      }
+    });
+  }
+
+  openGenerateTextResultDialog(request: GenerateTextRequestDto) {
+    const dialogRef = this.dialog.open(GenerateTextResultComponent, {
+      minWidth: '50vw',
+      data: <GenerateTextResultComponentData>{
+        request: request,
+        textToReplace: this.lastSelection?.text ?? '',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((generatedText: string) => {
+      if (generatedText) {
+        // If the range has 0 length, append the generated text
+        // at the end of the range in the Quill editor. Otherwise,
+        // replace the selected text with the generated text.
+        if (this.lastSelection!.range.length === 0) {
+          this.lastSelection!.editor.insertText(
+            this.lastSelection!.range.index,
+            generatedText
+          );
+        } else {
+          this.lastSelection!.editor.deleteText(
+            this.lastSelection!.range.index,
+            this.lastSelection!.range.length
+          );
+          this.lastSelection!.editor.insertText(
+            this.lastSelection!.range.index,
+            generatedText
+          );
+        }
+      }
+    });
+  }
+
+  assembleGenerateTextContext(): string {
+    if (!this.lastSelection) {
+      return 'There is no text selected';
+    }
+
+    // If the last selection has some text, just provide
+    // the text as context
+    if (this.lastSelection.text.length > 0) {
+      return this.lastSelection.text;
+    }
+
+    const chapter = this.prose.chapters[this.lastSelection.chapterIndex];
+
+    // Context = summary of the last 5 sections BEFORE the current section
+    // + the text of the current section up to before the selected text.
+    const sections = chapter.sections.slice(
+      Math.max(0, this.lastSelection.sectionIndex - 5),
+      this.lastSelection.sectionIndex
+    );
+
+    const context = sections
+      .map((section) => section.summary)
+      .join('\n\n')
+      .concat('\n\n')
+      .concat(
+        chapter.sections[this.lastSelection.sectionIndex].items
+          .filter(this.isTextSectionItem)
+          .map((item) => this.getRawText(item.text))
+          .join('\n\n')
+          .slice(0, this.lastSelection.range.index)
+      );
+
+    return context;
   }
 }

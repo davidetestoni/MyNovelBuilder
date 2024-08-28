@@ -34,7 +34,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 export class CreateNovelComponent {
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
-  novelService: NovelService = inject(NovelService);
+  readonly novelService: NovelService = inject(NovelService);
 
   formGroup = new FormGroup({
     title: new FormControl('', [

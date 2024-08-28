@@ -34,7 +34,7 @@ import { TitleCasePipe } from '@angular/common';
 export class CreateCompendiumRecordComponent {
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
-  compendiumService: CompendiumService = inject(CompendiumService);
+  readonly compendiumService: CompendiumService = inject(CompendiumService);
 
   formGroup = new FormGroup({
     name: new FormControl('', [Validators.required, Validators.maxLength(100)]),
