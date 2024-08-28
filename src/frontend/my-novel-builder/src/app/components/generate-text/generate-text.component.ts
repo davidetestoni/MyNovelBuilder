@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -14,6 +14,7 @@ import {
 } from '@angular/material/dialog';
 import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
+import { GenerateService } from '../../services/generate.service';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
@@ -30,10 +31,10 @@ export interface GenerateTextComponentData {
   templateUrl: './generate-text.component.html',
   styleUrl: './generate-text.component.scss',
 })
-export class GenerateTextComponent {
-  prompts: PromptDto[] = [];
-  models: string[] = ['undi95/toppy-m-7b:free'];
+export class GenerateTextComponent implements OnInit {
   instructionsRequired = false;
+  models: string[] = [];
+  readonly generateService: GenerateService = inject(GenerateService);
 
   formGroup = new FormGroup({
     promptId: new FormControl('', [Validators.required]),
@@ -55,7 +56,6 @@ export class GenerateTextComponent {
       promptId: this.data.prompts[0].id,
       instructions: data.instructions,
       context: data.context,
-      model: this.models[0],
     });
 
     if (!data.instructionsRequired) {
@@ -65,8 +65,18 @@ export class GenerateTextComponent {
       this.formGroup.get('instructions')!.setValidators([Validators.required]);
     }
 
-    this.prompts = this.data.prompts;
     this.instructionsRequired = data.instructionsRequired;
+  }
+
+  ngOnInit(): void {
+    this.getModels();
+  }
+
+  getModels() {
+    this.generateService.getAvailableModels().subscribe((models) => {
+      this.models = models;
+      this.formGroup.patchValue({ model: models[0] });
+    });
   }
 
   accept(): void {
@@ -81,7 +91,7 @@ export class GenerateTextComponent {
 
   // TODO: There is a better way to do this
   getPromptName(promptId: string): string {
-    const prompt = this.prompts.find((p) => p.id === promptId);
+    const prompt = this.data.prompts.find((p) => p.id === promptId);
     return prompt ? prompt.name : '';
   }
 }

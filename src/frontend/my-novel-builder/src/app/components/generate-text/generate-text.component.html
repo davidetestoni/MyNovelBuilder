@@ -5,7 +5,7 @@
       <div class="form-field">
         <div class="form-field-label">Prompt *</div>
         <select formControlName="promptId" placeholder="Select a prompt">
-          @for (prompt of prompts; track prompt.id) {
+          @for (prompt of data.prompts; track prompt.id) {
           <option [ngValue]="prompt.id">{{ prompt.name }}</option>
           }
         </select>
