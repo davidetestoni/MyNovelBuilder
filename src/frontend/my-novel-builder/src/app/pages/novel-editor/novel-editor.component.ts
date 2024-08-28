@@ -95,7 +95,7 @@ export class NovelEditorComponent {
     }
 
     if (this.selectedCompendium === null) {
-      return this.compendia
+      const records = this.compendia
         .map((compendium) => compendium.records)
         .flat()
         .filter(
@@ -103,6 +103,10 @@ export class NovelEditorComponent {
             record.type === type &&
             record.name.toLowerCase().includes(this.recordsFilter.toLowerCase())
         );
+
+      records.sort((a, b) => a.name.localeCompare(b.name));
+
+      return records;
     }
 
     return this.selectedCompendium.records.filter(
