@@ -21,6 +21,17 @@
             @for (item of section.items; track item) { @if
             (isTextSectionItem(item)) {
             <div class="section-item text-item">
+              @if (showEditorControls) {
+              <div
+                class="tooltip-controls"
+                [ngStyle]="{
+                  left: editorControlsPosition.x + 'px',
+                  top: editorControlsPosition.y + 'px',
+                }"
+              >
+                <i class="icon icon-ai"></i>
+              </div>
+              }
               <!-- TODO: When there are many WYSIWYG editors, the performance
               is terrible. We could paginate the chapters or use a virtual
               scroll. -->
@@ -29,11 +40,12 @@
                 width: '100%',
                 textIndent: '3rem',
                 fontSize: '1.2rem',
-                lineHeight: '1.6',
                 fontWeight: '300',
                 fontFamily: 'Source Serif 4, sans-serif',
                 letterSpacing: '0.05rem',
               }"
+                (onEditorCreated)="editorInit($event)"
+                (onEditorChanged)="editorChange($event)"
                 (onBlur)="updateTextSectionItem(item, $event)"
                 [ngModel]="item.text"
               ></quill-editor>
@@ -62,6 +74,12 @@
               </div>
             </div>
             <div class="section-actions">
+              <div class="section-action">
+                <i
+                  class="icon icon-ai"
+                  (click)="generateSectionSummary(chapterIndex, sectionIndex)"
+                ></i>
+              </div>
               <div class="section-action">
                 <i
                   class="icon icon-close"

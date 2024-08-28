@@ -1,4 +1,4 @@
-import { Observable, of } from 'rxjs';
+import { Observable, Subscriber, of } from 'rxjs';
 import { NovelDto } from '../types/dtos/novel/novel.dto';
 import { WritingTense } from '../types/enums/writing-tense';
 import { WritingPov } from '../types/enums/writing-pov';
@@ -11,6 +11,13 @@ import { PromptDto } from '../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../types/enums/prompt-type';
 import { PromptMessageRole } from '../types/enums/prompt-message-role';
 import { Prose, SectionItemType } from '../types/dtos/novel/prose';
+import {
+  HttpDownloadProgressEvent,
+  HttpEvent,
+  HttpEventType,
+  HttpResponse,
+} from '@angular/common/http';
+import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
@@ -222,3 +229,35 @@ export const mockedPrompts: PromptDto[] = [
     ],
   },
 ];
+
+export const mockedTextGenerationResponse = (generatedText: string) =>
+  new Observable<HttpEvent<string>>(
+    (subscriber: Subscriber<HttpEvent<string>>) => {
+      setTimeout(() => {
+        let index = 0;
+
+        const chunks: GenerateTextResponseChunkDto[] = [];
+
+        const intervalId = setInterval(() => {
+          if (index > generatedText.length) {
+            clearInterval(intervalId);
+            subscriber.complete();
+          } else {
+            chunks.push(<GenerateTextResponseChunkDto>{
+              content: generatedText.slice(index - 1, index),
+            });
+
+            subscriber.next(<HttpDownloadProgressEvent>{
+              type: HttpEventType.DownloadProgress,
+              loaded: index,
+              total: 100,
+              partialText: chunks
+                .map((item) => JSON.stringify(item))
+                .join('\n'),
+            });
+            index++;
+          }
+        });
+      }, 2500);
+    }
+  );

@@ -12,6 +12,8 @@ import { SpacedPipe } from '../../pipes/spaced.pipe';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { CompendiumRecordImageDto } from '../../types/dtos/compendium-record/compendium-record-image.dto';
 import { ProseEditorComponent } from '../../components/prose-editor/prose-editor.component';
+import { PromptService } from '../../services/prompt.service';
+import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 
 @Component({
   selector: 'app-novel-editor',
@@ -22,9 +24,11 @@ import { ProseEditorComponent } from '../../components/prose-editor/prose-editor
 })
 export class NovelEditorComponent {
   compendia: CompendiumDto[] | null = null;
+  prompts: PromptDto[] | null = null; // TODO: Send a lighter version of this DTO
   novel: NovelDto | null = null;
   prose: Prose | null = null;
   readonly novelService: NovelService = inject(NovelService);
+  readonly promptService: PromptService = inject(PromptService);
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   novelId!: string;
   recordsFilter = '';
@@ -52,6 +56,7 @@ export class NovelEditorComponent {
     this.novelId = this.route.snapshot.paramMap.get('id')!;
     this.getNovel();
     this.getProse();
+    this.getPrompts();
   }
 
   getNovel(): void {
@@ -64,6 +69,12 @@ export class NovelEditorComponent {
   getProse(): void {
     this.novelService.getNovelProse(this.novelId).subscribe((prose) => {
       this.prose = prose;
+    });
+  }
+
+  getPrompts(): void {
+    this.promptService.getPrompts().subscribe((prompts) => {
+      this.prompts = prompts;
     });
   }
 

@@ -11,6 +11,11 @@ public class GenerateTextRequestDto
     public required string Model { get; set; }
     
     /// <summary>
+    /// The context for the text generation.
+    /// </summary>
+    public string? Context { get; set; }
+    
+    /// <summary>
     /// The instructions for the text generation.
     /// </summary>
     public string? Instructions { get; set; }

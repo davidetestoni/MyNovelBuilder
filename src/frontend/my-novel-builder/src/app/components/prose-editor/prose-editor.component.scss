@@ -22,7 +22,7 @@
         gap: 1rem;
 
         /* Align it with the section without summary */
-        margin-right: calc(200px - 1rem - 20px);
+        margin-right: calc(250px - 1rem - 20px);
 
         h2 {
           font-size: 2rem;
@@ -74,6 +74,8 @@
             gap: 1rem;
 
             .section-item {
+              position: relative;
+
               &.text-item {
                 outline: none;
 
@@ -86,11 +88,30 @@
                   letter-spacing: 0.05rem;
                 }
               }
+
+              .tooltip-controls {
+                z-index: 1;
+                background-color: $grey0;
+                border-radius: 5px;
+                display: flex;
+                flex-direction: row;
+                gap: 5px;
+                align-items: center;
+                padding: 5px;
+                position: absolute;
+
+                i {
+                  width: 20px;
+                  height: 20px;
+                  filter: $grey13filter;
+                  cursor: pointer;
+                }
+              }
             }
           }
 
           .section-summary {
-            width: 200px;
+            width: 250px;
             padding: 0 1.5rem;
 
             .section-summary-title {
@@ -176,5 +197,5 @@
 
 .add-chapter-card-wrapper,
 .add-section-card-wrapper {
-  margin-right: 200px;
+  margin-right: 250px;
 }

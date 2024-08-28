@@ -8,10 +8,26 @@ import {
   Section,
 } from '../../types/dtos/novel/prose';
 import { CommonModule } from '@angular/common';
-import { Blur, QuillModule } from 'ngx-quill';
+import {
+  Blur,
+  EditorChangeContent,
+  EditorChangeSelection,
+  QuillModule,
+  Range,
+} from 'ngx-quill';
 import { environment } from '../../../environment';
 import { FormsModule } from '@angular/forms';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
+import { GenerateService } from '../../services/generate.service';
+import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
+import { PromptType } from '../../types/enums/prompt-type';
+import {
+  HttpDownloadProgressEvent,
+  HttpEvent,
+  HttpEventType,
+  HttpResponse,
+} from '@angular/common/http';
+import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
 
 @Component({
   selector: 'app-prose-editor',
@@ -23,8 +39,12 @@ import { ToastrModule, ToastrService } from 'ngx-toastr';
 export class ProseEditorComponent {
   @Input() novelId!: string;
   @Input() prose!: Prose;
+  @Input() prompts!: PromptDto[];
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
   toastr: ToastrService = inject(ToastrService);
+  generateService: GenerateService = inject(GenerateService);
+  showEditorControls = false;
+  editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
 
   isTextSectionItem(item: SectionItem): item is TextSectionItem {
     return item.$type === SectionItemType.Text;
@@ -125,7 +145,6 @@ export class ProseEditorComponent {
   }
 
   updateTextSectionItem(item: TextSectionItem, event: Blur) {
-    console.log(event);
     item.text = event.editor.getSemanticHTML();
     this.saveProse();
   }
@@ -153,5 +172,121 @@ export class ProseEditorComponent {
     if (event.key === 'Enter') {
       event.preventDefault();
     }
+  }
+
+  editorInit(quill: any) {
+    // This clears the background and text color when pasting text
+    quill.clipboard.addMatcher(
+      Node.ELEMENT_NODE,
+      function (node: any, delta: any) {
+        delta.forEach((e: any) => {
+          if (e.attributes) {
+            e.attributes.color = '';
+            e.attributes.background = '';
+          }
+        });
+        return delta;
+      }
+    );
+  }
+
+  editorChange(event: EditorChangeContent | EditorChangeSelection) {
+    if (event.event !== 'selection-change') {
+      return;
+    }
+
+    const range = event.range;
+
+    if (range === null || range.length === 0) {
+      this.showEditorControls = false;
+      return;
+    }
+
+    const lastCharRange = {
+      index: range.index + range.length - 1,
+      length: 1,
+    };
+
+    const rangeBounds = event.editor.getBounds(lastCharRange)!;
+
+    this.editorControlsPosition = {
+      x: rangeBounds.right + 10,
+      y: rangeBounds.bottom - 10,
+    };
+
+    this.showEditorControls = true;
+  }
+
+  generateSectionSummary(chapterIndex: number, sectionIndex: number) {
+    // Get the first summarization prompt
+    // TODO: Let the user choose the prompt
+    const prompt = this.prompts.find(
+      (prompt) => prompt.type === PromptType.SummarizeText
+    );
+
+    if (!prompt) {
+      this.toastr.error('No summarization prompts available');
+      return;
+    }
+
+    // Clear the current summary
+    this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
+      '[Summarizing...]';
+
+    this.generateService
+      .generateText({
+        model: 'undi95/toppy-m-7b:free', // TODO: Let the user choose the model
+        // In this case, the context is the text to summarize
+        context: this.prose.chapters[chapterIndex].sections[sectionIndex].items
+          .filter(this.isTextSectionItem)
+          .map((item) => this.getRawText(item.text))
+          .join(''),
+        instructions: null,
+        novelId: this.novelId,
+        promptId: prompt.id,
+      })
+      .subscribe({
+        next: (event: HttpEvent<string>) => {
+          if (event.type === HttpEventType.DownloadProgress) {
+            const response = (event as HttpDownloadProgressEvent)
+              .partialText as string;
+            const responseChunks = response
+              .split('\n')
+              .filter((item) => item.length > 0)
+              .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+            if (responseChunks.length > 0) {
+              const message = responseChunks
+                .map((item) => item.content)
+                .join('');
+
+              this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
+                message;
+            }
+          } else if (event.type === HttpEventType.Response) {
+            const response = event as HttpResponse<string>;
+            const responseChunks = response
+              .body!.split('\n')
+              .filter((item) => item.length > 0)
+              .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+
+            if (responseChunks.length > 0) {
+              const message = responseChunks
+                .map((item) => item.content)
+                .join('');
+
+              this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
+                message;
+
+              this.saveProse();
+            }
+          }
+        },
+      });
+  }
+
+  private getRawText(html: string): string {
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return div.innerText;
   }
 }

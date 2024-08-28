@@ -159,6 +159,7 @@ quill-editor {
 
     .ql-editor {
       outline: none;
+      line-height: 1.6;
 
       &.ql-blank::before {
         width: 100%;

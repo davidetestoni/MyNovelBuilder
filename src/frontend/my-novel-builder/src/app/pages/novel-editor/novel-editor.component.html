@@ -1,5 +1,5 @@
 <div class="novel-editor">
-  @if (novel === null || compendia === null) {
+  @if (novel === null || compendia === null || prompts === null) {
   <p>Loading...</p>
   } @else {
   <div class="novel-editor-header">
@@ -115,6 +115,7 @@
       <app-prose-editor
         [novelId]="novelId"
         [prose]="prose"
+        [prompts]="prompts"
         (proseChange)="updateProse($event)"
       ></app-prose-editor>
       }
