@@ -57,6 +57,7 @@ export class NovelEditorComponent {
     this.getNovel();
     this.getProse();
     this.getPrompts();
+    this.restoreFloatedImages();
   }
 
   getNovel(): void {
@@ -85,6 +86,12 @@ export class NovelEditorComponent {
         this.novel?.compendiumIds.includes(compendium.id)
       );
     });
+  }
+
+  restoreFloatedImages(): void {
+    this.floatedImages = this.novelService.getFloatedImagesForNovel(
+      this.novelId
+    );
   }
 
   getCompendiumRecordsByType(
@@ -146,6 +153,10 @@ export class NovelEditorComponent {
     }
 
     this.floatedImages = [...this.floatedImages, image];
+    this.novelService.setFloatedImagesForNovel(
+      this.novelId,
+      this.floatedImages
+    );
   }
 
   zoomImage(image: CompendiumRecordImageDto): void {
