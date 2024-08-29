@@ -1,12 +1,5 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import {
-  Prose,
-  TextSectionItem,
-  SectionItem,
-  SectionItemType,
-  ImageSectionItem,
-  Section,
-} from '../../types/dtos/novel/prose';
+import { Prose, Section } from '../../types/dtos/novel/prose';
 import { CommonModule } from '@angular/common';
 import {
   Blur,
@@ -33,7 +26,13 @@ import {
   GenerateTextComponent,
   GenerateTextComponentData,
 } from '../generate-text/generate-text.component';
-import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
+import {
+  GenerateTextContextInfoDto,
+  GenerateTextRequestDto,
+  ReplaceTextContextInfoDto,
+  SummarizeTextContextInfoDto,
+  TextGenerationType,
+} from '../../types/dtos/generate/generate-text-request.dto';
 import {
   GenerateTextResultComponent,
   GenerateTextResultComponentData,
@@ -66,14 +65,6 @@ export class ProseEditorComponent {
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
-
-  isTextSectionItem(item: SectionItem): item is TextSectionItem {
-    return item.$type === SectionItemType.Text;
-  }
-
-  isImageSectionItem(item: SectionItem): item is ImageSectionItem {
-    return item.$type === SectionItemType.Image;
-  }
 
   getImageUrl(imageId: string): string {
     // TODO: This should come directly from the API in ImageSectionItem
@@ -114,12 +105,7 @@ export class ProseEditorComponent {
       chapterIndex
     ].sections.concat({
       summary: '[Missing summary]',
-      items: [
-        <TextSectionItem>{
-          $type: SectionItemType.Text,
-          text: '',
-        },
-      ],
+      text: '',
     });
     this.saveProse();
   }
@@ -141,17 +127,6 @@ export class ProseEditorComponent {
     this.saveProse();
   }
 
-  addTextSectionItem(chapterIndex: number, sectionIndex: number) {
-    this.prose.chapters[chapterIndex].sections[sectionIndex].items =
-      this.prose.chapters[chapterIndex].sections[sectionIndex].items.concat(<
-        TextSectionItem
-      >{
-        $type: SectionItemType.Text,
-        text: '',
-      });
-    this.saveProse();
-  }
-
   updateChapterTitle(chapterIndex: number, event: Event) {
     const elem = event.target as HTMLInputElement;
 
@@ -165,8 +140,8 @@ export class ProseEditorComponent {
     this.saveProse();
   }
 
-  updateTextSectionItem(item: TextSectionItem, event: Blur) {
-    item.text = event.editor.getSemanticHTML();
+  updateSectionText(section: Section, event: Blur) {
+    section.text = event.editor.getSemanticHTML();
     this.saveProse();
   }
 
@@ -285,12 +260,12 @@ export class ProseEditorComponent {
       minWidth: '50vw',
       data: <GenerateTextComponentData>{
         prompts: prompts,
-        instructions: null,
         instructionsRequired: false,
-        context: this.prose.chapters[chapterIndex].sections[sectionIndex].items
-          .filter(this.isTextSectionItem)
-          .map((item) => this.getRawText(item.text))
-          .join(''),
+        contextInfo: <SummarizeTextContextInfoDto>{
+          $type: TextGenerationType.SummarizeText,
+          chapterIndex: chapterIndex,
+          sectionIndex: sectionIndex,
+        },
         novelId: this.novelId,
       },
     });
@@ -348,13 +323,11 @@ export class ProseEditorComponent {
 
   openGenerateTextDialog() {
     const prompts = this.prompts.filter(
-      (p) =>
-        p.type === PromptType.GenerateText ||
-        p.type === PromptType.ReplaceTextGuided
+      (p) => p.type === PromptType.GenerateText
     );
 
     if (prompts.length === 0) {
-      this.toastr.error('No summarization prompts available');
+      this.toastr.error('No generation prompts available');
       return;
     }
 
@@ -362,9 +335,14 @@ export class ProseEditorComponent {
       minWidth: '50vw',
       data: <GenerateTextComponentData>{
         prompts: prompts,
-        instructions: null,
+        contextInfo: <GenerateTextContextInfoDto>{
+          $type: TextGenerationType.GenerateText,
+          chapterIndex: this.lastSelection!.chapterIndex,
+          sectionIndex: this.lastSelection!.sectionIndex,
+          textOffset: this.lastSelection!.range.index,
+          instructions: null,
+        },
         instructionsRequired: true, // This should be defined by the prompt
-        context: this.assembleGenerateTextContext(),
         novelId: this.novelId,
       },
     });
@@ -409,38 +387,61 @@ export class ProseEditorComponent {
     });
   }
 
-  assembleGenerateTextContext(): string {
-    if (!this.lastSelection) {
-      return 'There is no text selected';
-    }
-
-    // If the last selection has some text, just provide
-    // the text as context
-    if (this.lastSelection.text.length > 0) {
-      return this.lastSelection.text;
-    }
-
-    const chapter = this.prose.chapters[this.lastSelection.chapterIndex];
-
-    // Context = summary of the last 5 sections BEFORE the current section
-    // + the text of the current section up to before the selected text.
-    const sections = chapter.sections.slice(
-      Math.max(0, this.lastSelection.sectionIndex - 5),
-      this.lastSelection.sectionIndex
+  openReplaceTextDialog() {
+    const prompts = this.prompts.filter(
+      (p) => p.type === PromptType.ReplaceText
     );
 
-    const context = sections
-      .map((section) => section.summary)
-      .join('\n\n')
-      .concat('\n\n')
-      .concat(
-        chapter.sections[this.lastSelection.sectionIndex].items
-          .filter(this.isTextSectionItem)
-          .map((item) => this.getRawText(item.text))
-          .join('\n\n')
-          .slice(0, this.lastSelection.range.index)
-      );
+    if (prompts.length === 0) {
+      this.toastr.error('No replacement prompts available');
+      return;
+    }
 
-    return context;
+    const dialogRef = this.dialog.open(GenerateTextComponent, {
+      minWidth: '50vw',
+      data: <GenerateTextComponentData>{
+        prompts: prompts,
+        contextInfo: <ReplaceTextContextInfoDto>{
+          $type: TextGenerationType.ReplaceText,
+          chapterIndex: this.lastSelection!.chapterIndex,
+          sectionIndex: this.lastSelection!.sectionIndex,
+          textOffset: this.lastSelection!.range.index,
+          textLength: this.lastSelection!.range.length,
+          instructions: null,
+        },
+        instructionsRequired: true, // This should be defined by the prompt
+        novelId: this.novelId,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.openReplaceTextResultDialog(request);
+      }
+    });
+  }
+
+  openReplaceTextResultDialog(request: GenerateTextRequestDto) {
+    const dialogRef = this.dialog.open(GenerateTextResultComponent, {
+      minWidth: '50vw',
+      data: <GenerateTextResultComponentData>{
+        request: request,
+        textToReplace: this.lastSelection?.text ?? '',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((generatedText: string) => {
+      if (generatedText) {
+        // Replace the selected text with the generated text.
+        this.lastSelection!.editor.deleteText(
+          this.lastSelection!.range.index,
+          this.lastSelection!.range.length
+        );
+        this.lastSelection!.editor.insertText(
+          this.lastSelection!.range.index,
+          generatedText
+        );
+      }
+    });
   }
 }

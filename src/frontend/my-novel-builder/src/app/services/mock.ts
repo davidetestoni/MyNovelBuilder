@@ -10,7 +10,7 @@ import { CompendiumRecordDto } from '../types/dtos/compendium-record/compendium-
 import { PromptDto } from '../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../types/enums/prompt-type';
 import { PromptMessageRole } from '../types/enums/prompt-message-role';
-import { Prose, SectionItemType } from '../types/dtos/novel/prose';
+import { Prose } from '../types/dtos/novel/prose';
 import {
   HttpDownloadProgressEvent,
   HttpEvent,
@@ -67,13 +67,7 @@ export const mockedProse: Prose = {
         .fill(0)
         .map((_, index) => ({
           summary: loremIpsum({ count: 5, units: 'sentences' }),
-          items: Array(3)
-            .fill(0)
-            .map((_, index) => ({
-              $type: SectionItemType.Text,
-              text:
-                '<p>' + loremIpsum({ count: 15, units: 'sentences' }) + '</p>',
-            })),
+          text: '<p>' + loremIpsum({ count: 15, units: 'sentences' }) + '</p>',
         })),
     })),
 };

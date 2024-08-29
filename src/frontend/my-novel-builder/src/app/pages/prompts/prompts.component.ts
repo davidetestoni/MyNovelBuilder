@@ -25,7 +25,6 @@ export class PromptsComponent implements OnInit {
     PromptType.GenerateText,
     PromptType.SummarizeText,
     PromptType.ReplaceText,
-    PromptType.ReplaceTextGuided,
     PromptType.CreateCompendiumRecord,
     PromptType.EditCompendiumRecord,
   ];

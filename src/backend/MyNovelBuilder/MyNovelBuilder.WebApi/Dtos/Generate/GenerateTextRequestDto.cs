@@ -11,16 +11,6 @@ public class GenerateTextRequestDto
     public required string Model { get; set; }
     
     /// <summary>
-    /// The context for the text generation.
-    /// </summary>
-    public string? Context { get; set; }
-    
-    /// <summary>
-    /// The instructions for the text generation.
-    /// </summary>
-    public string? Instructions { get; set; }
-    
-    /// <summary>
     /// The prompt ID.
     /// </summary>
     public Guid PromptId { get; set; }
@@ -29,4 +19,9 @@ public class GenerateTextRequestDto
     /// The novel ID.
     /// </summary>
     public Guid NovelId { get; set; }
+    
+    /// <summary>
+    /// The context information.
+    /// </summary>
+    public required TextGenerationContextInfoDto ContextInfo { get; set; }
 }

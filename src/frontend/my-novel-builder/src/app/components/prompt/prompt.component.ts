@@ -25,7 +25,6 @@ export class PromptComponent {
     PromptType.GenerateText,
     PromptType.SummarizeText,
     PromptType.ReplaceText,
-    PromptType.ReplaceTextGuided,
     PromptType.CreateCompendiumRecord,
     PromptType.EditCompendiumRecord,
   ];

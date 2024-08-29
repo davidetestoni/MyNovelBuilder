@@ -59,4 +59,9 @@ public static class ErrorCodes
     /// The external service returned an error.
     /// </summary>
     public const string ExternalServiceError = "external_service_error";
+    
+    /// <summary>
+    /// The prompt context is invalid.
+    /// </summary>
+    public const string InvalidPromptContext = "invalid_prompt_context";
 }

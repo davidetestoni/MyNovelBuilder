@@ -17,15 +17,12 @@
         @for (section of chapter.sections; let sectionIndex = $index; track
         section) {
         <div class="section">
-          <div class="section-items">
-            @for (item of section.items; track item) { @if
-            (isTextSectionItem(item)) {
-            <div class="section-item text-item">
-              <!-- TODO: When there are many WYSIWYG editors, the performance
+          <div class="section-text">
+            <!-- TODO: When there are many WYSIWYG editors, the performance
               is terrible. We could paginate the chapters or use a virtual
               scroll. -->
-              <quill-editor
-                [styles]="{
+            <quill-editor
+              [styles]="{
                 width: '100%',
                 textIndent: '3rem',
                 fontSize: '1.2rem',
@@ -33,22 +30,13 @@
                 fontFamily: 'Source Serif 4, sans-serif',
                 letterSpacing: '0.05rem',
               }"
-                (onEditorCreated)="editorInit($event)"
-                (onEditorChanged)="
-                  editorChange($event, chapterIndex, sectionIndex)
-                "
-                (onBlur)="updateTextSectionItem(item, $event)"
-                [ngModel]="item.text"
-              ></quill-editor>
-            </div>
-            } @else if (isImageSectionItem(item)) {
-            <div class="section-item image-item">
-              <img
-                src="{{ getImageUrl(item.imageId) }}"
-                alt="{{ item.imageId }}"
-              />
-            </div>
-            } }
+              (onEditorCreated)="editorInit($event)"
+              (onEditorChanged)="
+                editorChange($event, chapterIndex, sectionIndex)
+              "
+              (onBlur)="updateSectionText(section, $event)"
+              [ngModel]="section.text"
+            ></quill-editor>
           </div>
           <div class="section-summary">
             <div class="section-summary-title">
@@ -108,7 +96,15 @@
         top: editorControlsPosition.y + 'px',
       }"
   >
-    <i class="icon icon-ai" (mousedown)="openGenerateTextDialog()"></i>
+    <div class="tooltip-control" (mousedown)="openGenerateTextDialog()">
+      <i class="icon icon-ai"> </i>
+      <span>Generate</span>
+    </div>
+    <!-- TODO: Change icon -->
+    <div class="tooltip-control" (mousedown)="openReplaceTextDialog()">
+      <i class="icon icon-ai"> </i>
+      <span>Replace</span>
+    </div>
   </div>
   }
 </div>

@@ -11,7 +11,7 @@ public class Section
     public string Summary { get; set; } = string.Empty;
     
     /// <summary>
-    /// The items of the section.
+    /// The text of the section, in HTML format.
     /// </summary>
-    public required IEnumerable<SectionItem> Items { get; set; } = Array.Empty<SectionItem>();
+    public string Text { get; set; } = string.Empty;
 }

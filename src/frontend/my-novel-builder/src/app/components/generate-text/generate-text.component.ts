@@ -12,14 +12,16 @@ import {
   MatDialogClose,
   MatDialogRef,
 } from '@angular/material/dialog';
-import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
+import {
+  GenerateTextRequestDto,
+  TextGenerationContextInfoDto,
+} from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { GenerateService } from '../../services/generate.service';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
-  instructions: string | null;
-  context: string | null;
+  contextInfo: TextGenerationContextInfoDto;
   instructionsRequired: boolean;
   novelId: string;
 }
@@ -40,7 +42,6 @@ export class GenerateTextComponent implements OnInit {
     promptId: new FormControl('', [Validators.required]),
     model: new FormControl('', [Validators.required]),
     instructions: new FormControl(''),
-    context: new FormControl(''),
   });
 
   constructor(
@@ -54,8 +55,6 @@ export class GenerateTextComponent implements OnInit {
 
     this.formGroup.patchValue({
       promptId: this.data.prompts[0].id,
-      instructions: data.instructions,
-      context: data.context,
     });
 
     if (!data.instructionsRequired) {
@@ -83,8 +82,10 @@ export class GenerateTextComponent implements OnInit {
     this.dialogRef.close(<GenerateTextRequestDto>{
       promptId: this.formGroup.get('promptId')!.value,
       model: this.formGroup.get('model')!.value,
-      instructions: this.formGroup.get('instructions')!.value,
-      context: this.formGroup.get('context')!.value,
+      contextInfo: {
+        ...this.data.contextInfo,
+        instructions: this.formGroup.get('instructions')!.value,
+      },
       novelId: this.data.novelId,
     });
   }

@@ -8,5 +8,5 @@ public class Prose
     /// <summary>
     /// The chapters of the novel.
     /// </summary>
-    public IEnumerable<Chapter> Chapters { get; set; } = Array.Empty<Chapter>();
+    public IList<Chapter> Chapters { get; set; } = Array.Empty<Chapter>();
 }

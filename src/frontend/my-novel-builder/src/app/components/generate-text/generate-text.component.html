@@ -22,15 +22,6 @@
       </div>
       }
       <div class="form-field">
-        <div class="form-field-label">Context *</div>
-        <textarea
-          matInput
-          id="context"
-          formControlName="context"
-          placeholder="The context to inject in the prompt template..."
-        ></textarea>
-      </div>
-      <div class="form-field">
         <div class="form-field-label">Model *</div>
         <select formControlName="model" placeholder="Select a model">
           @for (model of models; track model) {
