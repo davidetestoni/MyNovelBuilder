@@ -149,6 +149,10 @@ export class NovelEditorComponent {
       this.floatedImages = this.floatedImages.filter(
         (floatedImage) => floatedImage.id !== image.id
       );
+      this.novelService.setFloatedImagesForNovel(
+        this.novelId,
+        this.floatedImages
+      );
       return;
     }
 
