@@ -331,6 +331,10 @@ export class ProseEditorComponent {
       return;
     }
 
+    // Save the prose to avoid losing the user's changes since
+    // all generation happens on the backend with the saved prose
+    this.saveProse();
+
     const dialogRef = this.dialog.open(GenerateTextComponent, {
       minWidth: '50vw',
       data: <GenerateTextComponentData>{
@@ -365,24 +369,13 @@ export class ProseEditorComponent {
 
     dialogRef.afterClosed().subscribe((generatedText: string) => {
       if (generatedText) {
-        // If the range has 0 length, append the generated text
-        // at the end of the range in the Quill editor. Otherwise,
-        // replace the selected text with the generated text.
-        if (this.lastSelection!.range.length === 0) {
-          this.lastSelection!.editor.insertText(
-            this.lastSelection!.range.index,
-            generatedText
-          );
-        } else {
-          this.lastSelection!.editor.deleteText(
-            this.lastSelection!.range.index,
-            this.lastSelection!.range.length
-          );
-          this.lastSelection!.editor.insertText(
-            this.lastSelection!.range.index,
-            generatedText
-          );
-        }
+        const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
+
+        // Append the generated text at the end of the range in the Quill editor.
+        this.lastSelection!.editor.insertText(
+          contextInfo.textOffset,
+          generatedText
+        );
       }
     });
   }
@@ -396,6 +389,10 @@ export class ProseEditorComponent {
       this.toastr.error('No replacement prompts available');
       return;
     }
+
+    // Save the prose to avoid losing the user's changes since
+    // all generation happens on the backend with the saved prose
+    this.saveProse();
 
     const dialogRef = this.dialog.open(GenerateTextComponent, {
       minWidth: '50vw',
@@ -432,13 +429,17 @@ export class ProseEditorComponent {
 
     dialogRef.afterClosed().subscribe((generatedText: string) => {
       if (generatedText) {
+        const contextInfo = request.contextInfo as ReplaceTextContextInfoDto;
+
         // Replace the selected text with the generated text.
+        // Do not use the current selection's range, as it may have changed
+        // since the dialog was opened.
         this.lastSelection!.editor.deleteText(
-          this.lastSelection!.range.index,
-          this.lastSelection!.range.length
+          contextInfo.textOffset,
+          contextInfo.textLength
         );
         this.lastSelection!.editor.insertText(
-          this.lastSelection!.range.index,
+          contextInfo.textOffset,
           generatedText
         );
       }
