@@ -142,6 +142,9 @@ export class GenerateService {
   }
 
   sortModels(models: string[]): string[] {
+    // Copy the array and sort it alphabetically
+    models = [...models].sort();
+
     // Push the recently used models to the start of the list
     const recentlyUsedModels = this.getRecentlyUsedModels();
 
