@@ -9,6 +9,7 @@ import {
 } from '@angular/common/http';
 import { GenerateService } from '../../services/generate.service';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
+import { ToastrService } from 'ngx-toastr';
 
 export interface GenerateTextResultComponentData {
   textToReplace: string; // In HTML format
@@ -24,6 +25,7 @@ export interface GenerateTextResultComponentData {
 })
 export class GenerateTextResultComponent implements OnInit {
   readonly generateService: GenerateService = inject(GenerateService);
+  readonly toastr: ToastrService = inject(ToastrService);
   isGenerating = true;
   generatedText = '';
 
@@ -71,7 +73,10 @@ export class GenerateTextResultComponent implements OnInit {
         }
       },
       error: (error) => {
-        this.generatedText = `Error: ${error.message}`;
+        this.toastr.error(
+          error.message,
+          'An error occurred while generating the text'
+        );
         this.isGenerating = false;
       },
     });
