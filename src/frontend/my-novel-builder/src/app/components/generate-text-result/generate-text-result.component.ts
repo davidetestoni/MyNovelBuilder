@@ -83,7 +83,9 @@ export class GenerateTextResultComponent implements OnInit {
   }
 
   accept() {
-    this.dialogRef.close(this.generatedText);
+    // Replace multiple linebreaks with a single linebreak
+    // TODO: Make this configurable, this is just my personal preference
+    this.dialogRef.close(this.generatedText.replace(/\n{2,}/g, '\n'));
   }
 
   discard() {
