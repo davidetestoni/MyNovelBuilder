@@ -25,7 +25,7 @@ public class SummarizeTextPromptBuilder : PromptBuilder<SummarizeTextContextInfo
         var section = GetSection(chapter, context.Client.SectionIndex);
         
         Builder
-            .Replace("{{context}}", StripHtmlTags(section.Text));
+            .Replace("{{context}}", HtmlToText(section.Text));
 
         return this;
     }

@@ -193,15 +193,14 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     }
     
     /// <summary>
-    /// Strips HTML tags from the text.
+    /// Strips HTML tags from the text and decodes HTML entities.
     /// </summary>
-    /// <param name="text"></param>
-    /// <returns></returns>
-    protected string StripHtmlTags(string text)
+    protected string HtmlToText(string text)
     {
-        return StripHtmlTagsRegex().Replace(text, string.Empty);
+        var stripped = StripHtmlTagsRegex().Replace(text, string.Empty);
+        return System.Net.WebUtility.HtmlDecode(stripped);
     }
-
+    
     /// <summary>
     /// Gets the chapter at the specified index.
     /// </summary>
