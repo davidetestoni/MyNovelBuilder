@@ -24,7 +24,7 @@ public class GenerateTextPromptBuilder : PromptBuilder<GenerateTextContextInfoDt
         
         var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
         var section = GetSection(chapter, context.Client.SectionIndex);
-        var text = HtmlToText(section.Text);
+        var text = StripHtmlTags(section.Text);
         
         // Get up to 6 previous sections (even across chapters)
         var previousSections = context.Prose.Chapters
@@ -38,14 +38,14 @@ public class GenerateTextPromptBuilder : PromptBuilder<GenerateTextContextInfoDt
         // Append the summaries of the previous sections except the last one (up to 5)
         foreach (var previousSection in previousSections)
         {
-            contextBuilder.Append(HtmlToText(previousSection.Text));
+            contextBuilder.Append(StripHtmlTags(previousSection.Text));
             contextBuilder.Append("\n\n");
         }
         
         // Append the text of the last previous section (if any)
         if (previousSections.Count != 0)
         {
-            contextBuilder.Append(HtmlToText(previousSections[^1].Text));
+            contextBuilder.Append(StripHtmlTags(previousSections[^1].Text));
             contextBuilder.Append("\n\n");
         }
         
@@ -63,7 +63,7 @@ public class GenerateTextPromptBuilder : PromptBuilder<GenerateTextContextInfoDt
         }
         
         Builder
-            .Replace("{{context}}", contextString)
+            .Replace("{{context}}", DecodeHtmlEntities(contextString))
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{records}}", CreateCompendiumRecordsString(recordsInContext.ToList()));
         

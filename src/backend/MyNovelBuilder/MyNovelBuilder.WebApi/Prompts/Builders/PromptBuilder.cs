@@ -195,10 +195,17 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// <summary>
     /// Strips HTML tags from the text and decodes HTML entities.
     /// </summary>
-    protected string HtmlToText(string text)
+    protected string StripHtmlTags(string text)
     {
-        var stripped = StripHtmlTagsRegex().Replace(text, string.Empty);
-        return System.Net.WebUtility.HtmlDecode(stripped);
+        return StripHtmlTagsRegex().Replace(text, string.Empty);
+    }
+    
+    /// <summary>
+    /// Decodes HTML entities in the text.
+    /// </summary>
+    protected string DecodeHtmlEntities(string text)
+    {
+        return System.Net.WebUtility.HtmlDecode(text);
     }
     
     /// <summary>
