@@ -18,6 +18,7 @@ import {
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { GenerateService } from '../../services/generate.service';
+import { PromptService } from '../../services/prompt.service';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
@@ -37,6 +38,7 @@ export class GenerateTextComponent implements OnInit {
   instructionsRequired = false;
   models: string[] = [];
   readonly generateService: GenerateService = inject(GenerateService);
+  readonly promptService: PromptService = inject(PromptService);
 
   formGroup = new FormGroup({
     promptId: new FormControl('', [Validators.required]),
@@ -51,6 +53,15 @@ export class GenerateTextComponent implements OnInit {
   ) {
     if (data.prompts.length === 0) {
       throw new Error('No prompts provided');
+    }
+
+    // Get the most recent instructions for the prompt type
+    const promptType = data.prompts[0].type;
+    const instructions =
+      this.promptService.getRecentInstructionsForPromptType(promptType);
+
+    if (instructions !== null) {
+      this.formGroup.patchValue({ instructions });
     }
 
     this.formGroup.patchValue({
@@ -79,6 +90,17 @@ export class GenerateTextComponent implements OnInit {
   }
 
   accept(): void {
+    // Save the instructions for the prompt type
+    const promptType = this.data.prompts[0].type;
+    const instructions = this.formGroup.get('instructions')!.value;
+
+    if (instructions !== null) {
+      this.promptService.setRecentInstructionsForPromptType(
+        promptType,
+        instructions
+      );
+    }
+
     this.dialogRef.close(<GenerateTextRequestDto>{
       promptId: this.formGroup.get('promptId')!.value,
       model: this.formGroup.get('model')!.value,

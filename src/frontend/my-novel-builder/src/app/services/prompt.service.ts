@@ -6,6 +6,11 @@ import { Injectable } from '@angular/core';
 import { PromptDto } from '../types/dtos/prompt/prompt.dto';
 import { CreatePromptDto } from '../types/dtos/prompt/create-prompt.dto';
 import { UpdatePromptDto } from '../types/dtos/prompt/update-prompt.dto';
+import { PromptType } from '../types/enums/prompt-type';
+
+interface RecentInstructions {
+  [key: string]: string;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -13,6 +18,7 @@ import { UpdatePromptDto } from '../types/dtos/prompt/update-prompt.dto';
 export class PromptService {
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
+  private recentInstructionsKey = 'recentInstructions';
 
   constructor(private http: HttpClient) {}
 
@@ -40,5 +46,29 @@ export class PromptService {
     }
 
     return this.http.delete<void>(`${this.baseUrl}/prompt/${promptId}`);
+  }
+
+  private getRecentInstructions(): RecentInstructions {
+    const recentInstructionsString = localStorage.getItem(
+      this.recentInstructionsKey
+    );
+    return recentInstructionsString ? JSON.parse(recentInstructionsString) : {};
+  }
+
+  getRecentInstructionsForPromptType(promptType: PromptType): string | null {
+    const recentInstructions = this.getRecentInstructions();
+    return recentInstructions[promptType] || null;
+  }
+
+  setRecentInstructionsForPromptType(
+    promptType: PromptType,
+    instruction: string
+  ): void {
+    const recentInstructions = this.getRecentInstructions();
+    recentInstructions[promptType] = instruction;
+    localStorage.setItem(
+      this.recentInstructionsKey,
+      JSON.stringify(recentInstructions)
+    );
   }
 }
