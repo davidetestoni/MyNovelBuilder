@@ -51,6 +51,14 @@ export class CompendiumRecordComponent {
       .subscribe();
   }
 
+  removeRecord(): void {
+    if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
+      return;
+    }
+
+    this.deleteRecord.emit(this.record);
+  }
+
   addImage(): void {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';

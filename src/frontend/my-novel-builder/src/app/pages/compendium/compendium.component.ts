@@ -129,4 +129,23 @@ export class CompendiumComponent implements OnInit {
       this.currentRecord = null;
     });
   }
+
+  deleteCompendium(): void {
+    if (this.compendium === null) {
+      return;
+    }
+
+    if (
+      !confirm(
+        'Are you sure you want to remove this compendium and all of its records? This action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    this.compendiumService.deleteCompendium(this.compendium.id).subscribe(() => {
+      // Redirect to the compendia page
+      window.location.href = '/compendia';
+    });
+  }
 }

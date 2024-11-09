@@ -50,6 +50,12 @@
         flex-direction: column;
         margin-top: 20px;
 
+        .compendium-records-actions {
+          display: flex;
+          flex-direction: row;
+          gap: 10px;;
+        }
+
         .compendium-records-type {
           margin-top: 20px;
 

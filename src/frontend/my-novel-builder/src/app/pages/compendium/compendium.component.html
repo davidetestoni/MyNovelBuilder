@@ -34,6 +34,9 @@
           <button class="add-record" (click)="openCreateRecordDialog()">
             Add Record
           </button>
+          <button class="delete-compendium" (click)="deleteCompendium()">
+            Delete Compendium
+          </button>
         </div>
         @for (type of compendiumRecordTypes; track type) { @if
         (getRecordsOfType(type).length > 0) {

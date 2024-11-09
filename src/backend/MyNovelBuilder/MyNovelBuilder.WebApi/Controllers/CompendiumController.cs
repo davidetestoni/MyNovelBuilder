@@ -92,6 +92,14 @@ public class CompendiumController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task DeleteCompendium(Guid id)
     {
+        // Delete all records associated with the compendium.
+        var records = await _compendiumRecordService.GetByCompendiumIdAsync(id);
+        
+        foreach (var record in records)
+        {
+            await _compendiumRecordService.DeleteAsync(record.Id);
+        }
+        
         await _compendiumService.DeleteAsync(id);
     }
     
