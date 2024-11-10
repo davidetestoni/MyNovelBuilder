@@ -1,5 +1,8 @@
 <div class="compendium-container">
-  <h1>Compendium</h1>
+  <h1>
+    Compendium
+    <i class="icon icon-close" (click)="deleteCompendium()"></i>
+  </h1>
   @if (compendium === null) {
   <p>Loading...</p>
   } @else {
@@ -33,9 +36,6 @@
         <div class="compendium-records-actions">
           <button class="add-record" (click)="openCreateRecordDialog()">
             Add Record
-          </button>
-          <button class="delete-compendium" (click)="deleteCompendium()">
-            Delete Compendium
           </button>
         </div>
         @for (type of compendiumRecordTypes; track type) { @if

@@ -58,4 +58,12 @@ export class PromptComponent {
     this.prompt.messages = this.prompt.messages.filter((m) => m !== message);
     this.onBlur();
   }
+
+  removePrompt(): void {
+    if (!confirm('Are you sure you want to delete this prompt? You cannot undo this action.')) {
+      return;
+    }
+
+    this.deletePrompt.emit(this.prompt);
+  }
 }

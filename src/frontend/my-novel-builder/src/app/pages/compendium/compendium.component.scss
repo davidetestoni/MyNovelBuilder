@@ -3,6 +3,15 @@
 .compendium-container {
   padding: 20px;
 
+  h1 {
+    i {
+      width: 20px;
+      height: 20px;
+      filter: $grey5filter;
+      cursor: pointer;
+    }
+  }
+
   .compendium-editor {
     display: flex;
     flex-direction: row;

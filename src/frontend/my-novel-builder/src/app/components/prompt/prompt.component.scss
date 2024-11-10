@@ -50,6 +50,17 @@
         .label {
           color: $grey13;
           margin-bottom: 5px;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 5px;
+
+          i {
+            width: 15px;
+            height: 15px;
+            filter: $grey5filter;
+            cursor: pointer;
+          }
         }
 
         textarea {
@@ -62,12 +73,29 @@
       }
     }
 
-    .prompt-messages-actions {
+    .prompt-actions-container {
+      margin-top: 20px;
       display: flex;
       flex-direction: row;
-      justify-content: flex-end;
-      margin-top: 20px;
-      gap: 10px;
+      justify-content: space-between;
+
+      .prompt-actions {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+
+        .delete-prompt {
+          background-color: transparent;
+          color: $grey13;
+          border: 1px solid $grey13;
+        }
+      }
+
+      .prompt-messages-actions {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+      }
     }
   }
 }

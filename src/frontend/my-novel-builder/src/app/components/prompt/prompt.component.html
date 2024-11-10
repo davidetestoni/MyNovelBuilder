@@ -26,39 +26,43 @@
         <div class="prompt-message">
           <div class="label">
             <span>{{ message.role | titlecase }}</span>
+            <i class="icon icon-close" (click)="removeMessage(message)"></i>
           </div>
           <textarea
             ngDefaultControl
             [(ngModel)]="message.message"
             (blur)="onBlur()"
           ></textarea>
-          <button class="remove-message" (click)="removeMessage(message)">
-            Remove
-          </button>
         </div>
         }
       </div>
-      <div class="prompt-messages-actions">
-        <button
-          class="add-message"
-          (click)="addMessage(PromptMessageRole.System)"
-        >
-          + System
-        </button>
-        <button
-          class="add-message"
-          (click)="addMessage(PromptMessageRole.User)"
-        >
-          + User
-        </button>
-        <button
-          class="add-message"
-          (click)="addMessage(PromptMessageRole.Assistant)"
-        >
-          + Assistant
-        </button>
+      <div class="prompt-actions-container">
+        <div class="prompt-messages-actions">
+          <button
+            class="add-message"
+            (click)="addMessage(PromptMessageRole.System)"
+          >
+            + System
+          </button>
+          <button
+            class="add-message"
+            (click)="addMessage(PromptMessageRole.User)"
+          >
+            + User
+          </button>
+          <button
+            class="add-message"
+            (click)="addMessage(PromptMessageRole.Assistant)"
+          >
+            + Assistant
+          </button>
+        </div>
+        <div class="prompt-actions">
+          <button class="delete-prompt" (click)="removePrompt()">
+            Delete Prompt
+          </button>
+        </div>
       </div>
     </div>
   </div>
-  <!-- TODO: Add remove button -->
 </div>

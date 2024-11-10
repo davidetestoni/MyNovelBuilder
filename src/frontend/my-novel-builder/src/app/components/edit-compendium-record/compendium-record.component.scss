@@ -126,17 +126,15 @@
 
           .compendium-record-image-remove {
             position: absolute;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: $grey5;
+            top: 10px;
+            right: 10px;
             border: none;
-            border-radius: 5px;
+            padding: 0;
+            margin: 0;
             opacity: 30%;
-            padding: 5px 10px;
-            color: $grey17;
             font-size: 0.8rem;
             transition: opacity 0.3s;
+            filter: $grey13filter;
 
             &:hover {
               opacity: 100%;
@@ -183,6 +181,12 @@
       display: flex;
       flex-direction: row;
       gap: 10px;
+
+      .delete-compendium-record {
+        background-color: transparent;
+        color: $grey13;
+        border: 1px solid $grey13;
+      }
     }
   }
 }
