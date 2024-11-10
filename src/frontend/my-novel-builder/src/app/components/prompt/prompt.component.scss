@@ -83,12 +83,6 @@
         display: flex;
         flex-direction: row;
         gap: 10px;
-
-        .delete-prompt {
-          background-color: transparent;
-          color: $grey13;
-          border: 1px solid $grey13;
-        }
       }
 
       .prompt-messages-actions {

@@ -181,12 +181,6 @@
       display: flex;
       flex-direction: row;
       gap: 10px;
-
-      .delete-compendium-record {
-        background-color: transparent;
-        color: $grey13;
-        border: 1px solid $grey13;
-      }
     }
   }
 }

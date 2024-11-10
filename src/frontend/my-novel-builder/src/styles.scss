@@ -126,6 +126,12 @@ button {
     color: $grey13;
     cursor: auto;
   }
+
+  &.button-outline {
+    background-color: transparent;
+    color: $grey13;
+    border: 1px solid $grey13;
+  }
 }
 
 /* Scrollbar (thin and dark) */
