@@ -20,6 +20,19 @@
     </div>
   </div>
   <div class="novel-settings-body">
+    <div class="novel-cover">
+      <div class="label">
+        Cover
+      </div>
+      <div class="novel-cover-image">
+        <img [src]="novel.coverImageUrl" alt="Cover Image" />
+      </div>
+      <input
+        type="file"
+        (change)="updateNovelCoverImage($event)"
+        accept="image/*"
+      />
+    </div>
     <div class="novel-title">
       <div class="label">
         <span>Title</span>

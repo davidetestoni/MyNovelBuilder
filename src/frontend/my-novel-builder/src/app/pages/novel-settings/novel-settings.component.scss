@@ -39,8 +39,32 @@
     padding: 1rem;
     margin: auto;
 
+    .novel-cover {
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      .novel-cover-image {
+        margin: 5px 0 10px 0;
+        width: 200px;
+        height: 300px;
+        overflow: hidden;
+        border-radius: 5px;
+        position: relative;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+    }    
+
     .novel-title {
       width: 300px;
+      margin-top: 20px;
 
       .label {
         color: $grey13;

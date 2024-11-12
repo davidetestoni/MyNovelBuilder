@@ -106,12 +106,30 @@ public class NovelService : INovelService
         await File.WriteAllTextAsync(path, proseJson);
     }
 
+    private string? GetLocalCoverImageFilePath(Guid id)
+    {
+        // This is the folder where the cover is stored
+        var folder = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString());
+        
+        // Find the cover image in the folder (called cover_{guid}.png) to prevent
+        // caching issues when the cover is updated.
+        var coverFiles = Directory.GetFiles(folder, "cover*.png");
+        
+        return coverFiles.Length == 0 ? null : coverFiles[0];
+    }
+
     /// <inheritdoc />
     public string? GetCoverImageLocation(Guid id)
     {
-        var localPath = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
-        var urlPath = Path.Combine("static", "novels", id.ToString(), "cover.png");
-        return File.Exists(localPath) ? urlPath : null;
+        var localPath = GetLocalCoverImageFilePath(id);
+        
+        if (localPath is null)
+        {
+            return null;
+        }
+        
+        return Path.Combine("static", "novels", id.ToString(), 
+            Path.GetFileName(localPath));
     }
 
     /// <inheritdoc />
@@ -135,10 +153,18 @@ public class NovelService : INovelService
             imageBytes = outputStream.ToArray();
         }
         
-        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
+        // Delete the existing cover
+        var existingCoverPath = GetLocalCoverImageFilePath(id);
+        
+        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), $"cover_{Guid.NewGuid()}.png");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, imageBytes);
+        
+        if (existingCoverPath is not null)
+        {
+            File.Delete(existingCoverPath);
+        }
     }
 
     /// <inheritdoc />

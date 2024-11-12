@@ -85,6 +85,22 @@ export class NovelSettingsComponent {
       .subscribe();
   }
 
+  updateNovelCoverImage(event: Event) {
+    if (this.novel === null) {
+      return;
+    }
+
+    const target = event.target as HTMLInputElement;
+
+    if (target.files !== null && target.files !== undefined && target.files.length > 0) {
+      this.novelService
+        .uploadNovelCoverImage(this.novel.id, target.files[0])
+        .subscribe(() => {
+          this.getNovel();
+        });
+    }
+  }
+
   getAvailableCharacters(): CompendiumRecordOverviewDto[] {
     if (this.novel === null || this.compendia === null) {
       return [];
