@@ -106,10 +106,15 @@ public class NovelService : INovelService
         await File.WriteAllTextAsync(path, proseJson);
     }
 
-    private string? GetLocalCoverImageFilePath(Guid id)
+    private static string? GetLocalCoverImageFilePath(Guid id)
     {
         // This is the folder where the cover is stored
         var folder = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString());
+        
+        if (!Directory.Exists(folder))
+        {
+            return null;
+        }
         
         // Find the cover image in the folder (called cover_{guid}.png) to prevent
         // caching issues when the cover is updated.

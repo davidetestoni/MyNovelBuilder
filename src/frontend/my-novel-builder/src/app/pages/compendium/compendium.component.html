@@ -50,7 +50,8 @@
           </div>
           <div class="compendium-records-grid">
             @for (record of getRecordsOfType(type); track record.id) {
-            <div class="compendium-record" (click)="setCurrentRecord(record)">
+            <div class="compendium-record" (click)="setCurrentRecord(record)"
+              [class.selected]="currentRecord === record">
               <div class="compendium-record-image">
                 @if (getRecordImage(record) !== null) {
                 <img

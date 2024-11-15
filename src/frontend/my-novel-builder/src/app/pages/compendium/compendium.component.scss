@@ -89,6 +89,10 @@
               max-width: 500px;
               user-select: none;
 
+              &.selected {
+                background-color: $grey5;
+              }
+
               .compendium-record-image {
                 width: 40px;
                 height: 40px;
