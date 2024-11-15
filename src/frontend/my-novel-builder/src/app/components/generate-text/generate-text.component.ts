@@ -68,6 +68,13 @@ export class GenerateTextComponent implements OnInit {
       promptId: this.data.prompts[0].id,
     });
 
+    const promptId =
+      this.promptService.getRecentPromptForPromptType(promptType);
+
+    if (promptId !== null) {
+      this.formGroup.patchValue({ promptId: promptId });
+    }
+
     if (!data.instructionsRequired) {
       this.formGroup.get('instructions')!.disable();
     } else {
@@ -99,6 +106,12 @@ export class GenerateTextComponent implements OnInit {
         promptType,
         instructions
       );
+    }
+
+    // Save the prompt id
+    const promptId = this.formGroup.get('promptId')!.value;
+    if (promptId !== null) {
+      this.promptService.setRecentPromptForPromptType(promptType, promptId);
     }
 
     this.dialogRef.close(<GenerateTextRequestDto>{

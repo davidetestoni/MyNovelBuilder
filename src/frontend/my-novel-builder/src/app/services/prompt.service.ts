@@ -8,7 +8,12 @@ import { CreatePromptDto } from '../types/dtos/prompt/create-prompt.dto';
 import { UpdatePromptDto } from '../types/dtos/prompt/update-prompt.dto';
 import { PromptType } from '../types/enums/prompt-type';
 
+// TODO: Make a generic service to interact with local storage
 interface RecentInstructions {
+  [key: string]: string;
+}
+
+interface RecentPrompts {
   [key: string]: string;
 }
 
@@ -19,6 +24,7 @@ export class PromptService {
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
   private recentInstructionsKey = 'recentInstructions';
+  private recentPromptsKey = 'recentPrompts';
 
   constructor(private http: HttpClient) {}
 
@@ -69,6 +75,30 @@ export class PromptService {
     localStorage.setItem(
       this.recentInstructionsKey,
       JSON.stringify(recentInstructions)
+    );
+  }
+
+  private getRecentPrompts(): RecentPrompts {
+    const recentPromptsString = localStorage.getItem(
+      this.recentPromptsKey
+    );
+    return recentPromptsString ? JSON.parse(recentPromptsString) : {};
+  }
+
+  getRecentPromptForPromptType(promptType: PromptType): string | null {
+    const recentPrompts = this.getRecentPrompts();
+    return recentPrompts[promptType] || null;
+  }
+
+  setRecentPromptForPromptType(
+    promptType: PromptType,
+    promptId: string
+  ): void {
+    const recentPrompts = this.getRecentPrompts();
+    recentPrompts[promptType] = promptId;
+    localStorage.setItem(
+      this.recentPromptsKey,
+      JSON.stringify(recentPrompts)
     );
   }
 }
