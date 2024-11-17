@@ -19,6 +19,8 @@ import {
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { GenerateService } from '../../services/generate.service';
 import { PromptService } from '../../services/prompt.service';
+import { LocalStorageService } from '../../services/local-storage.service';
+import { LocalStorageKey } from '../../types/enums/local-storage-key';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
@@ -39,6 +41,7 @@ export class GenerateTextComponent implements OnInit {
   models: string[] = [];
   readonly generateService: GenerateService = inject(GenerateService);
   readonly promptService: PromptService = inject(PromptService);
+  readonly localStorageService: LocalStorageService = inject(LocalStorageService);
 
   formGroup = new FormGroup({
     promptId: new FormControl('', [Validators.required]),
@@ -58,7 +61,8 @@ export class GenerateTextComponent implements OnInit {
     // Get the most recent instructions for the prompt type
     const promptType = data.prompts[0].type;
     const instructions =
-      this.promptService.getRecentInstructionsForPromptType(promptType);
+      this.localStorageService.getNestedStringForKey(
+        LocalStorageKey.RecentInstructions, promptType);
 
     if (instructions !== null) {
       this.formGroup.patchValue({ instructions });
@@ -69,7 +73,8 @@ export class GenerateTextComponent implements OnInit {
     });
 
     const promptId =
-      this.promptService.getRecentPromptForPromptType(promptType);
+      this.localStorageService.getNestedStringForKey(
+        LocalStorageKey.RecentPrompts, promptType);
 
     if (promptId !== null) {
       this.formGroup.patchValue({ promptId: promptId });
@@ -102,7 +107,8 @@ export class GenerateTextComponent implements OnInit {
     const instructions = this.formGroup.get('instructions')!.value;
 
     if (instructions !== null) {
-      this.promptService.setRecentInstructionsForPromptType(
+      this.localStorageService.setNestedStringForKey(
+        LocalStorageKey.RecentInstructions,
         promptType,
         instructions
       );
@@ -111,7 +117,11 @@ export class GenerateTextComponent implements OnInit {
     // Save the prompt id
     const promptId = this.formGroup.get('promptId')!.value;
     if (promptId !== null) {
-      this.promptService.setRecentPromptForPromptType(promptType, promptId);
+      this.localStorageService.setNestedStringForKey(
+        LocalStorageKey.RecentPrompts,
+        promptType,
+        promptId
+      );
     }
 
     this.dialogRef.close(<GenerateTextRequestDto>{
