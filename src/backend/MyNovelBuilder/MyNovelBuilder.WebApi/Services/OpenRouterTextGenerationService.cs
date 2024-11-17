@@ -18,8 +18,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
 
     /// <summary></summary>
     public OpenRouterTextGenerationService(
-        IConfiguration configuration,
-        HttpClient httpClient)
+        IConfiguration configuration)
     {
         var apiKey = configuration["Secrets:OpenRouterApiKey"];
         

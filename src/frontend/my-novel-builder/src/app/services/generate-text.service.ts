@@ -10,7 +10,7 @@ import moment from 'moment';
 @Injectable({
   providedIn: 'root',
 })
-export class GenerateService {
+export class GenerateTextService {
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
 

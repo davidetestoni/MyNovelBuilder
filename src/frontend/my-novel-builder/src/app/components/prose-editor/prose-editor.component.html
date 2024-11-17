@@ -63,6 +63,12 @@
               </div>
               <div class="section-action">
                 <i
+                  class="icon icon-headphones"
+                  (click)="textToSpeech(chapterIndex, sectionIndex)"
+                ></i>
+              </div>
+              <div class="section-action">
+                <i
                   class="icon icon-close"
                   (click)="removeSection(chapterIndex, sectionIndex)"
                 ></i>

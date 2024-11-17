@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Dtos.Generate;
@@ -7,23 +7,23 @@ using MyNovelBuilder.WebApi.Services;
 namespace MyNovelBuilder.WebApi.Controllers;
 
 /// <summary>
-/// Controller for generating text, images or audio.
+/// Controller for generating text.
 /// </summary>
-[Route("api/generate")]
+[Route("api/generate/text")]
 [ApiController]
-public class GenerateController : ControllerBase
+public class GenerateTextController : ControllerBase
 {
     private readonly IPromptCreatorService _promptCreatorService;
     private readonly ITextGenerationService _textGenerationService;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     /// <summary></summary>
-    public GenerateController(IPromptCreatorService promptCreatorService,
+    public GenerateTextController(IPromptCreatorService promptCreatorService,
         ITextGenerationService textGenerationService)
     {
         _promptCreatorService = promptCreatorService;
         _textGenerationService = textGenerationService;
-        
+
         _jsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -34,7 +34,7 @@ public class GenerateController : ControllerBase
     /// <summary>
     /// Generate streamed text.
     /// </summary>
-    [HttpPost("text/streamed")]
+    [HttpPost("streamed")]
     public async Task GenerateStreamedTextAsync(GenerateTextRequestDto dto,
         CancellationToken cancellationToken = default)
     {

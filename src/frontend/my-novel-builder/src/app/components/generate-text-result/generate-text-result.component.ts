@@ -7,7 +7,7 @@ import {
   HttpDownloadProgressEvent,
   HttpResponse,
 } from '@angular/common/http';
-import { GenerateService } from '../../services/generate.service';
+import { GenerateTextService } from '../../services/generate-text.service';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
 import { ToastrService } from 'ngx-toastr';
 
@@ -24,7 +24,7 @@ export interface GenerateTextResultComponentData {
   styleUrl: './generate-text-result.component.scss',
 })
 export class GenerateTextResultComponent implements OnInit {
-  readonly generateService: GenerateService = inject(GenerateService);
+  readonly generateTextService: GenerateTextService = inject(GenerateTextService);
   readonly toastr: ToastrService = inject(ToastrService);
   isGenerating = true;
   generatedText = '';
@@ -43,7 +43,7 @@ export class GenerateTextResultComponent implements OnInit {
     this.generatedText = '[Generating text...]';
     this.isGenerating = true;
 
-    this.generateService.generateText(this.data.request).subscribe({
+    this.generateTextService.generateText(this.data.request).subscribe({
       next: (event: HttpEvent<string>) => {
         if (event.type === HttpEventType.DownloadProgress) {
           const response = (event as HttpDownloadProgressEvent)

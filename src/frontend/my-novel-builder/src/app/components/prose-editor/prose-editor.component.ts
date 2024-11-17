@@ -11,7 +11,7 @@ import {
 import { environment } from '../../../environment';
 import { FormsModule } from '@angular/forms';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
-import { GenerateService } from '../../services/generate.service';
+import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import {
@@ -38,6 +38,7 @@ import {
   GenerateTextResultComponentData,
 } from '../generate-text-result/generate-text-result.component';
 import Quill from 'quill';
+import { GenerateAudioService } from '../../services/generate-audio.service';
 
 interface LastSelection {
   editor: Quill;
@@ -61,7 +62,8 @@ export class ProseEditorComponent {
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
   readonly dialog = inject(MatDialog);
   readonly toastr: ToastrService = inject(ToastrService);
-  readonly generateService: GenerateService = inject(GenerateService);
+  readonly generateTextService: GenerateTextService = inject(GenerateTextService);
+  readonly generateAudioService: GenerateAudioService = inject(GenerateAudioService);
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
@@ -246,6 +248,22 @@ export class ProseEditorComponent {
     return div.innerText;
   }
 
+  textToSpeech(chapterIndex: number, sectionIndex: number) {
+    this.generateAudioService.textToSpeech({
+      modelId: null,
+      voiceId: "233", // TODO: Read this from the user's settings
+      message: this.getRawText(this.prose.chapters[chapterIndex].sections[sectionIndex].text),
+    }).subscribe((event: HttpEvent<Blob>) => {
+      if (event.type === HttpEventType.Response) {
+        if (event.body !== null) {
+          const audio = new Audio();
+          audio.src = URL.createObjectURL(event.body);
+          audio.play();
+        }
+      }
+    });
+  }
+
   openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {
     const prompts = this.prompts.filter(
       (p) => p.type === PromptType.SummarizeText
@@ -286,7 +304,7 @@ export class ProseEditorComponent {
     this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
       '[Summarizing...]';
 
-    this.generateService.generateText(request).subscribe({
+    this.generateTextService.generateText(request).subscribe({
       next: (event: HttpEvent<string>) => {
         if (event.type === HttpEventType.DownloadProgress) {
           const response = (event as HttpDownloadProgressEvent)

@@ -8,8 +8,6 @@ import {
 } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
   MatDialogRef,
 } from '@angular/material/dialog';
 import {
@@ -17,7 +15,7 @@ import {
   TextGenerationContextInfoDto,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
-import { GenerateService } from '../../services/generate.service';
+import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptService } from '../../services/prompt.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
@@ -32,14 +30,14 @@ export interface GenerateTextComponentData {
 @Component({
   selector: 'app-generate-text',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, MatDialogActions, MatDialogClose],
+  imports: [FormsModule, ReactiveFormsModule],
   templateUrl: './generate-text.component.html',
   styleUrl: './generate-text.component.scss',
 })
 export class GenerateTextComponent implements OnInit {
   instructionsRequired = false;
   models: string[] = [];
-  readonly generateService: GenerateService = inject(GenerateService);
+  readonly generateTextService: GenerateTextService = inject(GenerateTextService);
   readonly promptService: PromptService = inject(PromptService);
   readonly localStorageService: LocalStorageService = inject(LocalStorageService);
 
@@ -95,7 +93,7 @@ export class GenerateTextComponent implements OnInit {
   }
 
   getModels() {
-    this.generateService.getAvailableModels().subscribe((models) => {
+    this.generateTextService.getAvailableModels().subscribe((models) => {
       this.models = models;
       this.formGroup.patchValue({ model: models[0] });
     });
