@@ -115,19 +115,9 @@ public class CreateCompendiumRecordContextInfoDto : TextGenerationContextInfoDto
     public int TextLength { get; set; }
     
     /// <summary>
-    /// The name of the compendium record to create.
+    /// The instructions about what record to generate.
     /// </summary>
-    public required string RecordName { get; set; }
-    
-    /// <summary>
-    /// The type of the compendium record to create.
-    /// </summary>
-    public CompendiumRecordType RecordType { get; set; }
-    
-    /// <summary>
-    /// The ID of the compendium to create the record in.
-    /// </summary>
-    public Guid CompendiumId { get; set; }
+    public string? Instructions { get; set; }
 }
 
 /// <summary>

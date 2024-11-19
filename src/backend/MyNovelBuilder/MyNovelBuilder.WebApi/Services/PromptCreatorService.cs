@@ -125,6 +125,14 @@ public class PromptCreatorService : IPromptCreatorService
                         Prose = prose,
                         CompendiumRecords = records
                     }).ToString(),
+                CreateCompendiumRecordContextInfoDto c => new CreateCompendiumRecordPromptBuilder(message.Message)
+                    .ReplacePlaceholders(new PromptBuilderContext<CreateCompendiumRecordContextInfoDto>
+                    {
+                        Client = c,
+                        Novel = novel,
+                        Prose = prose,
+                        CompendiumRecords = records
+                    }).ToString(),
                 _ => throw new NotImplementedException("Unknown context type.")
             }
         });

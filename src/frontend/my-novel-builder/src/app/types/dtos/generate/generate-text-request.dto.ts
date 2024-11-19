@@ -44,9 +44,7 @@ export interface CreateCompendiumRecordContextInfoDto
   sectionIndex: number;
   textOffset: number;
   textLength: number;
-  recordName: string;
-  recordType: CompendiumRecordType;
-  compendiumId: string;
+  instructions: string | null;
 }
 
 export interface EditCompendiumRecordContextInfoDto

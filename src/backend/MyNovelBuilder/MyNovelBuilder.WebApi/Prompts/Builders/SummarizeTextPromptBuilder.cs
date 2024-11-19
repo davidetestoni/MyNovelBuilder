@@ -24,8 +24,12 @@ public class SummarizeTextPromptBuilder : PromptBuilder<SummarizeTextContextInfo
         var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
         var section = GetSection(chapter, context.Client.SectionIndex);
         
+        var recordsInContext = FilterRecordsInContext(
+            context.CompendiumRecords, StripHtmlTags(section.Text));
+        
         Builder
-            .Replace("{{context}}", DecodeHtmlEntities(StripHtmlTags(section.Text)));
+            .Replace("{{context}}", DecodeHtmlEntities(StripHtmlTags(section.Text)))
+            .Replace("{{records}}", CreateCompendiumRecordsString(recordsInContext.ToList()));
 
         return this;
     }

@@ -27,6 +27,7 @@ import {
   GenerateTextComponentData,
 } from '../generate-text/generate-text.component';
 import {
+  CreateCompendiumRecordContextInfoDto,
   GenerateTextContextInfoDto,
   GenerateTextRequestDto,
   ReplaceTextContextInfoDto,
@@ -462,5 +463,49 @@ export class ProseEditorComponent {
         );
       }
     });
+  }
+
+  openCreateCompendiumRecordDialog() {
+    const prompts = this.prompts.filter(
+      (p) => p.type === PromptType.CreateCompendiumRecord
+    );
+
+    if (prompts.length === 0) {
+      this.toastr.error('No compendium record prompts available');
+      return;
+    }
+
+    const dialogRef = this.dialog.open(GenerateTextComponent, {
+      minWidth: '50vw',
+      data: <GenerateTextComponentData>{
+        prompts: prompts,
+        contextInfo: <CreateCompendiumRecordContextInfoDto>{
+          $type: TextGenerationType.CreateCompendiumRecord,
+          chapterIndex: this.lastSelection!.chapterIndex,
+          sectionIndex: this.lastSelection!.sectionIndex,
+          textOffset: this.lastSelection!.range.index,
+          textLength: this.lastSelection!.range.length,
+          instructions: null,
+        },
+        instructionsRequired: true,
+        novelId: this.novelId,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.openCreateCompendiumRecordResultDialog(request);
+      }
+    });
+  }
+
+  openCreateCompendiumRecordResultDialog(request: GenerateTextRequestDto) {
+    // TODO: Implement this
+    // In the confirmation modal, the user also needs to choose:
+    // - the compendium id
+    // - the compendium record type
+    // - the compendium record name
+    // (in the future, the image could be immediately uploaded by the
+    // user or even automatically generated)
   }
 }
