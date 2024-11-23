@@ -40,6 +40,7 @@ import {
 } from '../generate-text-result/generate-text-result.component';
 import Quill from 'quill';
 import { GenerateAudioService } from '../../services/generate-audio.service';
+import { GenerateCompendiumRecordComponentData, GenerateCompendiumRecordResultComponent } from '../generate-compendium-record-result/generate-compendium-record-result.component';
 
 interface LastSelection {
   editor: Quill;
@@ -61,6 +62,7 @@ export class ProseEditorComponent {
   @Input() prose!: Prose;
   @Input() prompts!: PromptDto[];
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
+  @Output() recordsChange: EventEmitter<void> = new EventEmitter<void>();
   readonly dialog = inject(MatDialog);
   readonly toastr: ToastrService = inject(ToastrService);
   readonly generateTextService: GenerateTextService = inject(GenerateTextService);
@@ -494,18 +496,32 @@ export class ProseEditorComponent {
 
     dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
       if (request) {
-        this.openCreateCompendiumRecordResultDialog(request);
+        const resultDialogRef = this.dialog.open(GenerateTextResultComponent, {
+          minWidth: '50vw',
+          data: <GenerateTextResultComponentData>{
+            request: request,
+            textToReplace: ''
+          },
+        });
+    
+        resultDialogRef.afterClosed().subscribe((generatedText: string) => {
+          if (generatedText) {
+            const finalDialog = this.dialog.open(GenerateCompendiumRecordResultComponent, {
+              minWidth: '50vw',
+              data: <GenerateCompendiumRecordComponentData>{
+                generatedText: generatedText,
+                novelId: this.novelId,
+              },
+            });
+
+            finalDialog.afterClosed().subscribe((changed) => {
+              if (changed === true) {
+                this.recordsChange.emit();
+              }
+            });
+          }
+        });
       }
     });
-  }
-
-  openCreateCompendiumRecordResultDialog(request: GenerateTextRequestDto) {
-    // TODO: Implement this
-    // In the confirmation modal, the user also needs to choose:
-    // - the compendium id
-    // - the compendium record type
-    // - the compendium record name
-    // (in the future, the image could be immediately uploaded by the
-    // user or even automatically generated)
   }
 }

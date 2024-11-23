@@ -1,0 +1,64 @@
+<div class="modal-container">
+    <h2>Generate Compendium Record</h2>
+    <div class="form-container">
+      <form [formGroup]="formGroup">
+        <div class="form-field">
+          <div class="form-field-label">Compendium *</div>
+          <select formControlName="compendiumId" placeholder="Select a compendium">
+            @for (compendium of compendia; track compendium.id) {
+            <option [ngValue]="compendium.id">{{ compendium.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="form-field-label">Name *</div>
+          <input
+            matInput
+            type="text"
+            id="name"
+            formControlName="name"
+            placeholder="My new record"
+          />
+        </div>
+        <div class="form-field">
+          <div class="form-field-label">Aliases</div>
+          <input
+            matInput
+            type="text"
+            id="aliases"
+            formControlName="aliases"
+            placeholder="Awesome record, Best record ever"
+          />
+        </div>
+        <div class="form-field">
+          <div class="form-field-label">Type *</div>
+          <select formControlName="type" placeholder="Select a type">
+            @for (type of recordTypes; track type) {
+            <option [ngValue]="type">{{ type | titlecase }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <div class="form-field-label">Context</div>
+          <textarea
+            readonly
+            matInput
+            id="context"
+            formControlName="context"
+          ></textarea>
+        </div>
+        <div class="form-field">
+          <div class="form-buttons-container">
+            <button
+              type="submit"
+              (click)="accept()"
+              [disabled]="formGroup.invalid"
+            >
+              Create
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  

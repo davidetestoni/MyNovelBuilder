@@ -8,8 +8,6 @@ import {
 } from '@angular/forms';
 import {
   MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
@@ -23,8 +21,6 @@ import { TitleCasePipe } from '@angular/common';
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    MatDialogActions,
-    MatDialogClose,
     ToastrModule,
     TitleCasePipe,
   ],
