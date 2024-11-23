@@ -91,20 +91,22 @@
         </div>
         }
       </div>
-      <div class="record-images-grid">
-        @for (image of selectedRecord.images; track image.id) {
-        <div
-          (click)="floatImage(image)"
-          class="record-image"
-          [class.place-image]="
-            selectedRecord.type === CompendiumRecordType.Place
-          "
-          [class.floated]="isFloatedImage(image)"
-        >
-          <img src="{{ image.url }}" alt="{{ image.id }}" />
+      @if (selectedRecord.images.length > 0) {
+        <div class="record-images-grid">
+          @for (image of selectedRecord.images; track image.id) {
+          <div
+            (click)="floatImage(image)"
+            class="record-image"
+            [class.place-image]="
+              selectedRecord.type === CompendiumRecordType.Place
+            "
+            [class.floated]="isFloatedImage(image)"
+          >
+            <img src="{{ image.url }}" alt="{{ image.id }}" />
+          </div>
+          }
         </div>
-        }
-      </div>
+      }
       <div class="record-context">
         <p>{{ selectedRecord.context }}</p>
       </div>
@@ -117,6 +119,7 @@
         [prose]="prose"
         [prompts]="prompts"
         (proseChange)="updateProse($event)"
+        (recordsChange)="getCompendia()"
       ></app-prose-editor>
       }
     </div>
