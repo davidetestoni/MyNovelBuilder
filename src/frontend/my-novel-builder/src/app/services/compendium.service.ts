@@ -112,7 +112,7 @@ export class CompendiumService {
 
   uploadRecordImage(
     recordId: string,
-    file: File,
+    file: File | Blob,
     isCurrent: boolean
   ): Observable<void> {
     const formData = new FormData();

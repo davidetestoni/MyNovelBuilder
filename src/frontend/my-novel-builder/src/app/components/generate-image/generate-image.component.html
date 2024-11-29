@@ -1,0 +1,44 @@
+<div class="modal-container">
+    <h2>Generate an image</h2>
+    <div class="form-container">
+      <form [formGroup]="formGroup">
+        <div class="form-row">
+          <div class="form-column left-column">
+            <div class="form-field">
+              <div class="form-field-label">Prompt</div>
+              <textarea
+                matInput
+                id="prompt"
+                formControlName="prompt"
+                placeholder="Describe the image you want to generate..."
+              ></textarea>
+            </div>
+          </div>        
+            @if (imagePreview !== null) {
+              <div class="form-column">
+                <div class="generated-image">
+                  <img [src]="imagePreview" alt="Generated Image" />
+                </div>
+              </div>
+            }
+        </div>
+        <div class="form-buttons-container">
+          <button
+            type="submit"
+            (click)="generateImage()"
+            [disabled]="isGenerating || formGroup.invalid || formGroup.pristine"
+          >
+            {{ isGenerating ? 'Generating...' : 'Generate' }}
+          </button>
+          <button
+            type="submit"
+            (click)="accept()"
+            [disabled]="imageBlob === null"
+          >
+            Accept
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  

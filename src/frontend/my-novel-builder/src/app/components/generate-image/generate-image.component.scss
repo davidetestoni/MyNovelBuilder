@@ -1,0 +1,49 @@
+textarea {
+  height: 100%;
+  width: 100%;
+
+  /* Remove the handle */
+  resize: none;
+}
+
+input:not([type="checkbox"]) {
+  width: 100%;
+}
+
+.form-container {
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.form-row {
+  height: 400px;
+}
+
+.form-column {
+  width: unset;
+}
+
+.left-column {
+  flex: 1;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+  height: 100%;
+}
+
+.generated-image {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 1rem;
+
+  img {
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+  }
+}

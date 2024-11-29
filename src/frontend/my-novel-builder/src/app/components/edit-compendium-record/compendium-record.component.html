@@ -79,7 +79,15 @@
             (click)="addImage()"
           >
             <i class="icon icon-plus"></i>
-            <span>Add Image</span>
+            <span>Upload</span>
+          </div>
+          <div
+            class="add-compendium-record-image"
+            [class.place-image]="record.type === CompendiumRecordType.Place"
+            (click)="generateImage()"
+          >
+            <i class="icon icon-plus"></i>
+            <span>Generate</span>
           </div>
         </div>
       </div>

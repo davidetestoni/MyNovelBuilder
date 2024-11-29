@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { TitleCasePipe } from '@angular/common';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
+import { MatDialog } from '@angular/material/dialog';
+import { GenerateImageComponent } from '../generate-image/generate-image.component';
 
 @Component({
   selector: 'app-compendium-record',
@@ -17,6 +19,7 @@ export class CompendiumRecordComponent {
   @Output() updateRecord = new EventEmitter<CompendiumRecordDto>();
   @Output() deleteRecord = new EventEmitter<CompendiumRecordDto>();
   readonly compendiumService: CompendiumService = inject(CompendiumService);
+  readonly dialog = inject(MatDialog);
 
   recordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -86,5 +89,28 @@ export class CompendiumRecordComponent {
       }
     };
     fileInput.click();
+  }
+
+  generateImage() {
+    this.dialog.open(GenerateImageComponent, {
+      minWidth: '50vw',
+    }).afterClosed().subscribe((image: Blob) => {
+      if (image) {
+        this.compendiumService
+          .uploadRecordImage(
+            this.record.id,
+            image,
+            this.record.images.length === 0
+          ).subscribe(() => {
+            // Get the record and update the images
+            this.compendiumService
+            .getRecord(this.record.id)
+            .subscribe((record) => {
+              this.record.images = record.images;
+              this.updateRecord.emit(this.record);
+            });
+        });
+      }
+    });
   }
 }
