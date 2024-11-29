@@ -277,7 +277,7 @@ export class ProseEditorComponent {
       return;
     }
 
-    const dialogRef = this.dialog.open(GenerateTextComponent, {
+    this.dialog.open(GenerateTextComponent, {
       minWidth: '50vw',
       data: <GenerateTextComponentData>{
         prompts: prompts,
@@ -289,9 +289,7 @@ export class ProseEditorComponent {
         },
         novelId: this.novelId,
       },
-    });
-
-    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
       if (request) {
         this.generateSectionSummary(chapterIndex, sectionIndex, request);
       }
@@ -356,7 +354,7 @@ export class ProseEditorComponent {
     // all generation happens on the backend with the saved prose
     this.saveProse();
 
-    const dialogRef = this.dialog.open(GenerateTextComponent, {
+    this.dialog.open(GenerateTextComponent, {
       minWidth: '50vw',
       data: <GenerateTextComponentData>{
         prompts: prompts,
@@ -370,9 +368,7 @@ export class ProseEditorComponent {
         instructionsRequired: true, // This should be defined by the prompt
         novelId: this.novelId,
       },
-    });
-
-    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
       if (request) {
         this.openGenerateTextResultDialog(request);
       }
@@ -380,15 +376,13 @@ export class ProseEditorComponent {
   }
 
   openGenerateTextResultDialog(request: GenerateTextRequestDto) {
-    const dialogRef = this.dialog.open(GenerateTextResultComponent, {
+    this.dialog.open(GenerateTextResultComponent, {
       minWidth: '50vw',
       data: <GenerateTextResultComponentData>{
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
       },
-    });
-
-    dialogRef.afterClosed().subscribe((generatedText: string) => {
+    }).afterClosed().subscribe((generatedText: string) => {
       if (generatedText) {
         const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
 
@@ -415,7 +409,7 @@ export class ProseEditorComponent {
     // all generation happens on the backend with the saved prose
     this.saveProse();
 
-    const dialogRef = this.dialog.open(GenerateTextComponent, {
+    this.dialog.open(GenerateTextComponent, {
       minWidth: '50vw',
       data: <GenerateTextComponentData>{
         prompts: prompts,
@@ -430,9 +424,7 @@ export class ProseEditorComponent {
         instructionsRequired: true, // This should be defined by the prompt
         novelId: this.novelId,
       },
-    });
-
-    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
       if (request) {
         this.openReplaceTextResultDialog(request);
       }
@@ -440,15 +432,13 @@ export class ProseEditorComponent {
   }
 
   openReplaceTextResultDialog(request: GenerateTextRequestDto) {
-    const dialogRef = this.dialog.open(GenerateTextResultComponent, {
+    this.dialog.open(GenerateTextResultComponent, {
       minWidth: '50vw',
       data: <GenerateTextResultComponentData>{
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
       },
-    });
-
-    dialogRef.afterClosed().subscribe((generatedText: string) => {
+    }).afterClosed().subscribe((generatedText: string) => {
       if (generatedText) {
         const contextInfo = request.contextInfo as ReplaceTextContextInfoDto;
 
@@ -477,7 +467,7 @@ export class ProseEditorComponent {
       return;
     }
 
-    const dialogRef = this.dialog.open(GenerateTextComponent, {
+    this.dialog.open(GenerateTextComponent, {
       minWidth: '50vw',
       data: <GenerateTextComponentData>{
         prompts: prompts,
@@ -492,29 +482,23 @@ export class ProseEditorComponent {
         instructionsRequired: true,
         novelId: this.novelId,
       },
-    });
-
-    dialogRef.afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
       if (request) {
-        const resultDialogRef = this.dialog.open(GenerateTextResultComponent, {
+        this.dialog.open(GenerateTextResultComponent, {
           minWidth: '50vw',
           data: <GenerateTextResultComponentData>{
             request: request,
             textToReplace: ''
           },
-        });
-    
-        resultDialogRef.afterClosed().subscribe((generatedText: string) => {
+        }).afterClosed().subscribe((generatedText: string) => {
           if (generatedText) {
-            const finalDialog = this.dialog.open(GenerateCompendiumRecordResultComponent, {
+            this.dialog.open(GenerateCompendiumRecordResultComponent, {
               minWidth: '50vw',
               data: <GenerateCompendiumRecordComponentData>{
                 generatedText: generatedText,
                 novelId: this.novelId,
               },
-            });
-
-            finalDialog.afterClosed().subscribe((changed) => {
+            }).afterClosed().subscribe((changed) => {
               if (changed === true) {
                 this.recordsChange.emit();
               }
