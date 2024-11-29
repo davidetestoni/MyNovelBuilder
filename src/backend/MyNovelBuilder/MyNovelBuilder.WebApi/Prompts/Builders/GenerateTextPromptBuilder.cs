@@ -1,5 +1,4 @@
-﻿using System.Text;
-using MyNovelBuilder.WebApi.Dtos.Generate;
+﻿using MyNovelBuilder.WebApi.Dtos.Generate;
 
 namespace MyNovelBuilder.WebApi.Prompts.Builders;
 

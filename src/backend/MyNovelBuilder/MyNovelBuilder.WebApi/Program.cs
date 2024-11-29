@@ -99,8 +99,10 @@ builder.Services.AddScoped<IPromptService, PromptService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
 builder.Services.AddSingleton<ITextGenerationService, OpenRouterTextGenerationService>();
 builder.Services.AddSingleton<ITtsService, CustomTtsService>();
+builder.Services.AddSingleton<IImageGenerationService, CustomImageGenerationService>();
 builder.Services.AddHttpClient<OpenRouterTextGenerationService>();
 builder.Services.AddHttpClient<CustomTtsService>();
+builder.Services.AddHttpClient<CustomImageGenerationService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();
