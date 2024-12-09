@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using MyNovelBuilder.WebApi.Data;
+﻿using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
-using MyNovelBuilder.WebApi.Models.Images;
+using MyNovelBuilder.WebApi.Models.Media;
 using SixLabors.ImageSharp;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -69,49 +68,59 @@ public class CompendiumRecordService : ICompendiumRecordService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<ImageRef>> GetGalleryImagesAsync(Guid id)
+    public async Task<IEnumerable<MediaRef>> GetGalleryMediaAsync(Guid id)
     {
         var record = await GetByIdAsync(id);
         var localPath = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery");
         
         if (!Directory.Exists(localPath))
         {
-            return Array.Empty<ImageRef>();
+            return Array.Empty<MediaRef>();
         }
         
-        return Directory.GetFiles(localPath, "*.png").Select(x => new ImageRef
+        return Directory.GetFiles(localPath).Select(x => new MediaRef
         {
             Id = Guid.Parse(Path.GetFileNameWithoutExtension(x)),
-            Location = Path.Combine("static", "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", Path.GetFileName(x))
+            Location = Path.Combine("static", "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", Path.GetFileName(x)),
+            IsVideo = Path.GetExtension(x) != ".png"
         });
     }
 
     /// <inheritdoc />
-    public async Task UploadImageAsync(Guid id, IFormFile file, bool isCurrent = false)
+    public async Task UploadMediaAsync(Guid id, IFormFile file, bool isCurrent = false)
     {
+        // If it's a video, it cannot be set as current
+        if (file.ContentType.StartsWith("video/") && isCurrent)
+        {
+            isCurrent = false;
+        }
+        
         var record = await GetByIdAsync(id);
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream);
-        var imageBytes = memoryStream.ToArray();
+        var mediaBytes = memoryStream.ToArray();
+        var extension = Path.GetExtension(file.FileName);
         
         // If it's not a PNG file, convert it to PNG using ImageSharp.
-        if (file.ContentType != "image/png")
+        if (file.ContentType.StartsWith("image/") && 
+            file.ContentType != "image/png")
         {
-            using var image = Image.Load(imageBytes);
+            using var image = Image.Load(mediaBytes);
             using var outputStream = new MemoryStream();
             await image.SaveAsPngAsync(outputStream);
-            imageBytes = outputStream.ToArray();
+            mediaBytes = outputStream.ToArray();
+            extension = ".png";
         }
         
-        var imageId = Guid.NewGuid();
-        var path = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{imageId}.png");
+        var mediaId = Guid.NewGuid();
+        var path = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{mediaId}{extension}");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllBytesAsync(path, imageBytes);
+        await File.WriteAllBytesAsync(path, mediaBytes);
         
         if (isCurrent)
         {
-            record.CurrentImageId = imageId;
+            record.CurrentImageId = mediaId;
             await UpdateAsync(record);
         }
     }
@@ -120,18 +129,47 @@ public class CompendiumRecordService : ICompendiumRecordService
     public async Task SetCurrentImageAsync(Guid id, Guid imageId)
     {
         var record = await GetByIdAsync(id);
+        
+        // If the image is not a .png file, it cannot be set as
+        // the current image.
+        var localPath = Path.Combine(
+            Globals.StaticFilesRoot, 
+            "compendium",
+            record.Compendium.Id.ToString(),
+            "records",
+            id.ToString(),
+            "gallery",
+            $"{imageId}.png");
+        
+        if (!File.Exists(localPath))
+        {
+            throw new ApiException(
+                ErrorCodes.InvalidFile,
+                $"Image with ID {imageId} was not found.");
+        }
+        
         record.CurrentImageId = imageId;
         
         await UpdateAsync(record);
     }
 
     /// <inheritdoc />
-    public async Task DeleteImageAsync(Guid id, Guid imageId)
+    public async Task DeleteMediaAsync(Guid id, Guid mediaId)
     {
         var record = await GetByIdAsync(id);
-        var localPath = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{imageId}.png");
+        var folderPath = Path.Combine(
+            Globals.StaticFilesRoot, 
+            "compendium",
+            record.Compendium.Id.ToString(),
+            "records",
+            id.ToString(),
+            "gallery");
         
-        if (File.Exists(localPath))
+        // Find a file called {mediaId} with any extension.
+        var localPath = Directory.GetFiles(
+            folderPath, $"{mediaId}.*").FirstOrDefault();
+        
+        if (localPath is not null && File.Exists(localPath))
         {
             File.Delete(localPath);
         }

@@ -91,18 +91,26 @@
         </div>
         }
       </div>
-      @if (selectedRecord.images.length > 0) {
-        <div class="record-images-grid">
-          @for (image of selectedRecord.images; track image.id) {
+      @if (selectedRecord.media.length > 0) {
+        <div class="record-media-grid">
+          @for (media of selectedRecord.media; track media.id) {
           <div
-            (click)="floatImage(image)"
-            class="record-image"
-            [class.place-image]="
+            (click)="floatMedia(media)"
+            class="record-media"
+            [class.place-media]="
               selectedRecord.type === CompendiumRecordType.Place
             "
-            [class.floated]="isFloatedImage(image)"
+            [class.floated]="isFloatedMedia(media)"
           >
-            <img src="{{ image.url }}" alt="{{ image.id }}" />
+            @if (!media.isVideo) {
+                <img 
+                  src="{{ media.url }}"
+                  alt="{{ media.id }}" />
+              } @else {
+              <video 
+                autoplay muted loop
+                src="{{ media.url }}"></video>
+            }
           </div>
           }
         </div>
@@ -123,23 +131,31 @@
       ></app-prose-editor>
       }
     </div>
-    @if (floatedImages.length > 0) {
-    <div class="floating-images-sidebar">
-      @for (image of floatedImages; track image.id) {
+    @if (floatedMedia.length > 0) {
+    <div class="floating-media-sidebar">
+      @for (media of floatedMedia; track media.id) {
       <div
-        class="floating-image"
-        (mouseenter)="lastHoveredFloatingImageId = image.id"
-        [class.last-hovered]="lastHoveredFloatingImageId === image.id"
+        class="floating-media"
+        (mouseenter)="lastHoveredFloatingMediaId = media.id"
+        [class.last-hovered]="lastHoveredFloatingMediaId === media.id"
       >
-        <img
-          src="{{ image.url }}"
-          alt="{{ image.id }}"
-          (click)="zoomImage(image)"
-        />
-        @if (image.id === lastHoveredFloatingImageId) {
+        @if (!media.isVideo) {
+          <img
+            src="{{ media.url }}"
+            alt="{{ media.id }}"
+            (click)="zoomMedia(media)"
+          />
+        } @else {
+          <video
+            autoplay muted loop
+            src="{{ media.url }}"
+            (click)="zoomMedia(media)"
+          ></video>
+        }
+        @if (media.id === lastHoveredFloatingMediaId) {
         <i
-          class="floating-image-remove icon icon-close"
-          (click)="floatImage(image)"
+          class="floating-media-remove icon icon-close"
+          (click)="floatMedia(media)"
         ></i>
         }
       </div>
@@ -147,10 +163,14 @@
     </div>
     }
   </div>
-  @if (zoomedImage !== null) {
-  <div class="zoomed-image-overlay" (click)="unzoomImage()">
-    <div class="zoomed-image">
-      <img src="{{ zoomedImage.url }}" alt="{{ zoomedImage.id }}" />
+  @if (zoomedMedia !== null) {
+  <div class="zoomed-media-overlay" (click)="unzoomMedia()">
+    <div class="zoomed-media">
+      @if (!zoomedMedia.isVideo) {
+        <img src="{{ zoomedMedia.url }}" alt="{{ zoomedMedia.id }}" />
+      } @else {
+        <video autoplay muted loop src="{{ zoomedMedia.url }}"></video>
+      }
     </div>
   </div>
   } }

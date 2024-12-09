@@ -22,6 +22,7 @@ public class CustomImageGenerationService : IImageGenerationService
     {
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri("http://localhost:5000");
+        _httpClient.Timeout = TimeSpan.FromMinutes(5);
     }
     
     /// <inheritdoc />

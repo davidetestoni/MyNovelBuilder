@@ -71,7 +71,7 @@ export class CreateCompendiumRecordComponent {
       .subscribe((record) => {
         if (this.imageFile !== null) {
           this.compendiumService
-            .uploadRecordImage(record.id, this.imageFile, true)
+            .uploadRecordMedia(record.id, this.imageFile, true)
             .subscribe(() => {
               this.toastr.success('Record created successfully');
               this.dialogRef.close(record);

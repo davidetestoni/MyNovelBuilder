@@ -3,7 +3,7 @@
 /// <summary>
 /// DTO for a compendium record image.
 /// </summary>
-public class CompendiumRecordImageDto
+public class CompendiumRecordMediaDto
 {
     /// <summary>
     /// The image's ID.
@@ -19,4 +19,9 @@ public class CompendiumRecordImageDto
     /// Whether the image is the current image.
     /// </summary>
     public bool IsCurrent { get; set; }
+    
+    /// <summary>
+    /// Whether the image is a video.
+    /// </summary>
+    public bool IsVideo { get; set; }
 }

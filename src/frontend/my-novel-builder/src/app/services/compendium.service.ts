@@ -110,7 +110,7 @@ export class CompendiumService {
     );
   }
 
-  uploadRecordImage(
+  uploadRecordMedia(
     recordId: string,
     file: File | Blob,
     isCurrent: boolean
@@ -122,16 +122,16 @@ export class CompendiumService {
     return this.mocked
       ? mockObservable<void>(undefined)
       : this.http.post<void>(
-          `${this.baseUrl}/compendium-record/${recordId}/image`,
+          `${this.baseUrl}/compendium-record/${recordId}/media`,
           formData
         );
   }
 
-  deleteRecordImage(recordId: string, imageId: string): Observable<void> {
+  deleteRecordMedia(recordId: string, mediaId: string): Observable<void> {
     return this.mocked
       ? mockObservable<void>(undefined)
       : this.http.delete<void>(
-          `${this.baseUrl}/compendium-record/${recordId}/image/${imageId}`
+          `${this.baseUrl}/compendium-record/${recordId}/media/${mediaId}`
         );
   }
 

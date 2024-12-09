@@ -51,6 +51,11 @@ public static class ErrorCodes
     public const string InvalidCoverImage = "invalid_cover_image";
     
     /// <summary>
+    /// The file is invalid.
+    /// </summary>
+    public const string InvalidFile = "invalid_file";
+    
+    /// <summary>
     /// The service credentials are missing or invalid.
     /// </summary>
     public const string MissingOrInvalidServiceCredentials = "missing_or_invalid_service_credentials";

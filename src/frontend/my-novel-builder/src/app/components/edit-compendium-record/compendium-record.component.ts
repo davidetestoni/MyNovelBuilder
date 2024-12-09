@@ -37,7 +37,7 @@ export class CompendiumRecordComponent {
   }
 
   setCurrentImage(imageId: string): void {
-    this.record.images.forEach((image) => {
+    this.record.media.forEach((image) => {
       image.isCurrent = image.id === imageId;
     });
     this.compendiumService
@@ -45,12 +45,12 @@ export class CompendiumRecordComponent {
       .subscribe();
   }
 
-  removeImage(imageId: string): void {
-    this.record.images = this.record.images.filter(
-      (image) => image.id !== imageId
+  removeMedia(mediaId: string): void {
+    this.record.media = this.record.media.filter(
+      (media) => media.id !== mediaId
     );
     this.compendiumService
-      .deleteRecordImage(this.record.id, imageId)
+      .deleteRecordMedia(this.record.id, mediaId)
       .subscribe();
   }
 
@@ -62,25 +62,25 @@ export class CompendiumRecordComponent {
     this.deleteRecord.emit(this.record);
   }
 
-  addImage(): void {
+  addMedia(): void {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = 'image/*';
+    fileInput.accept = 'image/*,video/*';
     fileInput.onchange = () => {
       if (fileInput.files && fileInput.files.length > 0) {
         const file = fileInput.files[0];
         this.compendiumService
-          .uploadRecordImage(
+          .uploadRecordMedia(
             this.record.id,
             file,
-            this.record.images.length === 0
+            this.record.media.length === 0
           )
           .subscribe(() => {
-            // Get the record and update the images
+            // Get the record and update the media
             this.compendiumService
               .getRecord(this.record.id)
               .subscribe((record) => {
-                this.record.images = record.images;
+                this.record.media = record.media;
                 this.updateRecord.emit(this.record);
               });
 
@@ -97,16 +97,16 @@ export class CompendiumRecordComponent {
     }).afterClosed().subscribe((image: Blob) => {
       if (image) {
         this.compendiumService
-          .uploadRecordImage(
+          .uploadRecordMedia(
             this.record.id,
             image,
-            this.record.images.length === 0
+            this.record.media.length === 0
           ).subscribe(() => {
-            // Get the record and update the images
+            // Get the record and update the media
             this.compendiumService
             .getRecord(this.record.id)
             .subscribe((record) => {
-              this.record.images = record.images;
+              this.record.media = record.media;
               this.updateRecord.emit(this.record);
             });
         });

@@ -119,16 +119,18 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     type: CompendiumRecordType.Character,
     context: loremIpsum({ count: 3, units: 'sentences' }),
     alwaysIncluded: false,
-    images: [
+    media: [
       {
         id: indexToGuid(11),
         url: `https://picsum.photos/seed/11/200/300`,
         isCurrent: true,
+        isVideo: false,
       },
       {
         id: indexToGuid(12),
         url: `https://picsum.photos/seed/12/200/300`,
         isCurrent: false,
+        isVideo: false,
       },
     ],
     compendiumId: mockedCompendia[0].id,
@@ -142,7 +144,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     type: CompendiumRecordType.Character,
     context: loremIpsum({ count: 3, units: 'sentences' }),
     alwaysIncluded: false,
-    images: [],
+    media: [],
     compendiumId: mockedCompendia[0].id,
   },
   {
@@ -154,16 +156,18 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     type: CompendiumRecordType.Place,
     context: loremIpsum({ count: 3, units: 'sentences' }),
     alwaysIncluded: false,
-    images: [
+    media: [
       {
         id: indexToGuid(31),
         url: `https://picsum.photos/seed/31/200/300`,
         isCurrent: true,
+        isVideo: false,
       },
       {
         id: indexToGuid(32),
         url: `https://picsum.photos/seed/32/200/300`,
         isCurrent: false,
+        isVideo: false,
       },
     ],
     compendiumId: mockedCompendia[0].id,
@@ -177,16 +181,18 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     type: CompendiumRecordType.Concept,
     context: loremIpsum({ count: 3, units: 'sentences' }),
     alwaysIncluded: false,
-    images: [
+    media: [
       {
         id: indexToGuid(41),
         url: `https://picsum.photos/seed/41/200/300`,
         isCurrent: true,
+        isVideo: false,
       },
       {
         id: indexToGuid(42),
         url: `https://picsum.photos/seed/42/200/300`,
         isCurrent: false,
+        isVideo: false,
       },
     ],
     compendiumId: mockedCompendia[0].id,

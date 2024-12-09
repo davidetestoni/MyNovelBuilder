@@ -1,5 +1,5 @@
 ﻿using MyNovelBuilder.WebApi.Data.Entities;
-using MyNovelBuilder.WebApi.Models.Images;
+using MyNovelBuilder.WebApi.Models.Media;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -39,14 +39,14 @@ public interface ICompendiumRecordService
     Task DeleteAsync(Guid id);
     
     /// <summary>
-    /// Get the gallery images for a compendium record.
+    /// Get the gallery media for a compendium record.
     /// </summary>
-    Task<IEnumerable<ImageRef>> GetGalleryImagesAsync(Guid id);
+    Task<IEnumerable<MediaRef>> GetGalleryMediaAsync(Guid id);
     
     /// <summary>
-    /// Upload an image for a compendium record.
+    /// Upload a media for a compendium record.
     /// </summary>
-    Task UploadImageAsync(Guid id, IFormFile file, bool isCurrent = false);
+    Task UploadMediaAsync(Guid id, IFormFile file, bool isCurrent = false);
     
     /// <summary>
     /// Set an image as the current image for a compendium record.
@@ -54,7 +54,7 @@ public interface ICompendiumRecordService
     Task SetCurrentImageAsync(Guid id, Guid imageId);
     
     /// <summary>
-    /// Delete an image for a compendium record.
+    /// Delete a media for a compendium record.
     /// </summary>
-    Task DeleteImageAsync(Guid id, Guid imageId);
+    Task DeleteMediaAsync(Guid id, Guid mediaId);
 }

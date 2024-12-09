@@ -50,40 +50,47 @@
           (blur)="onBlur()"
         ></textarea>
       </div>
-      <div class="compendium-record-images">
+      <div class="compendium-record-media-container">
         <div class="label">
-          <span>Images</span>
+          <span>Media</span>
         </div>
-        <div class="compendium-record-images-grid">
-          @for (image of record.images; track image.id) {
-          <div
-            class="compendium-record-image"
-            [class.current]="image.isCurrent"
-            [class.place-image]="record.type === CompendiumRecordType.Place"
-          >
-            <img
-              src="{{ image.url }}"
-              alt="{{ record.name }}"
-              (click)="setCurrentImage(image.id)"
-            />
+        <div class="compendium-record-media-grid">
+          @for (media of record.media; track media.id) {
+            <div
+              class="compendium-record-media"
+              [class.current]="media.isCurrent"
+              [class.place-media]="record.type === CompendiumRecordType.Place"
+            >
+              @if (!media.isVideo) {
+                <img
+                  src="{{ media.url }}"
+                  alt="{{ record.name }}"
+                  (click)="setCurrentImage(media.id)"
+                />
+              } @else {
+                <video
+                  autoplay muted loop
+                  src="{{ media.url }}"
+                ></video>
+              }
 
-            <i
-              class="compendium-record-image-remove icon icon-close"
-              (click)="removeImage(image.id)"
-            ></i>
-          </div>
+              <i
+                class="compendium-record-media-remove icon icon-close"
+                (click)="removeMedia(media.id)"
+              ></i>
+            </div>
           }
           <div
-            class="add-compendium-record-image"
-            [class.place-image]="record.type === CompendiumRecordType.Place"
-            (click)="addImage()"
+            class="add-compendium-record-media"
+            [class.place-media]="record.type === CompendiumRecordType.Place"
+            (click)="addMedia()"
           >
             <i class="icon icon-plus"></i>
             <span>Upload</span>
           </div>
           <div
-            class="add-compendium-record-image"
-            [class.place-image]="record.type === CompendiumRecordType.Place"
+            class="add-compendium-record-media"
+            [class.place-media]="record.type === CompendiumRecordType.Place"
             (click)="generateImage()"
           >
             <i class="icon icon-plus"></i>

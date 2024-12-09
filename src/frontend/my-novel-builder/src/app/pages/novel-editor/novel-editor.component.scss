@@ -184,25 +184,25 @@
         }
       }
 
-      .record-images-grid {
+      .record-media-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         grid-gap: 10px;
         padding: 1rem;
 
-        /* If there is only one image or it's a place, make it bigger */
-        &:has(.record-image:only-child, .place-image) {
+        /* If there is only one media or it's a place, make it bigger */
+        &:has(.record-media:only-child, .place-media) {
           grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         }
 
-        .record-image {
+        .record-media {
           width: 100%;
           overflow: hidden;
           border-radius: 5px;
           position: relative;
           cursor: pointer;
 
-          img {
+          img, video {
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -221,7 +221,7 @@
       overflow-y: auto;
     }
 
-    .floating-images-sidebar {
+    .floating-media-sidebar {
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -230,7 +230,7 @@
       height: calc(100dvh - 60px - $mainLayoutHeaderHeight);
       overflow-y: auto;
 
-      .floating-image {
+      .floating-media {
         width: 100%;
         min-height: 100px;
         overflow: hidden;
@@ -243,7 +243,7 @@
           min-height: 400px;
         }
 
-        img {
+        img, video {
           height: 100%;
           width: 100%;
           object-fit: cover;
@@ -255,7 +255,7 @@
           border: 1px solid $grey18;
         }
 
-        .floating-image-remove {
+        .floating-media-remove {
           position: absolute;
           right: 10px;
           top: 10px;
@@ -276,7 +276,7 @@
     }
   }
 
-  .zoomed-image-overlay {
+  .zoomed-media-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -288,12 +288,12 @@
     align-items: center;
     z-index: 1000;
 
-    .zoomed-image {
+    .zoomed-media {
       display: flex;
       justify-content: center;
       align-items: center;
 
-      img {
+      img, video {
         max-width: 80%;
         max-height: 80%;
         object-fit: contain;

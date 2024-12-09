@@ -35,7 +35,7 @@ public class CompendiumRecordController
     {
         var record = await _compendiumRecordService.GetByIdAsync(id);
         var dto = record.Adapt<CompendiumRecordDto>();
-        await AddImagesAsync(dto);
+        await AddMediaAsync(dto);
         
         return dto;
     }
@@ -48,7 +48,7 @@ public class CompendiumRecordController
     {
         var records = await _compendiumRecordService.GetByCompendiumIdAsync(compendiumId);
         var dtos = records.Adapt<IEnumerable<CompendiumRecordDto>>().ToList();
-        var tasks = dtos.Select(AddImagesAsync);
+        var tasks = dtos.Select(AddMediaAsync);
         await Task.WhenAll(tasks);
         
         dtos.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
@@ -67,7 +67,7 @@ public class CompendiumRecordController
         await _compendiumRecordService.CreateAsync(record);
         
         var dto = record.Adapt<CompendiumRecordDto>();
-        await AddImagesAsync(dto);
+        await AddMediaAsync(dto);
         
         return dto;
     }
@@ -84,7 +84,7 @@ public class CompendiumRecordController
         await _compendiumRecordService.UpdateAsync(record);
         
         var dto = record.Adapt<CompendiumRecordDto>();
-        await AddImagesAsync(dto);
+        await AddMediaAsync(dto);
         
         return dto;
     }
@@ -99,21 +99,21 @@ public class CompendiumRecordController
     }
     
     /// <summary>
-    /// Upload a new image for a compendium record.
+    /// Upload a new media for a compendium record.
     /// </summary>
-    [HttpPost("{id:guid}/image")]
-    public async Task UploadImage(Guid id, IFormFile file, [FromForm] bool isCurrent = false)
+    [HttpPost("{id:guid}/media")]
+    public async Task UploadMedia(Guid id, IFormFile file, [FromForm] bool isCurrent = false)
     {
-        await _compendiumRecordService.UploadImageAsync(id, file, isCurrent);
+        await _compendiumRecordService.UploadMediaAsync(id, file, isCurrent);
     }
     
     /// <summary>
-    /// Delete an image from a compendium record.
+    /// Delete a media from a compendium record.
     /// </summary>
-    [HttpDelete("{id:guid}/image/{imageId:guid}")]
-    public async Task DeleteImage(Guid id, Guid imageId)
+    [HttpDelete("{id:guid}/media/{mediaId:guid}")]
+    public async Task DeleteMedia(Guid id, Guid mediaId)
     {
-        await _compendiumRecordService.DeleteImageAsync(id, imageId);
+        await _compendiumRecordService.DeleteMediaAsync(id, mediaId);
     }
     
     /// <summary>
@@ -125,18 +125,19 @@ public class CompendiumRecordController
         await _compendiumRecordService.SetCurrentImageAsync(id, imageId);
     }
 
-    private async Task AddImagesAsync(CompendiumRecordDto dto)
+    private async Task AddMediaAsync(CompendiumRecordDto dto)
     {
-        var images = await _compendiumRecordService.GetGalleryImagesAsync(dto.Id);
+        var media = await _compendiumRecordService.GetGalleryMediaAsync(dto.Id);
 
         var request = _httpContextAccessor.HttpContext!.Request;
         var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
         
-        dto.Images = images.Select(i => new CompendiumRecordImageDto
+        dto.Media = media.Select(i => new CompendiumRecordMediaDto
         {
             Id = i.Id,
             Url = $"{baseUrl}/{i.Location.Replace(Path.DirectorySeparatorChar, '/')}",
-            IsCurrent = dto.CurrentImageId == i.Id
+            IsCurrent = dto.CurrentImageId == i.Id,
+            IsVideo = i.IsVideo
         });
     }
 }

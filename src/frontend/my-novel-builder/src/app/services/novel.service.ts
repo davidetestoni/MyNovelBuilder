@@ -7,10 +7,10 @@ import { Injectable } from '@angular/core';
 import { CreateNovelDto } from '../types/dtos/novel/create-novel.dto';
 import { UpdateNovelDto } from '../types/dtos/novel/update-novel.dto';
 import { Prose } from '../types/dtos/novel/prose';
-import { CompendiumRecordImageDto } from '../types/dtos/compendium-record/compendium-record-image.dto';
+import { CompendiumRecordMediaDto } from '../types/dtos/compendium-record/compendium-record-media.dto';
 
-interface FloatedImages {
-  [key: string]: CompendiumRecordImageDto[];
+interface FloatedMedia {
+  [key: string]: CompendiumRecordMediaDto[];
 }
 
 @Injectable({
@@ -19,7 +19,7 @@ interface FloatedImages {
 export class NovelService {
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
-  private floatedImagesKey = 'floatedImages';
+  private floatedMediaKey = 'floatedImages'; // For backwards compatibility
 
   constructor(private http: HttpClient) {}
 
@@ -79,26 +79,26 @@ export class NovelService {
     return this.http.delete<void>(`${this.baseUrl}/novel/${novelId}`);
   }
 
-  private getFloatedImages(): FloatedImages {
-    const floatedImages = localStorage.getItem(this.floatedImagesKey);
-    return floatedImages ? JSON.parse(floatedImages) : {};
+  private getFloatedMedia(): FloatedMedia {
+    const floatedMedia = localStorage.getItem(this.floatedMediaKey);
+    return floatedMedia ? JSON.parse(floatedMedia) : {};
   }
 
-  private setFloatedImages(floatedImages: FloatedImages): void {
-    localStorage.setItem(this.floatedImagesKey, JSON.stringify(floatedImages));
+  private setFloatedMedia(floatedMedia: FloatedMedia): void {
+    localStorage.setItem(this.floatedMediaKey, JSON.stringify(floatedMedia));
   }
 
-  getFloatedImagesForNovel(novelId: string): CompendiumRecordImageDto[] {
-    const floatedImages = this.getFloatedImages();
-    return floatedImages[novelId] || [];
+  getFloatedMediaForNovel(novelId: string): CompendiumRecordMediaDto[] {
+    const floatedMedia = this.getFloatedMedia();
+    return floatedMedia[novelId] || [];
   }
 
-  setFloatedImagesForNovel(
+  setFloatedMediaForNovel(
     novelId: string,
-    images: CompendiumRecordImageDto[]
+    media: CompendiumRecordMediaDto[]
   ): void {
-    const floatedImages = this.getFloatedImages();
-    floatedImages[novelId] = images;
-    this.setFloatedImages(floatedImages);
+    const floatedMedia = this.getFloatedMedia();
+    floatedMedia[novelId] = media;
+    this.setFloatedMedia(floatedMedia);
   }
 }

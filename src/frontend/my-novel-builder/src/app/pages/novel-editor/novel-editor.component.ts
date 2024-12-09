@@ -10,7 +10,7 @@ import { CompendiumRecordOverviewDto } from '../../types/dtos/compendium-record/
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
 import { SpacedPipe } from '../../pipes/spaced.pipe';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
-import { CompendiumRecordImageDto } from '../../types/dtos/compendium-record/compendium-record-image.dto';
+import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
 import { ProseEditorComponent } from '../../components/prose-editor/prose-editor.component';
 import { PromptService } from '../../services/prompt.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
@@ -35,9 +35,9 @@ export class NovelEditorComponent {
   selectedCompendium: CompendiumDto | null = null;
   selectedRecordOverview: CompendiumRecordOverviewDto | null = null;
   selectedRecord: CompendiumRecordDto | null = null;
-  floatedImages: CompendiumRecordImageDto[] = [];
-  lastHoveredFloatingImageId: string | null = null;
-  zoomedImage: CompendiumRecordImageDto | null = null;
+  floatedMedia: CompendiumRecordMediaDto[] = [];
+  lastHoveredFloatingMediaId: string | null = null;
+  zoomedMedia: CompendiumRecordMediaDto | null = null;
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -57,7 +57,7 @@ export class NovelEditorComponent {
     this.getNovel();
     this.getProse();
     this.getPrompts();
-    this.restoreFloatedImages();
+    this.restoreFloatedMedia();
   }
 
   getNovel(): void {
@@ -88,8 +88,8 @@ export class NovelEditorComponent {
     });
   }
 
-  restoreFloatedImages(): void {
-    this.floatedImages = this.novelService.getFloatedImagesForNovel(
+  restoreFloatedMedia(): void {
+    this.floatedMedia = this.novelService.getFloatedMediaForNovel(
       this.novelId
     );
   }
@@ -137,38 +137,38 @@ export class NovelEditorComponent {
     });
   }
 
-  isFloatedImage(image: CompendiumRecordImageDto): boolean {
-    return this.floatedImages.some(
-      (floatedImage) => floatedImage.id === image.id
+  isFloatedMedia(media: CompendiumRecordMediaDto): boolean {
+    return this.floatedMedia.some(
+      (floatedMedia) => floatedMedia.id === media.id
     );
   }
 
-  floatImage(image: CompendiumRecordImageDto): void {
-    // If the image is already floated, unfloat it (use id instead of object reference)
-    if (this.isFloatedImage(image)) {
-      this.floatedImages = this.floatedImages.filter(
-        (floatedImage) => floatedImage.id !== image.id
+  floatMedia(media: CompendiumRecordMediaDto): void {
+    // If the media is already floated, unfloat it (use id instead of object reference)
+    if (this.isFloatedMedia(media)) {
+      this.floatedMedia = this.floatedMedia.filter(
+        (floatedMedia) => floatedMedia.id !== media.id
       );
-      this.novelService.setFloatedImagesForNovel(
+      this.novelService.setFloatedMediaForNovel(
         this.novelId,
-        this.floatedImages
+        this.floatedMedia
       );
       return;
     }
 
-    this.floatedImages = [...this.floatedImages, image];
-    this.novelService.setFloatedImagesForNovel(
+    this.floatedMedia = [...this.floatedMedia, media];
+    this.novelService.setFloatedMediaForNovel(
       this.novelId,
-      this.floatedImages
+      this.floatedMedia
     );
   }
 
-  zoomImage(image: CompendiumRecordImageDto): void {
-    this.zoomedImage = image;
+  zoomMedia(media: CompendiumRecordMediaDto): void {
+    this.zoomedMedia = media;
   }
 
-  unzoomImage(): void {
-    this.zoomedImage = null;
+  unzoomMedia(): void {
+    this.zoomedMedia = null;
   }
 
   updateProse(prose: Prose) {

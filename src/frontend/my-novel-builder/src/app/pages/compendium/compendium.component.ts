@@ -75,7 +75,7 @@ export class CompendiumComponent implements OnInit {
   }
 
   getRecordImage(record: CompendiumRecordDto): string | null {
-    const mainImage = record.images.filter((image) => image.isCurrent);
+    const mainImage = record.media.filter((image) => image.isCurrent);
     return mainImage.length > 0 ? mainImage[0].url : null;
   }
 

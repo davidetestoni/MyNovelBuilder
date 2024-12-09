@@ -50,7 +50,7 @@ public class CompendiumRecordDto
     /// <summary>
     /// The compendium record's images.
     /// </summary>
-    public IEnumerable<CompendiumRecordImageDto> Images { get; set; } = Array.Empty<CompendiumRecordImageDto>();
+    public IEnumerable<CompendiumRecordMediaDto> Media { get; set; } = Array.Empty<CompendiumRecordMediaDto>();
     
     /// <summary>
     /// The ID of the compendium to which the record belongs.
