@@ -228,12 +228,20 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     
     /// <summary>
     /// Gets the section at the specified index.
+    /// Returns null if there are no sections in the chapter yet.
     /// </summary>
     /// <exception cref="IndexOutOfRangeException">
     /// When the section index is out of bounds.
     /// </exception>
-    protected Section GetSection(Chapter chapter, int sectionIndex)
+    protected Section? GetSection(Chapter chapter, int sectionIndex)
     {
+        // If there are no sections yet in this chapter,
+        // return null.
+        if (chapter.Sections.Count == 0)
+        {
+            return null;
+        }
+        
         // Check if the section index is out of bounds
         if (sectionIndex >= chapter.Sections.Count)
         {
@@ -252,14 +260,30 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     {
         var chapter = GetChapter(prose, chapterIndex);
         var section = GetSection(chapter, sectionIndex);
-        var text = StripHtmlTags(section.Text);
+        var text = StripHtmlTags(section?.Text ?? string.Empty);
+        
+        List<Section> previousSections;
         
         // Get up to 6 previous sections (even across chapters)
-        var previousSections = prose.Chapters
-            .SelectMany(c => c.Sections)
-            .TakeWhile(s => s != section)
-            .TakeLast(6)
-            .ToList();
+        if (section is null)
+        {
+            // If the section is null, this means that there
+            // are no sections in the chapter yet, so we return
+            // up to the last section in the previous chapter.
+            previousSections = prose.Chapters
+                .TakeWhile(c => c != chapter)
+                .SelectMany(c => c.Sections)
+                .TakeLast(6)
+                .ToList();
+        }
+        else
+        {
+            previousSections = prose.Chapters
+                .SelectMany(c => c.Sections)
+                .TakeWhile(s => s != section)
+                .TakeLast(6)
+                .ToList();
+        }
 
         var contextBuilder = new StringBuilder();
         
