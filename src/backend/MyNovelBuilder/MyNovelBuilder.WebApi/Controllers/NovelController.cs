@@ -104,10 +104,16 @@ public class NovelController : ControllerBase
         if (updateNovelDto.MainCharacterId is not null)
         {
             novel.MainCharacter = await _compendiumRecordService.GetByIdAsync(updateNovelDto.MainCharacterId.Value);
+            
+            // The main character must be part of a compendium that
+            // is in the novel's compendia.
+            if (novel.Compendia.All(c => c.Id != novel.MainCharacter.Compendium.Id))
+            {
+                throw new ApiException(
+                    ErrorCodes.BadRequest,
+                    "The main character must be part of the novel's compendia.");
+            }
         }
-        
-        // TODO: If the main character is from a compendium that
-        // is not in the novel's compendia, throw an exception.
         
         novel.UpdatedAt = DateTime.UtcNow;
         
