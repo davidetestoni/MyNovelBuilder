@@ -109,6 +109,8 @@ public class NovelController : ControllerBase
         // TODO: If the main character is from a compendium that
         // is not in the novel's compendia, throw an exception.
         
+        novel.UpdatedAt = DateTime.UtcNow;
+        
         await _novelService.UpdateAsync(novel);
         
         var dto = novel.Adapt<NovelDto>();
@@ -124,6 +126,11 @@ public class NovelController : ControllerBase
     public async Task UpdateNovelProse(Guid id, Prose prose)
     {
         await _novelService.UpdateProseAsync(id, prose);
+        
+        // Also update the novel's updated at time.
+        var novel = await _novelService.GetByIdAsync(id);
+        novel.UpdatedAt = DateTime.UtcNow;
+        await _novelService.UpdateAsync(novel);
     }
     
     /// <summary>
