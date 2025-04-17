@@ -2,6 +2,7 @@
 @import "icons";
 @import "overrides";
 
+/* Reset */
 body {
   background-color: $grey1;
   color: $grey17;
@@ -15,6 +16,7 @@ body {
   box-sizing: border-box;
 }
 
+/* Global */
 h1 {
   font-weight: 400;
 }
@@ -23,10 +25,12 @@ h2 {
   margin: 0;
 }
 
+/* Modals */
 .modal-container {
   padding: 20px;
 }
 
+/* Forms */
 .form-container {
   display: flex;
   width: 100%;
@@ -64,6 +68,7 @@ h2 {
   }
 }
 
+/* Inputs */
 input:not([type="checkbox"]) {
   padding: 10px;
   border-radius: 5px;
