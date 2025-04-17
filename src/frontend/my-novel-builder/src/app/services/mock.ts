@@ -15,7 +15,6 @@ import {
   HttpDownloadProgressEvent,
   HttpEvent,
   HttpEventType,
-  HttpResponse,
 } from '@angular/common/http';
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
