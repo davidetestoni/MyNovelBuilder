@@ -7,6 +7,7 @@
           contenteditable="true"
           (keydown)="preventReturnKey($event)"
           (blur)="updateChapterTitle(chapterIndex, $event)"
+          spellcheck="false"
         >
           {{ chapter.title }}
         </h2>
@@ -36,6 +37,7 @@
               "
               (onBlur)="updateSectionText(section, $event)"
               [ngModel]="section.text"
+              spellcheck="false"
             ></quill-editor>
           </div>
           <div class="section-summary">
@@ -45,6 +47,7 @@
             <div
               class="section-summary-content"
               contenteditable="true"
+              spellcheck="false"
               (keydown)="preventReturnKey($event)"
               (blur)="updateSectionSummary(section, $event)"
             >
