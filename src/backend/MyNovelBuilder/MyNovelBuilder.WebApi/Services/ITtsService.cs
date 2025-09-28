@@ -8,6 +8,11 @@ namespace MyNovelBuilder.WebApi.Services;
 public interface ITtsService
 {
     /// <summary>
+    /// Indicates if the TTS service supports emphasis tags in the text.
+    /// </summary>
+    bool SupportsEmphasisTags { get; }
+    
+    /// <summary>
     /// Generate (usually MP3) audio bytes from the given text.
     /// </summary>
     Task<byte[]> GenerateAudioAsync(TtsRequestDto request);

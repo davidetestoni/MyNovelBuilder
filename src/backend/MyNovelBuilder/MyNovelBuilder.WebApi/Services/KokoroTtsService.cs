@@ -73,6 +73,9 @@ public class KokoroTtsService : ITtsService
         "zm_yunxia",
         "zm_yunyang",
     ];
+    
+    /// <inheritdoc />
+    public bool SupportsEmphasisTags => false;
 
     /// <summary></summary>
     public KokoroTtsService(ILogger<KokoroTtsService> logger)

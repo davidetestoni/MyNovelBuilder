@@ -8,6 +8,14 @@ namespace MyNovelBuilder.WebApi.Services;
 public interface ITextGenerationService
 {
     /// <summary>
+    /// Generate text.
+    /// </summary>
+    Task<string> GenerateAsync(
+        string model,
+        IEnumerable<PromptMessageDto> messages,
+        CancellationToken cancellationToken = default);
+    
+    /// <summary>
     /// Generate streamed text.
     /// </summary>
     IAsyncEnumerable<string> GenerateStreamedAsync(

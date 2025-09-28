@@ -33,7 +33,27 @@ public class OpenRouterTextGenerationService : ITextGenerationService
             Endpoint = new Uri("https://openrouter.ai/api")
         });
     }
-    
+
+    /// <inheritdoc />
+    public async Task<string> GenerateAsync(
+        string model,
+        IEnumerable<PromptMessageDto> messages,
+        CancellationToken cancellationToken = default)
+    {
+        var chatClient = _openAiClient.GetChatClient(model);
+        
+        var chatMessages = messages.Select(ToChatMessage).ToList();
+        
+        var response = await chatClient.CompleteChatAsync(chatMessages, cancellationToken: cancellationToken);
+
+        if (response is null)
+        {
+            throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
+        }
+
+        return response.Value.Content[0].Text;
+    }
+
     /// <inheritdoc />
     public async IAsyncEnumerable<string> GenerateStreamedAsync(
         string model,

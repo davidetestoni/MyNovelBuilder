@@ -17,13 +17,16 @@ public class CustomTtsService : ITtsService
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    /// <inheritdoc />
+    public bool SupportsEmphasisTags => true;
+    
     /// <summary></summary>
     public CustomTtsService(HttpClient httpClient)
     {
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri("http://localhost:5000");
     }
-    
+
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
     {

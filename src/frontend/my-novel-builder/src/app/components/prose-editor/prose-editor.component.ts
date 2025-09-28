@@ -253,8 +253,10 @@ export class ProseEditorComponent {
 
   textToSpeech(chapterIndex: number, sectionIndex: number) {
     this.generateAudioService.textToSpeech({
-      modelId: null,
-      voiceId: "233", // TODO: Read this from the user's settings
+      modelId: "eleven_v3",
+      // voiceId: "coral",
+      // voiceId: "af_heart",
+      voiceId: "19STyYD15bswVz51nqLf", // TODO: Read this from the user's settings
       message: this.getRawText(this.prose.chapters[chapterIndex].sections[sectionIndex].text),
     }).subscribe((event: HttpEvent<Blob>) => {
       if (event.type === HttpEventType.Response) {

@@ -55,6 +55,9 @@ public class UnrealSpeechTtsService : ITtsService
         "Thiago", "Rafael"
     ];
 
+    /// <inheritdoc />
+    public bool SupportsEmphasisTags => false;
+    
     /// <summary></summary>
     public UnrealSpeechTtsService(IConfiguration configuration, HttpClient httpClient)
     {

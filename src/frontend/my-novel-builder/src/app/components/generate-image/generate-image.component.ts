@@ -16,13 +16,13 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
   styleUrl: './generate-image.component.scss'
 })
 export class GenerateImageComponent {
-  models: string[] = ['FLUX.1-dev']; // TODO: Get models from API
+  models: string[] = ['flux.1-dev-akash']; // TODO: Get models from API
   readonly generateImageService: GenerateImageService = inject(GenerateImageService);
   readonly localStorageService: LocalStorageService = inject(LocalStorageService);
   readonly toastrService: ToastrService = inject(ToastrService);
   readonly sanitizer: DomSanitizer = inject(DomSanitizer);
 
-  formGroup = new FormGroup({
+  formGroup = new FormGroup({ 
     prompt: new FormControl('', [Validators.required]),
     model: new FormControl('', [Validators.required]),
   });
