@@ -25,6 +25,9 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
         var section = GetSection(chapter, context.Client.SectionIndex);
         var text = StripHtmlTags(section.Text);
         
+        var textBefore = text[..context.Client.TextOffset];
+        var textAfter = text[(context.Client.TextOffset + context.Client.TextLength)..];
+        
         var textToReplace = text.Substring(context.Client.TextOffset,
             context.Client.TextLength);
 
@@ -38,6 +41,8 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
         }
         
         Builder
+            .Replace("{{textBefore}}", DecodeHtmlEntities(textBefore))
+            .Replace("{{textAfter}}", DecodeHtmlEntities(textAfter))
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{textToReplace}}", textToReplace)
             .Replace("{{records}}", CreateCompendiumRecordsString(recordsInContext.ToList()));
