@@ -18,7 +18,7 @@ public class CustomTtsService : ITtsService
     };
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags => true;
+    public bool SupportsEmphasisTags => false;
     
     /// <summary></summary>
     public CustomTtsService(HttpClient httpClient)
