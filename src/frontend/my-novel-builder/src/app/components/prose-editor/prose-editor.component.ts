@@ -246,9 +246,14 @@ export class ProseEditorComponent {
   }
 
   private getRawText(html: string): string {
+    // Add space between <p> tags, otherwise it looks like
+    // "First paragraph.Second paragraph."
+    const normalizedHtml = html.replace(/<\/p>\s*<p>/g, '</p> <p>');
     const div = document.createElement('div');
-    div.innerHTML = html;
-    return div.innerText;
+    div.innerHTML = normalizedHtml;
+    const innerText = div.innerText;
+    div.remove();
+    return innerText;
   }
 
   textToSpeech(chapterIndex: number, sectionIndex: number) {
