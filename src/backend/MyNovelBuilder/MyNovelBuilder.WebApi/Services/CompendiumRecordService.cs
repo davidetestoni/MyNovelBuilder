@@ -111,6 +111,11 @@ public class CompendiumRecordService : ICompendiumRecordService
             mediaBytes = outputStream.ToArray();
             extension = ".png";
         }
+
+        if (extension is null or "")
+        {
+            extension = ".png";
+        }
         
         var mediaId = Guid.NewGuid();
         var path = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{mediaId}{extension}");
