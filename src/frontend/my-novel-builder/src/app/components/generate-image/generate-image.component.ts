@@ -16,7 +16,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
   styleUrl: './generate-image.component.scss'
 })
 export class GenerateImageComponent {
-  models: string[] = ['flux.1-dev-akash']; // TODO: Get models from API
+  models: string[] = ['z-image/turbo']; // TODO: Get models from API
   readonly generateImageService: GenerateImageService = inject(GenerateImageService);
   readonly localStorageService: LocalStorageService = inject(LocalStorageService);
   readonly toastrService: ToastrService = inject(ToastrService);
@@ -66,8 +66,8 @@ export class GenerateImageComponent {
     this.generateImageService.generateImage({
       modelId: this.formGroup.get('model')!.value!,
       prompt: this.formGroup.get('prompt')!.value!,
-      width: 768,
-      height: 1024,
+      width: 832,
+      height: 1248,
     }).subscribe({
       next: (event: HttpEvent<Blob>) => {
         if (event.type === HttpEventType.Response) {

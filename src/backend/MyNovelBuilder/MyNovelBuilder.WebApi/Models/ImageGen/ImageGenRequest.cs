@@ -24,4 +24,9 @@ public class ImageGenRequest
     /// The height of the image to generate, in pixels.
     /// </summary>
     public int Height { get; set; }
+
+    /// <summary>
+    /// Whether to use a proxy for the request.
+    /// </summary>
+    public bool UseProxy { get; set; } = false;
 }
