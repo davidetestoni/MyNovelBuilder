@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Prompts;
@@ -41,7 +43,8 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Prompt>().Property(p => p.Messages)
-            .HasConversion(new JsonValueConverter<IEnumerable<PromptMessage>>());
+            .HasConversion(new JsonValueConverter<IEnumerable<PromptMessage>>())
+            .Metadata.SetValueComparer(new JsonValueComparer<IEnumerable<PromptMessage>>());
         
         // Use UTC for DateTime
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
