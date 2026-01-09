@@ -6,6 +6,7 @@ import { NovelEditorComponent } from './pages/novel-editor/novel-editor.componen
 import { CompendiumComponent } from './pages/compendium/compendium.component';
 import { PromptsComponent } from './pages/prompts/prompts.component';
 import { NovelSettingsComponent } from './pages/novel-settings/novel-settings.component';
+import { IntegrationsComponent } from './pages/integrations/integrations.component';
 
 export const routes: Routes = [
   // Redirect / to /novels
@@ -52,6 +53,13 @@ export const routes: Routes = [
   {
     path: 'prompts',
     component: PromptsComponent,
+    data: {
+      layoutType: LayoutType.Main,
+    },
+  },
+  {
+    path: 'integrations',
+    component: IntegrationsComponent,
     data: {
       layoutType: LayoutType.Main,
     },
