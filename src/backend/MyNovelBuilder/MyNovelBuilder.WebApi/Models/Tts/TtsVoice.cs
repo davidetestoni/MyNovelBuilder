@@ -18,5 +18,5 @@ public class TtsVoice
     /// <summary>
     /// The URL to a preview of the voice.
     /// </summary>
-    public required string PreviewUrl { get; set; }
+    public string? PreviewUrl { get; set; }
 }

@@ -10,7 +10,7 @@ namespace MyNovelBuilder.WebApi.Services;
 public class IntegrationsService : IIntegrationsService
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
-    private IntegrationsConfig? _cachedConfig = null;
+    private IntegrationsConfig? _cachedConfig;
 
     /// <summary></summary>
     public IntegrationsService()

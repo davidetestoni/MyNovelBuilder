@@ -1,5 +1,5 @@
 export interface TtsVoiceDto {
     voiceId: string;
     name: string;
-    previewUrl: string;
+    previewUrl: string | null;
 }

@@ -132,7 +132,6 @@ public class UnrealSpeechTtsService : ITtsService
         {
             VoiceId = v,
             Name = v,
-            PreviewUrl = "https://example.com"
         }));
     }
 }

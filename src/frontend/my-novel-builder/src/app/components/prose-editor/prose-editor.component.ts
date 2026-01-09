@@ -261,7 +261,7 @@ export class ProseEditorComponent {
       modelId: "sonic-2",
       // voiceId: "coral",
       // voiceId: "af_heart",
-      voiceId: "6f84f4b8-58a2-430c-8c79-688dad597532", // TODO: Read this from the user's settings
+      voiceId: "en-Emma_woman", // TODO: Read this from the user's settings
       message: this.getRawText(this.prose.chapters[chapterIndex].sections[sectionIndex].text),
     }).subscribe((event: HttpEvent<Blob>) => {
       if (event.type === HttpEventType.Response) {

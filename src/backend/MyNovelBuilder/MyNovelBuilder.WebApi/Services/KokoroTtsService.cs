@@ -113,7 +113,6 @@ public class KokoroTtsService : ITtsService
         {
             VoiceId = v,
             Name = v,
-            PreviewUrl = "https://example.com"
         }));
     }
 }
