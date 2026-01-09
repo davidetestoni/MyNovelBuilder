@@ -15,6 +15,7 @@ import {
   HttpDownloadProgressEvent,
   HttpEvent,
   HttpEventType,
+  HttpResponse,
 } from '@angular/common/http';
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
@@ -235,30 +236,36 @@ export const mockedTextGenerationResponse = (generatedText: string) =>
     (subscriber: Subscriber<HttpEvent<string>>) => {
       setTimeout(() => {
         let index = 0;
-
-        const chunks: GenerateTextResponseChunkDto[] = [];
+        let partialText = '';
 
         const intervalId = setInterval(() => {
-          if (index > generatedText.length) {
-            clearInterval(intervalId);
-            subscriber.complete();
-          } else {
-            chunks.push(<GenerateTextResponseChunkDto>{
-              content: generatedText.slice(index - 1, index),
-            });
+          if (index < generatedText.length) {
+            const char = generatedText.charAt(index);
+            const chunk: GenerateTextResponseChunkDto = { content: char };
+
+            partialText += JSON.stringify(chunk) + '\n';
 
             subscriber.next(<HttpDownloadProgressEvent>{
               type: HttpEventType.DownloadProgress,
-              loaded: index,
-              total: 100,
-              partialText: chunks
-                .map((item) => JSON.stringify(item))
-                .join('\n'),
+              loaded: index + 1,
+              total: generatedText.length,
+              partialText: partialText,
             });
+
             index++;
+          } else {
+            clearInterval(intervalId);
+
+            const finalResponse = new HttpResponse({
+              body: partialText,
+              status: 200,
+              statusText: 'OK',
+            });
+            subscriber.next(finalResponse);
+            subscriber.complete();
           }
-        });
-      }, 2500);
+        }, 50);
+      }, 500);
     }
   );
 
