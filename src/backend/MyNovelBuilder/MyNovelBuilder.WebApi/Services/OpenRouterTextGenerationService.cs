@@ -1,7 +1,5 @@
 ﻿using System.ClientModel;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
@@ -15,21 +13,32 @@ namespace MyNovelBuilder.WebApi.Services;
 /// </summary>
 public class OpenRouterTextGenerationService : ITextGenerationService
 {
-    private readonly OpenAIClient _openAiClient;
+    private readonly IIntegrationsService _integrationsService;
+    private readonly OpenAIClient? _openAiClient = null;
 
     /// <summary></summary>
     public OpenRouterTextGenerationService(
-        IConfiguration configuration)
+        IIntegrationsService integrationsService)
     {
-        var apiKey = configuration["Secrets:OpenRouterApiKey"];
-        
-        if (string.IsNullOrWhiteSpace(apiKey))
+        _integrationsService = integrationsService;
+    }
+    
+    private async ValueTask<OpenAIClient> GetOpenAiClientAsync()
+    {
+        if (_openAiClient is not null)
+        {
+            return _openAiClient;
+        }
+
+        var config = await _integrationsService.GetConfigAsync();
+
+        if (string.IsNullOrWhiteSpace(config.OpenRouterApiKey))
         {
             throw new ApiException(ErrorCodes.MissingOrInvalidServiceCredentials,
-                "OpenRouter API key is missing.");
+                "OpenRouter API key is missing in integrations configuration.");
         }
-        
-        _openAiClient = new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOptions
+
+        return new OpenAIClient(new ApiKeyCredential(config.OpenRouterApiKey), new OpenAIClientOptions
         {
             Endpoint = new Uri("https://openrouter.ai/api")
         });
@@ -41,18 +50,15 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         IEnumerable<PromptMessageDto> messages,
         CancellationToken cancellationToken = default)
     {
-        var chatClient = _openAiClient.GetChatClient(model);
+        var client = await GetOpenAiClientAsync();
+        var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
         
         var response = await chatClient.CompleteChatAsync(chatMessages, cancellationToken: cancellationToken);
 
-        if (response is null)
-        {
-            throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
-        }
-
-        return response.Value.Content[0].Text;
+        return response?.Value.Content[0].Text
+            ?? throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
     }
 
     /// <inheritdoc />
@@ -61,7 +67,8 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         IEnumerable<PromptMessageDto> messages,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var chatClient = _openAiClient.GetChatClient(model);
+        var client = await GetOpenAiClientAsync();
+        var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
 

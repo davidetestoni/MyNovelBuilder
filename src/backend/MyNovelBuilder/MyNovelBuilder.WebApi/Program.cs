@@ -96,6 +96,7 @@ builder.Services.AddScoped<ICompendiumService, CompendiumService>();
 builder.Services.AddScoped<ICompendiumRecordService, CompendiumRecordService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 
+builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
 builder.Services.AddSingleton<ITextGenerationService, OpenRouterTextGenerationService>();
 builder.Services.AddSingleton<ITtsService, CustomTtsService>();

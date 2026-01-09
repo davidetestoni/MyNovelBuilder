@@ -1,0 +1,71 @@
+@import "../../../styles/colors";
+@import "../../../styles/variables";
+
+.integrations-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+
+  h2 {
+    color: $grey17;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  .integration-form {
+    background-color: $grey2;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid $grey5;
+
+    h3 {
+      color: $grey17;
+      margin-top: 0;
+      margin-bottom: 20px;
+      border-bottom: 1px solid $grey5;
+      padding-bottom: 10px;
+    }
+
+    .api-key-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: $grey3;
+      color: $grey17;
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+
+      p {
+        margin: 0;
+
+        .check-icon {
+          color: $valid;
+          font-weight: bold;
+          margin-right: 8px;
+        }
+      }
+    }
+
+    .clear-button {
+      background-color: transparent;
+      color: $grey13;
+      border: 1px solid $grey13;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        color: $grey17;
+        font-weight: bold;
+      }
+    }
+
+    .save-button {
+      width: 100%;
+    }
+  }
+}

@@ -286,3 +286,7 @@ export const mockedAvailableVoices: TtsVoiceDto[] = [
     previewUrl: 'https://example.com/voice3',
   }
 ];
+
+export const mockedIntegrationsConfig = {
+  hasOpenRouterApiKey: true,
+};
