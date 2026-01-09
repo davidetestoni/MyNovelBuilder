@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.ClientModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
@@ -28,7 +29,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
                 "OpenRouter API key is missing.");
         }
         
-        _openAiClient = new OpenAIClient(apiKey, new OpenAIClientOptions
+        _openAiClient = new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOptions
         {
             Endpoint = new Uri("https://openrouter.ai/api")
         });

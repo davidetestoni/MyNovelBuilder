@@ -23,7 +23,7 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
         
         var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
         var section = GetSection(chapter, context.Client.SectionIndex);
-        var text = StripHtmlTags(section.Text);
+        var text = StripHtmlTags(section?.Text ?? string.Empty);
         
         var textBefore = text[..context.Client.TextOffset];
         var textAfter = text[(context.Client.TextOffset + context.Client.TextLength)..];
