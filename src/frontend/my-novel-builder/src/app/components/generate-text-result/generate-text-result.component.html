@@ -22,6 +22,7 @@
       </div>
     </div>
     <div class="result-actions">
+      <button (click)="goBack()" [disabled]="isGenerating">Back</button>
       <button (click)="generateText()" [disabled]="isGenerating">Retry</button>
       <button (click)="accept()" [disabled]="isGenerating">
         {{ data.textToReplace.length > 0 ? "Replace" : "Insert" }}

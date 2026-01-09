@@ -91,4 +91,8 @@ export class GenerateTextResultComponent implements OnInit {
   discard() {
     this.dialogRef.close();
   }
+
+  goBack() {
+    this.dialogRef.close('back');
+  }
 }

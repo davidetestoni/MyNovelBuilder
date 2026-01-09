@@ -389,14 +389,16 @@ export class ProseEditorComponent {
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
       },
-    }).afterClosed().subscribe((generatedText: string) => {
-      if (generatedText) {
+    }).afterClosed().subscribe((result: string | 'back' | undefined) => {
+      if (result === 'back') {
+        this.openGenerateTextDialog();
+      } else if (result) {
         const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
 
         // Append the generated text at the end of the range in the Quill editor.
         this.lastSelection!.editor.insertText(
           contextInfo.textOffset,
-          generatedText
+          result
         );
       }
     });
@@ -445,8 +447,10 @@ export class ProseEditorComponent {
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
       },
-    }).afterClosed().subscribe((generatedText: string) => {
-      if (generatedText) {
+    }).afterClosed().subscribe((result: string | 'back' | undefined) => {
+      if (result === 'back') {
+        this.openReplaceTextDialog();
+      } else if (result) {
         const contextInfo = request.contextInfo as ReplaceTextContextInfoDto;
 
         // Replace the selected text with the generated text.
@@ -458,7 +462,7 @@ export class ProseEditorComponent {
         );
         this.lastSelection!.editor.insertText(
           contextInfo.textOffset,
-          generatedText
+          result
         );
       }
     });
@@ -497,12 +501,14 @@ export class ProseEditorComponent {
             request: request,
             textToReplace: ''
           },
-        }).afterClosed().subscribe((generatedText: string) => {
-          if (generatedText) {
+        }).afterClosed().subscribe((result: string | 'back' | undefined) => {
+          if (result === 'back') {
+            this.openCreateCompendiumRecordDialog();
+          } else if (result) {
             this.dialog.open(GenerateCompendiumRecordResultComponent, {
               minWidth: '50vw',
               data: <GenerateCompendiumRecordComponentData>{
-                generatedText: generatedText,
+                generatedText: result,
                 novelId: this.novelId,
               },
             }).afterClosed().subscribe((changed) => {
