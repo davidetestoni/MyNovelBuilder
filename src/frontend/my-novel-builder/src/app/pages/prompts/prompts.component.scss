@@ -1,4 +1,4 @@
-@import "colors";
+@use "../../../styles/colors" as *;
 
 .prompts-container {
   padding: 20px;

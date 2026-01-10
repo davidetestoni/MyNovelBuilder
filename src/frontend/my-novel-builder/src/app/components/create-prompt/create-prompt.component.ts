@@ -8,8 +8,6 @@ import {
   Validators,
 } from '@angular/forms';
 import {
-  MatDialogActions,
-  MatDialogClose,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
@@ -23,8 +21,6 @@ import { SpacedPipe } from '../../pipes/spaced.pipe';
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    MatDialogActions,
-    MatDialogClose,
     ToastrModule,
     SpacedPipe,
   ],

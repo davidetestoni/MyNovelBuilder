@@ -8,8 +8,6 @@ import {
 } from '@angular/forms';
 import { CompendiumService } from '../../services/compendium.service';
 import {
-  MatDialogActions,
-  MatDialogClose,
   MatDialogRef,
 } from '@angular/material/dialog';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
@@ -20,8 +18,6 @@ import { ToastrModule, ToastrService } from 'ngx-toastr';
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    MatDialogActions,
-    MatDialogClose,
     ToastrModule,
   ],
   templateUrl: './create-compendium.component.html',

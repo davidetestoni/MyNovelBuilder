@@ -1,5 +1,5 @@
-@import "variables.scss";
-@import "colors";
+@use "../../../styles/variables" as *;
+@use "../../../styles/colors" as *;
 
 .novel-editor {
   .novel-editor-header {

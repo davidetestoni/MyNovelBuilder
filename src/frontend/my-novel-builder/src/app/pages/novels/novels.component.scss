@@ -1,4 +1,4 @@
-@import "colors.scss";
+@use "../../../styles/colors" as *;
 
 .novels-container {
   padding: 20px;

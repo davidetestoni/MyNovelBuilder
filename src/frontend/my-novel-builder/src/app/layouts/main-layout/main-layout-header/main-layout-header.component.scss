@@ -1,5 +1,5 @@
-@import "variables.scss";
-@import "colors.scss";
+@use "../../../../styles/variables" as *;
+@use "../../../../styles/colors" as *;
 
 .header {
   display: flex;

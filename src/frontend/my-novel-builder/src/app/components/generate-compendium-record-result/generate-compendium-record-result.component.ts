@@ -18,7 +18,7 @@ export interface GenerateCompendiumRecordComponentData {
   standalone: true,
   imports: [FormsModule, ReactiveFormsModule, TitleCasePipe],
   templateUrl: './generate-compendium-record-result.component.html',
-  styleUrl: './generate-compendium-record-result.component.scss'
+  styleUrl: './generate-compendium-record-result.component.scss',
 })
 export class GenerateCompendiumRecordResultComponent implements OnInit {
   readonly compendiumService: CompendiumService = inject(CompendiumService);

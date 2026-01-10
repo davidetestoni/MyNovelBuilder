@@ -12,11 +12,8 @@ import { WritingLanguage } from '../../types/enums/writing-language';
 import { NovelService } from '../../services/novel.service';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import {
-  MatDialogActions,
-  MatDialogClose,
   MatDialogRef,
 } from '@angular/material/dialog';
-import { provideAnimations } from '@angular/platform-browser/animations';
 
 @Component({
   selector: 'app-create-novel',
@@ -24,8 +21,6 @@ import { provideAnimations } from '@angular/platform-browser/animations';
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    MatDialogActions,
-    MatDialogClose,
     ToastrModule,
   ],
   templateUrl: './create-novel.component.html',

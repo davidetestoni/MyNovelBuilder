@@ -1,4 +1,4 @@
-@import "colors";
+@use "../styles/colors.scss" as *;
 
 .mat-mdc-dialog-surface {
   background-color: $grey1 !important;

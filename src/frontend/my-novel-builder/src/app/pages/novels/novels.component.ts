@@ -4,8 +4,6 @@ import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { EllipsisPipe } from '../../pipes/ellipsis.pipe';
 import moment from 'moment';
 import { RouterModule } from '@angular/router';
-import { Observable } from 'rxjs';
-import { AsyncPipe } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CreateNovelComponent } from '../../components/create-novel/create-novel.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -15,7 +13,7 @@ import { MatDialog } from '@angular/material/dialog';
   standalone: true,
   templateUrl: './novels.component.html',
   styleUrls: ['./novels.component.scss'],
-  imports: [EllipsisPipe, RouterModule, AsyncPipe, ReactiveFormsModule],
+  imports: [EllipsisPipe, RouterModule, ReactiveFormsModule],
 })
 export class NovelsComponent implements OnInit {
   novels: NovelDto[] | null = null;
