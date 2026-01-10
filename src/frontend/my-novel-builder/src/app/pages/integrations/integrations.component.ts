@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IntegrationsService } from '../../services/integrations.service';
 import { IntegrationsConfigDto, UpdateIntegrationsConfigDto } from '../../types/dtos/integrations/integrations-config.dto';
@@ -8,7 +8,7 @@ import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-integrations',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './integrations.component.html',
   styleUrl: './integrations.component.scss'
 })

@@ -4,13 +4,14 @@
   <form [formGroup]="integrationsForm" (ngSubmit)="onSubmit()" class="integration-form">
     <h3>OpenRouter</h3>
 
-    <div *ngIf="hasOpenRouterApiKey; else noApiKey" class="api-key-status">
-      <p><span class="check-icon">✓</span> An OpenRouter API key is currently configured.</p>
-    </div>
-
-    <ng-template #noApiKey>
+    @if (hasOpenRouterApiKey) {
+      <div class="api-key-status">
+        <p><span class="check-icon">✓</span> An OpenRouter API key is currently configured.</p>
+      </div>
+    } @else {
       <p>No OpenRouter API key is configured.</p>
-    </ng-template>
+    }
+
 
     <div class="form-group">
       <label for="openRouterApiKey">Enter New OpenRouter API Key:</label>
@@ -20,7 +21,7 @@
         formControlName="openRouterApiKey"
         placeholder="sk-or-..."
         autocomplete="off"
-      />
+        />
     </div>
 
     <button type="submit" [disabled]="!integrationsForm.valid" class="save-button">Save</button>
