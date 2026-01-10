@@ -62,6 +62,7 @@ interface LastSelection {
 export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
   @Input() prose!: Prose;
+  @Input() selectedChapterIndex: number | null = null;
   @Input() prompts!: PromptDto[];
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
   @Output() recordsChange: EventEmitter<void> = new EventEmitter<void>();

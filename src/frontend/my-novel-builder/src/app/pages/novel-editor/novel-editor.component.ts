@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { NovelService } from '../../services/novel.service';
@@ -39,7 +39,18 @@ export class NovelEditorComponent {
   compendia: CompendiumDto[] | null = null;
   prompts: PromptDto[] | null = null; // TODO: Send a lighter version of this DTO
   novel: NovelDto | null = null;
-  prose: Prose | null = null;
+  prose = signal<Prose | null>(null);
+  chapters = computed(() => {
+    const prose = this.prose();
+    if (!prose) {
+      return [];
+    }
+    return prose.chapters.map((chapter, index) => ({
+      label: chapter.title,
+      value: index,
+    }));
+  });
+
   readonly novelService: NovelService = inject(NovelService);
   readonly promptService: PromptService = inject(PromptService);
   readonly compendiumService: CompendiumService = inject(CompendiumService);
@@ -51,6 +62,7 @@ export class NovelEditorComponent {
   floatedMedia: CompendiumRecordMediaDto[] = [];
   lastHoveredFloatingMediaId: string | null = null;
   zoomedMedia: CompendiumRecordMediaDto | null = null;
+  selectedChapterIndex: number | null = null;
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -80,7 +92,13 @@ export class NovelEditorComponent {
 
   getProse(): void {
     this.novelService.getNovelProse(this.novelId).subscribe((prose) => {
-      this.prose = prose;
+      this.prose.set(prose);
+
+      if (prose.chapters.length > 0) {
+        this.selectedChapterIndex = 0;
+      } else {
+        this.selectedChapterIndex = null;
+      }
     });
   }
 
@@ -183,6 +201,8 @@ export class NovelEditorComponent {
   }
 
   updateProse(prose: Prose) {
+    // This will trigger the computed chapters to update
+    this.prose.set({ ...prose });
     this.novelService.updateNovelProse(this.novelId, prose).subscribe();
   }
 }

@@ -1,6 +1,7 @@
 <div id="prose-editor">
   <div class="chapters">
     @for (chapter of prose.chapters; let chapterIndex = $index; track chapter) {
+    @if (selectedChapterIndex === null || selectedChapterIndex === chapterIndex) {
     <div class="chapter">
       <div class="chapter-heading">
         <h2
@@ -90,12 +91,15 @@
       </div>
     </div>
     }
-    <div class="add-chapter-card-wrapper">
-      <div class="add-block-card" (click)="addChapter()">
-        <i class="icon icon-plus"></i>
-        <span>Add Chapter</span>
+    }
+    @if (selectedChapterIndex === null) {
+      <div class="add-chapter-card-wrapper">
+        <div class="add-block-card" (click)="addChapter()">
+          <i class="icon icon-plus"></i>
+          <span>Add Chapter</span>
+        </div>
       </div>
-    </div>
+    }
   </div>
   @if (showEditorControls) {
   <div

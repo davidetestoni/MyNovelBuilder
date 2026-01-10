@@ -16,6 +16,17 @@
       <span>{{ novel.title }}</span>
     </div>
     <div class="novel-editor-header-actions">
+      @if (prose() !== null) {
+        <p-select
+          [(ngModel)]="selectedChapterIndex"
+          [options]="chapters()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="All Chapters"
+          [style]="{'width': '200px'}"
+          [showClear]="true"
+        />
+      }
       <p-button
         label="Settings"
         [routerLink]="['/novel', novel.id, 'settings']"
@@ -123,11 +134,12 @@
     </div>
     }
     <div class="prose-editor-wrapper">
-      @if (prose !== null) {
+      @if (prose() !== null) {
       <app-prose-editor
         [novelId]="novelId"
-        [prose]="prose"
+        [prose]="prose()!"
         [prompts]="prompts"
+        [selectedChapterIndex]="selectedChapterIndex"
         (proseChange)="updateProse($event)"
         (recordsChange)="getCompendia()"
       ></app-prose-editor>
