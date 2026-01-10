@@ -22,8 +22,8 @@ const primeNgTheme = definePreset(Nora, {
       800: '{stone.800}',
       900: '{stone.900}',
       950: '{stone.950}',
-    }
-  }
+    },
+  },
 });
 
 export const appConfig: ApplicationConfig = {
@@ -36,6 +36,6 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: primeNgTheme,
       },
-    })
+    }),
   ],
 };

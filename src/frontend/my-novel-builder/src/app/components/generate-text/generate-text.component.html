@@ -10,12 +10,14 @@
           optionLabel="name"
           optionValue="id"
           placeholder="Select a prompt"
-          [style]="{'width': '100%'}"
+          [style]="{ width: '100%' }"
         />
       </div>
       @if (instructionsRequired) {
       <div class="form-field">
-        <label for="instructions" class="form-field-label">Instructions *</label>
+        <label for="instructions" class="form-field-label"
+          >Instructions *</label
+        >
         <textarea
           pTextarea
           id="instructions"
@@ -33,7 +35,7 @@
           formControlName="model"
           [options]="models"
           placeholder="Select a model"
-          [style]="{'width': '100%'}"
+          [style]="{ width: '100%' }"
         />
       </div>
       <div class="form-field">

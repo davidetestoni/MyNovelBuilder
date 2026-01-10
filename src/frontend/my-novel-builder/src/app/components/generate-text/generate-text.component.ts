@@ -47,9 +47,11 @@ export class GenerateTextComponent implements OnInit {
   data!: GenerateTextComponentData;
   instructionsRequired = false;
   models: string[] = [];
-  readonly generateTextService: GenerateTextService = inject(GenerateTextService);
+  readonly generateTextService: GenerateTextService =
+    inject(GenerateTextService);
   readonly promptService: PromptService = inject(PromptService);
-  readonly localStorageService: LocalStorageService = inject(LocalStorageService);
+  readonly localStorageService: LocalStorageService =
+    inject(LocalStorageService);
 
   formGroup = new FormGroup({
     promptId: new FormControl('', [Validators.required]),
@@ -66,9 +68,10 @@ export class GenerateTextComponent implements OnInit {
 
     // Get the most recent instructions for the prompt type
     const promptType = this.data.prompts[0].type;
-    const instructions =
-      this.localStorageService.getNestedStringForKey(
-        LocalStorageKey.RecentInstructions, promptType);
+    const instructions = this.localStorageService.getNestedStringForKey(
+      LocalStorageKey.RecentInstructions,
+      promptType
+    );
 
     if (instructions !== null) {
       this.formGroup.patchValue({ instructions });
@@ -78,9 +81,10 @@ export class GenerateTextComponent implements OnInit {
       promptId: this.data.prompts[0].id,
     });
 
-    const promptId =
-      this.localStorageService.getNestedStringForKey(
-        LocalStorageKey.RecentPrompts, promptType);
+    const promptId = this.localStorageService.getNestedStringForKey(
+      LocalStorageKey.RecentPrompts,
+      promptType
+    );
 
     if (promptId !== null) {
       this.formGroup.patchValue({ promptId: promptId });

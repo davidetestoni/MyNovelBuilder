@@ -20,14 +20,13 @@
         label="Prose"
         [routerLink]="['/novel', novel.id]"
         variant="text"
-        icon="pi pi-pencil" />
+        icon="pi pi-pencil"
+      />
     </div>
   </div>
   <div class="novel-settings-body">
     <div class="novel-cover">
-      <div class="label">
-        Cover
-      </div>
+      <div class="label">Cover</div>
       <div class="novel-cover-image">
         <img [src]="novel.coverImageUrl" alt="Cover Image" />
       </div>
@@ -79,7 +78,7 @@
         [options]="writingTenses"
         placeholder="Select a tense"
         (onChange)="onBlur()"
-        [style]="{'width': '100%'}"
+        [style]="{ width: '100%' }"
       >
         <ng-template let-tense pTemplate="item">
           {{ tense | spaced }}
@@ -98,7 +97,7 @@
         [options]="writingPovs"
         placeholder="Select a point of view"
         (onChange)="onBlur()"
-        [style]="{'width': '100%'}"
+        [style]="{ width: '100%' }"
       >
         <ng-template let-pov pTemplate="item">
           {{ pov | spaced }}
@@ -119,7 +118,7 @@
         optionValue="id"
         placeholder="Select a main character"
         (onChange)="onBlur()"
-        [style]="{'width': '100%'}"
+        [style]="{ width: '100%' }"
         [showClear]="true"
       >
       </p-select>
@@ -133,7 +132,7 @@
         [options]="writingLanguages"
         placeholder="Select a language"
         (onChange)="onBlur()"
-        [style]="{'width': '100%'}"
+        [style]="{ width: '100%' }"
       >
         <ng-template let-language pTemplate="item">
           {{ language | spaced }}
@@ -143,22 +142,22 @@
         </ng-template>
       </p-select>
     </div>
-<div class="novel-compendia">
-  <label class="label">
-    <span>Compendia</span>
-  </label>
-  <p-multiSelect
-    [(ngModel)]="novel.compendiumIds"
-    [options]="compendia"
-    optionLabel="name"
-    optionValue="id"
-    placeholder="Select compendia"
-    (onChange)="onBlur()"
-    [style]="{'width': '100%'}"
-    display="chip"
-  >
-  </p-multiSelect>
-</div>
+    <div class="novel-compendia">
+      <label class="label">
+        <span>Compendia</span>
+      </label>
+      <p-multiSelect
+        [(ngModel)]="novel.compendiumIds"
+        [options]="compendia"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Select compendia"
+        (onChange)="onBlur()"
+        [style]="{ width: '100%' }"
+        display="chip"
+      >
+      </p-multiSelect>
+    </div>
   </div>
   }
 </div>

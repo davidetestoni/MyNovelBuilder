@@ -56,9 +56,7 @@ export const mockedNovels: NovelDto[] = Array(10)
     pov: WritingPov.FirstPerson,
     language: WritingLanguage.English,
     mainCharacterId: null,
-    compendiumIds: [
-      indexToGuid(((index % 3) + 1)),
-    ],
+    compendiumIds: [indexToGuid((index % 3) + 1)],
   }));
 
 export const mockedProse: Prose = {
@@ -268,7 +266,7 @@ export const mockedPrompts: PromptDto[] = [
         message: loremIpsum({ count: 3, units: 'sentences' }),
       },
     ],
-  }
+  },
 ];
 
 export const mockedTextGenerationResponse = (generatedText: string) =>
@@ -324,7 +322,7 @@ export const mockedAvailableVoices: TtsVoiceDto[] = [
     voiceId: '3',
     name: 'Voice 3',
     previewUrl: 'https://example.com/voice3',
-  }
+  },
 ];
 
 export const mockedIntegrationsConfig = {

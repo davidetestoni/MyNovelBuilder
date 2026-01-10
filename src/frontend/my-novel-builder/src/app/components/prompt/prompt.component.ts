@@ -76,7 +76,8 @@ export class PromptComponent {
 
   removePrompt(): void {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to delete this prompt? You cannot undo this action.',
+      message:
+        'Are you sure you want to delete this prompt? You cannot undo this action.',
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',

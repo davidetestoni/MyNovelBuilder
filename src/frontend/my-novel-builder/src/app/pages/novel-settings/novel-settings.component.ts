@@ -108,7 +108,11 @@ export class NovelSettingsComponent {
 
     const target = event.target as HTMLInputElement;
 
-    if (target.files !== null && target.files !== undefined && target.files.length > 0) {
+    if (
+      target.files !== null &&
+      target.files !== undefined &&
+      target.files.length > 0
+    ) {
       this.novelService
         .uploadNovelCoverImage(this.novel.id, target.files[0])
         .subscribe(() => {

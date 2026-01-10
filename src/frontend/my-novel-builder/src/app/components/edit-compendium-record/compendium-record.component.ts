@@ -79,7 +79,8 @@ export class CompendiumRecordComponent {
 
   removeRecord(): void {
     this.confirmationService.confirm({
-      message: 'Are you sure you want to delete this record? This action cannot be undone.',
+      message:
+        'Are you sure you want to delete this record? This action cannot be undone.',
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
@@ -137,15 +138,16 @@ export class CompendiumRecordComponent {
             this.record.id,
             image,
             this.record.media.length === 0
-          ).subscribe(() => {
+          )
+          .subscribe(() => {
             // Get the record and update the media
             this.compendiumService
-            .getRecord(this.record.id)
-            .subscribe((record) => {
-              this.record.media = record.media;
-              this.updateRecord.emit(this.record);
-            });
-        });
+              .getRecord(this.record.id)
+              .subscribe((record) => {
+                this.record.media = record.media;
+                this.updateRecord.emit(this.record);
+              });
+          });
       }
     });
   }

@@ -17,22 +17,23 @@
     </div>
     <div class="novel-editor-header-actions">
       @if (prose() !== null) {
-        <p-select
-          [(ngModel)]="selectedChapterIndex"
-          [options]="chapters()"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="All Chapters"
-          [style]="{'width': '200px', 'border': 'none'}"
-          [showClear]="true"
-          size="small"
-        />
+      <p-select
+        [(ngModel)]="selectedChapterIndex"
+        [options]="chapters()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="All Chapters"
+        [style]="{ width: '200px', border: 'none' }"
+        [showClear]="true"
+        size="small"
+      />
       }
       <p-button
         label="Settings"
         [routerLink]="['/novel', novel.id, 'settings']"
         variant="text"
-        icon="pi pi-cog" />
+        icon="pi pi-cog"
+      />
     </div>
   </div>
   <div class="novel-editor-body">
@@ -44,7 +45,7 @@
           optionLabel="name"
           placeholder="All Compendia"
           [showClear]="true"
-          [style]="{'width': '100%'}"
+          [style]="{ width: '100%' }"
         />
         <input
           pInputText
@@ -106,28 +107,24 @@
         }
       </div>
       @if (selectedRecord.media.length > 0) {
-        <div class="record-media-grid">
-          @for (media of selectedRecord.media; track media.id) {
-          <div
-            (click)="floatMedia(media)"
-            class="record-media"
-            [class.place-media]="
-              selectedRecord.type === CompendiumRecordType.Place
-            "
-            [class.floated]="isFloatedMedia(media)"
-          >
-            @if (!media.isVideo) {
-                <img 
-                  src="{{ media.url }}"
-                  alt="{{ media.id }}" />
-              } @else {
-              <video 
-                autoplay muted loop
-                src="{{ media.url }}"></video>
-            }
-          </div>
+      <div class="record-media-grid">
+        @for (media of selectedRecord.media; track media.id) {
+        <div
+          (click)="floatMedia(media)"
+          class="record-media"
+          [class.place-media]="
+            selectedRecord.type === CompendiumRecordType.Place
+          "
+          [class.floated]="isFloatedMedia(media)"
+        >
+          @if (!media.isVideo) {
+          <img src="{{ media.url }}" alt="{{ media.id }}" />
+          } @else {
+          <video autoplay muted loop src="{{ media.url }}"></video>
           }
         </div>
+        }
+      </div>
       }
       <div class="record-context">
         <p>{{ selectedRecord.context }}</p>
@@ -155,19 +152,20 @@
         [class.last-hovered]="lastHoveredFloatingMediaId === media.id"
       >
         @if (!media.isVideo) {
-          <img
-            src="{{ media.url }}"
-            alt="{{ media.id }}"
-            (click)="zoomMedia(media)"
-          />
+        <img
+          src="{{ media.url }}"
+          alt="{{ media.id }}"
+          (click)="zoomMedia(media)"
+        />
         } @else {
-          <video
-            autoplay muted loop
-            src="{{ media.url }}"
-            (click)="zoomMedia(media)"
-          ></video>
-        }
-        @if (media.id === lastHoveredFloatingMediaId) {
+        <video
+          autoplay
+          muted
+          loop
+          src="{{ media.url }}"
+          (click)="zoomMedia(media)"
+        ></video>
+        } @if (media.id === lastHoveredFloatingMediaId) {
         <i
           class="floating-media-remove icon icon-close"
           (click)="floatMedia(media)"
@@ -182,9 +180,9 @@
   <div class="zoomed-media-overlay" (click)="unzoomMedia()">
     <div class="zoomed-media">
       @if (!zoomedMedia.isVideo) {
-        <img src="{{ zoomedMedia.url }}" alt="{{ zoomedMedia.id }}" />
+      <img src="{{ zoomedMedia.url }}" alt="{{ zoomedMedia.id }}" />
       } @else {
-        <video autoplay muted loop src="{{ zoomedMedia.url }}"></video>
+      <video autoplay muted loop src="{{ zoomedMedia.url }}"></video>
       }
     </div>
   </div>

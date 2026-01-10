@@ -165,15 +165,18 @@ export class CompendiumComponent implements OnInit {
     }
 
     this.confirmationService.confirm({
-      message: 'Are you sure you want to remove this compendium and all of its records? This action cannot be undone.',
+      message:
+        'Are you sure you want to remove this compendium and all of its records? This action cannot be undone.',
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.compendiumService.deleteCompendium(this.compendium!.id).subscribe(() => {
-          // Redirect to the compendia page
-          window.location.href = '/compendia';
-        });
+        this.compendiumService
+          .deleteCompendium(this.compendium!.id)
+          .subscribe(() => {
+            // Redirect to the compendia page
+            window.location.href = '/compendia';
+          });
       },
     });
   }

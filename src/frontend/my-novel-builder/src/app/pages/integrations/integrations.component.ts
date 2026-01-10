@@ -1,7 +1,15 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { IntegrationsService } from '../../services/integrations.service';
-import { IntegrationsConfigDto, UpdateIntegrationsConfigDto } from '../../types/dtos/integrations/integrations-config.dto';
+import {
+  IntegrationsConfigDto,
+  UpdateIntegrationsConfigDto,
+} from '../../types/dtos/integrations/integrations-config.dto';
 import { ToastrService } from 'ngx-toastr';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -10,21 +18,16 @@ import { PasswordModule } from 'primeng/password';
 @Component({
   selector: 'app-integrations',
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    InputTextModule,
-    ButtonModule,
-    PasswordModule,
-  ],
+  imports: [ReactiveFormsModule, InputTextModule, ButtonModule, PasswordModule],
   templateUrl: './integrations.component.html',
-  styleUrl: './integrations.component.scss'
+  styleUrl: './integrations.component.scss',
 })
 export class IntegrationsComponent implements OnInit {
   private integrationsService = inject(IntegrationsService);
   private toastrService = inject(ToastrService);
 
   integrationsForm = new FormGroup({
-    openRouterApiKey: new FormControl('', Validators.maxLength(1000))
+    openRouterApiKey: new FormControl('', Validators.maxLength(1000)),
   });
   hasOpenRouterApiKey: boolean = false;
 
@@ -36,7 +39,7 @@ export class IntegrationsComponent implements OnInit {
       error: (error) => {
         this.toastrService.error('Failed to load integrations configuration.');
         console.error('Error loading configuration:', error);
-      }
+      },
     });
   }
 
@@ -46,18 +49,22 @@ export class IntegrationsComponent implements OnInit {
     }
 
     const updateDto: UpdateIntegrationsConfigDto = {
-      openRouterApiKey: this.integrationsForm.value.openRouterApiKey
+      openRouterApiKey: this.integrationsForm.value.openRouterApiKey,
     };
     this.integrationsService.updateIntegrationsConfig(updateDto).subscribe({
       next: () => {
         this.hasOpenRouterApiKey = !!updateDto.openRouterApiKey;
         this.integrationsForm.get('openRouterApiKey')?.reset();
-        this.toastrService.success('Integrations configuration updated successfully.');
+        this.toastrService.success(
+          'Integrations configuration updated successfully.'
+        );
       },
       error: (error) => {
-        this.toastrService.error('Failed to update integrations configuration.');
+        this.toastrService.error(
+          'Failed to update integrations configuration.'
+        );
         console.error('Error updating configuration:', error);
-      }
+      },
     });
   }
 }

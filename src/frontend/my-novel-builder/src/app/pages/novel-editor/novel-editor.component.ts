@@ -118,9 +118,7 @@ export class NovelEditorComponent {
   }
 
   restoreFloatedMedia(): void {
-    this.floatedMedia = this.novelService.getFloatedMediaForNovel(
-      this.novelId
-    );
+    this.floatedMedia = this.novelService.getFloatedMediaForNovel(this.novelId);
   }
 
   getCompendiumRecordsByType(
@@ -186,10 +184,7 @@ export class NovelEditorComponent {
     }
 
     this.floatedMedia = [...this.floatedMedia, media];
-    this.novelService.setFloatedMediaForNovel(
-      this.novelId,
-      this.floatedMedia
-    );
+    this.novelService.setFloatedMediaForNovel(this.novelId, this.floatedMedia);
   }
 
   zoomMedia(media: CompendiumRecordMediaDto): void {

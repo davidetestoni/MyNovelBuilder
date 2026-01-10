@@ -21,22 +21,18 @@
       </div>
     </div>
     <div class="result-actions">
-      <p-button
-        label="Back"
-        (click)="goBack()"
-        [disabled]="isGenerating" />
+      <p-button label="Back" (click)="goBack()" [disabled]="isGenerating" />
       <p-button
         label="Retry"
         (click)="generateText()"
-        [disabled]="isGenerating" />
+        [disabled]="isGenerating"
+      />
       <p-button
         label="{{ data.textToReplace.length > 0 ? 'Replace' : 'Insert' }}"
         (click)="accept()"
-        [disabled]="isGenerating" />
-      <p-button
-        label="Discard"
-        (click)="discard()"
-        [disabled]="isGenerating" />
+        [disabled]="isGenerating"
+      />
+      <p-button label="Discard" (click)="discard()" [disabled]="isGenerating" />
     </div>
   </div>
 </div>

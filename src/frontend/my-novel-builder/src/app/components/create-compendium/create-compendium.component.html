@@ -1,7 +1,6 @@
 <div class="compendium-container">
   <div class="compendium-editor">
     <form [formGroup]="formGroup" class="compendium-form">
-      
       <!-- Name Field -->
       <div class="compendium-name">
         <label class="label" for="name">
@@ -34,7 +33,15 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="compendium-actions" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+      <div
+        class="compendium-actions"
+        style="
+          margin-top: 2rem;
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+        "
+      >
         <p-button
           label="Cancel"
           severity="secondary"
@@ -47,7 +54,6 @@
           [disabled]="formGroup.invalid || formGroup.pristine"
         />
       </div>
-
     </form>
   </div>
 </div>

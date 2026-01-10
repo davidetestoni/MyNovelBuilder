@@ -1,6 +1,12 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { CompendiumService } from '../../services/compendium.service';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { ToastrService } from 'ngx-toastr';
@@ -23,13 +29,13 @@ export interface GenerateCompendiumRecordComponentData {
   selector: 'app-generate-compendium-record-result',
   standalone: true,
   imports: [
-    FormsModule, 
-    ReactiveFormsModule, 
+    FormsModule,
+    ReactiveFormsModule,
     TitleCasePipe,
     InputTextModule,
     TextareaModule,
     SelectModule,
-    ButtonModule
+    ButtonModule,
   ],
   templateUrl: './generate-compendium-record-result.component.html',
   styleUrl: './generate-compendium-record-result.component.scss',
@@ -43,7 +49,7 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   readonly novelService: NovelService = inject(NovelService);
   readonly toastr: ToastrService = inject(ToastrService);
-  
+
   compendia: CompendiumDto[] = [];
 
   recordTypes: CompendiumRecordType[] = [
@@ -72,19 +78,18 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
 
   ngOnInit(): void {
     this.formGroup.get('context')!.setValue(this.data.generatedText);
-    
-    this.novelService.getNovel(this.data.novelId)
-      .subscribe((novel) => {
-        this.compendiumService.getCompendia().subscribe((compendia) => {
-          this.compendia = compendia
-            .filter((compendium) => novel.compendiumIds.includes(compendium.id));
 
-          if (this.compendia.length > 0) {
-            this.formGroup.get('compendiumId')!.setValue(this.compendia[0].id);
-          }
-        });
-      }
-    );
+    this.novelService.getNovel(this.data.novelId).subscribe((novel) => {
+      this.compendiumService.getCompendia().subscribe((compendia) => {
+        this.compendia = compendia.filter((compendium) =>
+          novel.compendiumIds.includes(compendium.id)
+        );
+
+        if (this.compendia.length > 0) {
+          this.formGroup.get('compendiumId')!.setValue(this.compendia[0].id);
+        }
+      });
+    });
   }
 
   accept(): void {
@@ -92,17 +97,19 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
 
     const name = this.formGroup.get('name')!.value!;
 
-    this.compendiumService.createRecord({
-      name: name,
-      aliases: this.formGroup.get('aliases')!.value!,
-      type: this.formGroup.get('type')!.value!,
-      context: this.data.generatedText,
-      compendiumId: this.formGroup.get('compendiumId')!.value!,
-      alwaysIncluded: false,
-    }).subscribe(() => {
-      this.toastr.success(`Record ${name} created successfully`);
-      this.dialogRef.close(true);
-    });
+    this.compendiumService
+      .createRecord({
+        name: name,
+        aliases: this.formGroup.get('aliases')!.value!,
+        type: this.formGroup.get('type')!.value!,
+        context: this.data.generatedText,
+        compendiumId: this.formGroup.get('compendiumId')!.value!,
+        alwaysIncluded: false,
+      })
+      .subscribe(() => {
+        this.toastr.success(`Record ${name} created successfully`);
+        this.dialogRef.close(true);
+      });
   }
 
   cancel(): void {

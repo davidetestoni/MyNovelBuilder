@@ -30,7 +30,8 @@ export class GenerateTextResultComponent implements OnInit {
 
   data!: GenerateTextResultComponentData;
 
-  readonly generateTextService: GenerateTextService = inject(GenerateTextService);
+  readonly generateTextService: GenerateTextService =
+    inject(GenerateTextService);
   readonly toastr: ToastrService = inject(ToastrService);
   isGenerating = true;
   generatedText = '';

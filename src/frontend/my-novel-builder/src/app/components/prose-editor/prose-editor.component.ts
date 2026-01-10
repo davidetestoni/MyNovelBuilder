@@ -1,4 +1,11 @@
-import { Component, EventEmitter, Input, OnDestroy, Output, inject } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  Output,
+  inject,
+} from '@angular/core';
 import { Prose, Section } from '../../types/dtos/novel/prose';
 import { CommonModule } from '@angular/common';
 import {
@@ -39,7 +46,10 @@ import {
 } from '../generate-text-result/generate-text-result.component';
 import Quill from 'quill';
 import { GenerateAudioService } from '../../services/generate-audio.service';
-import { GenerateCompendiumRecordComponentData, GenerateCompendiumRecordResultComponent } from '../generate-compendium-record-result/generate-compendium-record-result.component';
+import {
+  GenerateCompendiumRecordComponentData,
+  GenerateCompendiumRecordResultComponent,
+} from '../generate-compendium-record-result/generate-compendium-record-result.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { TooltipModule } from 'primeng/tooltip';
 
@@ -56,7 +66,13 @@ interface LastSelection {
   standalone: true,
   templateUrl: './prose-editor.component.html',
   styleUrl: './prose-editor.component.scss',
-  imports: [CommonModule, FormsModule, QuillModule, ToastrModule, TooltipModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    QuillModule,
+    ToastrModule,
+    TooltipModule,
+  ],
   providers: [DialogService],
 })
 export class ProseEditorComponent implements OnDestroy {
@@ -68,8 +84,10 @@ export class ProseEditorComponent implements OnDestroy {
   @Output() recordsChange: EventEmitter<void> = new EventEmitter<void>();
   private dialogService = inject(DialogService);
   readonly toastr: ToastrService = inject(ToastrService);
-  readonly generateTextService: GenerateTextService = inject(GenerateTextService);
-  readonly generateAudioService: GenerateAudioService = inject(GenerateAudioService);
+  readonly generateTextService: GenerateTextService =
+    inject(GenerateTextService);
+  readonly generateAudioService: GenerateAudioService =
+    inject(GenerateAudioService);
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
@@ -268,21 +286,25 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   textToSpeech(chapterIndex: number, sectionIndex: number) {
-    this.generateAudioService.textToSpeech({
-      modelId: "sonic-2",
-      // voiceId: "coral",
-      // voiceId: "af_heart",
-      voiceId: "en-Emma_woman", // TODO: Read this from the user's settings
-      message: this.getRawText(this.prose.chapters[chapterIndex].sections[sectionIndex].text),
-    }).subscribe((event: HttpEvent<Blob>) => {
-      if (event.type === HttpEventType.Response) {
-        if (event.body !== null) {
-          const audio = new Audio();
-          audio.src = URL.createObjectURL(event.body);
-          audio.play();
+    this.generateAudioService
+      .textToSpeech({
+        modelId: 'sonic-2',
+        // voiceId: "coral",
+        // voiceId: "af_heart",
+        voiceId: 'en-Emma_woman', // TODO: Read this from the user's settings
+        message: this.getRawText(
+          this.prose.chapters[chapterIndex].sections[sectionIndex].text
+        ),
+      })
+      .subscribe((event: HttpEvent<Blob>) => {
+        if (event.type === HttpEventType.Response) {
+          if (event.body !== null) {
+            const audio = new Audio();
+            audio.src = URL.createObjectURL(event.body);
+            audio.play();
+          }
         }
-      }
-    });
+      });
   }
 
   openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {
@@ -403,7 +425,7 @@ export class ProseEditorComponent implements OnDestroy {
         novelId: this.novelId,
       },
     });
-    
+
     this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
       if (request) {
         this.openGenerateTextResultDialog(request);
@@ -434,10 +456,7 @@ export class ProseEditorComponent implements OnDestroy {
         const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
 
         // Append the generated text at the end of the range in the Quill editor.
-        this.lastSelection!.editor.insertText(
-          contextInfo.textOffset,
-          result
-        );
+        this.lastSelection!.editor.insertText(contextInfo.textOffset, result);
       }
     });
   }
@@ -516,10 +535,7 @@ export class ProseEditorComponent implements OnDestroy {
           contextInfo.textOffset,
           contextInfo.textLength
         );
-        this.lastSelection!.editor.insertText(
-          contextInfo.textOffset,
-          result
-        );
+        this.lastSelection!.editor.insertText(contextInfo.textOffset, result);
       }
     });
   }
@@ -571,34 +587,39 @@ export class ProseEditorComponent implements OnDestroy {
           dismissableMask: true,
           data: <GenerateTextResultComponentData>{
             request: request,
-            textToReplace: ''
+            textToReplace: '',
           },
         });
-        this.dialogRef?.onClose.subscribe((result: string | 'back' | undefined) => {
-          if (result === 'back') {
-            this.openCreateCompendiumRecordDialog();
-          } else if (result) {
-            this.dialogRef = this.dialogService.open(GenerateCompendiumRecordResultComponent, {
-              header: 'Create Compendium Record',
-              width: '50vw',
-              contentStyle: { overflow: 'auto' },
-              baseZIndex: 10000,
-              modal: true,
-              closable: true,
-              closeOnEscape: true,
-              dismissableMask: true,
-              data: <GenerateCompendiumRecordComponentData>{
-                generatedText: result,
-                novelId: this.novelId,
-              },
-            });
-            this.dialogRef?.onClose.subscribe((changed) => {
-              if (changed === true) {
-                this.recordsChange.emit();
-              }
-            });
+        this.dialogRef?.onClose.subscribe(
+          (result: string | 'back' | undefined) => {
+            if (result === 'back') {
+              this.openCreateCompendiumRecordDialog();
+            } else if (result) {
+              this.dialogRef = this.dialogService.open(
+                GenerateCompendiumRecordResultComponent,
+                {
+                  header: 'Create Compendium Record',
+                  width: '50vw',
+                  contentStyle: { overflow: 'auto' },
+                  baseZIndex: 10000,
+                  modal: true,
+                  closable: true,
+                  closeOnEscape: true,
+                  dismissableMask: true,
+                  data: <GenerateCompendiumRecordComponentData>{
+                    generatedText: result,
+                    novelId: this.novelId,
+                  },
+                }
+              );
+              this.dialogRef?.onClose.subscribe((changed) => {
+                if (changed === true) {
+                  this.recordsChange.emit();
+                }
+              });
+            }
           }
-        });
+        );
       }
     });
   }

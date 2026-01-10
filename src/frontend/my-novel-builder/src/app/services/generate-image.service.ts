@@ -15,9 +15,9 @@ export class GenerateImageService {
 
   generateImage(request: ImageGenRequestDto): Observable<HttpEvent<Blob>> {
     return this.http.post(`${this.baseUrl}/generate/image`, request, {
-          observe: 'events',
-          reportProgress: true,
-          responseType: 'blob',
-        });
+      observe: 'events',
+      reportProgress: true,
+      responseType: 'blob',
+    });
   }
 }

@@ -58,7 +58,11 @@ export class LocalStorageService {
    * @param mapKey The key within the stored map object
    * @param value The value to store
    */
-  setNestedStringForKey(storageKey: string, mapKey: string, value: string): void {
+  setNestedStringForKey(
+    storageKey: string,
+    mapKey: string,
+    value: string
+  ): void {
     const map = this.getObjectForKey<Record<string, string>>(storageKey) ?? {};
     map[mapKey] = value;
     this.setObjectForKey(storageKey, map);

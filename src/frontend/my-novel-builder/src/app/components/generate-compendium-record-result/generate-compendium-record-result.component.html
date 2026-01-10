@@ -1,7 +1,6 @@
 <div class="compendium-record-container">
   <div class="compendium-record-editor">
     <form [formGroup]="formGroup" class="compendium-record-form">
-      
       <!-- Compendium Selection -->
       <div class="compendium-record-name">
         <label class="label">
@@ -13,7 +12,7 @@
           optionLabel="name"
           optionValue="id"
           placeholder="Select a compendium"
-          [style]="{'width':'100%'}"
+          [style]="{ width: '100%' }"
         ></p-select>
       </div>
 
@@ -39,7 +38,7 @@
           formControlName="type"
           [options]="recordTypes"
           placeholder="Select a type"
-          [style]="{'width':'100%'}"
+          [style]="{ width: '100%' }"
         >
           <ng-template #selectedItem let-selectedOption>
             {{ selectedOption | titlecase }}
@@ -78,7 +77,15 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="compendium-record-actions" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+      <div
+        class="compendium-record-actions"
+        style="
+          margin-top: 2rem;
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+        "
+      >
         <p-button
           label="Cancel"
           severity="secondary"
@@ -91,7 +98,6 @@
           [disabled]="formGroup.invalid"
         />
       </div>
-
     </form>
   </div>
 </div>

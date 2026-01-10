@@ -1,5 +1,11 @@
 import { Component, inject } from '@angular/core';
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { GenerateImageService } from '../../services/generate-image.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { DynamicDialogRef } from 'primeng/dynamicdialog';
@@ -21,18 +27,20 @@ import { ButtonModule } from 'primeng/button';
     ButtonModule,
   ],
   templateUrl: './generate-image.component.html',
-  styleUrl: './generate-image.component.scss'
+  styleUrl: './generate-image.component.scss',
 })
 export class GenerateImageComponent {
   dialogRef = inject(DynamicDialogRef);
 
   models: string[] = ['z-image/turbo']; // TODO: Get models from API
-  readonly generateImageService: GenerateImageService = inject(GenerateImageService);
-  readonly localStorageService: LocalStorageService = inject(LocalStorageService);
+  readonly generateImageService: GenerateImageService =
+    inject(GenerateImageService);
+  readonly localStorageService: LocalStorageService =
+    inject(LocalStorageService);
   readonly toastrService: ToastrService = inject(ToastrService);
   readonly sanitizer: DomSanitizer = inject(DomSanitizer);
 
-  formGroup = new FormGroup({ 
+  formGroup = new FormGroup({
     prompt: new FormControl('', [Validators.required]),
     model: new FormControl('', [Validators.required]),
   });
@@ -42,9 +50,9 @@ export class GenerateImageComponent {
   isGenerating = false;
 
   constructor() {
-    const prompt =
-      this.localStorageService.getStringForKey(
-        LocalStorageKey.LastImagePrompt);
+    const prompt = this.localStorageService.getStringForKey(
+      LocalStorageKey.LastImagePrompt
+    );
 
     this.formGroup.patchValue({
       model: this.models[0],
@@ -67,31 +75,34 @@ export class GenerateImageComponent {
     // Save the prompt
     this.localStorageService.setStringForKey(
       LocalStorageKey.LastImagePrompt,
-      this.formGroup.get('prompt')!.value!);
+      this.formGroup.get('prompt')!.value!
+    );
 
     this.isGenerating = true;
 
-    this.generateImageService.generateImage({
-      modelId: this.formGroup.get('model')!.value!,
-      prompt: this.formGroup.get('prompt')!.value!,
-      width: 832,
-      height: 1248,
-    }).subscribe({
-      next: (event: HttpEvent<Blob>) => {
-        if (event.type === HttpEventType.Response) {
-          this.imageBlob = event.body;
-  
-          if (event.body !== null) {
-            const objectURL = URL.createObjectURL(event.body);
-            this.imagePreview = this.sanitizer.bypassSecurityTrustUrl(
-              objectURL);
+    this.generateImageService
+      .generateImage({
+        modelId: this.formGroup.get('model')!.value!,
+        prompt: this.formGroup.get('prompt')!.value!,
+        width: 832,
+        height: 1248,
+      })
+      .subscribe({
+        next: (event: HttpEvent<Blob>) => {
+          if (event.type === HttpEventType.Response) {
+            this.imageBlob = event.body;
+
+            if (event.body !== null) {
+              const objectURL = URL.createObjectURL(event.body);
+              this.imagePreview =
+                this.sanitizer.bypassSecurityTrustUrl(objectURL);
+            }
           }
-        }
-      },
-      complete: () => {
-        this.isGenerating = false;
-      },
-    });
+        },
+        complete: () => {
+          this.isGenerating = false;
+        },
+      });
   }
 
   accept(): void {

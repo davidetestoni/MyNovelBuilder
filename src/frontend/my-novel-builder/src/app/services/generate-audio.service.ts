@@ -17,15 +17,17 @@ export class GenerateAudioService {
 
   textToSpeech(request: TtsRequestDto): Observable<HttpEvent<Blob>> {
     return this.http.post(`${this.baseUrl}/generate/audio/tts`, request, {
-          observe: 'events',
-          reportProgress: true,
-          responseType: 'blob',
-        });
+      observe: 'events',
+      reportProgress: true,
+      responseType: 'blob',
+    });
   }
 
   getAvailableVoices(): Observable<TtsVoiceDto[]> {
     return this.mocked
-        ? mockObservable(mockedAvailableVoices)
-        : this.http.get<TtsVoiceDto[]>(`${this.baseUrl}/generate/audio/tts/voices`);
+      ? mockObservable(mockedAvailableVoices)
+      : this.http.get<TtsVoiceDto[]>(
+          `${this.baseUrl}/generate/audio/tts/voices`
+        );
   }
 }
