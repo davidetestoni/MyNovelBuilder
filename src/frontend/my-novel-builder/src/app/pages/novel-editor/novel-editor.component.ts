@@ -23,6 +23,8 @@ import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
   styleUrl: './novel-editor.component.scss',
 })
 export class NovelEditorComponent {
+  private route = inject(ActivatedRoute);
+
   compendia: CompendiumDto[] | null = null;
   prompts: PromptDto[] | null = null; // TODO: Send a lighter version of this DTO
   novel: NovelDto | null = null;
@@ -49,8 +51,6 @@ export class NovelEditorComponent {
   ];
 
   CompendiumRecordType = CompendiumRecordType;
-
-  constructor(private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.novelId = this.route.snapshot.paramMap.get('id')!;

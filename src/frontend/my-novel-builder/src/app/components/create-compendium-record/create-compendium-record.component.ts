@@ -1,4 +1,4 @@
-import { Component, Inject, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -28,6 +28,12 @@ import { TitleCasePipe } from '@angular/common';
   styleUrl: './create-compendium-record.component.scss',
 })
 export class CreateCompendiumRecordComponent {
+  data = inject<{
+    compendiumId: string;
+}>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<CreateCompendiumRecordComponent>>(MatDialogRef);
+  private toastr = inject(ToastrService);
+
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
   readonly compendiumService: CompendiumService = inject(CompendiumService);
@@ -51,12 +57,6 @@ export class CreateCompendiumRecordComponent {
     CompendiumRecordType.Concept,
     CompendiumRecordType.Other,
   ];
-
-  constructor(
-    @Inject(MAT_DIALOG_DATA) public data: { compendiumId: string },
-    public dialogRef: MatDialogRef<CreateCompendiumRecordComponent>,
-    private toastr: ToastrService
-  ) {}
 
   createRecord(): void {
     this.compendiumService

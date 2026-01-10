@@ -1,6 +1,6 @@
 import { HttpClient, HttpEvent } from '@angular/common/http';
 import { environment } from '../../environment';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { TtsRequestDto } from '../types/dtos/generate/tts-request.dto';
 import { Observable } from 'rxjs';
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
@@ -10,10 +10,10 @@ import { mockedAvailableVoices, mockObservable } from './mock';
   providedIn: 'root',
 })
 export class GenerateAudioService {
+  private http = inject(HttpClient);
+
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
-
-  constructor(private http: HttpClient) {}
 
   textToSpeech(request: TtsRequestDto): Observable<HttpEvent<Blob>> {
     return this.http.post(`${this.baseUrl}/generate/audio/tts`, request, {

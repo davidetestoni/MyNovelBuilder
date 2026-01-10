@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { Router, RouterOutlet, RoutesRecognized } from '@angular/router';
 import { EmptyLayoutComponent } from './layouts/empty-layout/empty-layout.component';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
@@ -13,13 +13,11 @@ import { isPlatformBrowser } from '@angular/common';
   imports: [RouterOutlet, EmptyLayoutComponent, MainLayoutComponent],
 })
 export class AppComponent implements OnInit {
+  private router = inject(Router);
+  private platformId = inject<Object>(PLATFORM_ID);
+
   LayoutType = LayoutType;
   layoutType: LayoutType = LayoutType.Empty;
-
-  constructor(
-    private router: Router,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {}
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {

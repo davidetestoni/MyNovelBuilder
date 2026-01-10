@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -35,6 +35,9 @@ export interface GenerateTextComponentData {
   styleUrl: './generate-text.component.scss',
 })
 export class GenerateTextComponent implements OnInit {
+  data = inject<GenerateTextComponentData>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<GenerateTextComponent>>(MatDialogRef);
+
   instructionsRequired = false;
   models: string[] = [];
   readonly generateTextService: GenerateTextService = inject(GenerateTextService);
@@ -47,11 +50,9 @@ export class GenerateTextComponent implements OnInit {
     instructions: new FormControl(''),
   });
 
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: GenerateTextComponentData,
-    public dialogRef: MatDialogRef<GenerateTextComponent>
-  ) {
+  constructor() {
+    const data = this.data;
+
     if (data.prompts.length === 0) {
       throw new Error('No prompts provided');
     }

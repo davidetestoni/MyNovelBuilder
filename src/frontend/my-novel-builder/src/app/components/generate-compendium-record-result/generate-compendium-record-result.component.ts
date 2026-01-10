@@ -1,4 +1,4 @@
-import { Component, inject, Inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -21,6 +21,9 @@ export interface GenerateCompendiumRecordComponentData {
   styleUrl: './generate-compendium-record-result.component.scss',
 })
 export class GenerateCompendiumRecordResultComponent implements OnInit {
+  data = inject<GenerateCompendiumRecordComponentData>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<GenerateCompendiumRecordResultComponent>>(MatDialogRef);
+
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   readonly novelService: NovelService = inject(NovelService);
   readonly toastr: ToastrService = inject(ToastrService);
@@ -45,12 +48,6 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
     aliases: new FormControl('', [Validators.maxLength(500)]),
     context: new FormControl(''),
   });
-
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: GenerateCompendiumRecordComponentData,
-    public dialogRef: MatDialogRef<GenerateCompendiumRecordResultComponent>
-  ) {}
 
   ngOnInit(): void {
     this.formGroup.get('context')!.setValue(this.data.generatedText);

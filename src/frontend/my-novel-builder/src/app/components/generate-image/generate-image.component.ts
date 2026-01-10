@@ -16,6 +16,8 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
   styleUrl: './generate-image.component.scss'
 })
 export class GenerateImageComponent {
+  dialogRef = inject<MatDialogRef<GenerateImageComponent>>(MatDialogRef);
+
   models: string[] = ['z-image/turbo']; // TODO: Get models from API
   readonly generateImageService: GenerateImageService = inject(GenerateImageService);
   readonly localStorageService: LocalStorageService = inject(LocalStorageService);
@@ -31,9 +33,7 @@ export class GenerateImageComponent {
   imagePreview: SafeUrl | null = null;
   isGenerating = false;
 
-  constructor(
-    public dialogRef: MatDialogRef<GenerateImageComponent>
-  ) {
+  constructor() {
     const prompt =
       this.localStorageService.getStringForKey(
         LocalStorageKey.LastImagePrompt);

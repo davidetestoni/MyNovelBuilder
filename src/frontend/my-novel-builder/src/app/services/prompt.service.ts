@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environment';
 import { mockObservable, mockedPrompts } from './mock';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { PromptDto } from '../types/dtos/prompt/prompt.dto';
 import { CreatePromptDto } from '../types/dtos/prompt/create-prompt.dto';
 import { UpdatePromptDto } from '../types/dtos/prompt/update-prompt.dto';
@@ -12,12 +12,12 @@ import { PromptType } from '../types/enums/prompt-type';
   providedIn: 'root',
 })
 export class PromptService {
+  private http = inject(HttpClient);
+
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
   private recentInstructionsKey = 'recentInstructions';
   private recentPromptsKey = 'recentPrompts';
-
-  constructor(private http: HttpClient) {}
 
   getPrompts(): Observable<PromptDto[]> {
     return this.mocked

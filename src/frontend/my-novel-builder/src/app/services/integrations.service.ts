@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environment';
@@ -9,10 +9,10 @@ import { mockedIntegrationsConfig, mockObservable } from './mock';
   providedIn: 'root'
 })
 export class IntegrationsService {
+  private http = inject(HttpClient);
+
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
-
-  constructor(private http: HttpClient) { }
 
   getIntegrationsConfig(): Observable<IntegrationsConfigDto> {
     return this.mocked

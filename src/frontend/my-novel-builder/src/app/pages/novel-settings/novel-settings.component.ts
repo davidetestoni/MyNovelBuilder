@@ -20,6 +20,8 @@ import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
   styleUrl: './novel-settings.component.scss',
 })
 export class NovelSettingsComponent {
+  private route = inject(ActivatedRoute);
+
   novel: NovelDto | null = null;
   compendia: CompendiumDto[] | null = null;
   readonly novelService: NovelService = inject(NovelService);
@@ -42,8 +44,6 @@ export class NovelSettingsComponent {
     WritingLanguage.German,
     WritingLanguage.Russian,
   ];
-
-  constructor(private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.novelId = this.route.snapshot.paramMap.get('id')!;

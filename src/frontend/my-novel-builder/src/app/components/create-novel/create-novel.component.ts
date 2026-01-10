@@ -27,6 +27,9 @@ import {
   styleUrl: './create-novel.component.scss',
 })
 export class CreateNovelComponent {
+  dialogRef = inject<MatDialogRef<CreateNovelComponent>>(MatDialogRef);
+  private toastr = inject(ToastrService);
+
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
   readonly novelService: NovelService = inject(NovelService);
@@ -52,11 +55,6 @@ export class CreateNovelComponent {
     ]),
     // TODO: Add compendia and main character id
   });
-
-  constructor(
-    public dialogRef: MatDialogRef<CreateNovelComponent>,
-    private toastr: ToastrService
-  ) {}
 
   createNovel(): void {
     const tenseValue: string = this.formGroup.get('tense')!.value!;

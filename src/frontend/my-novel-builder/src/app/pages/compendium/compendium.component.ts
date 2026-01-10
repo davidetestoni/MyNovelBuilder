@@ -18,6 +18,8 @@ import { CompendiumRecordComponent } from '../../components/edit-compendium-reco
   styleUrl: './compendium.component.scss',
 })
 export class CompendiumComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+
   compendium: CompendiumDto | null = null;
   records: CompendiumRecordDto[] | null = null;
   readonly dialog = inject(MatDialog);
@@ -33,8 +35,6 @@ export class CompendiumComponent implements OnInit {
     CompendiumRecordType.Concept,
     CompendiumRecordType.Other,
   ];
-
-  constructor(private route: ActivatedRoute) {}
 
   ngOnInit(): void {
     this.compendiumId = this.route.snapshot.paramMap.get('id')!;

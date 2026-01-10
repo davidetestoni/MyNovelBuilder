@@ -2,7 +2,7 @@ import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environment';
 import { mockedTextGenerationResponse } from './mock';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { Moment } from 'moment';
 import moment from 'moment';
@@ -11,6 +11,8 @@ import moment from 'moment';
   providedIn: 'root',
 })
 export class GenerateTextService {
+  private http = inject(HttpClient);
+
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
 
@@ -20,8 +22,6 @@ export class GenerateTextService {
   cachedModelsExpiry = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
   cachedModelsLastUpdated: Moment | null = null;
   cachedModelsLastUpdatedKey = 'cachedModelsLastUpdated';
-
-  constructor(private http: HttpClient) {}
 
   generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>> {
     // Add the model to the start of the recently used models list

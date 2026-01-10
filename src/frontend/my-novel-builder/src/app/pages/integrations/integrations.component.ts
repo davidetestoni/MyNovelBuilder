@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IntegrationsService } from '../../services/integrations.service';
@@ -13,12 +13,13 @@ import { ToastrService } from 'ngx-toastr';
   styleUrl: './integrations.component.scss'
 })
 export class IntegrationsComponent implements OnInit {
+  private integrationsService = inject(IntegrationsService);
+  private toastrService = inject(ToastrService);
+
   integrationsForm = new FormGroup({
     openRouterApiKey: new FormControl('', Validators.maxLength(1000))
   });
   hasOpenRouterApiKey: boolean = false;
-
-  constructor(private integrationsService: IntegrationsService, private toastrService: ToastrService) { }
 
   ngOnInit(): void {
     this.integrationsService.getIntegrationsConfig().subscribe({

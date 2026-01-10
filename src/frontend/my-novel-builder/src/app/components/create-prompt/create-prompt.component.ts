@@ -28,6 +28,9 @@ import { SpacedPipe } from '../../pipes/spaced.pipe';
   styleUrl: './create-prompt.component.scss',
 })
 export class CreatePromptComponent {
+  dialogRef = inject<MatDialogRef<CreatePromptComponent>>(MatDialogRef);
+  private toastr = inject(ToastrService);
+
   readonly promptService: PromptService = inject(PromptService);
 
   formGroup = new FormGroup({
@@ -45,11 +48,6 @@ export class CreatePromptComponent {
     PromptType.CreateCompendiumRecord,
     PromptType.EditCompendiumRecord,
   ];
-
-  constructor(
-    public dialogRef: MatDialogRef<CreatePromptComponent>,
-    private toastr: ToastrService
-  ) {}
 
   createPrompt(): void {
     this.promptService

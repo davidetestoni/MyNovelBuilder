@@ -6,7 +6,7 @@ import {
   mockedCompendia,
   mockedCompendiumRecords,
 } from './mock';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { CompendiumDto } from '../types/dtos/compendium/compendium.dto';
 import { CreateCompendiumDto } from '../types/dtos/compendium/create-compendium.dto';
 import { UpdateCompendiumDto } from '../types/dtos/compendium/update-compendium.dto';
@@ -18,10 +18,10 @@ import { UpdateCompendiumRecordDto } from '../types/dtos/compendium-record/updat
   providedIn: 'root',
 })
 export class CompendiumService {
+  private http = inject(HttpClient);
+
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
-
-  constructor(private http: HttpClient) {}
 
   getCompendia(): Observable<CompendiumDto[]> {
     return this.mocked

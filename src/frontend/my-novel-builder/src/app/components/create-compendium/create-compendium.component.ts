@@ -24,17 +24,15 @@ import { ToastrModule, ToastrService } from 'ngx-toastr';
   styleUrl: './create-compendium.component.scss',
 })
 export class CreateCompendiumComponent {
+  dialogRef = inject<MatDialogRef<CreateCompendiumComponent>>(MatDialogRef);
+  private toastr = inject(ToastrService);
+
   readonly compendiumService: CompendiumService = inject(CompendiumService);
 
   formGroup = new FormGroup({
     name: new FormControl('', [Validators.required, Validators.maxLength(100)]),
     description: new FormControl('', [Validators.maxLength(500)]),
   });
-
-  constructor(
-    public dialogRef: MatDialogRef<CreateCompendiumComponent>,
-    private toastr: ToastrService
-  ) {}
 
   createCompendium(): void {
     this.compendiumService

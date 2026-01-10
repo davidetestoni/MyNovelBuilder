@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import {
@@ -24,16 +24,13 @@ export interface GenerateTextResultComponentData {
   styleUrl: './generate-text-result.component.scss',
 })
 export class GenerateTextResultComponent implements OnInit {
+  data = inject<GenerateTextResultComponentData>(MAT_DIALOG_DATA);
+  dialogRef = inject<MatDialogRef<GenerateTextResultComponent>>(MatDialogRef);
+
   readonly generateTextService: GenerateTextService = inject(GenerateTextService);
   readonly toastr: ToastrService = inject(ToastrService);
   isGenerating = true;
   generatedText = '';
-
-  constructor(
-    @Inject(MAT_DIALOG_DATA)
-    public data: GenerateTextResultComponentData,
-    public dialogRef: MatDialogRef<GenerateTextResultComponent>
-  ) {}
 
   ngOnInit(): void {
     this.generateText();

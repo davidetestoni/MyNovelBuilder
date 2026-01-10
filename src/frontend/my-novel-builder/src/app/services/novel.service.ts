@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { NovelDto } from '../types/dtos/novel/novel.dto';
 import { environment } from '../../environment';
 import { mockObservable, mockedNovels, mockedProse } from './mock';
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { CreateNovelDto } from '../types/dtos/novel/create-novel.dto';
 import { UpdateNovelDto } from '../types/dtos/novel/update-novel.dto';
 import { Prose } from '../types/dtos/novel/prose';
@@ -17,11 +17,11 @@ interface FloatedMedia {
   providedIn: 'root',
 })
 export class NovelService {
+  private http = inject(HttpClient);
+
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
-  private floatedMediaKey = 'floatedImages'; // For backwards compatibility
-
-  constructor(private http: HttpClient) {}
+  private floatedMediaKey = 'floatedImages';
 
   getNovels(): Observable<NovelDto[]> {
     return this.mocked
