@@ -1,5 +1,4 @@
 <div class="modal-container">
-  <h2>Text Generation Result</h2>
   <div class="result-container">
     @if (data.textToReplace.length > 0) {
     <div class="text-to-replace">
@@ -22,12 +21,22 @@
       </div>
     </div>
     <div class="result-actions">
-      <button (click)="goBack()" [disabled]="isGenerating">Back</button>
-      <button (click)="generateText()" [disabled]="isGenerating">Retry</button>
-      <button (click)="accept()" [disabled]="isGenerating">
-        {{ data.textToReplace.length > 0 ? "Replace" : "Insert" }}
-      </button>
-      <button (click)="discard()" [disabled]="isGenerating">Discard</button>
+      <p-button
+        label="Back"
+        (click)="goBack()"
+        [disabled]="isGenerating" />
+      <p-button
+        label="Retry"
+        (click)="generateText()"
+        [disabled]="isGenerating" />
+      <p-button
+        label="{{ data.textToReplace.length > 0 ? 'Replace' : 'Insert' }}"
+        (click)="accept()"
+        [disabled]="isGenerating" />
+      <p-button
+        label="Discard"
+        (click)="discard()"
+        [disabled]="isGenerating" />
     </div>
   </div>
 </div>

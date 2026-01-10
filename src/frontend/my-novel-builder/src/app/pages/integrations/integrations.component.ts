@@ -1,14 +1,21 @@
 import { Component, OnInit, inject } from '@angular/core';
-
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { IntegrationsService } from '../../services/integrations.service';
 import { IntegrationsConfigDto, UpdateIntegrationsConfigDto } from '../../types/dtos/integrations/integrations-config.dto';
 import { ToastrService } from 'ngx-toastr';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { PasswordModule } from 'primeng/password';
 
 @Component({
   selector: 'app-integrations',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [
+    ReactiveFormsModule,
+    InputTextModule,
+    ButtonModule,
+    PasswordModule,
+  ],
   templateUrl: './integrations.component.html',
   styleUrl: './integrations.component.scss'
 })

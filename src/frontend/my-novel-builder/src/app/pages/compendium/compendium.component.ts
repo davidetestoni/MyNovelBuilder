@@ -6,26 +6,42 @@ import { FormsModule } from '@angular/forms';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { TitleCasePipe } from '@angular/common';
-import { MatDialog } from '@angular/material/dialog';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { CreateCompendiumRecordComponent } from '../../components/create-compendium-record/create-compendium-record.component';
 import { CompendiumRecordComponent } from '../../components/edit-compendium-record/compendium-record.component';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-compendium',
   standalone: true,
-  imports: [FormsModule, TitleCasePipe, CompendiumRecordComponent],
+  imports: [
+    FormsModule,
+    TitleCasePipe,
+    CompendiumRecordComponent,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
+    ConfirmDialogModule,
+  ],
+  providers: [DialogService, ConfirmationService],
   templateUrl: './compendium.component.html',
   styleUrl: './compendium.component.scss',
 })
 export class CompendiumComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private dialogService = inject(DialogService);
+  private confirmationService = inject(ConfirmationService);
 
   compendium: CompendiumDto | null = null;
   records: CompendiumRecordDto[] | null = null;
-  readonly dialog = inject(MatDialog);
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   compendiumId!: string;
   currentRecord: CompendiumRecordDto | null = null;
+  private dialogRef: DynamicDialogRef | null = null;
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -40,6 +56,12 @@ export class CompendiumComponent implements OnInit {
     this.compendiumId = this.route.snapshot.paramMap.get('id')!;
     this.getCompendium();
     this.getRecords();
+  }
+
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
   }
 
   getCompendium(): void {
@@ -80,12 +102,19 @@ export class CompendiumComponent implements OnInit {
   }
 
   openCreateRecordDialog(): void {
-    const dialogRef = this.dialog.open(CreateCompendiumRecordComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(CreateCompendiumRecordComponent, {
+      header: 'Create Record',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      closable: true,
+      closeOnEscape: true,
+      modal: true,
+      dismissableMask: true,
       data: { compendiumId: this.compendiumId },
     });
 
-    dialogRef.afterClosed().subscribe((record: CompendiumRecordDto) => {
+    this.dialogRef?.onClose.subscribe((record: CompendiumRecordDto) => {
       if (record) {
         // Select the newly created record, then refresh the records
         // (this will also update the current record)
@@ -135,17 +164,17 @@ export class CompendiumComponent implements OnInit {
       return;
     }
 
-    if (
-      !confirm(
-        'Are you sure you want to remove this compendium and all of its records? This action cannot be undone.'
-      )
-    ) {
-      return;
-    }
-
-    this.compendiumService.deleteCompendium(this.compendium.id).subscribe(() => {
-      // Redirect to the compendia page
-      window.location.href = '/compendia';
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to remove this compendium and all of its records? This action cannot be undone.',
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.compendiumService.deleteCompendium(this.compendium!.id).subscribe(() => {
+          // Redirect to the compendia page
+          window.location.href = '/compendia';
+        });
+      },
     });
   }
 }

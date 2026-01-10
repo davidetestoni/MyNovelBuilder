@@ -1,12 +1,14 @@
+<p-confirmDialog></p-confirmDialog>
+
 <div class="compendium-record-container">
   <div class="compendium-record-editor">
     <div class="compendium-record">
       <div class="compendium-record-name">
-        <div class="label">
+        <label class="label">
           <span>Name</span>
-        </div>
+        </label>
         <input
-          ngDefaultControl
+          pInputText
           type="text"
           [(ngModel)]="record.name"
           (blur)="onBlur()"
@@ -19,35 +21,34 @@
         </div>
       </div>
       <div class="compendium-record-aliases">
-        <div class="label">
+        <label class="label">
           <span>Aliases</span>
-        </div>
+        </label>
         <input
-          ngDefaultControl
+          pInputText
           type="text"
           [(ngModel)]="record.aliases"
           (blur)="onBlur()"
         />
       </div>
       <div class="compendium-record-always-included">
-        <div class="label">
-          <span>Always Included</span>
-        </div>
-        <input
-          ngDefaultControl
-          type="checkbox"
+        <p-checkbox
+          id="alwaysIncluded"
           [(ngModel)]="record.alwaysIncluded"
-          (blur)="onBlur()"
+          (onChange)="onBlur()"
+          [binary]="true"
         />
+        <label for="alwaysIncluded">Always included</label>
       </div>
       <div class="compendium-record-context">
-        <div class="label">
+        <label class="label">
           <span>Context</span>
-        </div>
+        </label>
         <textarea
-          ngDefaultControl
+          pTextarea
           [(ngModel)]="record.context"
           (blur)="onBlur()"
+          [autoResize]="true"
         ></textarea>
       </div>
       <div class="compendium-record-media-container">
@@ -99,9 +100,12 @@
         </div>
       </div>
       <div class="compendium-record-actions">
-        <button class="button-outline" (click)="removeRecord()">
-          Delete Record
-        </button>
+        <p-button
+          label="Delete Record"
+          (click)="removeRecord()"
+          severity="danger"
+          [outlined]="true"
+        />
       </div>
     </div>
   </div>

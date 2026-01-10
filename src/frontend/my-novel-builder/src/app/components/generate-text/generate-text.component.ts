@@ -6,10 +6,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogRef,
-} from '@angular/material/dialog';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   GenerateTextRequestDto,
   TextGenerationContextInfoDto,
@@ -19,6 +16,9 @@ import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptService } from '../../services/prompt.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
+import { SelectModule } from 'primeng/select';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
@@ -30,14 +30,21 @@ export interface GenerateTextComponentData {
 @Component({
   selector: 'app-generate-text',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    SelectModule,
+    TextareaModule,
+    ButtonModule,
+  ],
   templateUrl: './generate-text.component.html',
   styleUrl: './generate-text.component.scss',
 })
 export class GenerateTextComponent implements OnInit {
-  data = inject<GenerateTextComponentData>(MAT_DIALOG_DATA);
-  dialogRef = inject<MatDialogRef<GenerateTextComponent>>(MatDialogRef);
+  config = inject(DynamicDialogConfig);
+  dialogRef = inject(DynamicDialogRef);
 
+  data!: GenerateTextComponentData;
   instructionsRequired = false;
   models: string[] = [];
   readonly generateTextService: GenerateTextService = inject(GenerateTextService);
@@ -51,14 +58,14 @@ export class GenerateTextComponent implements OnInit {
   });
 
   constructor() {
-    const data = this.data;
+    this.data = this.config.data as GenerateTextComponentData;
 
-    if (data.prompts.length === 0) {
+    if (this.data.prompts.length === 0) {
       throw new Error('No prompts provided');
     }
 
     // Get the most recent instructions for the prompt type
-    const promptType = data.prompts[0].type;
+    const promptType = this.data.prompts[0].type;
     const instructions =
       this.localStorageService.getNestedStringForKey(
         LocalStorageKey.RecentInstructions, promptType);
@@ -79,14 +86,14 @@ export class GenerateTextComponent implements OnInit {
       this.formGroup.patchValue({ promptId: promptId });
     }
 
-    if (!data.instructionsRequired) {
+    if (!this.data.instructionsRequired) {
       this.formGroup.get('instructions')!.disable();
     } else {
       // Add the validators
       this.formGroup.get('instructions')!.setValidators([Validators.required]);
     }
 
-    this.instructionsRequired = data.instructionsRequired;
+    this.instructionsRequired = this.data.instructionsRequired;
   }
 
   ngOnInit(): void {

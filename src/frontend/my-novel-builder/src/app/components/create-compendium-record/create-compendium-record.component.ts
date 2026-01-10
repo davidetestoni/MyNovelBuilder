@@ -6,14 +6,16 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  MAT_DIALOG_DATA,
-  MatDialogRef,
-} from '@angular/material/dialog';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { CompendiumService } from '../../services/compendium.service';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { TitleCasePipe } from '@angular/common';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { SelectModule } from 'primeng/select';
+import { CheckboxModule } from 'primeng/checkbox';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-create-compendium-record',
@@ -23,15 +25,18 @@ import { TitleCasePipe } from '@angular/common';
     ReactiveFormsModule,
     ToastrModule,
     TitleCasePipe,
+    InputTextModule,
+    TextareaModule,
+    SelectModule,
+    CheckboxModule,
+    ButtonModule,
   ],
   templateUrl: './create-compendium-record.component.html',
   styleUrl: './create-compendium-record.component.scss',
 })
 export class CreateCompendiumRecordComponent {
-  data = inject<{
-    compendiumId: string;
-}>(MAT_DIALOG_DATA);
-  dialogRef = inject<MatDialogRef<CreateCompendiumRecordComponent>>(MatDialogRef);
+  config = inject(DynamicDialogConfig);
+  dialogRef = inject(DynamicDialogRef);
   private toastr = inject(ToastrService);
 
   imagePreview: string | ArrayBuffer | null = null;
@@ -65,7 +70,7 @@ export class CreateCompendiumRecordComponent {
         aliases: this.formGroup.get('aliases')?.value ?? '',
         type: this.formGroup.get('type')!.value!,
         context: this.formGroup.get('context')!.value!,
-        compendiumId: this.data.compendiumId,
+        compendiumId: this.config.data.compendiumId,
         alwaysIncluded: this.formGroup.get('alwaysIncluded')!.value!,
       })
       .subscribe((record) => {

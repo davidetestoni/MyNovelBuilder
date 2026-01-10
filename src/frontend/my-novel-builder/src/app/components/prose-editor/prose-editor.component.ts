@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, inject } from '@angular/core';
 import { Prose, Section } from '../../types/dtos/novel/prose';
 import { CommonModule } from '@angular/common';
 import {
@@ -21,7 +21,6 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
-import { MatDialog } from '@angular/material/dialog';
 import {
   GenerateTextComponent,
   GenerateTextComponentData,
@@ -41,6 +40,7 @@ import {
 import Quill from 'quill';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { GenerateCompendiumRecordComponentData, GenerateCompendiumRecordResultComponent } from '../generate-compendium-record-result/generate-compendium-record-result.component';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 
 interface LastSelection {
   editor: Quill;
@@ -53,23 +53,32 @@ interface LastSelection {
 @Component({
   selector: 'app-prose-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, QuillModule, ToastrModule],
   templateUrl: './prose-editor.component.html',
   styleUrl: './prose-editor.component.scss',
+  imports: [CommonModule, FormsModule, QuillModule, ToastrModule],
+  providers: [DialogService],
 })
-export class ProseEditorComponent {
+export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
   @Input() prose!: Prose;
   @Input() prompts!: PromptDto[];
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
   @Output() recordsChange: EventEmitter<void> = new EventEmitter<void>();
-  readonly dialog = inject(MatDialog);
+  private dialogService = inject(DialogService);
   readonly toastr: ToastrService = inject(ToastrService);
   readonly generateTextService: GenerateTextService = inject(GenerateTextService);
   readonly generateAudioService: GenerateAudioService = inject(GenerateAudioService);
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
+
+  private dialogRef: DynamicDialogRef | null = null;
+
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+  }
 
   getImageUrl(imageId: string): string {
     // TODO: This should come directly from the API in ImageSectionItem
@@ -117,7 +126,7 @@ export class ProseEditorComponent {
 
   removeSection(chapterIndex: number, sectionIndex: number) {
     // Ask for confirmation before removing a section
-    // TODO: This should be a material modal dialog instead of a browser dialog
+    // TODO: This should be a primeng dialog instead of a browser dialog
     if (
       !confirm(
         'Are you sure you want to remove this section? This action cannot be undone.'
@@ -284,8 +293,15 @@ export class ProseEditorComponent {
       return;
     }
 
-    this.dialog.open(GenerateTextComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
+      header: 'Generate Section Summary',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
       data: <GenerateTextComponentData>{
         prompts: prompts,
         instructionsRequired: false,
@@ -296,7 +312,9 @@ export class ProseEditorComponent {
         },
         novelId: this.novelId,
       },
-    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    });
+
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
       if (request) {
         this.generateSectionSummary(chapterIndex, sectionIndex, request);
       }
@@ -361,8 +379,15 @@ export class ProseEditorComponent {
     // all generation happens on the backend with the saved prose
     this.saveProse();
 
-    this.dialog.open(GenerateTextComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
+      header: 'Generate Text',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
       data: <GenerateTextComponentData>{
         prompts: prompts,
         contextInfo: <GenerateTextContextInfoDto>{
@@ -375,7 +400,9 @@ export class ProseEditorComponent {
         instructionsRequired: true, // This should be defined by the prompt
         novelId: this.novelId,
       },
-    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    });
+    
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
       if (request) {
         this.openGenerateTextResultDialog(request);
       }
@@ -383,13 +410,22 @@ export class ProseEditorComponent {
   }
 
   openGenerateTextResultDialog(request: GenerateTextRequestDto) {
-    this.dialog.open(GenerateTextResultComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
+      header: 'Generate Text',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
       data: <GenerateTextResultComponentData>{
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
       },
-    }).afterClosed().subscribe((result: string | 'back' | undefined) => {
+    });
+
+    this.dialogRef?.onClose.subscribe((result: string | 'back' | undefined) => {
       if (result === 'back') {
         this.openGenerateTextDialog();
       } else if (result) {
@@ -418,8 +454,15 @@ export class ProseEditorComponent {
     // all generation happens on the backend with the saved prose
     this.saveProse();
 
-    this.dialog.open(GenerateTextComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
+      header: 'Replace Text',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
       data: <GenerateTextComponentData>{
         prompts: prompts,
         contextInfo: <ReplaceTextContextInfoDto>{
@@ -433,7 +476,9 @@ export class ProseEditorComponent {
         instructionsRequired: true, // This should be defined by the prompt
         novelId: this.novelId,
       },
-    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    });
+
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
       if (request) {
         this.openReplaceTextResultDialog(request);
       }
@@ -441,13 +486,22 @@ export class ProseEditorComponent {
   }
 
   openReplaceTextResultDialog(request: GenerateTextRequestDto) {
-    this.dialog.open(GenerateTextResultComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
+      header: 'Replace Text',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
       data: <GenerateTextResultComponentData>{
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
       },
-    }).afterClosed().subscribe((result: string | 'back' | undefined) => {
+    });
+
+    this.dialogRef?.onClose.subscribe((result: string | 'back' | undefined) => {
       if (result === 'back') {
         this.openReplaceTextDialog();
       } else if (result) {
@@ -478,8 +532,15 @@ export class ProseEditorComponent {
       return;
     }
 
-    this.dialog.open(GenerateTextComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
+      header: 'Create Compendium Record',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
       data: <GenerateTextComponentData>{
         prompts: prompts,
         contextInfo: <CreateCompendiumRecordContextInfoDto>{
@@ -493,25 +554,43 @@ export class ProseEditorComponent {
         instructionsRequired: true,
         novelId: this.novelId,
       },
-    }).afterClosed().subscribe((request: GenerateTextRequestDto) => {
+    });
+
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
       if (request) {
-        this.dialog.open(GenerateTextResultComponent, {
-          minWidth: '50vw',
+        this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
+          header: 'Create Compendium Record',
+          width: '50vw',
+          contentStyle: { overflow: 'auto' },
+          baseZIndex: 10000,
+          modal: true,
+          closable: true,
+          closeOnEscape: true,
+          dismissableMask: true,
           data: <GenerateTextResultComponentData>{
             request: request,
             textToReplace: ''
           },
-        }).afterClosed().subscribe((result: string | 'back' | undefined) => {
+        });
+        this.dialogRef?.onClose.subscribe((result: string | 'back' | undefined) => {
           if (result === 'back') {
             this.openCreateCompendiumRecordDialog();
           } else if (result) {
-            this.dialog.open(GenerateCompendiumRecordResultComponent, {
-              minWidth: '50vw',
+            this.dialogRef = this.dialogService.open(GenerateCompendiumRecordResultComponent, {
+              header: 'Create Compendium Record',
+              width: '50vw',
+              contentStyle: { overflow: 'auto' },
+              baseZIndex: 10000,
+              modal: true,
+              closable: true,
+              closeOnEscape: true,
+              dismissableMask: true,
               data: <GenerateCompendiumRecordComponentData>{
                 generatedText: result,
                 novelId: this.novelId,
               },
-            }).afterClosed().subscribe((changed) => {
+            });
+            this.dialogRef?.onClose.subscribe((changed) => {
               if (changed === true) {
                 this.recordsChange.emit();
               }

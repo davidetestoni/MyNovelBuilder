@@ -16,7 +16,11 @@
       <span>{{ novel.title }}</span>
     </div>
     <div class="novel-settings-header-actions">
-      <button [routerLink]="['/novel', novel.id]">Prose</button>
+      <p-button
+        label="Prose"
+        [routerLink]="['/novel', novel.id]"
+        variant="text"
+        icon="pi pi-pencil" />
     </div>
   </div>
   <div class="novel-settings-body">
@@ -34,115 +38,127 @@
       />
     </div>
     <div class="novel-title">
-      <div class="label">
+      <label class="label">
         <span>Title</span>
-      </div>
+      </label>
       <input
-        ngDefaultControl
+        pInputText
         type="text"
         [(ngModel)]="novel.title"
         (blur)="onBlur()"
       />
     </div>
     <div class="novel-author">
-      <div class="label">
+      <label class="label">
         <span>Author</span>
-      </div>
+      </label>
       <input
-        ngDefaultControl
+        pInputText
         type="text"
         [(ngModel)]="novel.author"
         (blur)="onBlur()"
       />
     </div>
     <div class="novel-brief">
-      <div class="label">
+      <label class="label">
         <span>Brief</span>
-      </div>
+      </label>
       <textarea
-        ngDefaultControl
+        pInputTextarea
         [(ngModel)]="novel.brief"
         (blur)="onBlur()"
+        [autoResize]="true"
       ></textarea>
     </div>
     <div class="novel-tense">
-      <div class="label">
+      <label class="label">
         <span>Tense</span>
-      </div>
-      <select
-        ngDefaultControl
+      </label>
+      <p-select
         [(ngModel)]="novel.tense"
+        [options]="writingTenses"
         placeholder="Select a tense"
-        (change)="onBlur()"
+        (onChange)="onBlur()"
+        [style]="{'width': '100%'}"
       >
-        @for (tense of writingTenses; track tense) {
-        <option [ngValue]="tense">{{ tense | spaced }}</option>
-        }
-      </select>
+        <ng-template let-tense pTemplate="item">
+          {{ tense | spaced }}
+        </ng-template>
+        <ng-template let-tense pTemplate="selectedItem">
+          {{ tense | spaced }}
+        </ng-template>
+      </p-select>
     </div>
     <div class="novel-pov">
-      <div class="label">
+      <label class="label">
         <span>Point of view</span>
-      </div>
-      <select
-        ngDefaultControl
+      </label>
+      <p-select
         [(ngModel)]="novel.pov"
+        [options]="writingPovs"
         placeholder="Select a point of view"
-        (change)="onBlur()"
+        (onChange)="onBlur()"
+        [style]="{'width': '100%'}"
       >
-        @for (pov of writingPovs; track pov) {
-        <option [ngValue]="pov">{{ pov | spaced }}</option>
-        }
-      </select>
+        <ng-template let-pov pTemplate="item">
+          {{ pov | spaced }}
+        </ng-template>
+        <ng-template let-pov pTemplate="selectedItem">
+          {{ pov | spaced }}
+        </ng-template>
+      </p-select>
     </div>
-    <!-- TODO: Turn this into a pretty combobox -->
     <div class="novel-mc">
-      <div class="label">
+      <label class="label">
         <span>Main character</span>
-      </div>
-      <select
-        ngDefaultControl
+      </label>
+      <p-select
         [(ngModel)]="novel.mainCharacterId"
+        [options]="getAvailableCharacters()"
+        optionLabel="name"
+        optionValue="id"
         placeholder="Select a main character"
-        (change)="onBlur()"
+        (onChange)="onBlur()"
+        [style]="{'width': '100%'}"
+        [showClear]="true"
       >
-        <option [ngValue]="null">None</option>
-        @for (character of getAvailableCharacters(); track character.id) {
-        <option [ngValue]="character.id">{{ character.name }}</option>
-        }
-      </select>
+      </p-select>
     </div>
     <div class="novel-language">
-      <div class="label">
+      <label class="label">
         <span>Language</span>
-      </div>
-      <select
-        ngDefaultControl
+      </label>
+      <p-select
         [(ngModel)]="novel.language"
+        [options]="writingLanguages"
         placeholder="Select a language"
-        (change)="onBlur()"
+        (onChange)="onBlur()"
+        [style]="{'width': '100%'}"
       >
-        @for (language of writingLanguages; track language) {
-        <option [ngValue]="language">{{ language | spaced }}</option>
-        }
-      </select>
+        <ng-template let-language pTemplate="item">
+          {{ language | spaced }}
+        </ng-template>
+        <ng-template let-language pTemplate="selectedItem">
+          {{ language | spaced }}
+        </ng-template>
+      </p-select>
     </div>
-    <div class="novel-compendia">
-      <div class="label">
-        <span>Compendia</span>
-      </div>
-      <div class="novel-compendia-grid">
-        @for (compendium of compendia; track compendium.id) {
-        <div
-          class="novel-compendium"
-          [class.selected]="novel.compendiumIds.includes(compendium.id)"
-          (click)="toggleCompendium(compendium.id)"
-        >
-          <span>{{ compendium.name }}</span>
-        </div>
-        }
-      </div>
-    </div>
+<div class="novel-compendia">
+  <label class="label">
+    <span>Compendia</span>
+  </label>
+  <p-multiSelect
+    [(ngModel)]="novel.compendiumIds"
+    [options]="compendia"
+    optionLabel="name"
+    optionValue="id"
+    placeholder="Select compendia"
+    (onChange)="onBlur()"
+    [style]="{'width': '100%'}"
+    display="chip"
+  >
+  </p-multiSelect>
+</div>
   </div>
   }
 </div>

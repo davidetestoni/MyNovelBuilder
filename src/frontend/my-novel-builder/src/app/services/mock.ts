@@ -56,7 +56,9 @@ export const mockedNovels: NovelDto[] = Array(10)
     pov: WritingPov.FirstPerson,
     language: WritingLanguage.English,
     mainCharacterId: null,
-    compendiumIds: [],
+    compendiumIds: [
+      indexToGuid(((index % 3) + 1)),
+    ],
   }));
 
 export const mockedProse: Prose = {
@@ -229,6 +231,44 @@ export const mockedPrompts: PromptDto[] = [
       },
     ],
   },
+  {
+    id: indexToGuid(2),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Second Prompt',
+    type: PromptType.ReplaceText,
+    messages: [
+      {
+        id: 0,
+        role: PromptMessageRole.System,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+      {
+        id: 1,
+        role: PromptMessageRole.User,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+    ],
+  },
+  {
+    id: indexToGuid(3),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Third Prompt',
+    type: PromptType.CreateCompendiumRecord,
+    messages: [
+      {
+        id: 0,
+        role: PromptMessageRole.System,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+      {
+        id: 1,
+        role: PromptMessageRole.User,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+    ],
+  }
 ];
 
 export const mockedTextGenerationResponse = (generatedText: string) =>

@@ -11,9 +11,11 @@ import { WritingPov } from '../../types/enums/writing-pov';
 import { WritingLanguage } from '../../types/enums/writing-language';
 import { NovelService } from '../../services/novel.service';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
-import {
-  MatDialogRef,
-} from '@angular/material/dialog';
+import { DynamicDialogRef } from 'primeng/dynamicdialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
+import { FileUploadModule } from 'primeng/fileupload';
 
 @Component({
   selector: 'app-create-novel',
@@ -22,12 +24,16 @@ import {
     FormsModule,
     ReactiveFormsModule,
     ToastrModule,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
+    FileUploadModule,
   ],
   templateUrl: './create-novel.component.html',
   styleUrl: './create-novel.component.scss',
 })
 export class CreateNovelComponent {
-  dialogRef = inject<MatDialogRef<CreateNovelComponent>>(MatDialogRef);
+  private dialogRef = inject(DynamicDialogRef);
   private toastr = inject(ToastrService);
 
   imagePreview: string | ArrayBuffer | null = null;

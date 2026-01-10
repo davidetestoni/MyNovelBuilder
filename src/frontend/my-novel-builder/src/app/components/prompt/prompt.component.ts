@@ -7,11 +7,25 @@ import { PromptType } from '../../types/enums/prompt-type';
 import { PromptMessageRole } from '../../types/enums/prompt-message-role';
 import { TitleCasePipe } from '@angular/common';
 import { PromptMessageDto } from '../../types/dtos/prompt/prompt-message.dto';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import { TextareaModule } from 'primeng/textarea';
 
 @Component({
   selector: 'app-prompt',
   standalone: true,
-  imports: [FormsModule, TitleCasePipe, SpacedPipe],
+  imports: [
+    FormsModule,
+    TitleCasePipe,
+    SpacedPipe,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
+    ConfirmDialogModule,
+  ],
+  providers: [ConfirmationService],
   templateUrl: './prompt.component.html',
   styleUrl: './prompt.component.scss',
 })
@@ -20,6 +34,7 @@ export class PromptComponent {
   @Output() updatePrompt = new EventEmitter<PromptDto>();
   @Output() deletePrompt = new EventEmitter<PromptDto>();
   promptService: PromptService = inject(PromptService);
+  private confirmationService = inject(ConfirmationService);
 
   promptTypes: PromptType[] = [
     PromptType.GenerateText,
@@ -60,10 +75,14 @@ export class PromptComponent {
   }
 
   removePrompt(): void {
-    if (!confirm('Are you sure you want to delete this prompt? You cannot undo this action.')) {
-      return;
-    }
-
-    this.deletePrompt.emit(this.prompt);
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to delete this prompt? You cannot undo this action.',
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.deletePrompt.emit(this.prompt);
+      },
+    });
   }
 }

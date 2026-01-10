@@ -1,6 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import {
   HttpEvent,
   HttpEventType,
@@ -10,6 +9,8 @@ import {
 import { GenerateTextService } from '../../services/generate-text.service';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
 import { ToastrService } from 'ngx-toastr';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { ButtonModule } from 'primeng/button';
 
 export interface GenerateTextResultComponentData {
   textToReplace: string; // In HTML format
@@ -19,18 +20,24 @@ export interface GenerateTextResultComponentData {
 @Component({
   selector: 'app-generate-text-result',
   standalone: true,
-  imports: [],
+  imports: [ButtonModule],
   templateUrl: './generate-text-result.component.html',
   styleUrl: './generate-text-result.component.scss',
 })
 export class GenerateTextResultComponent implements OnInit {
-  data = inject<GenerateTextResultComponentData>(MAT_DIALOG_DATA);
-  dialogRef = inject<MatDialogRef<GenerateTextResultComponent>>(MatDialogRef);
+  config = inject(DynamicDialogConfig);
+  dialogRef = inject(DynamicDialogRef);
+
+  data!: GenerateTextResultComponentData;
 
   readonly generateTextService: GenerateTextService = inject(GenerateTextService);
   readonly toastr: ToastrService = inject(ToastrService);
   isGenerating = true;
   generatedText = '';
+
+  constructor() {
+    this.data = this.config.data as GenerateTextResultComponentData;
+  }
 
   ngOnInit(): void {
     this.generateText();

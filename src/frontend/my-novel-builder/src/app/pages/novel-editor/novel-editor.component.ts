@@ -14,11 +14,22 @@ import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/com
 import { ProseEditorComponent } from '../../components/prose-editor/prose-editor.component';
 import { PromptService } from '../../services/prompt.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
+import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
 
 @Component({
   selector: 'app-novel-editor',
   standalone: true,
-  imports: [FormsModule, RouterModule, SpacedPipe, ProseEditorComponent],
+  imports: [
+    FormsModule,
+    RouterModule,
+    SpacedPipe,
+    ProseEditorComponent,
+    ButtonModule,
+    SelectModule,
+    InputTextModule,
+  ],
   templateUrl: './novel-editor.component.html',
   styleUrl: './novel-editor.component.scss',
 })

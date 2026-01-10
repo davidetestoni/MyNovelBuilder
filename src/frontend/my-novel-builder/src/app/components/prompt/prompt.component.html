@@ -1,3 +1,5 @@
+<p-confirmDialog></p-confirmDialog>
+
 <div class="prompt-container">
   <div class="prompt-editor">
     <div class="prompt">
@@ -6,7 +8,7 @@
           <span>Name</span>
         </div>
         <input
-          ngDefaultControl
+          pInputText
           type="text"
           [(ngModel)]="prompt.name"
           (blur)="onBlur()"
@@ -29,38 +31,42 @@
             <i class="icon icon-close" (click)="removeMessage(message)"></i>
           </div>
           <textarea
-            ngDefaultControl
+            pInputTextarea
             [(ngModel)]="message.message"
             (blur)="onBlur()"
+            [autoResize]="true"
           ></textarea>
         </div>
         }
       </div>
       <div class="prompt-actions-container">
         <div class="prompt-messages-actions">
-          <button
-            class="add-message"
+          <p-button
+            label="+ System"
             (click)="addMessage(PromptMessageRole.System)"
-          >
-            + System
-          </button>
-          <button
-            class="add-message"
+            styleClass="add-message"
+            variant="text"
+          />
+          <p-button
+            label="+ User"
             (click)="addMessage(PromptMessageRole.User)"
-          >
-            + User
-          </button>
-          <button
-            class="add-message"
+            styleClass="add-message"
+            variant="text"
+          />
+          <p-button
+            label="+ Assistant"
             (click)="addMessage(PromptMessageRole.Assistant)"
-          >
-            + Assistant
-          </button>
+            styleClass="add-message"
+            variant="text"
+          />
         </div>
         <div class="prompt-actions">
-          <button class="button-outline" (click)="removePrompt()">
-            Delete Prompt
-          </button>
+          <p-button
+            label="Delete Prompt"
+            (click)="removePrompt()"
+            severity="danger"
+            [outlined]="true"
+          />
         </div>
       </div>
     </div>

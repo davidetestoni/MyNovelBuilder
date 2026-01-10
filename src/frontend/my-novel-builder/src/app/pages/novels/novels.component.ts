@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { NovelService } from '../../services/novel.service';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { EllipsisPipe } from '../../pipes/ellipsis.pipe';
@@ -6,7 +6,7 @@ import moment from 'moment';
 import { RouterModule } from '@angular/router';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CreateNovelComponent } from '../../components/create-novel/create-novel.component';
-import { MatDialog } from '@angular/material/dialog';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-novels',
@@ -14,14 +14,22 @@ import { MatDialog } from '@angular/material/dialog';
   templateUrl: './novels.component.html',
   styleUrls: ['./novels.component.scss'],
   imports: [EllipsisPipe, RouterModule, ReactiveFormsModule],
+  providers: [DialogService],
 })
-export class NovelsComponent implements OnInit {
+export class NovelsComponent implements OnInit, OnDestroy {
   novels: NovelDto[] | null = null;
-  readonly dialog = inject(MatDialog);
+  private dialogService = inject(DialogService);
+  private dialogRef: DynamicDialogRef | null = null;
   readonly novelService = inject(NovelService);
 
   ngOnInit(): void {
     this.getNovels();
+  }
+
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
   }
 
   getNovels(): void {
@@ -55,11 +63,18 @@ export class NovelsComponent implements OnInit {
   }
 
   openCreateNovelDialog(): void {
-    const dialogRef = this.dialog.open(CreateNovelComponent, {
-      minWidth: '50vw',
+    this.dialogRef = this.dialogService.open(CreateNovelComponent, {
+      header: 'Create a novel',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
     });
 
-    dialogRef.afterClosed().subscribe((result) => {
+    this.dialogRef?.onClose.subscribe((result) => {
       if (result) {
         this.getNovels();
       }

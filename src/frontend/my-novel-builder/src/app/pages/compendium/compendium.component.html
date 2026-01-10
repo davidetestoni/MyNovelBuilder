@@ -1,3 +1,5 @@
+<p-confirmDialog></p-confirmDialog>
+
 <div class="compendium-container">
   <h1>
     Compendium
@@ -10,33 +12,36 @@
     <div class="compendium">
       <div class="compendium-metadata">
         <div class="compendium-name">
-          <div class="label">
+          <label class="label">
             <span>Name</span>
-          </div>
+          </label>
           <input
-            ngDefaultControl
+            pInputText
             type="text"
             [(ngModel)]="compendium.name"
             (blur)="updateCompendium()"
           />
         </div>
         <div class="compendium-description">
-          <div class="label">
+          <label class="label">
             <span>Description</span>
-          </div>
+          </label>
           <textarea
-            ngDefaultControl
+            pTextarea
             [(ngModel)]="compendium.description"
             (blur)="updateCompendium()"
+            [autoResize]="true"
           ></textarea>
         </div>
       </div>
       @if (records !== null) {
       <div class="compendium-records">
         <div class="compendium-records-actions">
-          <button class="add-record" (click)="openCreateRecordDialog()">
-            Add Record
-          </button>
+          <p-button
+            label="Add Record"
+            (click)="openCreateRecordDialog()"
+            styleClass="add-record"
+          />
         </div>
         @for (type of compendiumRecordTypes; track type) { @if
         (getRecordsOfType(type).length > 0) {

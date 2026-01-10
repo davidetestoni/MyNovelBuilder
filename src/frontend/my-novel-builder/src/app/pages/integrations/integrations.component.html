@@ -6,24 +6,29 @@
 
     @if (hasOpenRouterApiKey) {
       <div class="api-key-status">
-        <p><span class="check-icon">✓</span> An OpenRouter API key is currently configured.</p>
+        <i class="pi pi-check-circle" style="color: green; margin-right: 0.5rem;"></i>
+        <span>An OpenRouter API key is currently configured.</span>
       </div>
     } @else {
       <p>No OpenRouter API key is configured.</p>
     }
 
-
     <div class="form-group">
       <label for="openRouterApiKey">Enter New OpenRouter API Key:</label>
-      <input
+      <p-password
         id="openRouterApiKey"
-        type="password"
         formControlName="openRouterApiKey"
         placeholder="sk-or-..."
-        autocomplete="off"
-        />
+        [feedback]="false"
+        [toggleMask]="true"
+      />
     </div>
 
-    <button type="submit" [disabled]="!integrationsForm.valid" class="save-button">Save</button>
+    <p-button
+      class="save-button"
+      type="submit"
+      label="Save"
+      [disabled]="!integrationsForm.valid"
+    />
   </form>
 </div>

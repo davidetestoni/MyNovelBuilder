@@ -1,5 +1,4 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CompendiumService } from '../../services/compendium.service';
@@ -7,6 +6,13 @@ import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { ToastrService } from 'ngx-toastr';
 import { TitleCasePipe } from '@angular/common';
 import { NovelService } from '../../services/novel.service';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+
+// Latest PrimeNG Imports
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
 
 export interface GenerateCompendiumRecordComponentData {
   generatedText: string;
@@ -16,17 +22,28 @@ export interface GenerateCompendiumRecordComponentData {
 @Component({
   selector: 'app-generate-compendium-record-result',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, TitleCasePipe],
+  imports: [
+    FormsModule, 
+    ReactiveFormsModule, 
+    TitleCasePipe,
+    InputTextModule,
+    TextareaModule,
+    SelectModule,
+    ButtonModule
+  ],
   templateUrl: './generate-compendium-record-result.component.html',
   styleUrl: './generate-compendium-record-result.component.scss',
 })
 export class GenerateCompendiumRecordResultComponent implements OnInit {
-  data = inject<GenerateCompendiumRecordComponentData>(MAT_DIALOG_DATA);
-  dialogRef = inject<MatDialogRef<GenerateCompendiumRecordResultComponent>>(MatDialogRef);
+  config = inject(DynamicDialogConfig);
+  dialogRef = inject(DynamicDialogRef);
+
+  data!: GenerateCompendiumRecordComponentData;
 
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   readonly novelService: NovelService = inject(NovelService);
   readonly toastr: ToastrService = inject(ToastrService);
+  
   compendia: CompendiumDto[] = [];
 
   recordTypes: CompendiumRecordType[] = [
@@ -49,6 +66,10 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
     context: new FormControl(''),
   });
 
+  constructor() {
+    this.data = this.config.data as GenerateCompendiumRecordComponentData;
+  }
+
   ngOnInit(): void {
     this.formGroup.get('context')!.setValue(this.data.generatedText);
     
@@ -67,6 +88,8 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
   }
 
   accept(): void {
+    if (this.formGroup.invalid) return;
+
     const name = this.formGroup.get('name')!.value!;
 
     this.compendiumService.createRecord({
@@ -80,5 +103,9 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
       this.toastr.success(`Record ${name} created successfully`);
       this.dialogRef.close(true);
     });
+  }
+
+  cancel(): void {
+    this.dialogRef.close();
   }
 }

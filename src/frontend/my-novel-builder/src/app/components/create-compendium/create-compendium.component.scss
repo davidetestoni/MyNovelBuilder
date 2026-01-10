@@ -9,3 +9,9 @@ textarea {
 input:not([type="checkbox"]) {
   width: 100%;
 }
+
+.compendium-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

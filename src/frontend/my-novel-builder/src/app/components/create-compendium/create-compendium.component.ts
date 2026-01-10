@@ -7,10 +7,13 @@ import {
   Validators,
 } from '@angular/forms';
 import { CompendiumService } from '../../services/compendium.service';
-import {
-  MatDialogRef,
-} from '@angular/material/dialog';
-import { ToastrModule, ToastrService } from 'ngx-toastr';
+import { ToastrService } from 'ngx-toastr';
+import { DynamicDialogRef } from 'primeng/dynamicdialog';
+
+// PrimeNG Imports
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-create-compendium',
@@ -18,13 +21,16 @@ import { ToastrModule, ToastrService } from 'ngx-toastr';
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    ToastrModule,
+    // PrimeNG Modules
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
   ],
   templateUrl: './create-compendium.component.html',
   styleUrl: './create-compendium.component.scss',
 })
 export class CreateCompendiumComponent {
-  dialogRef = inject<MatDialogRef<CreateCompendiumComponent>>(MatDialogRef);
+  private dialogRef = inject(DynamicDialogRef);
   private toastr = inject(ToastrService);
 
   readonly compendiumService: CompendiumService = inject(CompendiumService);
@@ -35,6 +41,8 @@ export class CreateCompendiumComponent {
   });
 
   createCompendium(): void {
+    if (this.formGroup.invalid) return;
+
     this.compendiumService
       .createCompendium({
         name: this.formGroup.get('name')!.value!,
@@ -44,5 +52,9 @@ export class CreateCompendiumComponent {
         this.toastr.success('Compendium created successfully.');
         this.dialogRef.close(true);
       });
+  }
+
+  cancel(): void {
+    this.dialogRef.close();
   }
 }

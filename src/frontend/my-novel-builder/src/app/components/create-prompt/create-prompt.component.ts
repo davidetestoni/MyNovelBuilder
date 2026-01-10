@@ -7,13 +7,14 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import {
-  MatDialogRef,
-} from '@angular/material/dialog';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { PromptService } from '../../services/prompt.service';
 import { PromptType } from '../../types/enums/prompt-type';
 import { SpacedPipe } from '../../pipes/spaced.pipe';
+import { DynamicDialogRef } from 'primeng/dynamicdialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-create-prompt',
@@ -23,12 +24,15 @@ import { SpacedPipe } from '../../pipes/spaced.pipe';
     ReactiveFormsModule,
     ToastrModule,
     SpacedPipe,
+    InputTextModule,
+    SelectModule,
+    ButtonModule,
   ],
   templateUrl: './create-prompt.component.html',
   styleUrl: './create-prompt.component.scss',
 })
 export class CreatePromptComponent {
-  dialogRef = inject<MatDialogRef<CreatePromptComponent>>(MatDialogRef);
+  dialogRef = inject(DynamicDialogRef);
   private toastr = inject(ToastrService);
 
   readonly promptService: PromptService = inject(PromptService);

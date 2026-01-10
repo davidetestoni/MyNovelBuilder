@@ -16,24 +16,26 @@
       <span>{{ novel.title }}</span>
     </div>
     <div class="novel-editor-header-actions">
-      <button [routerLink]="['/novel', novel.id, 'settings']">Settings</button>
+      <p-button
+        label="Settings"
+        [routerLink]="['/novel', novel.id, 'settings']"
+        variant="text"
+        icon="pi pi-cog" />
     </div>
   </div>
   <div class="novel-editor-body">
     <div class="compendia-sidebar">
       <div class="compendium-filters">
-        <select
-          ngDefaultControl
+        <p-select
           [(ngModel)]="selectedCompendium"
-          placeholder="Select a compendium"
-        >
-          <option [ngValue]="null">All Compendia</option>
-          @for (compendium of compendia; track compendium.id) {
-          <option [ngValue]="compendium">{{ compendium.name }}</option>
-          }
-        </select>
+          [options]="compendia"
+          optionLabel="name"
+          placeholder="All Compendia"
+          [showClear]="true"
+          [style]="{'width': '100%'}"
+        />
         <input
-          ngDefaultControl
+          pInputText
           type="text"
           placeholder="Search records..."
           [(ngModel)]="recordsFilter"

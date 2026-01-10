@@ -4,13 +4,28 @@ import { FormsModule } from '@angular/forms';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { TitleCasePipe } from '@angular/common';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
-import { MatDialog } from '@angular/material/dialog';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { GenerateImageComponent } from '../generate-image/generate-image.component';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
+import { CheckboxModule } from 'primeng/checkbox';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-compendium-record',
   standalone: true,
-  imports: [FormsModule, TitleCasePipe],
+  imports: [
+    FormsModule,
+    TitleCasePipe,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
+    CheckboxModule,
+    ConfirmDialogModule,
+  ],
+  providers: [DialogService, ConfirmationService],
   templateUrl: './compendium-record.component.html',
   styleUrl: './compendium-record.component.scss',
 })
@@ -19,7 +34,9 @@ export class CompendiumRecordComponent {
   @Output() updateRecord = new EventEmitter<CompendiumRecordDto>();
   @Output() deleteRecord = new EventEmitter<CompendiumRecordDto>();
   readonly compendiumService: CompendiumService = inject(CompendiumService);
-  readonly dialog = inject(MatDialog);
+  private dialogService = inject(DialogService);
+  private confirmationService = inject(ConfirmationService);
+  private dialogRef: DynamicDialogRef | null = null;
 
   recordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -31,6 +48,12 @@ export class CompendiumRecordComponent {
   ];
 
   CompendiumRecordType = CompendiumRecordType;
+
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+  }
 
   onBlur(): void {
     this.updateRecord.emit(this.record);
@@ -55,11 +78,15 @@ export class CompendiumRecordComponent {
   }
 
   removeRecord(): void {
-    if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
-      return;
-    }
-
-    this.deleteRecord.emit(this.record);
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to delete this record? This action cannot be undone.',
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.deleteRecord.emit(this.record);
+      },
+    });
   }
 
   addMedia(): void {
@@ -92,9 +119,18 @@ export class CompendiumRecordComponent {
   }
 
   generateImage() {
-    this.dialog.open(GenerateImageComponent, {
-      minWidth: '50vw',
-    }).afterClosed().subscribe((image: Blob) => {
+    this.dialogRef = this.dialogService.open(GenerateImageComponent, {
+      header: 'Generate Image',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      closable: true,
+      closeOnEscape: true,
+      modal: true,
+      dismissableMask: true,
+    });
+
+    this.dialogRef?.onClose.subscribe((image: Blob) => {
       if (image) {
         this.compendiumService
           .uploadRecordMedia(

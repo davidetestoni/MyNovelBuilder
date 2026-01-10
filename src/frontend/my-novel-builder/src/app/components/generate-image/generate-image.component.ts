@@ -2,21 +2,29 @@ import { Component, inject } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { GenerateImageService } from '../../services/generate-image.service';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { MatDialogRef } from '@angular/material/dialog';
+import { DynamicDialogRef } from 'primeng/dynamicdialog';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { TextareaModule } from 'primeng/textarea';
+import { ButtonModule } from 'primeng/button';
 
 @Component({
   selector: 'app-generate-image',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, ToastrModule],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    ToastrModule,
+    TextareaModule,
+    ButtonModule,
+  ],
   templateUrl: './generate-image.component.html',
   styleUrl: './generate-image.component.scss'
 })
 export class GenerateImageComponent {
-  dialogRef = inject<MatDialogRef<GenerateImageComponent>>(MatDialogRef);
+  dialogRef = inject(DynamicDialogRef);
 
   models: string[] = ['z-image/turbo']; // TODO: Get models from API
   readonly generateImageService: GenerateImageService = inject(GenerateImageService);

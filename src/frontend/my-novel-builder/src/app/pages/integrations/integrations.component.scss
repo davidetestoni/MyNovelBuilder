@@ -29,28 +29,12 @@
     .api-key-status {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
       background-color: $grey3;
       color: $grey17;
       padding: 10px 15px;
       border-radius: 5px;
       margin-bottom: 20px;
-
-      p {
-        margin: 0;
-
-        .check-icon {
-          color: $valid;
-          font-weight: bold;
-          margin-right: 8px;
-        }
-      }
-    }
-
-    .clear-button {
-      background-color: transparent;
-      color: $grey13;
-      border: 1px solid $grey13;
     }
 
     .form-group {
@@ -59,13 +43,7 @@
       label {
         display: block;
         margin-bottom: 8px;
-        color: $grey17;
-        font-weight: bold;
       }
-    }
-
-    .save-button {
-      width: 100%;
     }
   }
 }

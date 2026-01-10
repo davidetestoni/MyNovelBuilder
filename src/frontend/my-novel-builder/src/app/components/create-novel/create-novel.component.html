@@ -1,13 +1,12 @@
 <div class="modal-container">
-  <h2>Create a novel</h2>
   <div class="form-container">
     <form [formGroup]="formGroup">
       <div class="form-row">
         <div class="form-column">
           <div class="form-field">
-            <div class="form-field-label">Title *</div>
+            <label for="title" class="form-field-label">Title *</label>
             <input
-              matInput
+              pInputText
               type="text"
               id="title"
               formControlName="title"
@@ -15,9 +14,9 @@
             />
           </div>
           <div class="form-field">
-            <div class="form-field-label">Author</div>
+            <label for="author" class="form-field-label">Author</label>
             <input
-              matInput
+              pInputText
               type="text"
               id="author"
               formControlName="author"
@@ -25,12 +24,13 @@
             />
           </div>
           <div class="form-field">
-            <div class="form-field-label">Brief</div>
+            <label for="brief" class="form-field-label">Brief</label>
             <textarea
-              matInput
+              pInputTextarea
               id="brief"
               formControlName="brief"
               placeholder="This story is about..."
+              rows="5"
             ></textarea>
           </div>
           <!-- TODO: Add remaining fields (tense, pov, language, MC) -->
@@ -53,13 +53,11 @@
       </div>
       <div class="form-field">
         <div class="form-buttons-container">
-          <button
-            type="submit"
+          <p-button
+            label="Create"
             (click)="createNovel()"
             [disabled]="formGroup.invalid || formGroup.pristine"
-          >
-            Create
-          </button>
+          />
         </div>
       </div>
     </form>

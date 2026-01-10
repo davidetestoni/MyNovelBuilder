@@ -7,9 +7,9 @@
     <!-- Left panel with the list of prompts and a button to add a new one -->
     <div class="prompts">
       <div class="prompts-actions">
-        <button class="add-prompt" (click)="openCreatePromptDialog()">
+        <p-button class="add-prompt" (click)="openCreatePromptDialog()">
           Add Prompt
-        </button>
+        </p-button>
       </div>
       <div class="prompt-types-list">
         @for (type of promptTypes; track type) { @if

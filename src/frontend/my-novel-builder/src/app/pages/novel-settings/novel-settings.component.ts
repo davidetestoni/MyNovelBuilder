@@ -11,11 +11,27 @@ import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { CompendiumService } from '../../services/compendium.service';
 import { CompendiumRecordOverviewDto } from '../../types/dtos/compendium-record/compendium-record-overview.dto';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
+import { SelectModule } from 'primeng/select';
+import { FileUploadModule } from 'primeng/fileupload';
+import { MultiSelectModule } from 'primeng/multiselect';
 
 @Component({
   selector: 'app-novel-settings',
   standalone: true,
-  imports: [FormsModule, RouterModule, SpacedPipe],
+  imports: [
+    FormsModule,
+    RouterModule,
+    SpacedPipe,
+    ButtonModule,
+    InputTextModule,
+    TextareaModule,
+    SelectModule,
+    FileUploadModule,
+    MultiSelectModule,
+  ],
   templateUrl: './novel-settings.component.html',
   styleUrl: './novel-settings.component.scss',
 })

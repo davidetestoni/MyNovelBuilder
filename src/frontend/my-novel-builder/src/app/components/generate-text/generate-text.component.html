@@ -1,43 +1,48 @@
 <div class="modal-container">
-  <h2>Generate Text</h2>
   <div class="form-container">
     <form [formGroup]="formGroup">
       <div class="form-field">
-        <div class="form-field-label">Prompt *</div>
-        <select formControlName="promptId" placeholder="Select a prompt">
-          @for (prompt of data.prompts; track prompt.id) {
-          <option [ngValue]="prompt.id">{{ prompt.name }}</option>
-          }
-        </select>
+        <label for="promptId" class="form-field-label">Prompt *</label>
+        <p-select
+          id="promptId"
+          formControlName="promptId"
+          [options]="data.prompts"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Select a prompt"
+          [style]="{'width': '100%'}"
+        />
       </div>
       @if (instructionsRequired) {
       <div class="form-field">
-        <div class="form-field-label">Instructions *</div>
+        <label for="instructions" class="form-field-label">Instructions *</label>
         <textarea
-          matInput
+          pTextarea
           id="instructions"
           formControlName="instructions"
           placeholder="The instructions to follow..."
+          [autoResize]="true"
+          rows="5"
         ></textarea>
       </div>
       }
       <div class="form-field">
-        <div class="form-field-label">Model *</div>
-        <select formControlName="model" placeholder="Select a model">
-          @for (model of models; track model) {
-          <option [ngValue]="model">{{ model }}</option>
-          }
-        </select>
+        <label for="model" class="form-field-label">Model *</label>
+        <p-select
+          id="model"
+          formControlName="model"
+          [options]="models"
+          placeholder="Select a model"
+          [style]="{'width': '100%'}"
+        />
       </div>
       <div class="form-field">
         <div class="form-buttons-container">
-          <button
-            type="submit"
+          <p-button
+            label="Generate"
             (click)="accept()"
             [disabled]="formGroup.invalid"
-          >
-            Generate
-          </button>
+          />
         </div>
       </div>
     </form>
