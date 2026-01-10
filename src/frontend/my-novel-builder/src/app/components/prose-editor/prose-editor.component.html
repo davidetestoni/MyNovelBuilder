@@ -109,16 +109,14 @@
       <i class="icon icon-ai"> </i>
       <span>Generate</span>
     </div>
-    <!-- TODO: Change icon -->
-    <div class="tooltip-control" (mousedown)="openReplaceTextDialog()">
-      <i class="icon icon-ai"> </i>
-      <span>Replace</span>
-    </div>
-    <!-- TODO: Change icon -->
-    <div class="tooltip-control" (mousedown)="openCreateCompendiumRecordDialog()">
-      <i class="icon icon-ai"> </i>
-      <span>New record</span>
-    </div>
+    @if (lastSelection != null && lastSelection.range.length > 0) {
+      <div pTooltip="Replace" tooltipPosition="bottom" class="tooltip-control" (mousedown)="openReplaceTextDialog()">
+        <i class="pi pi-refresh"> </i>
+      </div>
+      <div pTooltip="New record" tooltipPosition="bottom" class="tooltip-control" (mousedown)="openCreateCompendiumRecordDialog()">
+        <i class="pi pi-user-plus"> </i>
+      </div>
+    }
   </div>
   }
 </div>

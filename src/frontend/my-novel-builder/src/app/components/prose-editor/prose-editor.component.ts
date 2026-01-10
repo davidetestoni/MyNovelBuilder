@@ -41,6 +41,7 @@ import Quill from 'quill';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { GenerateCompendiumRecordComponentData, GenerateCompendiumRecordResultComponent } from '../generate-compendium-record-result/generate-compendium-record-result.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface LastSelection {
   editor: Quill;
@@ -55,7 +56,7 @@ interface LastSelection {
   standalone: true,
   templateUrl: './prose-editor.component.html',
   styleUrl: './prose-editor.component.scss',
-  imports: [CommonModule, FormsModule, QuillModule, ToastrModule],
+  imports: [CommonModule, FormsModule, QuillModule, ToastrModule, TooltipModule],
   providers: [DialogService],
 })
 export class ProseEditorComponent implements OnDestroy {
