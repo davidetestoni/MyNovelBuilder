@@ -182,4 +182,28 @@ public class NovelService : INovelService
             File.Delete(path);
         }
     }
+
+    /// <inheritdoc />
+    public async Task<string> UploadProseImageAsync(Guid id, IFormFile file)
+    {
+        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "prose-images");
+        Directory.CreateDirectory(path);
+        
+        var filePath = Path.Combine(path, $"{Guid.NewGuid()}.png");
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var imageBytes = memoryStream.ToArray();
+        
+        // Convert to PNG using ImageSharp.
+        if (file.ContentType != "image/png")
+        {
+            using var image = Image.Load(imageBytes);
+            using var outputStream = new MemoryStream();
+            await image.SaveAsPngAsync(outputStream);
+            imageBytes = outputStream.ToArray();
+        }
+        
+        await File.WriteAllBytesAsync(filePath, imageBytes);
+        return Path.GetFileName(filePath);
+    }
 }

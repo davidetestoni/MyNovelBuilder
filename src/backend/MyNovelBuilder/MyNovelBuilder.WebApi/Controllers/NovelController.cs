@@ -1,4 +1,5 @@
-﻿using Mapster;
+﻿using System.Text.Json;
+using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Novel;
@@ -155,6 +156,16 @@ public class NovelController : ControllerBase
     public async Task UploadCoverImage(Guid id, IFormFile file)
     {
         await _novelService.UploadCoverImageAsync(id, file);
+    }
+
+    /// <summary>
+    /// Upload a new prose image for a novel.
+    /// </summary>
+    [HttpPost("{id:guid}/prose-image")]
+    public async Task<IActionResult> UploadProseImage(Guid id, IFormFile file)
+    {
+        var location = await _novelService.UploadProseImageAsync(id, file);
+        return Ok(JsonSerializer.Serialize(location));
     }
 
     private void AddCoverImageUrl(NovelDto dto)

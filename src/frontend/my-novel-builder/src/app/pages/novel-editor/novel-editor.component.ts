@@ -200,4 +200,9 @@ export class NovelEditorComponent {
     this.prose.set({ ...prose });
     this.novelService.updateNovelProse(this.novelId, prose).subscribe();
   }
+
+  onProseImageClicked(imageUrl: string): void {
+    // TODO: This could be done better
+    this.zoomMedia({ id: '', url: imageUrl, isCurrent: false, isVideo: false });
+  }
 }

@@ -69,6 +69,7 @@ export const mockedProse: Prose = {
         .map((_, index) => ({
           summary: loremIpsum({ count: 5, units: 'sentences' }),
           text: '<p>' + loremIpsum({ count: 15, units: 'sentences' }) + '</p>',
+          images: [],
         })),
     })),
 };
@@ -254,6 +255,25 @@ export const mockedPrompts: PromptDto[] = [
     updatedAt: '2021-01-01T00:00:00Z',
     name: 'The Third Prompt',
     type: PromptType.CreateCompendiumRecord,
+    messages: [
+      {
+        id: 0,
+        role: PromptMessageRole.System,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+      {
+        id: 1,
+        role: PromptMessageRole.User,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+    ],
+  },
+  {
+    id: indexToGuid(4),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Fourth Prompt',
+    type: PromptType.SummarizeText,
     messages: [
       {
         id: 0,

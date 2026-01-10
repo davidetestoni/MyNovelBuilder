@@ -68,17 +68,69 @@
           border-bottom: 2px dashed $grey5;
           padding-bottom: 3rem;
 
-          .section-text {
-            outline: none;
+          .section-body {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
             width: 100%;
 
-            .text-content {
-              text-indent: 3rem;
-              font-size: 1.2rem;
-              line-height: 1.6;
-              font-weight: 300;
-              font-family: "Source Serif 4", sans-serif;
-              letter-spacing: 0.05rem;
+            .section-text {
+              outline: none;
+              width: 100%;
+
+              .text-content {
+                text-indent: 3rem;
+                font-size: 1.2rem;
+                line-height: 1.6;
+                font-weight: 300;
+                font-family: "Source Serif 4", sans-serif;
+                letter-spacing: 0.05rem;
+              }
+            }
+
+            .section-images-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+              gap: 1rem;
+              padding: 0 1rem;
+
+              .section-image {
+                width: 100%;
+                overflow: hidden;
+                border-radius: 5px;
+                position: relative;
+                cursor: pointer;
+
+                img {
+                  width: 100%;
+                  height: 100%;
+                  object-fit: cover;
+                  transition: transform 0.3s;
+                }
+
+                &:hover img {
+                  transform: scale(1.05);
+                }
+
+                .section-image-remove {
+                  position: absolute;
+                  top: 10px;
+                  right: 10px;
+                  border: none;
+                  padding: 0;
+                  margin: 0;
+                  opacity: 30%;
+                  font-size: 0.8rem;
+                  transition: opacity 0.3s;
+                  filter: $grey13filter;
+                  cursor: pointer;
+
+                  &:hover {
+                    opacity: 100%;
+                    filter: $blackfilter;
+                  }
+                }
+              }
             }
           }
 
@@ -102,12 +154,15 @@
             .section-actions {
               display: flex;
               flex-direction: row;
+              align-items: center;
               gap: 1rem;
               margin-top: 1rem;
 
               .section-action {
+                height: 30px;
                 display: flex;
                 flex-direction: row;
+                align-items: center;
                 gap: 0.5rem;
                 color: $grey13;
                 cursor: pointer;
@@ -115,7 +170,7 @@
 
                 i {
                   width: 20px;
-                  height: 20px;
+                  margin: auto 0;
                   filter: $grey5filter;
                 }
 

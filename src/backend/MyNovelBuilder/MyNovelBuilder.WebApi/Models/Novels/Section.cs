@@ -14,4 +14,9 @@ public class Section
     /// The text of the section, in HTML format.
     /// </summary>
     public string Text { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The images associated with the section.
+    /// </summary>
+    public string[] Images { get; set; } = [];
 }

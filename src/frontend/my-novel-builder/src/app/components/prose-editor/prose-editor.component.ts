@@ -52,6 +52,9 @@ import {
 } from '../generate-compendium-record-result/generate-compendium-record-result.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { TooltipModule } from 'primeng/tooltip';
+import { NovelService } from '../../services/novel.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 
 interface LastSelection {
   editor: Quill;
@@ -72,8 +75,9 @@ interface LastSelection {
     QuillModule,
     ToastrModule,
     TooltipModule,
+    ConfirmDialogModule,
   ],
-  providers: [DialogService],
+  providers: [DialogService, ConfirmationService],
 })
 export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
@@ -82,12 +86,16 @@ export class ProseEditorComponent implements OnDestroy {
   @Input() prompts!: PromptDto[];
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
   @Output() recordsChange: EventEmitter<void> = new EventEmitter<void>();
+  @Output() proseImageClicked: EventEmitter<string> =
+    new EventEmitter<string>();
   private dialogService = inject(DialogService);
+  private confirmationService = inject(ConfirmationService);
   readonly toastr: ToastrService = inject(ToastrService);
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
   readonly generateAudioService: GenerateAudioService =
     inject(GenerateAudioService);
+  readonly novelService = inject(NovelService);
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
@@ -100,10 +108,10 @@ export class ProseEditorComponent implements OnDestroy {
     }
   }
 
-  getImageUrl(imageId: string): string {
+  getImageUrl(fileName: string): string {
     // TODO: This should come directly from the API in ImageSectionItem
     // instead of being built in the client.
-    return `${environment.api.staticFilesUrl}/novels/${this.novelId}/images/${imageId}`;
+    return `${environment.api.staticFilesUrl}/novels/${this.novelId}/prose-images/${fileName}`;
   }
 
   addChapter() {
@@ -140,6 +148,7 @@ export class ProseEditorComponent implements OnDestroy {
     ].sections.concat({
       summary: '[Missing summary]',
       text: '',
+      images: [],
     });
     this.saveProse();
   }
@@ -621,6 +630,47 @@ export class ProseEditorComponent implements OnDestroy {
           }
         );
       }
+    });
+  }
+
+  addProseImage(chapterIndex: number, sectionIndex: number) {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*,video/*';
+    fileInput.onchange = () => {
+      if (fileInput.files && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        this.novelService
+          .uploadProseImage(this.novelId, file)
+          .subscribe((location: string) => {
+            this.prose.chapters[chapterIndex].sections[sectionIndex].images =
+              this.prose.chapters[chapterIndex].sections[
+                sectionIndex
+              ].images.concat(location);
+            this.saveProse();
+            fileInput.remove();
+          });
+      }
+    };
+    fileInput.click();
+  }
+
+  removeProseImage(
+    chapterIndex: number,
+    sectionIndex: number,
+    imageId: string
+  ) {
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to remove this image?',
+      header: 'Confirm Image Removal',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.prose.chapters[chapterIndex].sections[sectionIndex].images =
+          this.prose.chapters[chapterIndex].sections[
+            sectionIndex
+          ].images.filter((img) => img !== imageId);
+        this.saveProse();
+      },
     });
   }
 }

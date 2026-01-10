@@ -10,4 +10,5 @@ export interface Chapter {
 export interface Section {
   summary: string;
   text: string;
+  images: string[];
 }

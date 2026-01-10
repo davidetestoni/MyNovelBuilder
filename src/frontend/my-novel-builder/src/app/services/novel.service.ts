@@ -53,6 +53,18 @@ export class NovelService {
         );
   }
 
+  uploadProseImage(novelId: string, file: File): Observable<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.mocked
+      ? mockObservable('https://picsum.photos/200/300')
+      : this.http.post<string>(
+          `${this.baseUrl}/novel/${novelId}/prose-image`,
+          formData
+        );
+  }
+
   createNovel(novel: CreateNovelDto): Observable<NovelDto> {
     return this.mocked
       ? mockObservable(mockedNovels[0])
