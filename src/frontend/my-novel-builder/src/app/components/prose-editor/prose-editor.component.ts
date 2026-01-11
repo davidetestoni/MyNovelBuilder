@@ -154,20 +154,19 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   removeSection(chapterIndex: number, sectionIndex: number) {
-    // Ask for confirmation before removing a section
-    // TODO: This should be a primeng dialog instead of a browser dialog
-    if (
-      !confirm(
-        'Are you sure you want to remove this section? This action cannot be undone.'
-      )
-    ) {
-      return;
-    }
-
-    this.prose.chapters[chapterIndex].sections = this.prose.chapters[
-      chapterIndex
-    ].sections.filter((_, index) => index !== sectionIndex);
-    this.saveProse();
+    this.confirmationService.confirm({
+      message:
+        'Are you sure you want to remove this section? This action cannot be undone.',
+      header: 'Confirm Section Removal',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.prose.chapters[chapterIndex].sections = this.prose.chapters[
+          chapterIndex
+        ].sections.filter((_, index) => index !== sectionIndex);
+        this.saveProse();
+      },
+    });
   }
 
   updateChapterTitle(chapterIndex: number, event: Event) {
