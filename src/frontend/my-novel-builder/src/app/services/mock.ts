@@ -303,7 +303,7 @@ export const mockedTextGenerationResponse = (generatedText: string) =>
 
             partialText += JSON.stringify(chunk) + '\n';
 
-            subscriber.next(<HttpDownloadProgressEvent>{
+            subscriber.next(<HttpDownloadProgressEvent>{ 
               type: HttpEventType.DownloadProgress,
               loaded: index + 1,
               total: generatedText.length,
@@ -326,6 +326,22 @@ export const mockedTextGenerationResponse = (generatedText: string) =>
       }, 500);
     }
   );
+
+export const mockedImageGenerationResponse = () =>
+  new Observable<HttpEvent<Blob>>((subscriber: Subscriber<HttpEvent<Blob>>) => {
+    fetch('https://picsum.photos/512/512')
+      .then((response) => response.blob())
+      .then((blob) => {
+        const response = new HttpResponse({
+          body: blob,
+          status: 200,
+          statusText: 'OK',
+        });
+        subscriber.next(response);
+        subscriber.complete();
+      })
+      .catch((error) => subscriber.error(error));
+  });
 
 export const mockedAvailableVoices: TtsVoiceDto[] = [
   {

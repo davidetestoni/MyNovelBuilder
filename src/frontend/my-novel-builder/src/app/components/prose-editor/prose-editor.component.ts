@@ -55,6 +55,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { NovelService } from '../../services/novel.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
+import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
+import { GenerateImageComponent } from '../generate-image/generate-image.component';
 
 interface LastSelection {
   editor: Quill;
@@ -633,6 +635,24 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   addProseImage(chapterIndex: number, sectionIndex: number) {
+    this.dialogRef = this.dialogService.open(ImageSourceSelectorComponent, {
+      header: 'Add Image',
+      width: '300px',
+      modal: true,
+      closable: true,
+      dismissableMask: true,
+    });
+
+    this.dialogRef?.onClose.subscribe((result: 'upload' | 'generate') => {
+      if (result === 'upload') {
+        this.uploadProseImageFile(chapterIndex, sectionIndex);
+      } else if (result === 'generate') {
+        this.generateProseImage(chapterIndex, sectionIndex);
+      }
+    });
+  }
+
+  uploadProseImageFile(chapterIndex: number, sectionIndex: number) {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*,video/*';
@@ -652,6 +672,36 @@ export class ProseEditorComponent implements OnDestroy {
       }
     };
     fileInput.click();
+  }
+
+  generateProseImage(chapterIndex: number, sectionIndex: number) {
+    this.dialogRef = this.dialogService.open(GenerateImageComponent, {
+      header: 'Generate Image',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      closable: true,
+      closeOnEscape: true,
+      modal: true,
+      dismissableMask: true,
+    });
+
+    this.dialogRef?.onClose.subscribe((image: Blob) => {
+      if (image) {
+        const file = new File([image], 'generated-image.png', {
+          type: 'image/png',
+        });
+        this.novelService
+          .uploadProseImage(this.novelId, file)
+          .subscribe((location: string) => {
+            this.prose.chapters[chapterIndex].sections[sectionIndex].images =
+              this.prose.chapters[chapterIndex].sections[
+                sectionIndex
+              ].images.concat(location);
+            this.saveProse();
+          });
+      }
+    });
   }
 
   removeProseImage(
