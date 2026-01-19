@@ -53,6 +53,9 @@ export class GenerateTextResultComponent implements OnInit {
         if (event.type === HttpEventType.DownloadProgress) {
           const response = (event as HttpDownloadProgressEvent)
             .partialText as string;
+          if (response === undefined) {
+            return;
+          }
           const responseChunks = response
             .split('\n')
             .filter((item) => item.length > 0)
