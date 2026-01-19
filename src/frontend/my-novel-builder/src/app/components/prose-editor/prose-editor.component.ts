@@ -128,13 +128,13 @@ export class ProseEditorComponent implements OnDestroy {
     // To remove a chapter, it must be empty to avoid user data loss
     if (this.prose.chapters[chapterIndex].sections.length > 0) {
       this.toastr.error(
-        'Cannot remove a chapter that is not empty. Please remove all sections first.'
+        'Cannot remove a chapter that is not empty. Please remove all sections first.',
       );
       return;
     }
 
     this.prose.chapters = this.prose.chapters.filter(
-      (_, index) => index !== chapterIndex
+      (_, index) => index !== chapterIndex,
     );
     this.saveProse();
   }
@@ -226,14 +226,14 @@ export class ProseEditorComponent implements OnDestroy {
           }
         });
         return delta;
-      }
+      },
     );
   }
 
   editorChange(
     event: EditorChangeContent | EditorChangeSelection,
     chapterIndex: number,
-    sectionIndex: number
+    sectionIndex: number,
   ) {
     if (event.event !== 'selection-change') {
       return;
@@ -301,9 +301,10 @@ export class ProseEditorComponent implements OnDestroy {
         modelId: 'sonic-2',
         // voiceId: "coral",
         // voiceId: "af_heart",
-        voiceId: 'en-Emma_woman', // TODO: Read this from the user's settings
+        // voiceId: 'en-Emma_woman',
+        voiceId: 'fantine', // TODO: Read this from the user's settings
         message: this.getRawText(
-          this.prose.chapters[chapterIndex].sections[sectionIndex].text
+          this.prose.chapters[chapterIndex].sections[sectionIndex].text,
         ),
       })
       .subscribe((event: HttpEvent<Blob>) => {
@@ -319,7 +320,7 @@ export class ProseEditorComponent implements OnDestroy {
 
   openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {
     const prompts = this.prompts.filter(
-      (p) => p.type === PromptType.SummarizeText
+      (p) => p.type === PromptType.SummarizeText,
     );
 
     if (prompts.length === 0) {
@@ -358,7 +359,7 @@ export class ProseEditorComponent implements OnDestroy {
   generateSectionSummary(
     chapterIndex: number,
     sectionIndex: number,
-    request: GenerateTextRequestDto
+    request: GenerateTextRequestDto,
   ) {
     // Clear the current summary
     this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
@@ -401,7 +402,7 @@ export class ProseEditorComponent implements OnDestroy {
 
   openGenerateTextDialog() {
     const prompts = this.prompts.filter(
-      (p) => p.type === PromptType.GenerateText
+      (p) => p.type === PromptType.GenerateText,
     );
 
     if (prompts.length === 0) {
@@ -473,7 +474,7 @@ export class ProseEditorComponent implements OnDestroy {
 
   openReplaceTextDialog() {
     const prompts = this.prompts.filter(
-      (p) => p.type === PromptType.ReplaceText
+      (p) => p.type === PromptType.ReplaceText,
     );
 
     if (prompts.length === 0) {
@@ -543,7 +544,7 @@ export class ProseEditorComponent implements OnDestroy {
         // since the dialog was opened.
         this.lastSelection!.editor.deleteText(
           contextInfo.textOffset,
-          contextInfo.textLength
+          contextInfo.textLength,
         );
         this.lastSelection!.editor.insertText(contextInfo.textOffset, result);
       }
@@ -552,7 +553,7 @@ export class ProseEditorComponent implements OnDestroy {
 
   openCreateCompendiumRecordDialog() {
     const prompts = this.prompts.filter(
-      (p) => p.type === PromptType.CreateCompendiumRecord
+      (p) => p.type === PromptType.CreateCompendiumRecord,
     );
 
     if (prompts.length === 0) {
@@ -620,7 +621,7 @@ export class ProseEditorComponent implements OnDestroy {
                     generatedText: result,
                     novelId: this.novelId,
                   },
-                }
+                },
               );
               this.dialogRef?.onClose.subscribe((changed) => {
                 if (changed === true) {
@@ -628,7 +629,7 @@ export class ProseEditorComponent implements OnDestroy {
                 }
               });
             }
-          }
+          },
         );
       }
     });
@@ -707,7 +708,7 @@ export class ProseEditorComponent implements OnDestroy {
   removeProseImage(
     chapterIndex: number,
     sectionIndex: number,
-    imageId: string
+    imageId: string,
   ) {
     this.confirmationService.confirm({
       message: 'Are you sure you want to remove this image?',

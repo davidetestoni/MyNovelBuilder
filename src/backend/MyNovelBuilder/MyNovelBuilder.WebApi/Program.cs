@@ -99,12 +99,13 @@ builder.Services.AddScoped<IPromptService, PromptService>();
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
 builder.Services.AddSingleton<ITextGenerationService, OpenRouterTextGenerationService>();
-builder.Services.AddSingleton<ITtsService, VibeVoiceTtsService>();
+builder.Services.AddSingleton<ITtsService, PocketTtsService>();
 builder.Services.AddSingleton<IImageGenerationService, CustomImageGenerationService>();
 builder.Services.AddHttpClient<OpenRouterTextGenerationService>();
 builder.Services.AddHttpClient<CustomTtsService>();
 builder.Services.AddHttpClient<CustomImageGenerationService>();
 builder.Services.AddHttpClient<VibeVoiceTtsService>();
+builder.Services.AddHttpClient<PocketTtsService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();
