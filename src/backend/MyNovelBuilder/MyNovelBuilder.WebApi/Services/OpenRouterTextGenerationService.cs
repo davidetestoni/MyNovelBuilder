@@ -40,7 +40,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
 
         return new OpenAIClient(new ApiKeyCredential(config.OpenRouterApiKey), new OpenAIClientOptions
         {
-            Endpoint = new Uri("https://openrouter.ai/api")
+            Endpoint = new Uri("https://openrouter.ai/api/v1")
         });
     }
 
