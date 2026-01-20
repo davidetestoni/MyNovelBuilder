@@ -1,4 +1,5 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -19,6 +20,9 @@ public class PocketTtsService : ITtsService
 
     /// <inheritdoc/>
     public bool SupportsEmphasisTags => false;
+    
+    /// <inheritdoc />
+    public AudioFormat OutputAudioFormat => AudioFormat.Wav;
     
     /// <summary></summary>
     public PocketTtsService(HttpClient httpClient)
@@ -45,6 +49,20 @@ public class PocketTtsService : ITtsService
         
         // The response is a wav file, so just return it
         return await response.Content.ReadAsByteArrayAsync();
+    }
+    
+    /// <inheritdoc />
+    public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    {
+        using var httpRequest = new HttpRequestMessage();
+        httpRequest.RequestUri = new Uri("http://localhost:8000/tts");
+        httpRequest.Method = HttpMethod.Post;
+        httpRequest.Content = CreateRequestContent(request);
+        
+        var response = await _httpClient.SendAsync(
+            httpRequest, HttpCompletionOption.ResponseHeadersRead);
+        
+        return await response.Content.ReadAsStreamAsync();
     }
     
     /// <inheritdoc/>

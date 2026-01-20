@@ -2,7 +2,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Helpers;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -58,6 +60,9 @@ public class UnrealSpeechTtsService : ITtsService
     /// <inheritdoc />
     public bool SupportsEmphasisTags => false;
     
+    /// <inheritdoc />
+    public AudioFormat OutputAudioFormat => AudioFormat.Wav;
+    
     /// <summary></summary>
     public UnrealSpeechTtsService(IConfiguration configuration, HttpClient httpClient)
     {
@@ -82,7 +87,7 @@ public class UnrealSpeechTtsService : ITtsService
         var payload = new
         {
             Text = request.Message,
-            VoiceId = request.VoiceId,
+            request.VoiceId,
             Bitrate = "320k",
             AudioFormat = "mp3",
             OutputFormat = "uri",
@@ -126,6 +131,17 @@ public class UnrealSpeechTtsService : ITtsService
     }
 
     /// <inheritdoc />
+    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    {
+        // This endpoint only supports text up to 1000 characters
+        var textChunks = new TextChunker(1000).ChunkText(request.Message).ToList();
+        
+        return Task.FromResult<Stream>(
+            new UnrealSpeechStreamingStream(
+                _httpClient, request.VoiceId, textChunks));
+    }
+    
+    /// <inheritdoc />
     public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync()
     {
         return Task.FromResult(_voices.Select(v => new TtsVoiceDto
@@ -133,5 +149,189 @@ public class UnrealSpeechTtsService : ITtsService
             VoiceId = v,
             Name = v,
         }));
+    }
+    
+    private sealed class UnrealSpeechStreamingStream : Stream
+    {
+        private readonly HttpClient _httpClient;
+        private readonly string _voiceId;
+        private readonly List<string> _textChunks;
+        private int _currentChunkIndex;
+        private Stream? _currentStream;
+        private bool _headerWritten; // Track header across chunks
+
+        /// <summary></summary>
+        public UnrealSpeechStreamingStream(HttpClient httpClient, string voiceId, List<string> textChunks)
+        {
+            _httpClient = httpClient;
+            _voiceId = voiceId;
+            _textChunks = textChunks;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                // If we have a current stream, try to read from it
+                if (_currentStream != null)
+                {
+                    var bytesRead = await _currentStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
+
+                    if (bytesRead > 0)
+                    {
+                        return bytesRead;
+                    }
+
+                    // Current stream exhausted, dispose and move to next chunk
+                    await _currentStream.DisposeAsync();
+                    _currentStream = null;
+                    _currentChunkIndex++;
+                }
+
+                // No more chunks
+                if (_currentChunkIndex >= _textChunks.Count)
+                {
+                    return 0;
+                }
+
+                // Stream next chunk
+                var textChunk = _textChunks[_currentChunkIndex];
+
+                var payload = new
+                {
+                    Text = textChunk,
+                    VoiceId = _voiceId,
+                    Codec = "pcm_s16le"
+                };
+                var jsonPayload = JsonSerializer.Serialize(payload);
+                var httpRequest = new HttpRequestMessage
+                {
+                    RequestUri = new Uri(_httpClient.BaseAddress!, "stream"),
+                    Method = HttpMethod.Post,
+                    Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
+                };
+
+                var response = await _httpClient.SendAsync(
+                    httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                    throw new ApiException(ErrorCodes.ExternalServiceError,
+                        $"UnrealSpeech refused to generate audio stream: {errorContent}");
+                }
+
+                var pcmStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+                // Only prepend WAV header on first chunk
+                _currentStream = _headerWritten
+                    ? pcmStream
+                    : new PcmToWavStream(pcmStream, writeHeader: true);
+
+                _headerWritten = true;
+            }
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+            => ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _currentStream?.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+    }
+
+    private sealed class PcmToWavStream : Stream
+    {
+        private readonly Stream _pcmStream;
+        private readonly bool _writeHeader;
+        private bool _headerWritten;
+
+        /// <summary></summary>
+        public PcmToWavStream(Stream pcmStream, bool writeHeader = true)
+        {
+            _pcmStream = pcmStream;
+            _writeHeader = writeHeader;
+        }
+
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+        {
+            if (!_writeHeader || _headerWritten)
+            {
+                return await _pcmStream.ReadAsync(buffer.AsMemory(offset, count), ct);
+            }
+
+            _headerWritten = true;
+            var header = CreateWavHeader();
+            var toCopy = Math.Min(count, header.Length);
+            Array.Copy(header, 0, buffer, offset, toCopy);
+            return toCopy;
+
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+            => ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+
+        private static byte[] CreateWavHeader()
+        {
+            using var ms = new MemoryStream();
+            using var w = new BinaryWriter(ms);
+
+            const int maxDataSize = int.MaxValue - 44;
+
+            // RIFF
+            w.Write("RIFF"u8.ToArray());
+            w.Write(36 + maxDataSize);
+            w.Write("WAVE"u8.ToArray());
+
+            // fmt
+            w.Write("fmt "u8.ToArray());
+            w.Write(16);              // PCM fmt chunk size
+            w.Write((short)1);        // PCM
+            w.Write((short)1);        // Mono
+            w.Write(22050);           // Sample rate
+            w.Write(44100);           // Byte rate (22050 * 2)
+            w.Write((short)2);        // Block align
+            w.Write((short)16);       // Bits per sample
+
+            // data
+            w.Write("data"u8.ToArray());
+            w.Write(maxDataSize);
+
+            return ms.ToArray();
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _pcmStream.Dispose();
+            }
+            base.Dispose(disposing);
+        }
     }
 }

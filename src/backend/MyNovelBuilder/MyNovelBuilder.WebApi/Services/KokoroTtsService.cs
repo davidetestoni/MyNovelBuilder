@@ -1,6 +1,7 @@
 using KokoroSharp;
 using KokoroSharp.Utilities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
 using NAudio.Wave;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -77,6 +78,9 @@ public class KokoroTtsService : ITtsService
     /// <inheritdoc />
     public bool SupportsEmphasisTags => false;
 
+    /// <inheritdoc />
+    public AudioFormat OutputAudioFormat => AudioFormat.Wav;
+    
     /// <summary></summary>
     public KokoroTtsService(ILogger<KokoroTtsService> logger)
     {
@@ -104,6 +108,12 @@ public class KokoroTtsService : ITtsService
         ms.Seek(0, SeekOrigin.Begin);
 
         return ms.ToArray();
+    }
+    
+    /// <inheritdoc />
+    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

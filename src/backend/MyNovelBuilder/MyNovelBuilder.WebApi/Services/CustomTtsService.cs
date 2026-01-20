@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Mapster;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.Tts;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -19,6 +20,9 @@ public class CustomTtsService : ITtsService
 
     /// <inheritdoc />
     public bool SupportsEmphasisTags => false;
+    
+    /// <inheritdoc />
+    public AudioFormat OutputAudioFormat => AudioFormat.Wav;
     
     /// <summary></summary>
     public CustomTtsService(HttpClient httpClient)
@@ -38,6 +42,12 @@ public class CustomTtsService : ITtsService
         response.EnsureSuccessStatusCode();
         
         return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    /// <inheritdoc />
+    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

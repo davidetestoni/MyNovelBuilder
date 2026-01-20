@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -14,6 +15,9 @@ public class ElevenLabsTtsService : ITtsService
 
     /// <inheritdoc />
     public bool SupportsEmphasisTags => true;
+    
+    /// <inheritdoc />
+    public AudioFormat OutputAudioFormat => AudioFormat.Mp3;
 
     /// <summary></summary>
     public ElevenLabsTtsService(IConfiguration configuration,
@@ -57,6 +61,12 @@ public class ElevenLabsTtsService : ITtsService
         }
         
         return await response.Content.ReadAsByteArrayAsync();
+    }
+    
+    /// <inheritdoc />
+    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

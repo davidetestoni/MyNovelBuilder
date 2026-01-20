@@ -1,4 +1,5 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -13,9 +14,21 @@ public interface ITtsService
     bool SupportsEmphasisTags { get; }
     
     /// <summary>
-    /// Generate (usually MP3) audio bytes from the given text.
+    /// The audio format of the generated output.
+    /// </summary>
+    AudioFormat OutputAudioFormat { get; }
+    
+    /// <summary>
+    /// Generate audio bytes from the given text.
+    /// Returns the entire audio as a byte array.
     /// </summary>
     Task<byte[]> GenerateAudioAsync(TtsRequestDto request);
+    
+    /// <summary>
+    /// Generate audio stream from the given text.
+    /// Returns the audio as an encoded stream.
+    /// </summary>
+    Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request);
     
     /// <summary>
     /// Get a list of available voices.

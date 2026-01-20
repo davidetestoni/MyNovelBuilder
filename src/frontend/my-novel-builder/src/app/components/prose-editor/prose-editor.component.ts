@@ -57,6 +57,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
 import { GenerateImageComponent } from '../generate-image/generate-image.component';
+import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 
 interface LastSelection {
   editor: Quill;
@@ -295,27 +296,35 @@ export class ProseEditorComponent implements OnDestroy {
     return innerText;
   }
 
-  textToSpeech(chapterIndex: number, sectionIndex: number) {
-    this.generateAudioService
-      .textToSpeech({
+  async textToSpeech(chapterIndex: number, sectionIndex: number) {
+    const response = await this.generateAudioService.textToSpeechStreamResponse(
+      {
         modelId: 'sonic-2',
+        // TODO: Read the voice from the user's settings
         // voiceId: "coral",
         // voiceId: "af_heart",
+        // voiceId: 'Hannah',
         // voiceId: 'en-Emma_woman',
-        voiceId: 'fantine', // TODO: Read this from the user's settings
+        voiceId: 'fantine',
         message: this.getRawText(
           this.prose.chapters[chapterIndex].sections[sectionIndex].text,
         ),
-      })
-      .subscribe((event: HttpEvent<Blob>) => {
-        if (event.type === HttpEventType.Response) {
-          if (event.body !== null) {
-            const audio = new Audio();
-            audio.src = URL.createObjectURL(event.body);
-            audio.play();
-          }
-        }
-      });
+      },
+    );
+
+    const stream = response.body!;
+    const player = new StreamingWavPlayer();
+    const reader = stream.getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) player.addChunk(value);
+      }
+    } catch (error) {
+      console.error('WAV streaming error:', error);
+    }
   }
 
   openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {

@@ -23,11 +23,22 @@ export class GenerateAudioService {
     });
   }
 
+  textToSpeechStreamResponse(request: TtsRequestDto): Promise<Response> {
+    return fetch(`${this.baseUrl}/generate/audio/tts/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    }).then((response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response;
+    });
+  }
+
   getAvailableVoices(): Observable<TtsVoiceDto[]> {
     return this.mocked
       ? mockObservable(mockedAvailableVoices)
       : this.http.get<TtsVoiceDto[]>(
-          `${this.baseUrl}/generate/audio/tts/voices`
+          `${this.baseUrl}/generate/audio/tts/voices`,
         );
   }
 }

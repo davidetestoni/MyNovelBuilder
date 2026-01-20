@@ -29,6 +29,24 @@ public class GenerateAudioController : ControllerBase
         _textGenerationService = textGenerationService;
     }
     
+    private async Task<string> GetEmphasizedTextAsync(string inputText) =>
+        await _textGenerationService
+            .GenerateAsync(
+                "anthropic/claude-sonnet-4", // TODO: Make configurable
+                [
+                    new PromptMessageDto
+                    {
+                        Role = PromptMessageRole.System,
+                        Message = SystemPrompts.EmphasizeText
+                    },
+                    new PromptMessageDto
+                    {
+                        Role = PromptMessageRole.User,
+                        Message = $"Here's the text that needs to be enriched:\n{inputText}"
+                    }
+                ]
+            );
+
     /// <summary>
     /// Generate audio from text.
     /// </summary>
@@ -40,30 +58,73 @@ public class GenerateAudioController : ControllerBase
         // Emphasis
         if (_ttsService.SupportsEmphasisTags)
         {
-            var emphasizedText = await _textGenerationService
-                .GenerateAsync(
-                    "anthropic/claude-sonnet-4", // TODO: Make configurable
-                    [
-                        new PromptMessageDto
-                        {
-                            Role = PromptMessageRole.System,
-                            Message = SystemPrompts.EmphasizeText
-                        },
-                        new PromptMessageDto
-                        {
-                            Role = PromptMessageRole.User,
-                            Message = $"Here's the text that needs to be enriched:\n{dto.Message}"
-                        }
-                    ]
-                );
+            var emphasizedText = await GetEmphasizedTextAsync(dto.Message);
             dto.Message = emphasizedText.Trim();
             
             _logger.LogInformation("Emphasized text: {EmphasizedText}", dto.Message);
         }
         
         var ttsResponse = await _ttsService.GenerateAudioAsync(dto);
+        var mimeType = _ttsService.OutputAudioFormat switch 
+        {
+            AudioFormat.Mp3 => "audio/mp3",
+            AudioFormat.Wav => "audio/wav",
+            _ => "application/octet-stream"
+        };
+        var fileName = _ttsService.OutputAudioFormat switch 
+        {
+            AudioFormat.Mp3 => "audio.mp3",
+            AudioFormat.Wav => "audio.wav",
+            _ => "audio.bin"
+        };
         
-        return File(ttsResponse, "audio/mpeg", "audio.mp3");
+        return File(ttsResponse, mimeType, fileName);
+    }
+
+    /// <summary>
+    /// Generate audio stream from text.
+    /// </summary>
+    [HttpPost("tts/stream")]
+    public async Task<ActionResult> GenerateAudioStreamAsync(TtsRequestDto dto)
+    {
+        _logger.LogInformation("Generating audio stream for text: {Text}", dto.Message);
+        
+        // Emphasis
+        if (_ttsService.SupportsEmphasisTags)
+        {
+            var emphasizedText = await GetEmphasizedTextAsync(dto.Message);
+            dto.Message = emphasizedText.Trim();
+            
+            _logger.LogInformation("Emphasized text: {EmphasizedText}", dto.Message);
+        }
+        
+        Stream audioStream;
+
+        try
+        {
+            audioStream = await _ttsService.GenerateAudioStreamAsync(dto);
+        }
+        catch (NotImplementedException)
+        {
+            // Fallback to non-streaming
+            var audioBytes = await _ttsService.GenerateAudioAsync(dto);
+            audioStream = new MemoryStream(audioBytes);
+        }
+        
+        var mimeType = _ttsService.OutputAudioFormat switch 
+        {
+            AudioFormat.Mp3 => "audio/mp3",
+            AudioFormat.Wav => "audio/wav",
+            _ => "application/octet-stream"
+        };
+        var fileName = _ttsService.OutputAudioFormat switch 
+        {
+            AudioFormat.Mp3 => "audio.mp3",
+            AudioFormat.Wav => "audio.wav",
+            _ => "audio.bin"
+        };
+        
+        return File(audioStream, mimeType, fileName);
     }
 
     /// <summary>
