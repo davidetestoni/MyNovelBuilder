@@ -268,11 +268,12 @@ public class UnrealSpeechTtsService : ITtsService
             _writeHeader = writeHeader;
         }
 
-        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+        public override async Task<int> ReadAsync(
+            byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (!_writeHeader || _headerWritten)
             {
-                return await _pcmStream.ReadAsync(buffer.AsMemory(offset, count), ct);
+                return await _pcmStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
             }
 
             _headerWritten = true;
