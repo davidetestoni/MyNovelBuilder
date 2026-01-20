@@ -1,45 +1,45 @@
 <div class="novels-container">
   <h1>Novels</h1>
   @if (novels === null) {
-  <p>Loading...</p>
+    <p>Loading...</p>
   } @else {
-  <div class="novels-grid">
-    @for (novel of novels; track novel;) {
-    <div class="novel-card">
-      <div class="novel-cover">
-        @if (novel.coverImageUrl !== null) {
-        <img
-          [routerLink]="['/novel', novel.id]"
-          src="{{ novel.coverImageUrl }}"
-          alt="{{ novel.title }}"
-        />
-        } @else {
-        <div
-          class="no-cover"
-          [routerLink]="['/novel', novel.id]"
-          [style]="{ 'background-color': guidToColor(novel.id) }"
-        >
-          <i class="icon icon-novels"></i>
+    <div class="novels-grid">
+      @for (novel of novels; track novel) {
+        <div class="novel-card">
+          <div class="novel-cover">
+            @if (novel.coverImageUrl !== null) {
+              <img
+                [routerLink]="['/novel', novel.id]"
+                src="{{ novel.coverImageUrl }}"
+                alt="{{ novel.title }}"
+              />
+            } @else {
+              <div
+                class="no-cover"
+                [routerLink]="['/novel', novel.id]"
+                [style]="{ 'background-color': guidToColor(novel.id) }"
+              >
+                <i class="icon icon-novels"></i>
+              </div>
+            }
+            <div class="brief-overlay">
+              <p>{{ novel.brief | ellipsis: 100 }}</p>
+            </div>
+          </div>
+          <div class="novel-title" [routerLink]="['/novel', novel.id]">
+            <span>{{ novel.title }}</span>
+          </div>
+          <div class="novel-last-updated">
+            <span>{{ getLastUpdated(novel) }}</span>
+          </div>
         </div>
-        }
-        <div class="brief-overlay">
-          <p>{{ novel.brief | ellipsis : 100 }}</p>
+      }
+      <div class="add-novel-card" (click)="openCreateNovelDialog()">
+        <div class="add-novel-cover">
+          <i class="icon icon-plus"></i>
+          <span>Add Novel</span>
         </div>
-      </div>
-      <div class="novel-title" [routerLink]="['/novel', novel.id]">
-        <span>{{ novel.title }}</span>
-      </div>
-      <div class="novel-last-updated">
-        <span>{{ getLastUpdated(novel) }}</span>
       </div>
     </div>
-    }
-    <div class="add-novel-card" (click)="openCreateNovelDialog()">
-      <div class="add-novel-cover">
-        <i class="icon icon-plus"></i>
-        <span>Add Novel</span>
-      </div>
-    </div>
-  </div>
   }
 </div>

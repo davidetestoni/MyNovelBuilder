@@ -65,17 +65,17 @@ export class CreateNovelComponent {
   createNovel(): void {
     const tenseValue: string = this.formGroup.get('tense')!.value!;
     const tense: WritingTense = Object.values(WritingTense).find(
-      (tense) => tense === tenseValue
+      (tense) => tense === tenseValue,
     )!;
 
     const povValue: string = this.formGroup.get('pov')!.value!;
     const pov: WritingPov = Object.values(WritingPov).find(
-      (pov) => pov === povValue
+      (pov) => pov === povValue,
     )!;
 
     const languageValue: string = this.formGroup.get('language')!.value!;
     const language: WritingLanguage = Object.values(WritingLanguage).find(
-      (language) => language === languageValue
+      (language) => language === languageValue,
     )!;
 
     this.novelService

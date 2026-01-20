@@ -112,7 +112,7 @@ export class NovelEditorComponent {
     // TODO: Only get the novel's compendia, not all compendia
     this.compendiumService.getCompendia().subscribe((compendia) => {
       this.compendia = compendia.filter((compendium) =>
-        this.novel?.compendiumIds.includes(compendium.id)
+        this.novel?.compendiumIds.includes(compendium.id),
       );
     });
   }
@@ -122,7 +122,7 @@ export class NovelEditorComponent {
   }
 
   getCompendiumRecordsByType(
-    type: CompendiumRecordType
+    type: CompendiumRecordType,
   ): CompendiumRecordOverviewDto[] {
     if (this.compendia === null) {
       return [];
@@ -135,7 +135,9 @@ export class NovelEditorComponent {
         .filter(
           (record) =>
             record.type === type &&
-            record.name.toLowerCase().includes(this.recordsFilter.toLowerCase())
+            record.name
+              .toLowerCase()
+              .includes(this.recordsFilter.toLowerCase()),
         );
 
       records.sort((a, b) => a.name.localeCompare(b.name));
@@ -146,7 +148,7 @@ export class NovelEditorComponent {
     return this.selectedCompendium.records.filter(
       (record) =>
         record.type === type &&
-        record.name.toLowerCase().includes(this.recordsFilter.toLowerCase())
+        record.name.toLowerCase().includes(this.recordsFilter.toLowerCase()),
     );
   }
 
@@ -166,7 +168,7 @@ export class NovelEditorComponent {
 
   isFloatedMedia(media: CompendiumRecordMediaDto): boolean {
     return this.floatedMedia.some(
-      (floatedMedia) => floatedMedia.id === media.id
+      (floatedMedia) => floatedMedia.id === media.id,
     );
   }
 
@@ -174,11 +176,11 @@ export class NovelEditorComponent {
     // If the media is already floated, unfloat it (use id instead of object reference)
     if (this.isFloatedMedia(media)) {
       this.floatedMedia = this.floatedMedia.filter(
-        (floatedMedia) => floatedMedia.id !== media.id
+        (floatedMedia) => floatedMedia.id !== media.id,
       );
       this.novelService.setFloatedMediaForNovel(
         this.novelId,
-        this.floatedMedia
+        this.floatedMedia,
       );
       return;
     }

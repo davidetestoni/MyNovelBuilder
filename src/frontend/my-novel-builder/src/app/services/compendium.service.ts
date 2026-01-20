@@ -33,7 +33,7 @@ export class CompendiumService {
     return this.mocked
       ? mockObservable(mockedCompendia[0])
       : this.http.get<CompendiumDto>(
-          `${this.baseUrl}/compendium/${compendiumId}`
+          `${this.baseUrl}/compendium/${compendiumId}`,
         );
   }
 
@@ -46,7 +46,7 @@ export class CompendiumService {
             params: {
               compendiumId,
             },
-          }
+          },
         );
   }
 
@@ -54,7 +54,7 @@ export class CompendiumService {
     return this.mocked
       ? mockObservable(mockedCompendiumRecords[0])
       : this.http.get<CompendiumRecordDto>(
-          `${this.baseUrl}/compendium-record/${recordId}`
+          `${this.baseUrl}/compendium-record/${recordId}`,
         );
   }
 
@@ -65,13 +65,13 @@ export class CompendiumService {
   }
 
   createRecord(
-    record: CreateCompendiumRecordDto
+    record: CreateCompendiumRecordDto,
   ): Observable<CompendiumRecordDto> {
     return this.mocked
       ? mockObservable(mockedCompendiumRecords[0])
       : this.http.post<CompendiumRecordDto>(
           `${this.baseUrl}/compendium-record`,
-          record
+          record,
         );
   }
 
@@ -82,13 +82,13 @@ export class CompendiumService {
   }
 
   updateRecord(
-    record: UpdateCompendiumRecordDto
+    record: UpdateCompendiumRecordDto,
   ): Observable<CompendiumRecordDto> {
     return this.mocked
       ? mockObservable(mockedCompendiumRecords[0])
       : this.http.put<CompendiumRecordDto>(
           `${this.baseUrl}/compendium-record`,
-          record
+          record,
         );
   }
 
@@ -106,14 +106,14 @@ export class CompendiumService {
     }
 
     return this.http.delete<void>(
-      `${this.baseUrl}/compendium-record/${recordId}`
+      `${this.baseUrl}/compendium-record/${recordId}`,
     );
   }
 
   uploadRecordMedia(
     recordId: string,
     file: File | Blob,
-    isCurrent: boolean
+    isCurrent: boolean,
   ): Observable<void> {
     const formData = new FormData();
     formData.append('file', file);
@@ -123,7 +123,7 @@ export class CompendiumService {
       ? mockObservable<void>(undefined)
       : this.http.post<void>(
           `${this.baseUrl}/compendium-record/${recordId}/media`,
-          formData
+          formData,
         );
   }
 
@@ -131,7 +131,7 @@ export class CompendiumService {
     return this.mocked
       ? mockObservable<void>(undefined)
       : this.http.delete<void>(
-          `${this.baseUrl}/compendium-record/${recordId}/media/${mediaId}`
+          `${this.baseUrl}/compendium-record/${recordId}/media/${mediaId}`,
         );
   }
 
@@ -140,7 +140,7 @@ export class CompendiumService {
       ? mockObservable<void>(undefined)
       : this.http.post<void>(
           `${this.baseUrl}/compendium-record/${recordId}/image/${imageId}/set-current`,
-          {}
+          {},
         );
   }
 }

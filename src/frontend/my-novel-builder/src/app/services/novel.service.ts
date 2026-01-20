@@ -49,7 +49,7 @@ export class NovelService {
       ? mockObservable<void>(undefined)
       : this.http.post<void>(
           `${this.baseUrl}/novel/${novelId}/cover-image`,
-          formData
+          formData,
         );
   }
 
@@ -61,7 +61,7 @@ export class NovelService {
       ? mockObservable('https://picsum.photos/200/300')
       : this.http.post<string>(
           `${this.baseUrl}/novel/${novelId}/prose-image`,
-          formData
+          formData,
         );
   }
 
@@ -107,7 +107,7 @@ export class NovelService {
 
   setFloatedMediaForNovel(
     novelId: string,
-    media: CompendiumRecordMediaDto[]
+    media: CompendiumRecordMediaDto[],
   ): void {
     const floatedMedia = this.getFloatedMedia();
     floatedMedia[novelId] = media;

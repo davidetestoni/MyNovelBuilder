@@ -70,7 +70,7 @@ export class CompendiumRecordComponent {
 
   removeMedia(mediaId: string): void {
     this.record.media = this.record.media.filter(
-      (media) => media.id !== mediaId
+      (media) => media.id !== mediaId,
     );
     this.compendiumService
       .deleteRecordMedia(this.record.id, mediaId)
@@ -101,7 +101,7 @@ export class CompendiumRecordComponent {
           .uploadRecordMedia(
             this.record.id,
             file,
-            this.record.media.length === 0
+            this.record.media.length === 0,
           )
           .subscribe(() => {
             // Get the record and update the media
@@ -137,7 +137,7 @@ export class CompendiumRecordComponent {
           .uploadRecordMedia(
             this.record.id,
             image,
-            this.record.media.length === 0
+            this.record.media.length === 0,
           )
           .subscribe(() => {
             // Get the record and update the media

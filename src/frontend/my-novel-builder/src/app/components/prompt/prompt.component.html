@@ -25,18 +25,18 @@
       </div>
       <div class="prompt-messages">
         @for (message of prompt.messages; track message.message) {
-        <div class="prompt-message">
-          <div class="label">
-            <span>{{ message.role | titlecase }}</span>
-            <i class="icon icon-close" (click)="removeMessage(message)"></i>
+          <div class="prompt-message">
+            <div class="label">
+              <span>{{ message.role | titlecase }}</span>
+              <i class="icon icon-close" (click)="removeMessage(message)"></i>
+            </div>
+            <textarea
+              pInputTextarea
+              [(ngModel)]="message.message"
+              (blur)="onBlur()"
+              [autoResize]="true"
+            ></textarea>
           </div>
-          <textarea
-            pInputTextarea
-            [(ngModel)]="message.message"
-            (blur)="onBlur()"
-            [autoResize]="true"
-          ></textarea>
-        </div>
         }
       </div>
       <div class="prompt-actions-container">

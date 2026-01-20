@@ -1,163 +1,163 @@
 <div class="novel-settings">
   @if (novel === null || compendia === null) {
-  <p>Loading...</p>
+    <p>Loading...</p>
   } @else {
-  <div class="novel-settings-header">
-    @if (novel.coverImageUrl !== null) {
-    <div class="novel-settings-header-cover">
-      <img
-        [routerLink]="['/novel', novel.id]"
-        src="{{ novel.coverImageUrl }}"
-        alt="{{ novel.title }}"
-      />
-    </div>
-    }
-    <div class="novel-settings-header-title">
-      <span>{{ novel.title }}</span>
-    </div>
-    <div class="novel-settings-header-actions">
-      <p-button
-        label="Prose"
-        [routerLink]="['/novel', novel.id]"
-        variant="text"
-        icon="pi pi-pencil"
-      />
-    </div>
-  </div>
-  <div class="novel-settings-body">
-    <div class="novel-cover">
-      <div class="label">Cover</div>
-      <div class="novel-cover-image">
-        <img [src]="novel.coverImageUrl" alt="Cover Image" />
+    <div class="novel-settings-header">
+      @if (novel.coverImageUrl !== null) {
+        <div class="novel-settings-header-cover">
+          <img
+            [routerLink]="['/novel', novel.id]"
+            src="{{ novel.coverImageUrl }}"
+            alt="{{ novel.title }}"
+          />
+        </div>
+      }
+      <div class="novel-settings-header-title">
+        <span>{{ novel.title }}</span>
       </div>
-      <input
-        type="file"
-        (change)="updateNovelCoverImage($event)"
-        accept="image/*"
-      />
+      <div class="novel-settings-header-actions">
+        <p-button
+          label="Prose"
+          [routerLink]="['/novel', novel.id]"
+          variant="text"
+          icon="pi pi-pencil"
+        />
+      </div>
     </div>
-    <div class="novel-title">
-      <label class="label">
-        <span>Title</span>
-      </label>
-      <input
-        pInputText
-        type="text"
-        [(ngModel)]="novel.title"
-        (blur)="onBlur()"
-      />
+    <div class="novel-settings-body">
+      <div class="novel-cover">
+        <div class="label">Cover</div>
+        <div class="novel-cover-image">
+          <img [src]="novel.coverImageUrl" alt="Cover Image" />
+        </div>
+        <input
+          type="file"
+          (change)="updateNovelCoverImage($event)"
+          accept="image/*"
+        />
+      </div>
+      <div class="novel-title">
+        <label class="label">
+          <span>Title</span>
+        </label>
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="novel.title"
+          (blur)="onBlur()"
+        />
+      </div>
+      <div class="novel-author">
+        <label class="label">
+          <span>Author</span>
+        </label>
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="novel.author"
+          (blur)="onBlur()"
+        />
+      </div>
+      <div class="novel-brief">
+        <label class="label">
+          <span>Brief</span>
+        </label>
+        <textarea
+          pInputTextarea
+          [(ngModel)]="novel.brief"
+          (blur)="onBlur()"
+          [autoResize]="true"
+        ></textarea>
+      </div>
+      <div class="novel-tense">
+        <label class="label">
+          <span>Tense</span>
+        </label>
+        <p-select
+          [(ngModel)]="novel.tense"
+          [options]="writingTenses"
+          placeholder="Select a tense"
+          (onChange)="onBlur()"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template let-tense pTemplate="item">
+            {{ tense | spaced }}
+          </ng-template>
+          <ng-template let-tense pTemplate="selectedItem">
+            {{ tense | spaced }}
+          </ng-template>
+        </p-select>
+      </div>
+      <div class="novel-pov">
+        <label class="label">
+          <span>Point of view</span>
+        </label>
+        <p-select
+          [(ngModel)]="novel.pov"
+          [options]="writingPovs"
+          placeholder="Select a point of view"
+          (onChange)="onBlur()"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template let-pov pTemplate="item">
+            {{ pov | spaced }}
+          </ng-template>
+          <ng-template let-pov pTemplate="selectedItem">
+            {{ pov | spaced }}
+          </ng-template>
+        </p-select>
+      </div>
+      <div class="novel-mc">
+        <label class="label">
+          <span>Main character</span>
+        </label>
+        <p-select
+          [(ngModel)]="novel.mainCharacterId"
+          [options]="getAvailableCharacters()"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Select a main character"
+          (onChange)="onBlur()"
+          [style]="{ width: '100%' }"
+          [showClear]="true"
+        >
+        </p-select>
+      </div>
+      <div class="novel-language">
+        <label class="label">
+          <span>Language</span>
+        </label>
+        <p-select
+          [(ngModel)]="novel.language"
+          [options]="writingLanguages"
+          placeholder="Select a language"
+          (onChange)="onBlur()"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template let-language pTemplate="item">
+            {{ language | spaced }}
+          </ng-template>
+          <ng-template let-language pTemplate="selectedItem">
+            {{ language | spaced }}
+          </ng-template>
+        </p-select>
+      </div>
+      <div class="novel-compendia">
+        <label class="label">
+          <span>Compendia</span>
+        </label>
+        <p-multiSelect
+          [(ngModel)]="novel.compendiumIds"
+          [options]="compendia"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Select compendia"
+          (onChange)="onBlur()"
+          [style]="{ width: '100%' }"
+          display="chip"
+        >
+        </p-multiSelect>
+      </div>
     </div>
-    <div class="novel-author">
-      <label class="label">
-        <span>Author</span>
-      </label>
-      <input
-        pInputText
-        type="text"
-        [(ngModel)]="novel.author"
-        (blur)="onBlur()"
-      />
-    </div>
-    <div class="novel-brief">
-      <label class="label">
-        <span>Brief</span>
-      </label>
-      <textarea
-        pInputTextarea
-        [(ngModel)]="novel.brief"
-        (blur)="onBlur()"
-        [autoResize]="true"
-      ></textarea>
-    </div>
-    <div class="novel-tense">
-      <label class="label">
-        <span>Tense</span>
-      </label>
-      <p-select
-        [(ngModel)]="novel.tense"
-        [options]="writingTenses"
-        placeholder="Select a tense"
-        (onChange)="onBlur()"
-        [style]="{ width: '100%' }"
-      >
-        <ng-template let-tense pTemplate="item">
-          {{ tense | spaced }}
-        </ng-template>
-        <ng-template let-tense pTemplate="selectedItem">
-          {{ tense | spaced }}
-        </ng-template>
-      </p-select>
-    </div>
-    <div class="novel-pov">
-      <label class="label">
-        <span>Point of view</span>
-      </label>
-      <p-select
-        [(ngModel)]="novel.pov"
-        [options]="writingPovs"
-        placeholder="Select a point of view"
-        (onChange)="onBlur()"
-        [style]="{ width: '100%' }"
-      >
-        <ng-template let-pov pTemplate="item">
-          {{ pov | spaced }}
-        </ng-template>
-        <ng-template let-pov pTemplate="selectedItem">
-          {{ pov | spaced }}
-        </ng-template>
-      </p-select>
-    </div>
-    <div class="novel-mc">
-      <label class="label">
-        <span>Main character</span>
-      </label>
-      <p-select
-        [(ngModel)]="novel.mainCharacterId"
-        [options]="getAvailableCharacters()"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Select a main character"
-        (onChange)="onBlur()"
-        [style]="{ width: '100%' }"
-        [showClear]="true"
-      >
-      </p-select>
-    </div>
-    <div class="novel-language">
-      <label class="label">
-        <span>Language</span>
-      </label>
-      <p-select
-        [(ngModel)]="novel.language"
-        [options]="writingLanguages"
-        placeholder="Select a language"
-        (onChange)="onBlur()"
-        [style]="{ width: '100%' }"
-      >
-        <ng-template let-language pTemplate="item">
-          {{ language | spaced }}
-        </ng-template>
-        <ng-template let-language pTemplate="selectedItem">
-          {{ language | spaced }}
-        </ng-template>
-      </p-select>
-    </div>
-    <div class="novel-compendia">
-      <label class="label">
-        <span>Compendia</span>
-      </label>
-      <p-multiSelect
-        [(ngModel)]="novel.compendiumIds"
-        [options]="compendia"
-        optionLabel="name"
-        optionValue="id"
-        placeholder="Select compendia"
-        (onChange)="onBlur()"
-        [style]="{ width: '100%' }"
-        display="chip"
-      >
-      </p-multiSelect>
-    </div>
-  </div>
   }
 </div>

@@ -70,7 +70,7 @@ export class GenerateTextComponent implements OnInit {
     const promptType = this.data.prompts[0].type;
     const instructions = this.localStorageService.getNestedStringForKey(
       LocalStorageKey.RecentInstructions,
-      promptType
+      promptType,
     );
 
     if (instructions !== null) {
@@ -83,7 +83,7 @@ export class GenerateTextComponent implements OnInit {
 
     const promptId = this.localStorageService.getNestedStringForKey(
       LocalStorageKey.RecentPrompts,
-      promptType
+      promptType,
     );
 
     if (promptId !== null) {
@@ -120,7 +120,7 @@ export class GenerateTextComponent implements OnInit {
       this.localStorageService.setNestedStringForKey(
         LocalStorageKey.RecentInstructions,
         promptType,
-        instructions
+        instructions,
       );
     }
 
@@ -130,7 +130,7 @@ export class GenerateTextComponent implements OnInit {
       this.localStorageService.setNestedStringForKey(
         LocalStorageKey.RecentPrompts,
         promptType,
-        promptId
+        promptId,
       );
     }
 

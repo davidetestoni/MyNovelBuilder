@@ -83,7 +83,7 @@ export class GenerateTextResultComponent implements OnInit {
       error: (error) => {
         this.toastr.error(
           error.message,
-          'An error occurred while generating the text'
+          'An error occurred while generating the text',
         );
         this.isGenerating = false;
       },

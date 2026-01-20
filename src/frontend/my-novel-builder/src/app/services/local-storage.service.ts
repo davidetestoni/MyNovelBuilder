@@ -61,7 +61,7 @@ export class LocalStorageService {
   setNestedStringForKey(
     storageKey: string,
     mapKey: string,
-    value: string
+    value: string,
   ): void {
     const map = this.getObjectForKey<Record<string, string>>(storageKey) ?? {};
     map[mapKey] = value;

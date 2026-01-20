@@ -53,7 +53,7 @@ export class GenerateTextService {
     // Otherwise, get them from local storage
     const cachedModels = localStorage.getItem(this.cachedModelsKey);
     const cachedModelsLastUpdated = localStorage.getItem(
-      this.cachedModelsLastUpdatedKey
+      this.cachedModelsLastUpdatedKey,
     );
     this.cachedModels = cachedModels
       ? this.getModelIds(JSON.parse(cachedModels))
@@ -90,15 +90,15 @@ export class GenerateTextService {
             // Save to local storage
             localStorage.setItem(
               this.cachedModelsKey,
-              JSON.stringify(response)
+              JSON.stringify(response),
             );
             localStorage.setItem(
               this.cachedModelsLastUpdatedKey,
-              this.cachedModelsLastUpdated.toISOString()
+              this.cachedModelsLastUpdated.toISOString(),
             );
 
             return this.sortModels(this.cachedModels);
-          })
+          }),
         );
   }
 
@@ -126,7 +126,7 @@ export class GenerateTextService {
 
     localStorage.setItem(
       'recentlyUsedModels',
-      JSON.stringify(recentlyUsedModels)
+      JSON.stringify(recentlyUsedModels),
     );
   }
 

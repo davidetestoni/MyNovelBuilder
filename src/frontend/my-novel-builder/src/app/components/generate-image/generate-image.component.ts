@@ -51,7 +51,7 @@ export class GenerateImageComponent {
 
   constructor() {
     const prompt = this.localStorageService.getStringForKey(
-      LocalStorageKey.LastImagePrompt
+      LocalStorageKey.LastImagePrompt,
     );
 
     this.formGroup.patchValue({
@@ -75,7 +75,7 @@ export class GenerateImageComponent {
     // Save the prompt
     this.localStorageService.setStringForKey(
       LocalStorageKey.LastImagePrompt,
-      this.formGroup.get('prompt')!.value!
+      this.formGroup.get('prompt')!.value!,
     );
 
     this.isGenerating = true;

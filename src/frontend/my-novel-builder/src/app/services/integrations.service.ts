@@ -21,7 +21,7 @@ export class IntegrationsService {
     return this.mocked
       ? mockObservable<IntegrationsConfigDto>(mockedIntegrationsConfig)
       : this.http.get<IntegrationsConfigDto>(
-          `${this.baseUrl}/integrations/config`
+          `${this.baseUrl}/integrations/config`,
         );
   }
 

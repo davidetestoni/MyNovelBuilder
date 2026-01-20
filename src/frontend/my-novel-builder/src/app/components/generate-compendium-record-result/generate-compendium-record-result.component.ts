@@ -82,7 +82,7 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
     this.novelService.getNovel(this.data.novelId).subscribe((novel) => {
       this.compendiumService.getCompendia().subscribe((compendia) => {
         this.compendia = compendia.filter((compendium) =>
-          novel.compendiumIds.includes(compendium.id)
+          novel.compendiumIds.includes(compendium.id),
         );
 
         if (this.compendia.length > 0) {

@@ -82,7 +82,7 @@ export class CompendiumComponent implements OnInit {
         if (this.currentRecord) {
           this.currentRecord =
             this.records.find(
-              (record) => record.id === this.currentRecord!.id
+              (record) => record.id === this.currentRecord!.id,
             ) ?? null;
         }
       });

@@ -56,12 +56,12 @@ export class IntegrationsComponent implements OnInit {
         this.hasOpenRouterApiKey = !!updateDto.openRouterApiKey;
         this.integrationsForm.get('openRouterApiKey')?.reset();
         this.toastrService.success(
-          'Integrations configuration updated successfully.'
+          'Integrations configuration updated successfully.',
         );
       },
       error: (error) => {
         this.toastrService.error(
-          'Failed to update integrations configuration.'
+          'Failed to update integrations configuration.',
         );
         console.error('Error updating configuration:', error);
       },

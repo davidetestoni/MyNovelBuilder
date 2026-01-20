@@ -303,7 +303,7 @@ export const mockedTextGenerationResponse = (generatedText: string) =>
 
             partialText += JSON.stringify(chunk) + '\n';
 
-            subscriber.next(<HttpDownloadProgressEvent>{ 
+            subscriber.next(<HttpDownloadProgressEvent>{
               type: HttpEventType.DownloadProgress,
               loaded: index + 1,
               total: generatedText.length,
@@ -324,7 +324,7 @@ export const mockedTextGenerationResponse = (generatedText: string) =>
           }
         }, 50);
       }, 500);
-    }
+    },
   );
 
 export const mockedImageGenerationResponse = () =>
