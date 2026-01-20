@@ -31,6 +31,19 @@
       />
     </div>
 
+    <h3>Text-to-Speech</h3>
+
+    <div class="form-group">
+      <label for="ttsProvider">Select TTS Provider:</label>
+      <p-select
+        id="ttsProvider"
+        [options]="ttsProviderOptions"
+        formControlName="ttsProvider"
+        placeholder="Select a TTS provider"
+        [style]="{ width: '100%' }"
+      />
+    </div>
+
     <p-button
       class="save-button"
       type="submit"

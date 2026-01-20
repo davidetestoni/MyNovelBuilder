@@ -3,7 +3,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Service for generating audio using ElevenLabs TTS.

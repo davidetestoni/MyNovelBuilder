@@ -1,3 +1,5 @@
+using MyNovelBuilder.WebApi.Enums;
+
 namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 
 /// <summary>
@@ -10,4 +12,9 @@ public class IntegrationsConfigDto
     /// Indicates whether an OpenRouter API key is configured.
     /// </summary>
     public bool HasOpenRouterApiKey { get; init; }
+
+    /// <summary>
+    /// The configured Text-to-Speech provider.
+    /// </summary>
+    public TtsProvider TtsProvider { get; init; }
 }

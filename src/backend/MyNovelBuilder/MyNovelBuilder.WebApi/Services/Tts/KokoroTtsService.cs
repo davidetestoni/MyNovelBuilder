@@ -4,7 +4,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using NAudio.Wave;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Text-to-Speech service for the local Kokoro model.

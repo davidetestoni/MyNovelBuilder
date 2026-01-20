@@ -1,3 +1,5 @@
+using MyNovelBuilder.WebApi.Enums;
+
 namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 
 /// <summary>
@@ -9,4 +11,9 @@ public class UpdateIntegrationsConfigDto
     /// The OpenRouter API key.
     /// </summary>
     public string? OpenRouterApiKey { get; init; }
+    
+    /// <summary>
+    /// The Text-to-Speech provider to use to generate speech.
+    /// </summary>
+    public TtsProvider? TtsProvider { get; init; }
 }

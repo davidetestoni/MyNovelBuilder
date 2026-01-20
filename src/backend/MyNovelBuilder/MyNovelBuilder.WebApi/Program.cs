@@ -12,9 +12,11 @@ using MyNovelBuilder.WebApi;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Data.Repositories;
+using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Middleware;
 using MyNovelBuilder.WebApi.Models.Errors;
 using MyNovelBuilder.WebApi.Services;
+using MyNovelBuilder.WebApi.Services.Tts;
 using Serilog;
 using Serilog.Events;
 
@@ -99,13 +101,23 @@ builder.Services.AddScoped<IPromptService, PromptService>();
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
 builder.Services.AddSingleton<ITextGenerationService, OpenRouterTextGenerationService>();
-builder.Services.AddSingleton<ITtsService, PocketTtsService>();
+
+// TTS services
+builder.Services.AddKeyedSingleton<ITtsService, CustomTtsService>(TtsProvider.Custom);
+builder.Services.AddKeyedSingleton<ITtsService, ElevenLabsTtsService>(TtsProvider.ElevenLabs);
+builder.Services.AddKeyedSingleton<ITtsService, KokoroTtsService>(TtsProvider.Kokoro);
+builder.Services.AddKeyedSingleton<ITtsService, PocketTtsService>(TtsProvider.PocketTts);
+builder.Services.AddKeyedSingleton<ITtsService, UnrealSpeechTtsService>(TtsProvider.UnrealSpeech);
+builder.Services.AddKeyedSingleton<ITtsService, VibeVoiceTtsService>(TtsProvider.VibeVoice);
+builder.Services.AddHttpClient<CustomTtsService>();
+builder.Services.AddHttpClient<ElevenLabsTtsService>();
+builder.Services.AddHttpClient<PocketTtsService>();
+builder.Services.AddHttpClient<UnrealSpeechTtsService>();
+builder.Services.AddHttpClient<VibeVoiceTtsService>();
+
 builder.Services.AddSingleton<IImageGenerationService, CustomImageGenerationService>();
 builder.Services.AddHttpClient<OpenRouterTextGenerationService>();
-builder.Services.AddHttpClient<CustomTtsService>();
 builder.Services.AddHttpClient<CustomImageGenerationService>();
-builder.Services.AddHttpClient<VibeVoiceTtsService>();
-builder.Services.AddHttpClient<PocketTtsService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();

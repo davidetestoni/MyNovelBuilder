@@ -19,6 +19,7 @@ import {
 } from '@angular/common/http';
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
+import { TtsProvider } from '../types/enums/tts-provider';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
@@ -363,4 +364,5 @@ export const mockedAvailableVoices: TtsVoiceDto[] = [
 
 export const mockedIntegrationsConfig = {
   hasOpenRouterApiKey: true,
+  ttsProvider: TtsProvider.Custom,
 };

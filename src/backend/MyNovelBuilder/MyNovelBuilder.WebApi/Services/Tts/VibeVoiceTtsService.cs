@@ -3,7 +3,7 @@ using System.Text.Json;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Text-to-speech service for VibeVoice.

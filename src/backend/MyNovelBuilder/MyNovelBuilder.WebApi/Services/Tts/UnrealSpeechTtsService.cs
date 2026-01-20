@@ -6,7 +6,7 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Text-to-speech service from unrealspeech.com.

@@ -32,7 +32,8 @@ public class IntegrationsController : ControllerBase
         var config = await _integrationsService.GetConfigAsync();
         return new IntegrationsConfigDto
         {
-            HasOpenRouterApiKey = !string.IsNullOrWhiteSpace(config.OpenRouterApiKey)
+            HasOpenRouterApiKey = !string.IsNullOrWhiteSpace(config.OpenRouterApiKey),
+            TtsProvider = config.TtsProvider
         };
     }
 
@@ -47,6 +48,11 @@ public class IntegrationsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(dto.OpenRouterApiKey))
         {
             config.OpenRouterApiKey = dto.OpenRouterApiKey;
+        }
+
+        if (dto.TtsProvider.HasValue)
+        {
+            config.TtsProvider = dto.TtsProvider.Value;
         }
         
         await _integrationsService.UpdateConfigAsync(config);

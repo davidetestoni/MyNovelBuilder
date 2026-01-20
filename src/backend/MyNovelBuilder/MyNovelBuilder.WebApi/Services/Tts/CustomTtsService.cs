@@ -5,7 +5,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.Tts;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Custom service for generating audio using TTS.
