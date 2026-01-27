@@ -22,7 +22,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// <summary>
     /// Creates a new prompt builder.
     /// </summary>
-    public PromptBuilder(string prompt)
+    protected PromptBuilder(string prompt)
     {
         Builder = new StringBuilder(prompt);
     }
@@ -92,7 +92,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// <summary>
     /// Filters the records based on the context.
     /// </summary>
-    protected HashSet<CompendiumRecord> FilterRecordsInContext(IList<CompendiumRecord> records, string context)
+    protected static HashSet<CompendiumRecord> FilterRecordsInContext(IList<CompendiumRecord> records, string context)
     {
         // Index records by their name and any aliases
         var processedRecords = new HashSet<CompendiumRecord>(); // To avoid infinite loops
@@ -106,11 +106,6 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
             {
                 ProcessRecordInContext(record, records, processedRecords, recordsInContext);
                 continue;
-            }
-
-            if (record.Name == "Michelle")
-            {
-                var x = 0;
             }
             
             // If the record is in context, add it to the records in context
@@ -195,7 +190,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// <summary>
     /// Strips HTML tags from the text and decodes HTML entities.
     /// </summary>
-    protected string StripHtmlTags(string text)
+    protected static string StripHtmlTags(string text)
     {
         return StripHtmlTagsRegex().Replace(text, string.Empty);
     }
@@ -203,7 +198,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// <summary>
     /// Decodes HTML entities in the text.
     /// </summary>
-    protected string DecodeHtmlEntities(string text)
+    protected static string DecodeHtmlEntities(string text)
     {
         return System.Net.WebUtility.HtmlDecode(text);
     }
@@ -214,7 +209,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// <exception cref="IndexOutOfRangeException">
     /// When the chapter index is out of bounds.
     /// </exception>
-    protected Chapter GetChapter(Prose prose, int chapterIndex)
+    protected static Chapter GetChapter(Prose prose, int chapterIndex)
     {
         // Check if the chapter index is out of bounds
         if (chapterIndex >= prose.Chapters.Count)
@@ -233,7 +228,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// <exception cref="IndexOutOfRangeException">
     /// When the section index is out of bounds.
     /// </exception>
-    protected Section? GetSection(Chapter chapter, int sectionIndex)
+    protected static Section? GetSection(Chapter chapter, int sectionIndex)
     {
         // If there are no sections yet in this chapter,
         // return null.
@@ -253,9 +248,47 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     }
 
     /// <summary>
+    /// Gets the entire story as plain text.
+    /// </summary>
+    protected static string GetEntireStory(Prose prose)
+    {
+        var storyBuilder = new StringBuilder();
+        
+        foreach (var chapter in prose.Chapters)
+        {
+            storyBuilder.AppendLine($"# {StripHtmlTags(chapter.Title)}\n\n");
+            
+            foreach (var section in chapter.Sections)
+            {
+                storyBuilder.Append(StripHtmlTags(section.Text));
+                storyBuilder.Append("\n\n");
+            }
+        }
+        
+        return storyBuilder.ToString();
+    }
+
+    /// <summary>
+    /// Gets the whole chapter at the specified index.
+    /// </summary>
+    protected static string GetWholeChapter(Prose prose, int chapterIndex)
+    {
+        var chapter = GetChapter(prose, chapterIndex);
+        var chapterBuilder = new StringBuilder();
+        
+        foreach (var section in chapter.Sections)
+        {
+            chapterBuilder.Append(StripHtmlTags(section.Text));
+            chapterBuilder.Append("\n\n");
+        }
+        
+        return chapterBuilder.ToString();
+    }
+
+    /// <summary>
     /// Gets the story so far up to the specified offset in the text.
     /// </summary>
-    protected string GetStorySoFar(
+    protected static string GetStorySoFar(
         Prose prose, int chapterIndex, int sectionIndex, int textOffset)
     {
         var chapter = GetChapter(prose, chapterIndex);

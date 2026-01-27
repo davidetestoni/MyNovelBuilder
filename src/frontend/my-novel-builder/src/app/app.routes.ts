@@ -7,6 +7,7 @@ import { CompendiumComponent } from './pages/compendium/compendium.component';
 import { PromptsComponent } from './pages/prompts/prompts.component';
 import { NovelSettingsComponent } from './pages/novel-settings/novel-settings.component';
 import { IntegrationsComponent } from './pages/integrations/integrations.component';
+import { ChatsComponent } from './pages/chats/chats.component';
 
 export const routes: Routes = [
   // Redirect / to /novels
@@ -18,6 +19,20 @@ export const routes: Routes = [
   {
     path: 'novels',
     component: NovelsComponent,
+    data: {
+      layoutType: LayoutType.Main,
+    },
+  },
+  {
+    path: 'chat',
+    component: ChatsComponent,
+    data: {
+      layoutType: LayoutType.Main,
+    },
+  },
+  {
+    path: 'chat/:id',
+    component: ChatsComponent,
     data: {
       layoutType: LayoutType.Main,
     },

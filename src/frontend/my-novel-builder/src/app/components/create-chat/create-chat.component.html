@@ -1,0 +1,27 @@
+<div class="create-chat-container">
+  @if (novels === null) {
+    <p>Loading novels...</p>
+  } @else {
+    <form [formGroup]="formGroup" (ngSubmit)="createChat()">
+      <div class="form-field">
+        <label for="novel-select">Select Novel</label>
+        <p-select
+          id="novel-select"
+          [options]="novels"
+          formControlName="novel"
+          optionLabel="title"
+          placeholder="Select a Novel"
+          [style]="{ width: '100%' }"
+          appendTo="body"
+        ></p-select>
+      </div>
+      <div class="form-actions">
+        <p-button
+          label="Create"
+          type="submit"
+          [disabled]="formGroup.invalid"
+        ></p-button>
+      </div>
+    </form>
+  }
+</div>

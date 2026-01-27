@@ -49,6 +49,7 @@ public class PromptCreatorService : IPromptCreatorService
             PromptType.ReplaceText => typeof(ReplaceTextContextInfoDto),
             PromptType.CreateCompendiumRecord => typeof(CreateCompendiumRecordContextInfoDto),
             PromptType.EditCompendiumRecord => typeof(EditCompendiumRecordContextInfoDto),
+            PromptType.SendChatMessage => typeof(SendChatMessageContextInfoDto),
             _ => throw new NotImplementedException("Unknown prompt type.")
         };
         
@@ -83,6 +84,7 @@ public class PromptCreatorService : IPromptCreatorService
             ReplaceTextContextInfoDto r => GetPromptMessages(r, prompt, novel, prose, records),
             CreateCompendiumRecordContextInfoDto c => GetPromptMessages(c, prompt, novel, prose, records),
             EditCompendiumRecordContextInfoDto e => GetPromptMessages(e, prompt, novel, prose, records),
+            SendChatMessageContextInfoDto m => GetPromptMessages(m, prompt, novel, prose, records),
             _ => throw new NotImplementedException("Unknown context type.")
         };
         
@@ -129,6 +131,14 @@ public class PromptCreatorService : IPromptCreatorService
                     .ReplacePlaceholders(new PromptBuilderContext<CreateCompendiumRecordContextInfoDto>
                     {
                         Client = c,
+                        Novel = novel,
+                        Prose = prose,
+                        CompendiumRecords = records
+                    }).ToString(),
+                SendChatMessageContextInfoDto s => new SendChatMessagePromptBuilder(message.Message)
+                    .ReplacePlaceholders(new PromptBuilderContext<SendChatMessageContextInfoDto>
+                    {
+                        Client = s,
                         Novel = novel,
                         Prose = prose,
                         CompendiumRecords = records

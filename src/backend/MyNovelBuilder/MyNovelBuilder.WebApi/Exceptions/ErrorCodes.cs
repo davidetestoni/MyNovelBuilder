@@ -46,6 +46,11 @@ public static class ErrorCodes
     public const string PromptNotFound = "prompt_not_found";
     
     /// <summary>
+    /// The chat was not found.
+    /// </summary>
+    public const string ChatNotFound = "chat_not_found";
+    
+    /// <summary>
     /// The cover image is invalid.
     /// </summary>
     public const string InvalidCoverImage = "invalid_cover_image";

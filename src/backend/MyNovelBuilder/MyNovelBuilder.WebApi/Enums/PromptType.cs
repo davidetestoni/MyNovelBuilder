@@ -29,4 +29,9 @@ public enum PromptType
     /// A prompt to edit a compendium record.
     /// </summary>
     EditCompendiumRecord = 4,
+    
+    /// <summary>
+    /// A system prompt for chat interactions.
+    /// </summary>
+    SendChatMessage = 5,
 }

@@ -20,13 +20,16 @@ import {
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
 import { TtsProvider } from '../types/enums/tts-provider';
+import { ChatMetadata } from '../types/dtos/chats/chat-metadata';
+import { ChatMessageRole } from '../types/enums/chat-message-role';
+import { Chat } from '../types/dtos/chats/chat';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
 }
 
 // Function that hashes an index to a GUID-like string
-function indexToGuid(index: number): string {
+export function indexToGuid(index: number): string {
   const str = index.toString();
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -365,4 +368,53 @@ export const mockedAvailableVoices: TtsVoiceDto[] = [
 export const mockedIntegrationsConfig = {
   hasOpenRouterApiKey: true,
   ttsProvider: TtsProvider.Custom,
+};
+
+export const mockedChats: ChatMetadata[] = [
+  {
+    id: indexToGuid(3),
+    createdAt: '2025-01-01T00:00:00Z',
+    updatedAt: '2026-01-02T00:00:00Z',
+    name: 'Chat about Chapter 1',
+  },
+  {
+    id: indexToGuid(2),
+    createdAt: '2024-06-03T00:00:00Z',
+    updatedAt: '2024-01-04T00:00:00Z',
+    name: 'Brainstorming Session',
+  },
+  {
+    id: indexToGuid(1),
+    createdAt: '2023-01-05T00:00:00Z',
+    updatedAt: '2023-01-06T00:00:00Z',
+    name: null,
+  },
+];
+
+export const mockedChat: Chat = {
+  id: indexToGuid(1),
+  createdAt: '2021-01-01T00:00:00Z',
+  updatedAt: '2021-01-02T00:00:00Z',
+  name: 'Chat about Chapter 1',
+  context: {
+    novelId: indexToGuid(1),
+    chapterIndex: 0,
+    compendiumIds: [indexToGuid(1)],
+    compendiumRecordIds: [indexToGuid(1), indexToGuid(2)],
+  },
+  messages: [
+    {
+      id: indexToGuid(101),
+      sentAt: '2021-01-01T01:00:00Z',
+      role: ChatMessageRole.User,
+      textContent: 'Hello, can you help me brainstorm ideas for Chapter 1?',
+    },
+    {
+      id: indexToGuid(102),
+      sentAt: '2021-01-01T01:05:00Z',
+      role: ChatMessageRole.Assistant,
+      textContent:
+        'Of course! What themes or events are you considering for this chapter?',
+    },
+  ],
 };
