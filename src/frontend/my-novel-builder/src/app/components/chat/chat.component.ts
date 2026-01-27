@@ -6,11 +6,12 @@ import {
   SimpleChanges,
   signal,
   computed,
+  OnDestroy,
 } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ChatService } from '../../services/chat.service';
-import { Chat } from '../../types/dtos/chats/chat';
+import { Chat, ChatMessage } from '../../types/dtos/chats/chat';
 import { NovelService } from '../../services/novel.service';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { Prose } from '../../types/dtos/novel/prose';
@@ -24,6 +25,8 @@ import { ChatMessageRole } from '../../types/enums/chat-message-role';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastrService } from 'ngx-toastr';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message.component';
 
 @Component({
   selector: 'app-chat',
@@ -39,9 +42,9 @@ import { ToastrService } from 'ngx-toastr';
     InputTextModule,
     ConfirmDialogModule,
   ],
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, DialogService],
 })
-export class ChatComponent implements OnChanges {
+export class ChatComponent implements OnChanges, OnDestroy {
   @Input() currentChatId!: string;
   @Input() currentChat!: Chat;
 
@@ -50,6 +53,8 @@ export class ChatComponent implements OnChanges {
   readonly compendiumService = inject(CompendiumService);
   readonly confirmationService = inject(ConfirmationService);
   readonly toastr = inject(ToastrService);
+  private dialogService = inject(DialogService);
+  private dialogRef: DynamicDialogRef | null = null;
 
   ChatMessageRole = ChatMessageRole;
 
@@ -75,6 +80,12 @@ export class ChatComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['currentChat'] && this.currentChat) {
       this.loadNovelContext();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
     }
   }
 
@@ -159,6 +170,26 @@ export class ChatComponent implements OnChanges {
 
     this.currentChat.context.compendiumIds = compIds;
     this.saveChat();
+  }
+
+  editMessage(message: ChatMessage): void {
+    this.dialogRef = this.dialogService.open(EditChatMessageComponent, {
+      header: 'Edit Message',
+      width: '50vw',
+      data: {
+        text: message.textContent,
+      },
+      modal: true,
+      closable: true,
+      dismissableMask: true,
+    });
+
+    this.dialogRef?.onClose.subscribe((newText: string | undefined) => {
+      if (newText !== undefined && newText !== message.textContent) {
+        message.textContent = newText;
+        this.saveChat();
+      }
+    });
   }
 
   deleteMessage(messageId: string): void {
