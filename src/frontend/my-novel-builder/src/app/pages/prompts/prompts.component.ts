@@ -24,13 +24,7 @@ export class PromptsComponent implements OnInit, OnDestroy {
   readonly promptService: PromptService = inject(PromptService);
   currentPrompt: PromptDto | null = null;
 
-  promptTypes: PromptType[] = [
-    PromptType.GenerateText,
-    PromptType.SummarizeText,
-    PromptType.ReplaceText,
-    PromptType.CreateCompendiumRecord,
-    PromptType.EditCompendiumRecord,
-  ];
+  promptTypes: PromptType[] = Object.values(PromptType);
 
   ngOnInit(): void {
     this.getPrompts();
