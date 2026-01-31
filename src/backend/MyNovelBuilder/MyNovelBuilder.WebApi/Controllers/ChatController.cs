@@ -23,7 +23,7 @@ public class ChatController : ControllerBase
     /// <summary>
     /// Get metadata for all chats.
     /// </summary>
-    [HttpGet]
+    [HttpGet("/api/chats")]
     public async Task<IEnumerable<ChatMetadata>> GetAllChatMetadata()
     {
         return await _chatService.GetAllMetadataAsync();
