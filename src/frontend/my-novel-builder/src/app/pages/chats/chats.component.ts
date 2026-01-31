@@ -47,6 +47,7 @@ export class ChatsComponent implements OnInit, OnDestroy {
       } else {
         this.currentChatId = null;
         this.currentChat = null;
+        this.maybeOpenFirstChat();
       }
     });
   }
@@ -60,7 +61,18 @@ export class ChatsComponent implements OnInit, OnDestroy {
   getChats(): void {
     this.chatService.getChats().subscribe((chats) => {
       this.chats = chats;
+      this.maybeOpenFirstChat();
     });
+  }
+
+  private maybeOpenFirstChat(): void {
+    if (
+      this.chats &&
+      this.chats.length > 0 &&
+      !this.route.snapshot.paramMap.get('id')
+    ) {
+      this.selectChat(this.chats[0].id);
+    }
   }
 
   loadChat(chatId: string): void {
