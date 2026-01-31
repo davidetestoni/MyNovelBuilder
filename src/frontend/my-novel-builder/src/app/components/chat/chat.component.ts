@@ -10,6 +10,7 @@ import {
   ViewChild,
   ElementRef,
   AfterViewChecked,
+  OnInit,
 } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -30,6 +31,23 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastrService } from 'ngx-toastr';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message.component';
+import { GenerateTextService } from '../../services/generate-text.service';
+import { PromptService } from '../../services/prompt.service';
+import { TextareaModule } from 'primeng/textarea';
+import {
+  HttpDownloadProgressEvent,
+  HttpEventType,
+  HttpResponse,
+} from '@angular/common/http';
+import {
+  GenerateTextRequestDto,
+  SendChatMessageContextInfoDto,
+  TextGenerationType,
+} from '../../types/dtos/generate/generate-text-request.dto';
+import { PromptType } from '../../types/enums/prompt-type';
+import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
 
 @Component({
   selector: 'app-chat',
@@ -44,10 +62,13 @@ import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message
     MultiSelect,
     InputTextModule,
     ConfirmDialogModule,
+    TextareaModule,
   ],
   providers: [ConfirmationService, DialogService],
 })
-export class ChatComponent implements OnChanges, OnDestroy, AfterViewChecked {
+export class ChatComponent
+  implements OnChanges, OnDestroy, AfterViewChecked, OnInit
+{
   @Input() currentChatId!: string;
   @Input() currentChat!: Chat;
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
@@ -58,14 +79,26 @@ export class ChatComponent implements OnChanges, OnDestroy, AfterViewChecked {
   readonly confirmationService = inject(ConfirmationService);
   readonly toastr = inject(ToastrService);
   private dialogService = inject(DialogService);
+  private generateTextService = inject(GenerateTextService);
+  private promptService = inject(PromptService);
+
   private dialogRef: DynamicDialogRef | null = null;
   private shouldScrollToBottom = false;
 
   ChatMessageRole = ChatMessageRole;
 
   novel = signal<NovelDto | null>(null);
+  novelNotFound = signal(false);
   prose = signal<Prose | null>(null);
   compendia = signal<CompendiumDto[] | null>(null);
+
+  models: string[] = [];
+  selectedModel: string | null = null;
+  prompts: PromptDto[] = [];
+  selectedPromptId: string | null = null;
+
+  userInput = '';
+  isGenerating = false;
 
   chapters = computed(() => {
     const prose = this.prose();
@@ -82,6 +115,24 @@ export class ChatComponent implements OnChanges, OnDestroy, AfterViewChecked {
     return this.compendia()?.flatMap((c) => c.records) ?? [];
   });
 
+  ngOnInit(): void {
+    this.generateTextService.getAvailableModels().subscribe((models) => {
+      this.models = models;
+      if (models.length > 0) {
+        this.selectedModel = models[0];
+      }
+    });
+
+    this.promptService.getPrompts().subscribe((prompts) => {
+      this.prompts = prompts.filter(
+        (p) => p.type === PromptType.SendChatMessage,
+      );
+      if (this.prompts.length > 0) {
+        this.selectedPromptId = this.prompts[0].id;
+      }
+    });
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['currentChat'] && this.currentChat) {
       this.loadNovelContext();
@@ -93,6 +144,103 @@ export class ChatComponent implements OnChanges, OnDestroy, AfterViewChecked {
     if (this.shouldScrollToBottom) {
       this.scrollToBottom();
     }
+  }
+
+  sendMessage() {
+    if (
+      !this.userInput.trim() ||
+      this.isGenerating ||
+      !this.selectedModel ||
+      !this.selectedPromptId
+    ) {
+      return;
+    }
+
+    const userMessageContent = this.userInput;
+    this.userInput = '';
+    this.isGenerating = true;
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: uuidv4(),
+      sentAt: new Date().toISOString(),
+      role: ChatMessageRole.User,
+      textContent: userMessageContent,
+    };
+    this.currentChat.messages.push(userMessage);
+    this.shouldScrollToBottom = true;
+
+    // Create placeholder assistant message
+    const assistantMessage: ChatMessage = {
+      id: uuidv4(),
+      sentAt: new Date().toISOString(),
+      role: ChatMessageRole.Assistant,
+      textContent: '',
+    };
+    this.currentChat.messages.push(assistantMessage);
+
+    const contextInfo: SendChatMessageContextInfoDto = {
+      $type: TextGenerationType.SendChatMessage,
+      chapterIndex: this.currentChat.context.chapterIndex,
+      userMessage: userMessageContent,
+      compendiumIds: this.currentChat.context.compendiumIds,
+      compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
+    };
+
+    const request: GenerateTextRequestDto = {
+      model: this.selectedModel,
+      promptId: this.selectedPromptId,
+      novelId: this.currentChat.context.novelId,
+      contextInfo: contextInfo,
+    };
+
+    this.generateTextService.generateText(request).subscribe({
+      next: (event) => {
+        if (event.type === HttpEventType.DownloadProgress) {
+          const response = (event as HttpDownloadProgressEvent)
+            .partialText as string;
+          if (response === undefined) {
+            return;
+          }
+
+          const responseChunks = response
+            .split('\n')
+            .filter((item) => item.length > 0)
+            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+
+          if (responseChunks.length > 0) {
+            const message = responseChunks.map((item) => item.content).join('');
+            assistantMessage.textContent = message;
+            this.shouldScrollToBottom = true;
+          }
+        } else if (event.type === HttpEventType.Response) {
+          const response = event as HttpResponse<string>;
+          const responseChunks = response
+            .body!.split('\n')
+            .filter((item) => item.length > 0)
+            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+
+          if (responseChunks.length > 0) {
+            const message = responseChunks.map((item) => item.content).join('');
+            assistantMessage.textContent = message;
+            this.isGenerating = false;
+            this.saveChat();
+            this.shouldScrollToBottom = true;
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error generating text:', err);
+        this.toastr.error('Failed to generate response');
+        this.isGenerating = false;
+        // Remove the empty assistant message if it failed
+        if (!assistantMessage.textContent) {
+          this.currentChat.messages = this.currentChat.messages.filter(
+            (m) => m.id !== assistantMessage.id,
+          );
+        }
+      },
+    });
   }
 
   private scrollToBottom(): void {
@@ -113,12 +261,25 @@ export class ChatComponent implements OnChanges, OnDestroy, AfterViewChecked {
 
   loadNovelContext(): void {
     const novelId = this.currentChat.context.novelId;
-    this.novelService.getNovel(novelId).subscribe((novel) => {
-      this.novel.set(novel);
-      this.loadCompendia(novel);
+    this.novelNotFound.set(false);
+
+    this.novelService.getNovel(novelId).subscribe({
+      next: (novel) => {
+        this.novel.set(novel);
+        this.loadCompendia(novel);
+      },
+      error: () => {
+        this.novelNotFound.set(true);
+      },
     });
-    this.novelService.getNovelProse(novelId).subscribe((prose) => {
-      this.prose.set(prose);
+
+    this.novelService.getNovelProse(novelId).subscribe({
+      next: (prose) => {
+        this.prose.set(prose);
+      },
+      error: () => {
+        // Handle error if needed
+      },
     });
   }
 

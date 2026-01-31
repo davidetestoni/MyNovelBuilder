@@ -122,6 +122,34 @@
     gap: 1.5rem;
     scroll-behavior: smooth;
 
+    &.error-state {
+      justify-content: center;
+      align-items: center;
+
+      .error-container {
+        text-align: center;
+        color: $grey15;
+        max-width: 400px;
+
+        i {
+          font-size: 3rem;
+          color: $invalid;
+          margin-bottom: 1rem;
+        }
+
+        h2 {
+          font-size: 1.5rem;
+          margin-bottom: 0.5rem;
+          color: $grey19;
+        }
+
+        p {
+          font-size: 1rem;
+          line-height: 1.5;
+        }
+      }
+    }
+
     /* Custom scrollbar */
     &::-webkit-scrollbar {
       width: 8px;
@@ -225,6 +253,24 @@
     border-top: 1px solid $grey4;
     flex-shrink: 0; // Ensure footer doesn't shrink
 
+    &.error {
+      background-color: $grey1;
+      border-top-color: $invalid;
+
+      .error-message {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: $invalid;
+        font-weight: 500;
+        justify-content: center;
+
+        i {
+          font-size: 1.2rem;
+        }
+      }
+    }
+
     .input-wrapper {
       display: flex;
       gap: 0.5rem;
@@ -235,13 +281,22 @@
       padding: 0.5rem;
       transition: border-color 0.2s;
 
-      &:focus-within {
+      &.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+
+        textarea {
+          cursor: not-allowed;
+        }
+      }
+
+      &:focus-within:not(.disabled) {
         border-color: $grey6;
       }
 
       textarea {
         flex: 1;
-        background: transparent;
+        background: transparent !important;
         border: none;
         resize: none;
         padding: 0.5rem;

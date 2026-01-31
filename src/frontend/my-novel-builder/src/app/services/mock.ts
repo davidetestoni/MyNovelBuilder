@@ -28,6 +28,14 @@ export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
 }
 
+export function mockErrorObservable<T>(error: any): Observable<T> {
+  return new Observable<T>((subscriber) => {
+    setTimeout(() => {
+      subscriber.error(error);
+    }, 500);
+  });
+}
+
 // Function that hashes an index to a GUID-like string
 export function indexToGuid(index: number): string {
   const str = index.toString();
@@ -287,6 +295,20 @@ export const mockedPrompts: PromptDto[] = [
       {
         id: 1,
         role: PromptMessageRole.User,
+        message: loremIpsum({ count: 3, units: 'sentences' }),
+      },
+    ],
+  },
+  {
+    id: indexToGuid(5),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Fifth Prompt',
+    type: PromptType.SendChatMessage,
+    messages: [
+      {
+        id: 0,
+        role: PromptMessageRole.System,
         message: loremIpsum({ count: 3, units: 'sentences' }),
       },
     ],
