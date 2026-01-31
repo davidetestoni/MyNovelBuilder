@@ -45,13 +45,7 @@ export class CreatePromptComponent {
     ]),
   });
 
-  promptTypes: PromptType[] = [
-    PromptType.GenerateText,
-    PromptType.SummarizeText,
-    PromptType.ReplaceText,
-    PromptType.CreateCompendiumRecord,
-    PromptType.EditCompendiumRecord,
-  ];
+  promptTypes: PromptType[] = Object.values(PromptType);
 
   createPrompt(): void {
     this.promptService
