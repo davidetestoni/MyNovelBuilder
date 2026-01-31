@@ -332,7 +332,7 @@
     .input-wrapper {
       display: flex;
       gap: 0.5rem;
-      align-items: flex-end;
+      align-items: center;
       background-color: $grey2;
       border: 1px solid $grey5;
       border-radius: 0.5rem;
@@ -373,7 +373,7 @@
       }
 
       .send-btn {
-        background: transparent;
+        background-color: transparent;
         border: none;
         color: $grey11;
         padding: 0.5rem;
