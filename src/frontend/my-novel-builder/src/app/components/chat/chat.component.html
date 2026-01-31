@@ -129,7 +129,7 @@
             size="small"
           />
 
-          @if (prompts.length > 0) {
+          @if (prompts !== null && prompts.length > 0) {
             <p-select
               [(ngModel)]="selectedPromptId"
               [options]="prompts"
@@ -156,12 +156,12 @@
           [class.assistant-message]="message.role === ChatMessageRole.Assistant"
         >
           <div class="message-wrapper">
-                                <div class="message-bubble">
-                                  <div class="message-content">
-                                    <markdown [data]="message.textContent"></markdown>
-                                  </div>
-                                </div>
-                                  @if (!isGenerating || !last) {
+            <div class="message-bubble">
+              <div class="message-content">
+                <markdown [data]="message.textContent"></markdown>
+              </div>
+            </div>
+            @if (!isGenerating || !last) {
               <div class="message-actions">
                 @if (canResend(message)) {
                   <button class="action-btn" (click)="resendMessage(message)">
@@ -192,7 +192,7 @@
 
     <p-confirmDialog></p-confirmDialog>
 
-    @if (prompts.length === 0) {
+    @if (prompts !== null && prompts.length === 0) {
       <div class="chat-input error">
         <div class="error-message">
           <i class="pi pi-exclamation-triangle"></i>

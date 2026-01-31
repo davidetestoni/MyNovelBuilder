@@ -100,9 +100,9 @@ export class ChatComponent
   prose = signal<Prose | null>(null);
   compendia = signal<CompendiumDto[] | null>(null);
 
-  models: string[] = [];
+  models: string[] | null = null;
   selectedModel: string | null = null;
-  prompts: PromptDto[] = [];
+  prompts: PromptDto[] | null = null;
   selectedPromptId: string | null = null;
 
   userInput = '';
@@ -141,10 +141,7 @@ export class ChatComponent
         PromptType.SendChatMessage,
       );
 
-      if (
-        savedPromptId &&
-        this.prompts.some((p) => p.id === savedPromptId)
-      ) {
+      if (savedPromptId && this.prompts.some((p) => p.id === savedPromptId)) {
         this.selectedPromptId = savedPromptId;
       } else if (this.prompts.length > 0) {
         this.selectedPromptId = this.prompts[0].id;
