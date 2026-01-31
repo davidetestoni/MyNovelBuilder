@@ -407,14 +407,37 @@ export const mockedChat: Chat = {
       id: indexToGuid(101),
       sentAt: '2021-01-01T01:00:00Z',
       role: ChatMessageRole.User,
-      textContent: 'Hello, can you help me brainstorm ideas for Chapter 1?',
+      textContent: loremIpsum({ count: 2, units: 'sentences' }),
     },
     {
       id: indexToGuid(102),
       sentAt: '2021-01-01T01:05:00Z',
       role: ChatMessageRole.Assistant,
-      textContent:
-        'Of course! What themes or events are you considering for this chapter?',
+      textContent: loremIpsum({ count: 2, units: 'paragraphs' }),
+    },
+    {
+      id: indexToGuid(103),
+      sentAt: '2021-01-01T01:10:00Z',
+      role: ChatMessageRole.User,
+      textContent: loremIpsum({ count: 4, units: 'sentences' }),
+    },
+    {
+      id: indexToGuid(104),
+      sentAt: '2021-01-01T01:15:00Z',
+      role: ChatMessageRole.Assistant,
+      textContent: loremIpsum({ count: 1, units: 'paragraphs' }),
+    },
+    {
+      id: indexToGuid(105),
+      sentAt: '2021-01-01T01:20:00Z',
+      role: ChatMessageRole.User,
+      textContent: loremIpsum({ count: 3, units: 'sentences' }),
+    },
+    {
+      id: indexToGuid(106),
+      sentAt: '2021-01-01T01:25:00Z',
+      role: ChatMessageRole.Assistant,
+      textContent: loremIpsum({ count: 3, units: 'paragraphs' }),
     },
   ],
 };

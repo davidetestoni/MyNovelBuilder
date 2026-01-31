@@ -99,7 +99,7 @@
     </div>
   </div>
 
-  <div class="chat-messages">
+  <div class="chat-messages" #chatContainer>
     @for (message of currentChat.messages; track message.id) {
       <div
         class="message-container"
@@ -137,6 +137,16 @@
   <p-confirmDialog></p-confirmDialog>
 
   <div class="chat-input">
-    <!-- Input will go here -->
+    <div class="input-wrapper">
+      <textarea
+        pInputTextarea
+        placeholder="Type a message..."
+        rows="1"
+        style="max-height: 150px; overflow-y: auto"
+      ></textarea>
+      <button class="send-btn">
+        <i class="pi pi-send"></i>
+      </button>
+    </div>
   </div>
 </div>

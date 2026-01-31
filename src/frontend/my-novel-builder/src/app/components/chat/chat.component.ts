@@ -7,6 +7,9 @@ import {
   signal,
   computed,
   OnDestroy,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
 } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -44,9 +47,10 @@ import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message
   ],
   providers: [ConfirmationService, DialogService],
 })
-export class ChatComponent implements OnChanges, OnDestroy {
+export class ChatComponent implements OnChanges, OnDestroy, AfterViewChecked {
   @Input() currentChatId!: string;
   @Input() currentChat!: Chat;
+  @ViewChild('chatContainer') private chatContainer!: ElementRef;
 
   readonly chatService = inject(ChatService);
   readonly novelService = inject(NovelService);
@@ -55,6 +59,7 @@ export class ChatComponent implements OnChanges, OnDestroy {
   readonly toastr = inject(ToastrService);
   private dialogService = inject(DialogService);
   private dialogRef: DynamicDialogRef | null = null;
+  private shouldScrollToBottom = false;
 
   ChatMessageRole = ChatMessageRole;
 
@@ -80,6 +85,23 @@ export class ChatComponent implements OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['currentChat'] && this.currentChat) {
       this.loadNovelContext();
+      this.shouldScrollToBottom = true;
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+    }
+  }
+
+  private scrollToBottom(): void {
+    try {
+      this.chatContainer.nativeElement.scrollTop =
+        this.chatContainer.nativeElement.scrollHeight;
+      this.shouldScrollToBottom = false;
+    } catch (err) {
+      console.error('Error scrolling to bottom:', err);
     }
   }
 

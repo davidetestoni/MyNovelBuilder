@@ -223,5 +223,65 @@
     padding: 1rem;
     background-color: $grey0;
     border-top: 1px solid $grey4;
+    flex-shrink: 0; // Ensure footer doesn't shrink
+
+    .input-wrapper {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+      background-color: $grey2;
+      border: 1px solid $grey5;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      transition: border-color 0.2s;
+
+      &:focus-within {
+        border-color: $grey6;
+      }
+
+      textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        resize: none;
+        padding: 0.5rem;
+        color: $grey19;
+        font-family: inherit;
+        line-height: 1.5;
+
+        &:focus {
+          outline: none;
+          box-shadow: none;
+        }
+
+        &::placeholder {
+          color: $grey11;
+        }
+      }
+
+      .send-btn {
+        background: transparent;
+        border: none;
+        color: $grey11;
+        padding: 0.5rem;
+        cursor: pointer;
+        border-radius: 0.25rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition:
+          color 0.2s,
+          background-color 0.2s;
+
+        &:hover {
+          color: $grey13;
+          background-color: $grey4;
+        }
+
+        i {
+          font-size: 1rem;
+        }
+      }
+    }
   }
 }
