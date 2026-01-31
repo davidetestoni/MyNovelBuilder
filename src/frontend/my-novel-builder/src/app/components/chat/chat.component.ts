@@ -48,6 +48,8 @@ import { PromptType } from '../../types/enums/prompt-type';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
+import { LocalStorageService } from '../../services/local-storage.service';
+import { LocalStorageKey } from '../../types/enums/local-storage-key';
 
 @Component({
   selector: 'app-chat',
@@ -81,6 +83,7 @@ export class ChatComponent
   private dialogService = inject(DialogService);
   private generateTextService = inject(GenerateTextService);
   private promptService = inject(PromptService);
+  private localStorageService = inject(LocalStorageService);
 
   private dialogRef: DynamicDialogRef | null = null;
   private shouldScrollToBottom = false;
@@ -127,7 +130,18 @@ export class ChatComponent
       this.prompts = prompts.filter(
         (p) => p.type === PromptType.SendChatMessage,
       );
-      if (this.prompts.length > 0) {
+
+      const savedPromptId = this.localStorageService.getNestedStringForKey(
+        LocalStorageKey.RecentPrompts,
+        PromptType.SendChatMessage,
+      );
+
+      if (
+        savedPromptId &&
+        this.prompts.some((p) => p.id === savedPromptId)
+      ) {
+        this.selectedPromptId = savedPromptId;
+      } else if (this.prompts.length > 0) {
         this.selectedPromptId = this.prompts[0].id;
       }
     });
@@ -155,6 +169,13 @@ export class ChatComponent
     ) {
       return;
     }
+
+    // Save selected prompt
+    this.localStorageService.setNestedStringForKey(
+      LocalStorageKey.RecentPrompts,
+      PromptType.SendChatMessage,
+      this.selectedPromptId,
+    );
 
     const userMessageContent = this.userInput;
     this.userInput = '';
