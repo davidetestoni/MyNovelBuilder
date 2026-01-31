@@ -8,6 +8,7 @@ import { definePreset } from '@primeuix/themes';
 import { routes } from './app.routes';
 import { provideHttpClient } from '@angular/common/http';
 import { provideToastr } from 'ngx-toastr';
+import { provideMarkdown } from 'ngx-markdown';
 
 const primeNgTheme = definePreset(Nora, {
   semantic: {
@@ -34,6 +35,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimations(),
     provideHttpClient(),
     provideToastr(),
+    provideMarkdown(),
     providePrimeNG({
       theme: {
         preset: primeNgTheme,

@@ -8,7 +8,7 @@
           [(ngModel)]="currentChat.name"
           (blur)="updateChatName(currentChat.name ?? '')"
           (keyup.enter)="updateChatName(currentChat.name ?? '')"
-          placeholder="Chat Name"
+          placeholder="New chat"
         />
       </div>
     </div>
@@ -31,7 +31,7 @@
           [(ngModel)]="currentChat.name"
           (blur)="updateChatName(currentChat.name ?? '')"
           (keyup.enter)="updateChatName(currentChat.name ?? '')"
-          placeholder="Chat Name"
+          placeholder="New chat"
         />
       </div>
       <div class="chat-context-header">
@@ -144,40 +144,45 @@
     </div>
 
     <div class="chat-messages" #chatContainer>
-          @for (message of currentChat.messages; track message.id; let last = $last) {
-            <div
-              class="message-container"
-              [class.user-message]="message.role === ChatMessageRole.User"
-              [class.assistant-message]="message.role === ChatMessageRole.Assistant"
-            >
-              <div class="message-wrapper">
-                <div class="message-bubble">
-                  <div class="message-content">
-                    {{ message.textContent }}
-                  </div>
-                </div>
-                @if (!isGenerating || !last) {
-                  <div class="message-actions">
-                    <button
-                      class="action-btn"
-                      (click)="copyMessage(message.textContent)"
-                    >
-                      <i class="pi pi-copy"></i>
-                    </button>
-                    <button class="action-btn" (click)="editMessage(message)">
-                      <i class="pi pi-pencil"></i>
-                    </button>
-                    <button
-                      class="action-btn delete"
-                      (click)="deleteMessage(message.id)"
-                    >
-                      <i class="pi pi-trash"></i>
-                    </button>
-                  </div>
-                }
+      @for (
+        message of currentChat.messages;
+        track message.id;
+        let last = $last
+      ) {
+        <div
+          class="message-container"
+          [class.user-message]="message.role === ChatMessageRole.User"
+          [class.assistant-message]="message.role === ChatMessageRole.Assistant"
+        >
+          <div class="message-wrapper">
+                                <div class="message-bubble">
+                                  <div class="message-content">
+                                    <markdown [data]="message.textContent"></markdown>
+                                  </div>
+                                </div>
+                                  @if (!isGenerating || !last) {
+              <div class="message-actions">
+                <button
+                  class="action-btn"
+                  (click)="copyMessage(message.textContent)"
+                >
+                  <i class="pi pi-copy"></i>
+                </button>
+                <button class="action-btn" (click)="editMessage(message)">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  class="action-btn delete"
+                  (click)="deleteMessage(message.id)"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
               </div>
-            </div>
-          }    </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
 
     <p-confirmDialog></p-confirmDialog>
 

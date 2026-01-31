@@ -34,6 +34,7 @@ import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message
 import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptService } from '../../services/prompt.service';
 import { TextareaModule } from 'primeng/textarea';
+import { MarkdownComponent } from 'ngx-markdown';
 import {
   HttpDownloadProgressEvent,
   HttpEventType,
@@ -65,6 +66,7 @@ import { LocalStorageKey } from '../../types/enums/local-storage-key';
     InputTextModule,
     ConfirmDialogModule,
     TextareaModule,
+    MarkdownComponent,
   ],
   providers: [ConfirmationService, DialogService],
 })
