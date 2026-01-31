@@ -1,6 +1,8 @@
 import {
   Component,
   Input,
+  Output,
+  EventEmitter,
   inject,
   OnChanges,
   SimpleChanges,
@@ -75,6 +77,7 @@ export class ChatComponent
 {
   @Input() currentChatId!: string;
   @Input() currentChat!: Chat;
+  @Output() onChatUpdated = new EventEmitter<void>();
   @ViewChild('chatContainer') private chatContainer!: ElementRef;
 
   readonly chatService = inject(ChatService);
@@ -428,5 +431,6 @@ export class ChatComponent
       messages: this.currentChat.messages,
     };
     this.chatService.updateChat(this.currentChatId, dto).subscribe();
+    this.onChatUpdated.emit();
   }
 }

@@ -46,6 +46,7 @@
         <app-chat
           [currentChatId]="currentChatId!"
           [currentChat]="currentChat"
+          (onChatUpdated)="updateLocalChatMetadata()"
         ></app-chat>
       } @else {
         <div class="empty-state">

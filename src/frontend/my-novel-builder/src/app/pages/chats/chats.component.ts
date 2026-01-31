@@ -72,6 +72,20 @@ export class ChatsComponent implements OnInit, OnDestroy {
     }
   }
 
+  updateLocalChatMetadata(): void {
+    if (
+      this.chats !== null &&
+      this.currentChat !== null &&
+      this.currentChatId !== null
+    ) {
+      const chat = this.chats.find((c) => c.id === this.currentChatId);
+      if (chat !== undefined) {
+        chat.name = this.currentChat.name;
+        chat.updatedAt = new Date().toISOString();
+      }
+    }
+  }
+
   selectChat(chatId: string): void {
     this.router.navigate(['/chat', chatId]);
   }
