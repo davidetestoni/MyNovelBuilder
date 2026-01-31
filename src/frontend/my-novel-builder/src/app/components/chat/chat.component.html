@@ -162,6 +162,11 @@
                                 </div>
                                   @if (!isGenerating || !last) {
               <div class="message-actions">
+                @if (canResend(message)) {
+                  <button class="action-btn" (click)="resendMessage(message)">
+                    <i class="pi pi-refresh"></i>
+                  </button>
+                }
                 <button
                   class="action-btn"
                   (click)="copyMessage(message.textContent)"

@@ -175,16 +175,8 @@ export class ChatComponent
       return;
     }
 
-    // Save selected prompt
-    this.localStorageService.setNestedStringForKey(
-      LocalStorageKey.RecentPrompts,
-      PromptType.SendChatMessage,
-      this.selectedPromptId,
-    );
-
     const userMessageContent = this.userInput;
     this.userInput = '';
-    this.isGenerating = true;
 
     // Add user message
     const userMessage: ChatMessage = {
@@ -194,7 +186,6 @@ export class ChatComponent
       textContent: userMessageContent,
     };
     this.currentChat.messages.push(userMessage);
-    this.shouldScrollToBottom = true;
 
     // Create placeholder assistant message
     const assistantMessage: ChatMessage = {
@@ -205,68 +196,7 @@ export class ChatComponent
     };
     this.currentChat.messages.push(assistantMessage);
 
-    const contextInfo: SendChatMessageContextInfoDto = {
-      $type: TextGenerationType.SendChatMessage,
-      chapterIndex: this.currentChat.context.chapterIndex,
-      userMessage: userMessageContent,
-      compendiumIds: this.currentChat.context.compendiumIds,
-      compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
-    };
-
-    const request: GenerateTextRequestDto = {
-      model: this.selectedModel,
-      promptId: this.selectedPromptId,
-      novelId: this.currentChat.context.novelId,
-      contextInfo: contextInfo,
-    };
-
-    this.generateTextService.generateText(request).subscribe({
-      next: (event) => {
-        if (event.type === HttpEventType.DownloadProgress) {
-          const response = (event as HttpDownloadProgressEvent)
-            .partialText as string;
-          if (response === undefined) {
-            return;
-          }
-
-          const responseChunks = response
-            .split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
-            assistantMessage.textContent = message;
-            this.shouldScrollToBottom = true;
-          }
-        } else if (event.type === HttpEventType.Response) {
-          const response = event as HttpResponse<string>;
-          const responseChunks = response
-            .body!.split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
-            assistantMessage.textContent = message;
-            this.isGenerating = false;
-            this.saveChat();
-            this.shouldScrollToBottom = true;
-          }
-        }
-      },
-      error: (err) => {
-        console.error('Error generating text:', err);
-        this.toastr.error('Failed to generate response');
-        this.isGenerating = false;
-        // Remove the empty assistant message if it failed
-        if (!assistantMessage.textContent) {
-          this.currentChat.messages = this.currentChat.messages.filter(
-            (m) => m.id !== assistantMessage.id,
-          );
-        }
-      },
-    });
+    this.executeGeneration(userMessageContent, assistantMessage);
   }
 
   private scrollToBottom(): void {
@@ -419,6 +349,125 @@ export class ChatComponent
   copyMessage(textContent: string): void {
     navigator.clipboard.writeText(textContent).then(() => {
       this.toastr.success('Message copied to clipboard');
+    });
+  }
+
+  canResend(message: ChatMessage): boolean {
+    if (message.role !== ChatMessageRole.User || this.isGenerating) {
+      return false;
+    }
+
+    const index = this.currentChat.messages.indexOf(message);
+    const isLastMessage = index === this.currentChat.messages.length - 1;
+    const nextMessage = this.currentChat.messages[index + 1];
+
+    return (
+      isLastMessage ||
+      (nextMessage && nextMessage.role !== ChatMessageRole.Assistant)
+    );
+  }
+
+  resendMessage(message: ChatMessage): void {
+    if (!this.canResend(message)) {
+      return;
+    }
+
+    const userMessageContent = message.textContent;
+    const index = this.currentChat.messages.indexOf(message);
+
+    // Create placeholder assistant message
+    const assistantMessage: ChatMessage = {
+      id: uuidv4(),
+      sentAt: new Date().toISOString(),
+      role: ChatMessageRole.Assistant,
+      textContent: '',
+    };
+
+    // Insert after the user message
+    this.currentChat.messages.splice(index + 1, 0, assistantMessage);
+
+    this.executeGeneration(userMessageContent, assistantMessage);
+  }
+
+  private executeGeneration(
+    userMessageContent: string,
+    assistantMessage: ChatMessage,
+  ): void {
+    if (!this.selectedModel || !this.selectedPromptId) {
+      return;
+    }
+
+    // Save selected prompt
+    this.localStorageService.setNestedStringForKey(
+      LocalStorageKey.RecentPrompts,
+      PromptType.SendChatMessage,
+      this.selectedPromptId,
+    );
+
+    this.isGenerating = true;
+    this.shouldScrollToBottom = true;
+
+    const contextInfo: SendChatMessageContextInfoDto = {
+      $type: TextGenerationType.SendChatMessage,
+      chapterIndex: this.currentChat.context.chapterIndex,
+      userMessage: userMessageContent,
+      compendiumIds: this.currentChat.context.compendiumIds,
+      compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
+    };
+
+    const request: GenerateTextRequestDto = {
+      model: this.selectedModel,
+      promptId: this.selectedPromptId,
+      novelId: this.currentChat.context.novelId,
+      contextInfo: contextInfo,
+    };
+
+    this.generateTextService.generateText(request).subscribe({
+      next: (event) => {
+        if (event.type === HttpEventType.DownloadProgress) {
+          const response = (event as HttpDownloadProgressEvent)
+            .partialText as string;
+          if (response === undefined) {
+            return;
+          }
+
+          const responseChunks = response
+            .split('\n')
+            .filter((item) => item.length > 0)
+            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+
+          if (responseChunks.length > 0) {
+            const message = responseChunks.map((item) => item.content).join('');
+            assistantMessage.textContent = message;
+            this.shouldScrollToBottom = true;
+          }
+        } else if (event.type === HttpEventType.Response) {
+          const response = event as HttpResponse<string>;
+          const responseChunks = response
+            .body!.split('\n')
+            .filter((item) => item.length > 0)
+            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+
+          if (responseChunks.length > 0) {
+            const message = responseChunks.map((item) => item.content).join('');
+            assistantMessage.textContent = message;
+            this.isGenerating = false;
+            this.saveChat();
+            this.shouldScrollToBottom = true;
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error generating text:', err);
+        this.toastr.error('Failed to generate response');
+        this.isGenerating = false;
+        // Remove the empty assistant message if it failed
+        if (!assistantMessage.textContent) {
+          this.currentChat.messages = this.currentChat.messages.filter(
+            (m) => m.id !== assistantMessage.id,
+          );
+        }
+      },
     });
   }
 
