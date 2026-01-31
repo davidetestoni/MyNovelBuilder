@@ -203,3 +203,6 @@ dotnet_diagnostic.S112.severity = None
 
 # Complete the task associated to this 'TODO' comment.
 dotnet_diagnostic.S1135.severity = None
+
+# Refactor your code not to use hardcoded absolute paths or URIs.
+dotnet_diagnostic.S1075.severity = None
