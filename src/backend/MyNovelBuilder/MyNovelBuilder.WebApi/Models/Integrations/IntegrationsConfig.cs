@@ -11,6 +11,16 @@ public class IntegrationsConfig
     /// The OpenRouter API key.
     /// </summary>
     public string? OpenRouterApiKey { get; set; }
+    
+    /// <summary>
+    /// The Google GenAI API key.
+    /// </summary>
+    public string? GoogleGenAiApiKey { get; set; }
+    
+    /// <summary>
+    /// The Text Generation provider to use to generate text.
+    /// </summary>
+    public TextGenerationProvider TextGenerationProvider { get; set; } = TextGenerationProvider.OpenRouter;
 
     /// <summary>
     /// The Text-to-Speech provider to use to generate speech.

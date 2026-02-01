@@ -6,30 +6,78 @@
     (ngSubmit)="onSubmit()"
     class="integration-form"
   >
-    <h3>OpenRouter</h3>
-
-    @if (hasOpenRouterApiKey) {
-      <div class="api-key-status">
-        <i
-          class="pi pi-check-circle"
-          style="color: green; margin-right: 0.5rem"
-        ></i>
-        <span>An OpenRouter API key is currently configured.</span>
-      </div>
-    } @else {
-      <p>No OpenRouter API key is configured.</p>
-    }
+    <h3>Text Generation</h3>
 
     <div class="form-group">
-      <label for="openRouterApiKey">Enter New OpenRouter API Key:</label>
-      <p-password
-        id="openRouterApiKey"
-        formControlName="openRouterApiKey"
-        placeholder="sk-or-..."
-        [feedback]="false"
-        [toggleMask]="true"
+      <label for="textGenerationProvider">Select Text Generation Provider:</label>
+      <p-select
+        id="textGenerationProvider"
+        [options]="textGenerationProviderOptions"
+        formControlName="textGenerationProvider"
+        placeholder="Select a Text Generation provider"
+        [style]="{ width: '100%' }"
       />
     </div>
+
+    @if (
+      integrationsForm.value.textGenerationProvider ===
+      TextGenerationProvider.OpenRouter
+    ) {
+      <h4>OpenRouter Configuration</h4>
+
+      @if (hasOpenRouterApiKey) {
+        <div class="api-key-status">
+          <i
+            class="pi pi-check-circle"
+            style="color: green; margin-right: 0.5rem"
+          ></i>
+          <span>An OpenRouter API key is currently configured.</span>
+        </div>
+      } @else {
+        <p>No OpenRouter API key is configured.</p>
+      }
+
+      <div class="form-group">
+        <label for="openRouterApiKey">Enter New OpenRouter API Key:</label>
+        <p-password
+          id="openRouterApiKey"
+          formControlName="openRouterApiKey"
+          placeholder="sk-or-..."
+          [feedback]="false"
+          [toggleMask]="true"
+        />
+      </div>
+    }
+
+    @if (
+      integrationsForm.value.textGenerationProvider ===
+      TextGenerationProvider.GoogleGenAi
+    ) {
+      <h4>Google GenAI Configuration</h4>
+
+      @if (hasGoogleGenAiApiKey) {
+        <div class="api-key-status">
+          <i
+            class="pi pi-check-circle"
+            style="color: green; margin-right: 0.5rem"
+          ></i>
+          <span>A Google GenAI API key is currently configured.</span>
+        </div>
+      } @else {
+        <p>No Google GenAI API key is configured.</p>
+      }
+
+      <div class="form-group">
+        <label for="googleGenAiApiKey">Enter New Google GenAI API Key:</label>
+        <p-password
+          id="googleGenAiApiKey"
+          formControlName="googleGenAiApiKey"
+          placeholder="Enter API Key"
+          [feedback]="false"
+          [toggleMask]="true"
+        />
+      </div>
+    }
 
     <h3>Text-to-Speech</h3>
 

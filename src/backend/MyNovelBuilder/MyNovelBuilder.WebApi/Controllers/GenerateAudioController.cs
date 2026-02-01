@@ -4,6 +4,7 @@ using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Prompts;
 using MyNovelBuilder.WebApi.Services;
+using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
 
 namespace MyNovelBuilder.WebApi.Controllers;
@@ -16,24 +17,21 @@ namespace MyNovelBuilder.WebApi.Controllers;
 public class GenerateAudioController : ControllerBase
 {
     private readonly ILogger<GenerateAudioController> _logger;
-    private readonly IKeyedServiceProvider _keyedProvider;
-    private readonly ITextGenerationService _textGenerationService;
+    private readonly IServiceProvider _keyedProvider;
     private readonly IIntegrationsService _integrationsService;
 
     /// <summary></summary>
     public GenerateAudioController(
         ILogger<GenerateAudioController> logger,
-        IKeyedServiceProvider keyedProvider,
-        ITextGenerationService textGenerationService,
+        IServiceProvider keyedProvider,
         IIntegrationsService integrationsService)
     {
         _logger = logger;
         _keyedProvider = keyedProvider;
-        _textGenerationService = textGenerationService;
         _integrationsService = integrationsService;
     }
     
-    private async Task<ITtsService> GetTtsServiceAsync()
+    private async ValueTask<ITtsService> GetTtsServiceAsync()
     {
         var config = await _integrationsService.GetConfigAsync();
         var ttsService = _keyedProvider.GetKeyedService<ITtsService>(config.TtsProvider);
@@ -50,8 +48,27 @@ public class GenerateAudioController : ControllerBase
         return ttsService;
     }
     
-    private async Task<string> GetEmphasizedTextAsync(string inputText) =>
-        await _textGenerationService
+    private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync()
+    {
+        var config = await _integrationsService.GetConfigAsync();
+        var textGenerationService = _keyedProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
+
+        if (textGenerationService is null)
+        {
+            _logger.LogError(
+                "Unsupported text generation provider: {Provider}", config.TextGenerationProvider);
+            
+            throw new InvalidOperationException(
+                $"Unsupported text generation provider: {config.TextGenerationProvider}");
+        }
+
+        return textGenerationService;
+    }
+    
+    private async Task<string> GetEmphasizedTextAsync(string inputText)
+    {
+        var textGenerationService = await GetTextGenerationServiceAsync();
+        return await textGenerationService
             .GenerateAsync(
                 "anthropic/claude-sonnet-4", // TODO: Make configurable
                 [
@@ -67,6 +84,7 @@ public class GenerateAudioController : ControllerBase
                     }
                 ]
             );
+    }
 
     /// <summary>
     /// Generate audio from text.

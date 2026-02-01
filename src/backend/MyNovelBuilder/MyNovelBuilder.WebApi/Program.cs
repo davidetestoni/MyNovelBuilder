@@ -16,6 +16,7 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Middleware;
 using MyNovelBuilder.WebApi.Models.Errors;
 using MyNovelBuilder.WebApi.Services;
+using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
 using Serilog;
 using Serilog.Events;
@@ -101,7 +102,9 @@ builder.Services.AddScoped<IChatService, ChatService>();
 
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
-builder.Services.AddSingleton<ITextGenerationService, OpenRouterTextGenerationService>();
+builder.Services.AddKeyedSingleton<ITextGenerationService, OpenRouterTextGenerationService>(TextGenerationProvider.OpenRouter);
+builder.Services.AddKeyedSingleton<ITextGenerationService, GoogleGenAiTextGenerationService>(TextGenerationProvider
+    .GoogleGenAi);
 
 // TTS services
 builder.Services.AddKeyedSingleton<ITtsService, CustomTtsService>(TtsProvider.Custom);
@@ -117,7 +120,6 @@ builder.Services.AddHttpClient<UnrealSpeechTtsService>();
 builder.Services.AddHttpClient<VibeVoiceTtsService>();
 
 builder.Services.AddSingleton<IImageGenerationService, CustomImageGenerationService>();
-builder.Services.AddHttpClient<OpenRouterTextGenerationService>();
 builder.Services.AddHttpClient<CustomImageGenerationService>();
 
 // Mapster configuration

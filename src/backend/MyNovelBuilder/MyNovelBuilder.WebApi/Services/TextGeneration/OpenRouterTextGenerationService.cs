@@ -3,10 +3,11 @@ using System.Runtime.CompilerServices;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Models.TextGeneration;
 using OpenAI;
 using OpenAI.Chat;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 
 /// <summary>
 /// Service for generating text using OpenRouter's OpenAI-compatible API.
@@ -85,6 +86,20 @@ public class OpenRouterTextGenerationService : ITextGenerationService
                 yield return message.Text;
             }
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
+    {
+        // TODO: Cache these
+        
+        var client = await GetOpenAiClientAsync();
+        var models = await client.GetOpenAIModelClient().GetModelsAsync();
+
+        return models.Value.Select(m => new TextGenerationModelInfo
+        {
+            Id = m.Id
+        });
     }
 
     private static ChatMessage ToChatMessage(PromptMessageDto message) =>

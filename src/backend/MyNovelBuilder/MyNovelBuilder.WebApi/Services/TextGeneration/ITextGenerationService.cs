@@ -1,6 +1,7 @@
 ﻿using MyNovelBuilder.WebApi.Dtos.Prompt;
+using MyNovelBuilder.WebApi.Models.TextGeneration;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 
 /// <summary>
 /// Service for generating text using LLMs.
@@ -22,4 +23,9 @@ public interface ITextGenerationService
         string model,
         IEnumerable<PromptMessageDto> messages,
         CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get available text generation models.
+    /// </summary>
+    Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync();
 }

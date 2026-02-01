@@ -33,6 +33,8 @@ public class IntegrationsController : ControllerBase
         return new IntegrationsConfigDto
         {
             HasOpenRouterApiKey = !string.IsNullOrWhiteSpace(config.OpenRouterApiKey),
+            HasGoogleGenAiApiKey = !string.IsNullOrWhiteSpace(config.GoogleGenAiApiKey),
+            TextGenerationProvider = config.TextGenerationProvider,
             TtsProvider = config.TtsProvider
         };
     }
@@ -48,6 +50,16 @@ public class IntegrationsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(dto.OpenRouterApiKey))
         {
             config.OpenRouterApiKey = dto.OpenRouterApiKey;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(dto.GoogleGenAiApiKey))
+        {
+            config.GoogleGenAiApiKey = dto.GoogleGenAiApiKey;
+        }
+        
+        if (dto.TextGenerationProvider.HasValue)
+        {
+            config.TextGenerationProvider = dto.TextGenerationProvider.Value;
         }
 
         if (dto.TtsProvider.HasValue)

@@ -20,6 +20,7 @@ import {
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
 import { TtsProvider } from '../types/enums/tts-provider';
+import { TextGenerationProvider } from '../types/enums/text-generation-provider';
 import { ChatMetadata } from '../types/dtos/chats/chat-metadata';
 import { ChatMessageRole } from '../types/enums/chat-message-role';
 import { Chat } from '../types/dtos/chats/chat';
@@ -389,6 +390,8 @@ export const mockedAvailableVoices: TtsVoiceDto[] = [
 
 export const mockedIntegrationsConfig = {
   hasOpenRouterApiKey: true,
+  hasGoogleGenAiApiKey: false,
+  textGenerationProvider: TextGenerationProvider.OpenRouter,
   ttsProvider: TtsProvider.Custom,
 };
 
