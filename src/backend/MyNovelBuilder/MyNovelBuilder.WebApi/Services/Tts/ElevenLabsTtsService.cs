@@ -11,6 +11,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class ElevenLabsTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
     private readonly ILogger<ElevenLabsTtsService> _logger;
 
     /// <inheritdoc />
@@ -20,10 +21,14 @@ public class ElevenLabsTtsService : ITtsService
     public AudioFormat OutputAudioFormat => AudioFormat.Mp3;
 
     /// <summary></summary>
-    public ElevenLabsTtsService(IConfiguration configuration,
-        HttpClient httpClient, ILogger<ElevenLabsTtsService> logger)
+    public ElevenLabsTtsService(
+        ILogger<ElevenLabsTtsService> logger,
+        IConfiguration configuration,
+        HttpClient httpClient,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
         _logger = logger;
         _httpClient.BaseAddress = new Uri("https://api.elevenlabs.io/v1/");
         
@@ -42,14 +47,16 @@ public class ElevenLabsTtsService : ITtsService
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
     {
+        var config = await _integrationsService.GetConfigAsync();
+        
         var payload = new
         {
             text = request.Message,
-            model_id = request.ModelId ?? "eleven_v3",
+            model_id = "eleven_v3",
         };
         var jsonPayload = JsonSerializer.Serialize(payload);
         using var response = await _httpClient.PostAsync(
-            $"text-to-speech/{request.VoiceId}",
+            $"text-to-speech/{config.TtsVoiceId}",
             new StringContent(jsonPayload, System.Text.Encoding.UTF8, "application/json"));
 
         if (!response.IsSuccessStatusCode)

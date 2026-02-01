@@ -14,6 +14,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class UnrealSpeechTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
 
     private readonly string[] _voices =
     [
@@ -64,9 +65,13 @@ public class UnrealSpeechTtsService : ITtsService
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
     
     /// <summary></summary>
-    public UnrealSpeechTtsService(IConfiguration configuration, HttpClient httpClient)
+    public UnrealSpeechTtsService(
+        IConfiguration configuration,
+        HttpClient httpClient,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
         _httpClient.BaseAddress = new Uri("https://api.v8.unrealspeech.com");
         
         var apiKey = configuration["Secrets:UnrealSpeechApiKey"];
@@ -83,11 +88,13 @@ public class UnrealSpeechTtsService : ITtsService
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
     {
+        var config = await _integrationsService.GetConfigAsync();
+        
         // Create the task
         var payload = new
         {
             Text = request.Message,
-            request.VoiceId,
+            VoiceId = config.TtsVoiceId,
             Bitrate = "320k",
             AudioFormat = "mp3",
             OutputFormat = "uri",
@@ -131,14 +138,15 @@ public class UnrealSpeechTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
     {
+        var config = await _integrationsService.GetConfigAsync();
+        
         // This endpoint only supports text up to 1000 characters
         var textChunks = new TextChunker(1000).ChunkText(request.Message).ToList();
         
-        return Task.FromResult<Stream>(
-            new UnrealSpeechStreamingStream(
-                _httpClient, request.VoiceId, textChunks));
+        return new UnrealSpeechStreamingStream(
+            _httpClient, config.TtsVoiceId, textChunks);
     }
     
     /// <inheritdoc />

@@ -31,18 +31,30 @@ public class GenerateAudioController : ControllerBase
         _integrationsService = integrationsService;
     }
     
-    private async ValueTask<ITtsService> GetTtsServiceAsync()
+    private async ValueTask<ITtsService> GetTtsServiceAsync(
+        TtsProvider? provider = null)
     {
-        var config = await _integrationsService.GetConfigAsync();
-        var ttsService = _keyedProvider.GetKeyedService<ITtsService>(config.TtsProvider);
+        TtsProvider ttsProvider;
+        
+        if (provider.HasValue)
+        {
+            ttsProvider = provider.Value;
+        }
+        else
+        {
+            var config = await _integrationsService.GetConfigAsync();
+            ttsProvider = config.TtsProvider;
+        }
+        
+        var ttsService = _keyedProvider.GetKeyedService<ITtsService>(ttsProvider);
 
         if (ttsService is null)
         {
             _logger.LogError(
-                "Unsupported TTS provider: {Provider}", config.TtsProvider);
+                "Unsupported TTS provider: {Provider}", ttsProvider);
 
             throw new InvalidOperationException(
-                $"Unsupported TTS provider: {config.TtsProvider}");
+                $"Unsupported TTS provider: {ttsProvider}");
         }
 
         return ttsService;
@@ -174,9 +186,10 @@ public class GenerateAudioController : ControllerBase
     /// Get available TTS voices.
     /// </summary>
     [HttpGet("tts/voices")]
-    public async Task<ActionResult<IEnumerable<TtsVoiceDto>>> GetVoices()
+    public async Task<ActionResult<IEnumerable<TtsVoiceDto>>> GetVoices(
+        [FromQuery] TtsProvider? provider)
     {
-        var ttsService = await GetTtsServiceAsync();
+        var ttsService = await GetTtsServiceAsync(provider);
         
         var voices = await ttsService.GetVoicesAsync();
         

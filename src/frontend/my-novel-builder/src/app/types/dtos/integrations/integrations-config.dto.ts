@@ -6,6 +6,7 @@ export interface IntegrationsConfigDto {
   hasGoogleGenAiApiKey: boolean;
   textGenerationProvider: TextGenerationProvider;
   ttsProvider: TtsProvider;
+  ttsVoiceId: string;
 }
 
 export interface UpdateIntegrationsConfigDto {
@@ -13,4 +14,5 @@ export interface UpdateIntegrationsConfigDto {
   googleGenAiApiKey?: string | null;
   textGenerationProvider?: TextGenerationProvider | null;
   ttsProvider?: TtsProvider | null;
+  ttsVoiceId?: string | null;
 }

@@ -12,6 +12,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class KokoroTtsService : ITtsService
 {
     private readonly ILogger<KokoroTtsService> _logger;
+    private readonly IIntegrationsService _integrationsService;
 
     private readonly string[] _voices =
     [
@@ -82,21 +83,25 @@ public class KokoroTtsService : ITtsService
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
     
     /// <summary></summary>
-    public KokoroTtsService(ILogger<KokoroTtsService> logger)
+    public KokoroTtsService(
+        ILogger<KokoroTtsService> logger,
+        IIntegrationsService integrationsService)
     {
         _logger = logger;
+        _integrationsService = integrationsService;
     }
     
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
     {
+        var config = await _integrationsService.GetConfigAsync();
         _logger.LogInformation("Generating audio using Kokoro TTS");
         
         // Download the model if not present
         await KokoroTTS.LoadModelAsync(model: KModel.float32);
         
         var synth = new KokoroWavSynthesizer("kokoro.onnx");
-        var voice = KokoroVoiceManager.GetVoice(request.VoiceId);
+        var voice = KokoroVoiceManager.GetVoice(config.TtsVoiceId);
 
         var audioBytes = await synth.SynthesizeAsync(request.Message, voice);
         

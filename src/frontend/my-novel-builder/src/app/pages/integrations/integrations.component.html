@@ -92,6 +92,20 @@
       />
     </div>
 
+    @if (ttsVoiceOptions.length > 0) {
+      <div class="form-group">
+        <label for="ttsVoiceId">Select TTS Voice:</label>
+        <p-select
+          id="ttsVoiceId"
+          [options]="ttsVoiceOptions"
+          formControlName="ttsVoiceId"
+          placeholder="Select a TTS voice"
+          [style]="{ width: '100%' }"
+          [filter]="true"
+        />
+      </div>
+    }
+
     <p-button
       class="save-button"
       type="submit"

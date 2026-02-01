@@ -13,6 +13,8 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class CustomTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
+
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -25,17 +27,25 @@ public class CustomTtsService : ITtsService
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
     
     /// <summary></summary>
-    public CustomTtsService(HttpClient httpClient)
+    public CustomTtsService(
+        HttpClient httpClient,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
         _httpClient.BaseAddress = new Uri("http://localhost:5000");
     }
 
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
     {
-        var payload = request.Adapt<TtsRequest>();
-        var jsonPayload = JsonSerializer.Serialize(payload, _jsonSerializerOptions);
+        var config = await _integrationsService.GetConfigAsync();
+        
+        var jsonPayload = JsonSerializer.Serialize(new TtsRequest
+        {
+            Message = request.Message,
+            VoiceId = config.TtsVoiceId
+        }, _jsonSerializerOptions);
         using var response = await _httpClient.PostAsync("generate/audio",
             new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
         

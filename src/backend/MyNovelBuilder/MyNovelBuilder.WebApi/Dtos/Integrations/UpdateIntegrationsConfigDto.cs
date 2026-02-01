@@ -15,7 +15,7 @@ public class UpdateIntegrationsConfigDto
     /// <summary>
     /// The Google GenAI API key.
     /// </summary>
-    public string? GoogleGenAiApiKey { get; set; }
+    public string? GoogleGenAiApiKey { get; init; }
     
     /// <summary>
     /// The Text Generation provider to use to generate text.
@@ -26,4 +26,9 @@ public class UpdateIntegrationsConfigDto
     /// The Text-to-Speech provider to use to generate speech.
     /// </summary>
     public TtsProvider? TtsProvider { get; init; }
+    
+    /// <summary>
+    /// The TTS voice ID to use for text-to-speech generation.
+    /// </summary>
+    public string? TtsVoiceId { get; init; }
 }

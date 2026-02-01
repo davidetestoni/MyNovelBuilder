@@ -26,4 +26,9 @@ public class IntegrationsConfig
     /// The Text-to-Speech provider to use to generate speech.
     /// </summary>
     public TtsProvider TtsProvider { get; set; } = TtsProvider.ElevenLabs;
+    
+    /// <summary>
+    /// The TTS voice ID to use for text-to-speech generation.
+    /// </summary>
+    public string TtsVoiceId { get; set; } = string.Empty;
 }

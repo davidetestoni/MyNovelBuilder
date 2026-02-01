@@ -5,6 +5,7 @@ import { TtsRequestDto } from '../types/dtos/generate/tts-request.dto';
 import { Observable } from 'rxjs';
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
 import { mockedAvailableVoices, mockObservable } from './mock';
+import { TtsProvider } from '../types/enums/tts-provider';
 
 @Injectable({
   providedIn: 'root',
@@ -34,11 +35,13 @@ export class GenerateAudioService {
     });
   }
 
-  getAvailableVoices(): Observable<TtsVoiceDto[]> {
+  getAvailableVoices(
+    ttsProvider: TtsProvider | null,
+  ): Observable<TtsVoiceDto[]> {
     return this.mocked
       ? mockObservable(mockedAvailableVoices)
       : this.http.get<TtsVoiceDto[]>(
-          `${this.baseUrl}/generate/audio/tts/voices`,
+          `${this.baseUrl}/generate/audio/tts/voices?provider=${ttsProvider}`,
         );
   }
 }

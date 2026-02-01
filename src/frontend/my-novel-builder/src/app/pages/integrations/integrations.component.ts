@@ -17,6 +17,8 @@ import { PasswordModule } from 'primeng/password';
 import { TtsProvider } from '../../types/enums/tts-provider';
 import { SelectModule } from 'primeng/select';
 import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
+import { GenerateAudioService } from '../../services/generate-audio.service';
+import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
 
 @Component({
   selector: 'app-integrations',
@@ -35,6 +37,7 @@ export class IntegrationsComponent implements OnInit {
   protected readonly TextGenerationProvider = TextGenerationProvider;
 
   private integrationsService = inject(IntegrationsService);
+  private generateAudioService = inject(GenerateAudioService);
   private toastrService = inject(ToastrService);
 
   integrationsForm = new FormGroup({
@@ -44,6 +47,7 @@ export class IntegrationsComponent implements OnInit {
     openRouterApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     googleGenAiApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsProvider: new FormControl<TtsProvider>(TtsProvider.Custom),
+    ttsVoiceId: new FormControl<string>(''),
   });
   hasOpenRouterApiKey: boolean = false;
   hasGoogleGenAiApiKey: boolean = false;
@@ -55,6 +59,8 @@ export class IntegrationsComponent implements OnInit {
       .replace(/^./, (str) => str.toUpperCase()),
     value: provider,
   }));
+
+  ttsVoiceOptions: { label: string; value: string }[] = [];
 
   textGenerationProviderOptions = Object.values(TextGenerationProvider).map(
     (provider) => ({
@@ -69,6 +75,14 @@ export class IntegrationsComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.integrationsForm.controls.ttsProvider.valueChanges.subscribe(
+      (provider) => {
+        if (provider) {
+          this.loadTtsVoices(provider);
+        }
+      },
+    );
+
     this.integrationsService.getIntegrationsConfig().subscribe({
       next: (config: IntegrationsConfigDto) => {
         this.hasOpenRouterApiKey = config.hasOpenRouterApiKey;
@@ -77,10 +91,40 @@ export class IntegrationsComponent implements OnInit {
           textGenerationProvider: config.textGenerationProvider,
           ttsProvider: config.ttsProvider,
         });
+
+        this.loadTtsVoices(config.ttsProvider, config.ttsVoiceId);
       },
       error: (error) => {
         this.toastrService.error('Failed to load integrations configuration.');
         console.error('Error loading configuration:', error);
+      },
+    });
+  }
+
+  loadTtsVoices(provider: TtsProvider, selectedVoiceId?: string): void {
+    this.generateAudioService.getAvailableVoices(provider).subscribe({
+      next: (voices: TtsVoiceDto[]) => {
+        this.ttsVoiceOptions = voices.map((v) => ({
+          label: v.name,
+          value: v.voiceId,
+        }));
+
+        if (selectedVoiceId) {
+          this.integrationsForm.patchValue({ ttsVoiceId: selectedVoiceId });
+        } else if (
+          voices.length > 0 &&
+          !this.ttsVoiceOptions.find(
+            (v) => v.value === this.integrationsForm.value.ttsVoiceId,
+          )
+        ) {
+          // If the current value is not in the new list, select the first one or reset
+          this.integrationsForm.patchValue({ ttsVoiceId: voices[0].voiceId });
+        }
+      },
+      error: (error) => {
+        console.error('Error loading TTS voices:', error);
+        this.toastrService.error('Failed to load TTS voices.');
+        this.ttsVoiceOptions = [];
       },
     });
   }
@@ -98,6 +142,7 @@ export class IntegrationsComponent implements OnInit {
       googleGenAiApiKey:
         this.integrationsForm.value.googleGenAiApiKey || undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
+      ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
     };
 
     this.integrationsService.updateIntegrationsConfig(updateDto).subscribe({

@@ -35,7 +35,8 @@ public class IntegrationsController : ControllerBase
             HasOpenRouterApiKey = !string.IsNullOrWhiteSpace(config.OpenRouterApiKey),
             HasGoogleGenAiApiKey = !string.IsNullOrWhiteSpace(config.GoogleGenAiApiKey),
             TextGenerationProvider = config.TextGenerationProvider,
-            TtsProvider = config.TtsProvider
+            TtsProvider = config.TtsProvider,
+            TtsVoiceId = config.TtsVoiceId,
         };
     }
 
@@ -65,6 +66,11 @@ public class IntegrationsController : ControllerBase
         if (dto.TtsProvider.HasValue)
         {
             config.TtsProvider = dto.TtsProvider.Value;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(dto.TtsVoiceId))
+        {
+            config.TtsVoiceId = dto.TtsVoiceId;
         }
         
         await _integrationsService.UpdateConfigAsync(config);

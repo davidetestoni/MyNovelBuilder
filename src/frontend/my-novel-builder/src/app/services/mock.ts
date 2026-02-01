@@ -24,6 +24,7 @@ import { TextGenerationProvider } from '../types/enums/text-generation-provider'
 import { ChatMetadata } from '../types/dtos/chats/chat-metadata';
 import { ChatMessageRole } from '../types/enums/chat-message-role';
 import { Chat } from '../types/dtos/chats/chat';
+import { IntegrationsConfigDto } from '../types/dtos/integrations/integrations-config.dto';
 
 export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
@@ -388,11 +389,12 @@ export const mockedAvailableVoices: TtsVoiceDto[] = [
   },
 ];
 
-export const mockedIntegrationsConfig = {
+export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   hasOpenRouterApiKey: true,
   hasGoogleGenAiApiKey: false,
   textGenerationProvider: TextGenerationProvider.OpenRouter,
   ttsProvider: TtsProvider.Custom,
+  ttsVoiceId: 'voice-1',
 };
 
 export const mockedChats: ChatMetadata[] = [

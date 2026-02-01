@@ -11,6 +11,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class VibeVoiceTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
 
     // TODO: Read this from config
     private const string _host = "localhost:8000";
@@ -22,19 +23,24 @@ public class VibeVoiceTtsService : ITtsService
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
     /// <summary></summary>
-    public VibeVoiceTtsService(HttpClient httpClient)
+    public VibeVoiceTtsService(
+        HttpClient httpClient,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
     }
     
     /// <inheritdoc/>
     public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
     {
+        var config = await _integrationsService.GetConfigAsync();
+        
         // The websocket accepts query parameters for text and voice
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
-        query["voice"] = request.VoiceId;
+        query["voice"] = config.TtsVoiceId;
         uriBuilder.Query = query.ToString();
         
         using var ws = new ClientWebSocket();
@@ -107,10 +113,12 @@ public class VibeVoiceTtsService : ITtsService
     /// <inheritdoc />
     public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
     {
+        var config = await _integrationsService.GetConfigAsync();
+        
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
-        query["voice"] = request.VoiceId;
+        query["voice"] = config.TtsVoiceId;
         uriBuilder.Query = query.ToString();
         
         var ws = new ClientWebSocket();

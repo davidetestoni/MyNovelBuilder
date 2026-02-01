@@ -299,13 +299,6 @@ export class ProseEditorComponent implements OnDestroy {
   async textToSpeech(chapterIndex: number, sectionIndex: number) {
     const response = await this.generateAudioService.textToSpeechStreamResponse(
       {
-        modelId: 'sonic-2',
-        // TODO: Read the voice from the user's settings
-        // voiceId: "coral",
-        // voiceId: "af_heart",
-        // voiceId: 'Hannah',
-        // voiceId: 'en-Emma_woman',
-        voiceId: 'fantine',
         message: this.getRawText(
           this.prose.chapters[chapterIndex].sections[sectionIndex].text,
         ),
