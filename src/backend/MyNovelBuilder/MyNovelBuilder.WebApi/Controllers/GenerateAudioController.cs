@@ -17,17 +17,17 @@ namespace MyNovelBuilder.WebApi.Controllers;
 public class GenerateAudioController : ControllerBase
 {
     private readonly ILogger<GenerateAudioController> _logger;
-    private readonly IServiceProvider _keyedProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
 
     /// <summary></summary>
     public GenerateAudioController(
         ILogger<GenerateAudioController> logger,
-        IServiceProvider keyedProvider,
+        IServiceProvider serviceProvider,
         IIntegrationsService integrationsService)
     {
         _logger = logger;
-        _keyedProvider = keyedProvider;
+        _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
     }
     
@@ -46,7 +46,7 @@ public class GenerateAudioController : ControllerBase
             ttsProvider = config.TtsProvider;
         }
         
-        var ttsService = _keyedProvider.GetKeyedService<ITtsService>(ttsProvider);
+        var ttsService = _serviceProvider.GetKeyedService<ITtsService>(ttsProvider);
 
         if (ttsService is null)
         {
@@ -63,7 +63,7 @@ public class GenerateAudioController : ControllerBase
     private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync()
     {
         var config = await _integrationsService.GetConfigAsync();
-        var textGenerationService = _keyedProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
+        var textGenerationService = _serviceProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
 
         if (textGenerationService is null)
         {

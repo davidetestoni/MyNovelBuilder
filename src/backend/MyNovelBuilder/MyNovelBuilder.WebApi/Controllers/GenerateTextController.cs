@@ -17,7 +17,7 @@ public class GenerateTextController : ControllerBase
 {
     private readonly ILogger<GenerateTextController> _logger;
     private readonly IPromptCreatorService _promptCreatorService;
-    private readonly IServiceProvider _keyedProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
     private readonly HybridCache _hybridCache;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -26,13 +26,13 @@ public class GenerateTextController : ControllerBase
     public GenerateTextController(
         ILogger<GenerateTextController> logger,
         IPromptCreatorService promptCreatorService,
-        IServiceProvider keyedProvider,
+        IServiceProvider serviceProvider,
         IIntegrationsService integrationsService,
         HybridCache hybridCache)
     {
         _logger = logger;
         _promptCreatorService = promptCreatorService;
-        _keyedProvider = keyedProvider;
+        _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
         _hybridCache = hybridCache;
 
@@ -46,7 +46,7 @@ public class GenerateTextController : ControllerBase
     private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync()
     {
         var config = await _integrationsService.GetConfigAsync();
-        var textGenerationService = _keyedProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
+        var textGenerationService = _serviceProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
 
         if (textGenerationService is null)
         {
