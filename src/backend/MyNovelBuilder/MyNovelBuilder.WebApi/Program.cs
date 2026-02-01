@@ -131,6 +131,8 @@ builder.Services.AddScoped<IMapper, ServiceMapper>();
 // FluentValidation configuration
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 
+builder.Services.AddHybridCache();
+
 var app = builder.Build();
 
 app.UseCors(b => b

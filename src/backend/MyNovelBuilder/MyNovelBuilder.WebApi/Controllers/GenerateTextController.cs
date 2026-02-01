@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Hybrid;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -18,6 +19,7 @@ public class GenerateTextController : ControllerBase
     private readonly IPromptCreatorService _promptCreatorService;
     private readonly IServiceProvider _keyedProvider;
     private readonly IIntegrationsService _integrationsService;
+    private readonly HybridCache _hybridCache;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     /// <summary></summary>
@@ -25,12 +27,14 @@ public class GenerateTextController : ControllerBase
         ILogger<GenerateTextController> logger,
         IPromptCreatorService promptCreatorService,
         IServiceProvider keyedProvider,
-        IIntegrationsService integrationsService)
+        IIntegrationsService integrationsService,
+        HybridCache hybridCache)
     {
         _logger = logger;
         _promptCreatorService = promptCreatorService;
         _keyedProvider = keyedProvider;
         _integrationsService = integrationsService;
+        _hybridCache = hybridCache;
 
         _jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -89,12 +93,25 @@ public class GenerateTextController : ControllerBase
     [HttpGet("models")]
     public async Task<IEnumerable<TextGenerationModelInfoDto>> GetAvailableModelsAsync()
     {
-        var textGenerationService = await GetTextGenerationServiceAsync();
-        var models = await textGenerationService.GetAvailableModelsAsync();
+        var config = await _integrationsService.GetConfigAsync();
+        return await _hybridCache.GetOrCreateAsync(
+            $"textgen-{config.TextGenerationProvider}-models",
+            async _ =>
+            {
+                var textGenerationService = await GetTextGenerationServiceAsync();
+                var models = await textGenerationService.GetAvailableModelsAsync();
         
-        return models.Select(m => new TextGenerationModelInfoDto
-        {
-            Id = m.Id
-        });
+                return models.Select(m => new TextGenerationModelInfoDto
+                {
+                    Id = m.Id
+                });
+            },
+            new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromHours(6),
+                LocalCacheExpiration = TimeSpan.FromHours(6)
+            },
+            tags: ["textgen", config.TextGenerationProvider.ToString(), "models"]
+        );
     }
 }

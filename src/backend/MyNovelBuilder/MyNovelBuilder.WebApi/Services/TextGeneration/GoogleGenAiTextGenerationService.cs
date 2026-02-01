@@ -117,8 +117,6 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
     {
-        // TODO: Cache these
-        
         var client = await GetGoogleGenAiClientAsync();
         var models = new List<TextGenerationModelInfo>();
         

@@ -91,8 +91,6 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
     {
-        // TODO: Cache these
-        
         var client = await GetOpenAiClientAsync();
         var models = await client.GetOpenAIModelClient().GetModelsAsync();
 
