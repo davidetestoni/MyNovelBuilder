@@ -35,6 +35,7 @@ import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
 })
 export class IntegrationsComponent implements OnInit {
   protected readonly TextGenerationProvider = TextGenerationProvider;
+  protected readonly TtsProvider = TtsProvider;
 
   private integrationsService = inject(IntegrationsService);
   private generateAudioService = inject(GenerateAudioService);
@@ -47,10 +48,14 @@ export class IntegrationsComponent implements OnInit {
     openRouterApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     googleGenAiApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsProvider: new FormControl<TtsProvider>(TtsProvider.Custom),
+    elevenLabsApiKey: new FormControl<string>('', Validators.maxLength(1000)),
+    unrealSpeechApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsVoiceId: new FormControl<string>(''),
   });
   hasOpenRouterApiKey: boolean = false;
   hasGoogleGenAiApiKey: boolean = false;
+  hasElevenLabsApiKey: boolean = false;
+  hasUnrealSpeechApiKey: boolean = false;
 
   ttsProviderOptions = Object.values(TtsProvider).map((provider) => ({
     // camelCase to spaced Pascal Case for display
@@ -87,6 +92,8 @@ export class IntegrationsComponent implements OnInit {
       next: (config: IntegrationsConfigDto) => {
         this.hasOpenRouterApiKey = config.hasOpenRouterApiKey;
         this.hasGoogleGenAiApiKey = config.hasGoogleGenAiApiKey;
+        this.hasElevenLabsApiKey = config.hasElevenLabsApiKey;
+        this.hasUnrealSpeechApiKey = config.hasUnrealSpeechApiKey;
         this.integrationsForm.patchValue({
           textGenerationProvider: config.textGenerationProvider,
           ttsProvider: config.ttsProvider,
@@ -141,6 +148,10 @@ export class IntegrationsComponent implements OnInit {
         this.integrationsForm.value.openRouterApiKey || undefined,
       googleGenAiApiKey:
         this.integrationsForm.value.googleGenAiApiKey || undefined,
+      elevenLabsApiKey:
+        this.integrationsForm.value.elevenLabsApiKey || undefined,
+      unrealSpeechApiKey:
+        this.integrationsForm.value.unrealSpeechApiKey || undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
     };
@@ -154,6 +165,14 @@ export class IntegrationsComponent implements OnInit {
         if (this.integrationsForm.value.googleGenAiApiKey) {
           this.hasGoogleGenAiApiKey = true;
           this.integrationsForm.get('googleGenAiApiKey')?.reset();
+        }
+        if (this.integrationsForm.value.elevenLabsApiKey) {
+          this.hasElevenLabsApiKey = true;
+          this.integrationsForm.get('elevenLabsApiKey')?.reset();
+        }
+        if (this.integrationsForm.value.unrealSpeechApiKey) {
+          this.hasUnrealSpeechApiKey = true;
+          this.integrationsForm.get('unrealSpeechApiKey')?.reset();
         }
         this.toastrService.success(
           'Integrations configuration updated successfully.',

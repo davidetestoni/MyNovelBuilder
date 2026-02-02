@@ -28,8 +28,7 @@
       @if (hasOpenRouterApiKey) {
         <div class="api-key-status">
           <i
-            class="pi pi-check-circle"
-            style="color: green; margin-right: 0.5rem"
+            class="pi pi-check-circle success-icon"
           ></i>
           <span>An OpenRouter API key is currently configured.</span>
         </div>
@@ -58,8 +57,7 @@
       @if (hasGoogleGenAiApiKey) {
         <div class="api-key-status">
           <i
-            class="pi pi-check-circle"
-            style="color: green; margin-right: 0.5rem"
+            class="pi pi-check-circle success-icon"
           ></i>
           <span>A Google GenAI API key is currently configured.</span>
         </div>
@@ -91,6 +89,58 @@
         [style]="{ width: '100%' }"
       />
     </div>
+
+    @if (integrationsForm.value.ttsProvider === TtsProvider.ElevenLabs) {
+      <h4>ElevenLabs Configuration</h4>
+
+      @if (hasElevenLabsApiKey) {
+        <div class="api-key-status">
+          <i
+            class="pi pi-check-circle success-icon"
+          ></i>
+          <span>An ElevenLabs API key is currently configured.</span>
+        </div>
+      } @else {
+        <p>No ElevenLabs API key is configured.</p>
+      }
+
+      <div class="form-group">
+        <label for="elevenLabsApiKey">Enter New ElevenLabs API Key:</label>
+        <p-password
+          id="elevenLabsApiKey"
+          formControlName="elevenLabsApiKey"
+          placeholder="Enter API Key"
+          [feedback]="false"
+          [toggleMask]="true"
+        />
+      </div>
+    }
+
+    @if (integrationsForm.value.ttsProvider === TtsProvider.UnrealSpeech) {
+      <h4>UnrealSpeech Configuration</h4>
+
+      @if (hasUnrealSpeechApiKey) {
+        <div class="api-key-status">
+          <i
+            class="pi pi-check-circle success-icon"
+          ></i>
+          <span>An UnrealSpeech API key is currently configured.</span>
+        </div>
+      } @else {
+        <p>No UnrealSpeech API key is configured.</p>
+      }
+
+      <div class="form-group">
+        <label for="unrealSpeechApiKey">Enter New UnrealSpeech API Key:</label>
+        <p-password
+          id="unrealSpeechApiKey"
+          formControlName="unrealSpeechApiKey"
+          placeholder="Enter API Key"
+          [feedback]="false"
+          [toggleMask]="true"
+        />
+      </div>
+    }
 
     @if (ttsVoiceOptions.length > 0) {
       <div class="form-group">

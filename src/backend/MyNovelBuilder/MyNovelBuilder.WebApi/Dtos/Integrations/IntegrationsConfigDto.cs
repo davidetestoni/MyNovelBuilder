@@ -19,6 +19,16 @@ public class IntegrationsConfigDto
     public required bool HasGoogleGenAiApiKey { get; init; }
     
     /// <summary>
+    /// Indicates whether an ElevenLabs API key is configured.
+    /// </summary>
+    public required bool HasElevenLabsApiKey { get; init; }
+    
+    /// <summary>
+    /// Indicates whether an UnrealSpeech API key is configured.
+    /// </summary>
+    public required bool HasUnrealSpeechApiKey { get; init; }
+    
+    /// <summary>
     /// The configured Text Generation provider.
     /// </summary>
     public required TextGenerationProvider TextGenerationProvider { get; init; }

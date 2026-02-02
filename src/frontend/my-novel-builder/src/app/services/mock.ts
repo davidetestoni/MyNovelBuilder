@@ -392,6 +392,8 @@ export const mockedAvailableVoices: TtsVoiceDto[] = [
 export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   hasOpenRouterApiKey: true,
   hasGoogleGenAiApiKey: false,
+  hasElevenLabsApiKey: false,
+  hasUnrealSpeechApiKey: false,
   textGenerationProvider: TextGenerationProvider.OpenRouter,
   ttsProvider: TtsProvider.Custom,
   ttsVoiceId: 'voice-1',

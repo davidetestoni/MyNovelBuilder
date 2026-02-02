@@ -13,6 +13,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 /// </summary>
 public class UnrealSpeechTtsService : ITtsService
 {
+    private readonly ILogger<UnrealSpeechTtsService> _logger;
     private readonly HttpClient _httpClient;
     private readonly IIntegrationsService _integrationsService;
 
@@ -66,15 +67,21 @@ public class UnrealSpeechTtsService : ITtsService
     
     /// <summary></summary>
     public UnrealSpeechTtsService(
-        IConfiguration configuration,
+        ILogger<UnrealSpeechTtsService> logger,
         HttpClient httpClient,
         IIntegrationsService integrationsService)
     {
+        _logger = logger;
         _httpClient = httpClient;
         _integrationsService = integrationsService;
         _httpClient.BaseAddress = new Uri("https://api.v8.unrealspeech.com");
-        
-        var apiKey = configuration["Secrets:UnrealSpeechApiKey"];
+    }
+    
+    /// <inheritdoc />
+    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
+    {
+        var config = await _integrationsService.GetConfigAsync();
+        var apiKey = config.UnrealSpeechApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -82,33 +89,32 @@ public class UnrealSpeechTtsService : ITtsService
                 "UnrealSpeech API key is missing.");
         }
         
-        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-    }
-    
-    /// <inheritdoc />
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
-    {
-        var config = await _integrationsService.GetConfigAsync();
-        
         // Create the task
-        var payload = new
+        var httpRequest = new HttpRequestMessage
         {
-            Text = request.Message,
-            VoiceId = config.TtsVoiceId,
-            Bitrate = "320k",
-            AudioFormat = "mp3",
-            OutputFormat = "uri",
-            TimestampType = "sentence",
-            sync = true
+            Method = HttpMethod.Post,
+            RequestUri = new Uri(_httpClient.BaseAddress!, "synthesisTasks"),
+            Content = new StringContent(
+                JsonSerializer.Serialize(new
+                {
+                    Text = request.Message,
+                    VoiceId = config.TtsVoiceId,
+                    Bitrate = "320k",
+                    AudioFormat = "mp3",
+                    OutputFormat = "uri",
+                    TimestampType = "sentence",
+                    sync = true
+                }), Encoding.UTF8, "application/json")
         };
-        var jsonPayload = JsonSerializer.Serialize(payload);
-        using var response = await _httpClient.PostAsync("synthesisTasks",
-            new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
+        httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
+        
+        using var response = await _httpClient.SendAsync(httpRequest);
         
         var jsonResponse = await response.Content.ReadAsStringAsync();
         
         if (!response.IsSuccessStatusCode)
         {
+            _logger.LogError("UnrealSpeech TTS generation failed: {Response}", jsonResponse);
             throw new ApiException(ErrorCodes.ExternalServiceError,
                 $"UnrealSpeech refused to generate audio: {jsonResponse}");
         }

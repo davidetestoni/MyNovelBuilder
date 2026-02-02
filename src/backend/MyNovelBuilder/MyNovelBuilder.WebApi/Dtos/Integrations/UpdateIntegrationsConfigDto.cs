@@ -18,6 +18,16 @@ public class UpdateIntegrationsConfigDto
     public string? GoogleGenAiApiKey { get; init; }
     
     /// <summary>
+    /// The ElevenLabs API key.
+    /// </summary>
+    public string? ElevenLabsApiKey { get; set; }
+    
+    /// <summary>
+    /// The UnrealSpeech API key.
+    /// </summary>
+    public string? UnrealSpeechApiKey { get; set; }
+    
+    /// <summary>
     /// The Text Generation provider to use to generate text.
     /// </summary>
     public TextGenerationProvider? TextGenerationProvider { get; init; }

@@ -34,6 +34,8 @@ public class IntegrationsController : ControllerBase
         {
             HasOpenRouterApiKey = !string.IsNullOrWhiteSpace(config.OpenRouterApiKey),
             HasGoogleGenAiApiKey = !string.IsNullOrWhiteSpace(config.GoogleGenAiApiKey),
+            HasElevenLabsApiKey = !string.IsNullOrWhiteSpace(config.ElevenLabsApiKey),
+            HasUnrealSpeechApiKey = !string.IsNullOrWhiteSpace(config.UnrealSpeechApiKey),
             TextGenerationProvider = config.TextGenerationProvider,
             TtsProvider = config.TtsProvider,
             TtsVoiceId = config.TtsVoiceId,
@@ -56,6 +58,16 @@ public class IntegrationsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(dto.GoogleGenAiApiKey))
         {
             config.GoogleGenAiApiKey = dto.GoogleGenAiApiKey;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(dto.ElevenLabsApiKey))
+        {
+            config.ElevenLabsApiKey = dto.ElevenLabsApiKey;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(dto.UnrealSpeechApiKey))
+        {
+            config.UnrealSpeechApiKey = dto.UnrealSpeechApiKey;
         }
         
         if (dto.TextGenerationProvider.HasValue)
