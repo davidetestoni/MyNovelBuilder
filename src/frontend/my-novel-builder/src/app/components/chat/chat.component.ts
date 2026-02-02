@@ -46,6 +46,7 @@ import {
   GenerateTextRequestDto,
   SendChatMessageContextInfoDto,
   TextGenerationType,
+  ChatMessageDto,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
@@ -404,10 +405,16 @@ export class ChatComponent
     this.isGenerating = true;
     this.shouldScrollToBottom = true;
 
+    const assistantIndex = this.currentChat.messages.indexOf(assistantMessage);
+    const previousMessages: ChatMessageDto[] = this.currentChat.messages
+      .slice(0, assistantIndex - 1)
+      .map((m) => ({ role: m.role, textContent: m.textContent }));
+
     const contextInfo: SendChatMessageContextInfoDto = {
       $type: TextGenerationType.SendChatMessage,
       chapterIndex: this.currentChat.context.chapterIndex,
       userMessage: userMessageContent,
+      previousMessages,
       compendiumIds: this.currentChat.context.compendiumIds,
       compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
     };

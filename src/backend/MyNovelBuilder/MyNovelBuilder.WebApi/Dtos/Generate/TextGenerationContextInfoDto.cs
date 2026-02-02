@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using MyNovelBuilder.WebApi.Enums;
 
 namespace MyNovelBuilder.WebApi.Dtos.Generate;
 
@@ -157,6 +158,22 @@ public class EditCompendiumRecordContextInfoDto : TextGenerationContextInfoDto
 }
 
 /// <summary>
+/// DTO for a chat message.
+/// </summary>
+public class ChatMessageDto
+{
+    /// <summary>
+    /// The role of the sender of the chat message.
+    /// </summary>
+    public required ChatMessageRole Role { get; set; }
+    
+    /// <summary>
+    /// The text content of the chat message.
+    /// </summary>
+    public required string TextContent { get; set; }
+}
+
+/// <summary>
 /// DTO for the context information for sending a chat message.
 /// </summary>
 public class SendChatMessageContextInfoDto : TextGenerationContextInfoDto
@@ -171,6 +188,11 @@ public class SendChatMessageContextInfoDto : TextGenerationContextInfoDto
     /// The user message to which the AI is responding.
     /// </summary>
     public string UserMessage { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The messages in the chat conversation prior to the user message.
+    /// </summary>
+    public IEnumerable<ChatMessageDto> PreviousMessages { get; set; } = new List<ChatMessageDto>();
     
     /// <summary>
     /// The ids of the compendia included in the chat context.

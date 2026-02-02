@@ -1,3 +1,5 @@
+import { ChatMessageRole } from '../../enums/chat-message-role';
+
 export interface GenerateTextRequestDto {
   model: string;
   promptId: string;
@@ -51,10 +53,16 @@ export interface EditCompendiumRecordContextInfoDto extends TextGenerationContex
   instructions: string | null;
 }
 
+export interface ChatMessageDto {
+  role: ChatMessageRole;
+  textContent: string;
+}
+
 export interface SendChatMessageContextInfoDto extends TextGenerationContextInfoDto {
   $type: TextGenerationType.SendChatMessage;
   chapterIndex: number | null;
   userMessage: string;
+  previousMessages: ChatMessageDto[];
   compendiumIds: string[];
   compendiumRecordIds: string[];
 }
