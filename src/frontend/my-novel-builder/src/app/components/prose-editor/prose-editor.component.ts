@@ -6,7 +6,7 @@ import {
   Output,
   inject,
 } from '@angular/core';
-import { Prose, Section } from '../../types/dtos/novel/prose';
+import { Prose, Section, RecordOverride } from '../../types/dtos/novel/prose';
 import { CommonModule } from '@angular/common';
 import {
   Blur,
@@ -67,6 +67,12 @@ interface LastSelection {
   sectionIndex: number;
 }
 
+import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
+import {
+  RecordOverridesEditorComponent,
+  RecordOverridesEditorComponentData,
+} from '../record-overrides-editor/record-overrides-editor.component';
+
 @Component({
   selector: 'app-prose-editor',
   standalone: true,
@@ -87,6 +93,7 @@ export class ProseEditorComponent implements OnDestroy {
   @Input() prose!: Prose;
   @Input() selectedChapterIndex: number | null = null;
   @Input() prompts!: PromptDto[];
+  @Input() compendia: CompendiumDto[] | null = null;
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
   @Output() recordsChange: EventEmitter<void> = new EventEmitter<void>();
   @Output() proseImageClicked: EventEmitter<string> =
@@ -152,6 +159,7 @@ export class ProseEditorComponent implements OnDestroy {
       summary: '[Missing summary]',
       text: '',
       images: [],
+      recordOverrides: [],
     });
     this.saveProse();
   }
@@ -723,6 +731,36 @@ export class ProseEditorComponent implements OnDestroy {
           ].images.filter((img) => img !== imageId);
         this.saveProse();
       },
+    });
+  }
+
+  openRecordOverridesDialog(chapterIndex: number, sectionIndex: number) {
+    const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
+    const availableRecords = this.compendia
+      ? this.compendia.flatMap((c) => c.records)
+      : [];
+
+    this.dialogRef = this.dialogService.open(RecordOverridesEditorComponent, {
+      header: 'Record Overrides',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
+      focusOnShow: false,
+      data: <RecordOverridesEditorComponentData>{
+        recordOverrides: section.recordOverrides || [],
+        availableRecords: availableRecords,
+      },
+    });
+
+    this.dialogRef?.onClose.subscribe((overrides: RecordOverride[]) => {
+      if (overrides) {
+        section.recordOverrides = overrides;
+        this.saveProse();
+      }
     });
   }
 }

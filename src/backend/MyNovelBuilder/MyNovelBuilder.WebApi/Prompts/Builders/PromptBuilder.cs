@@ -69,10 +69,16 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     }
     
     /// <summary>
-    /// Creates a string representation of the compendium records.
+    /// Creates a string representation of the compendium records,
+    /// while applying any context overrides up to the specified
+    /// chapter and section (all if null).
     /// Only provide the records that are in context.
     /// </summary>
-    protected static string CreateCompendiumRecordsString(IList<CompendiumRecord> records)
+    protected static string CreateCompendiumRecordsString(
+        IList<CompendiumRecord> records,
+        Prose prose,
+        int? chapterIndex,
+        int? sectionIndex)
     {
         var recordsBuilder = new StringBuilder();
         
@@ -82,11 +88,64 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
             recordsBuilder.Append(" (");
             recordsBuilder.Append(record.Type);
             recordsBuilder.Append(")\n");
-            recordsBuilder.Append(record.Context);
+            recordsBuilder.Append(
+                ApplyContextOverrides(record, prose, chapterIndex, sectionIndex));
             recordsBuilder.Append("\n\n");
         }
         
         return recordsBuilder.ToString();
+    }
+
+    /// <summary>
+    /// Applies any context overrides to the compendium record,
+    /// up to the specified chapter and section (all if null),
+    /// returning the modified description.
+    /// </summary>
+    private static string ApplyContextOverrides(
+        CompendiumRecord record, Prose prose,
+        int? chapterIndex, int? sectionIndex)
+    {
+        var recordContext = record.Context;
+        var recordOverrides = new List<RecordOverride>();
+        
+        var endChapterIndex = chapterIndex ?? prose.Chapters.Count - 1;
+        var endSectionIndex = sectionIndex ?? prose.Chapters[endChapterIndex].Sections.Count - 1;
+
+        for (var c = 0; c <= endChapterIndex; c++)
+        {
+            for (var s = 0; s < prose.Chapters[c].Sections.Count; s++)
+            {
+                // If we are past the target chapter and section, stop
+                if (c == chapterIndex && s > endSectionIndex)
+                {
+                    break;
+                }
+
+                // Find any overrides for the record in this section
+                var overrides = prose.Chapters[c].Sections[s].RecordOverrides
+                    .Where(ro => ro.CompendiumRecordId == record.Id)
+                    .ToList();
+
+                recordOverrides.AddRange(overrides);
+            }
+        }
+        
+        // Apply the overrides in order
+        foreach (var recordOverride in recordOverrides)
+        {
+            if (string.IsNullOrWhiteSpace(recordOverride.Keyword))
+            {
+                continue;
+            }
+            
+            // Context regions are in the format:
+            // [keyword]...[/keyword]
+            var keywordRegionPattern = $@"\[{Regex.Escape(recordOverride.Keyword)}\](?:.|\n)*?\[\/{Regex.Escape(recordOverride.Keyword)}\]";
+            var regex = new Regex(keywordRegionPattern);
+            recordContext = regex.Replace(recordContext, recordOverride.Description);
+        }
+        
+        return recordContext;
     }
 
     /// <summary>

@@ -11,4 +11,11 @@ export interface Section {
   summary: string;
   text: string;
   images: string[];
+  recordOverrides: RecordOverride[];
+}
+
+export interface RecordOverride {
+  compendiumRecordId: string;
+  keyword: string;
+  description: string;
 }

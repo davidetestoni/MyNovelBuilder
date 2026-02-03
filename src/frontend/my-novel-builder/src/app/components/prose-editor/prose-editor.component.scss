@@ -181,6 +181,12 @@
                     filter: $grey13filter;
                   }
                 }
+
+                &.has-overrides {
+                  i {
+                    filter: $grey13filter;
+                  }
+                }
               }
             }
           }

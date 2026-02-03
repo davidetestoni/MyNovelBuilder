@@ -113,6 +113,27 @@
                         (click)="addProseImage(chapterIndex, sectionIndex)"
                       ></i>
                     </div>
+                    <div
+                      class="section-action"
+                      [class.has-overrides]="
+                        (section.recordOverrides.length || 0) > 0
+                      "
+                    >
+                      <i
+                        [pTooltip]="
+                          (section.recordOverrides.length || 0) > 0
+                            ? section.recordOverrides.length +
+                              ' Record Override' +
+                              (section.recordOverrides.length === 1 ? '' : 's')
+                            : 'Record Overrides'
+                        "
+                        tooltipPosition="bottom"
+                        class="pi pi-tags"
+                        (click)="
+                          openRecordOverridesDialog(chapterIndex, sectionIndex)
+                        "
+                      ></i>
+                    </div>
                     <div class="section-action">
                       <i
                         pTooltip="Remove Section"

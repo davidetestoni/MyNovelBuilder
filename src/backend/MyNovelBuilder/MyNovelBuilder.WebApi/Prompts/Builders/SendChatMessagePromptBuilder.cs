@@ -34,7 +34,9 @@ public class SendChatMessagePromptBuilder : PromptBuilder<SendChatMessageContext
             .Replace("{{context}}", DecodeHtmlEntities(contextString))
             .Replace("{{chatHistory}}", BuildChatHistory(context.Client.PreviousMessages))
             .Replace("{{instructions}}", context.Client.UserMessage)
-            .Replace("{{records}}", CreateCompendiumRecordsString(recordsInContext.ToList()));
+            .Replace("{{records}}", CreateCompendiumRecordsString(
+                recordsInContext.ToList(), context.Prose,
+                context.Client.ChapterIndex, null));
         
         return this;
     }

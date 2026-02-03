@@ -30,7 +30,9 @@ public class SummarizeTextPromptBuilder : PromptBuilder<SummarizeTextContextInfo
         
         Builder
             .Replace("{{context}}", DecodeHtmlEntities(StripHtmlTags(sectionText)))
-            .Replace("{{records}}", CreateCompendiumRecordsString(recordsInContext.ToList()));
+            .Replace("{{records}}", CreateCompendiumRecordsString(
+                recordsInContext.ToList(), context.Prose,
+                context.Client.ChapterIndex, context.Client.SectionIndex));
 
         return this;
     }

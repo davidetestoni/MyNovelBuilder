@@ -19,4 +19,9 @@ public class Section
     /// The images associated with the section.
     /// </summary>
     public string[] Images { get; set; } = [];
+    
+    /// <summary>
+    /// The record overrides associated with the section.
+    /// </summary>
+    public RecordOverride[] RecordOverrides { get; set; } = [];
 }

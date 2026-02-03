@@ -37,7 +37,9 @@ public class GenerateTextPromptBuilder : PromptBuilder<GenerateTextContextInfoDt
         Builder
             .Replace("{{context}}", DecodeHtmlEntities(contextString))
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
-            .Replace("{{records}}", CreateCompendiumRecordsString(recordsInContext.ToList()));
+            .Replace("{{records}}", CreateCompendiumRecordsString(
+                recordsInContext.ToList(), context.Prose,
+                context.Client.ChapterIndex, context.Client.SectionIndex));
         
         return this;
     }

@@ -84,6 +84,7 @@ export const mockedProse: Prose = {
           summary: loremIpsum({ count: 5, units: 'sentences' }),
           text: '<p>' + loremIpsum({ count: 15, units: 'sentences' }) + '</p>',
           images: [],
+          recordOverrides: [],
         })),
     })),
 };
