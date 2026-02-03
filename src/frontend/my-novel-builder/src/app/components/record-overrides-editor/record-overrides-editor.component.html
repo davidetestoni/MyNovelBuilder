@@ -36,6 +36,9 @@
                 <label>Record</label>
                 <p-select
                   [(ngModel)]="override.compendiumRecordId"
+                  (onChange)="
+                    fetchSuggestedKeywords(override.compendiumRecordId)
+                  "
                   [options]="availableRecords"
                   optionLabel="name"
                   optionValue="id"
@@ -61,10 +64,11 @@
               </div>
               <div class="field">
                 <label>Keyword</label>
-                <input
-                  pInputText
+                <p-autocomplete
                   [(ngModel)]="override.keyword"
-                  placeholder="Keyword to replace"
+                  [dropdown]="true"
+                  [suggestions]="filteredKeywords"
+                  (completeMethod)="searchKeywords($event)"
                   style="width: 100%"
                 />
               </div>

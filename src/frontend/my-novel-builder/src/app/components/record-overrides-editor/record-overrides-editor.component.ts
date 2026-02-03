@@ -9,6 +9,11 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
 import { CommonModule } from '@angular/common';
+import { CompendiumService } from '../../services/compendium.service';
+import {
+  AutoCompleteCompleteEvent,
+  AutoCompleteModule,
+} from 'primeng/autocomplete';
 
 export interface RecordOverridesEditorComponentData {
   recordOverrides: RecordOverride[];
@@ -30,6 +35,7 @@ interface EditableRecordOverride extends RecordOverride {
     TextareaModule,
     SelectModule,
     TooltipModule,
+    AutoCompleteModule,
   ],
   templateUrl: './record-overrides-editor.component.html',
   styleUrl: './record-overrides-editor.component.scss',
@@ -37,9 +43,12 @@ interface EditableRecordOverride extends RecordOverride {
 export class RecordOverridesEditorComponent implements OnInit {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
+  compendiumService = inject(CompendiumService);
 
   overrides: EditableRecordOverride[] = [];
   availableRecords: CompendiumRecordOverviewDto[] = [];
+  suggestedKeywords: string[] = [];
+  filteredKeywords: string[] = [];
 
   ngOnInit(): void {
     const data = this.config.data as RecordOverridesEditorComponentData;
@@ -52,13 +61,15 @@ export class RecordOverridesEditorComponent implements OnInit {
   }
 
   addOverride() {
+    const compendiumRecordId =
+      this.availableRecords.length > 0 ? this.availableRecords[0].id : '';
     this.overrides.push({
-      compendiumRecordId:
-        this.availableRecords.length > 0 ? this.availableRecords[0].id : '',
+      compendiumRecordId: compendiumRecordId,
       keyword: '',
       description: '',
       isExpanded: true,
     });
+    this.fetchSuggestedKeywords(compendiumRecordId);
   }
 
   toggleExpand(index: number) {
@@ -68,6 +79,31 @@ export class RecordOverridesEditorComponent implements OnInit {
   getRecordName(id: string): string {
     const record = this.availableRecords.find((r) => r.id === id);
     return record ? record.name : 'Unknown Record';
+  }
+
+  fetchSuggestedKeywords(recordId: string): void {
+    this.compendiumService.getRecord(recordId).subscribe((record) => {
+      this.suggestedKeywords = this.parseKeywords(record.context);
+    });
+  }
+
+  private parseKeywords(keywordsStr: string): string[] {
+    // Context regions are in the format:
+    // [keyword]...[/keyword]
+    const regex = /\[([^\]]+)\](?:.|\n)*?\[\/\1\]/g;
+    const matches = [];
+    let match;
+    while ((match = regex.exec(keywordsStr)) !== null) {
+      matches.push(match[1]);
+    }
+    return matches;
+  }
+
+  searchKeywords(event: AutoCompleteCompleteEvent) {
+    const query = event.query.toLowerCase();
+    this.filteredKeywords = this.suggestedKeywords.filter((keyword) =>
+      keyword.toLowerCase().includes(query),
+    );
   }
 
   removeOverride(index: number) {
