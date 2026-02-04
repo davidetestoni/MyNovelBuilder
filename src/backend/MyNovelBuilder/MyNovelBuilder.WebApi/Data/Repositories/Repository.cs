@@ -51,15 +51,15 @@ public class Repository<TEntity> :
     }
 
     /// <inheritdoc />
-    public async Task AddAsync(TEntity entity)
+    public void Add(TEntity entity)
     {
-        await Context.Set<TEntity>().AddAsync(entity);
+        Context.Set<TEntity>().Add(entity);
     }
 
     /// <inheritdoc />
-    public async Task AddRangeAsync(IEnumerable<TEntity> entities)
+    public void AddRange(IEnumerable<TEntity> entities)
     {
-        await Context.Set<TEntity>().AddRangeAsync(entities);
+        Context.Set<TEntity>().AddRangeAsync(entities);
     }
 
     /// <inheritdoc />

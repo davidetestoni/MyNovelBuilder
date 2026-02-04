@@ -47,7 +47,7 @@ public class CompendiumRecordService : ICompendiumRecordService
     /// <inheritdoc />
     public async Task CreateAsync(CompendiumRecord compendiumRecord)
     {
-        await _unitOfWork.CompendiumRecords.AddAsync(compendiumRecord);
+        _unitOfWork.CompendiumRecords.Add(compendiumRecord);
         await _unitOfWork.SaveChangesAsync();
     }
 

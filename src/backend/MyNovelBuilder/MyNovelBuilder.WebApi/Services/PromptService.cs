@@ -39,7 +39,7 @@ public class PromptService : IPromptService
     /// <inheritdoc />
     public async Task CreateAsync(Prompt prompt)
     {
-        await _unitOfWork.Prompts.AddAsync(prompt);
+        _unitOfWork.Prompts.Add(prompt);
         await _unitOfWork.SaveChangesAsync();
     }
 

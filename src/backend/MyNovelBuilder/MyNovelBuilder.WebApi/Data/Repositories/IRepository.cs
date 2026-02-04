@@ -31,12 +31,12 @@ public interface IRepository<TEntity> where TEntity : Entity
     /// <summary>
     /// Add an entity.
     /// </summary>
-    Task AddAsync(TEntity entity);
+    void Add(TEntity entity);
     
     /// <summary>
     /// Add a range of entities.
     /// </summary>
-    Task AddRangeAsync(IEnumerable<TEntity> entities);
+    void AddRange(IEnumerable<TEntity> entities);
     
     /// <summary>
     /// Update an entity.

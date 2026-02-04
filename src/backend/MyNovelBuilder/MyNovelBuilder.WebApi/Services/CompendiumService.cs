@@ -39,7 +39,7 @@ public class CompendiumService : ICompendiumService
     /// <inheritdoc />
     public async Task CreateAsync(Compendium compendium)
     {
-        await _unitOfWork.Compendia.AddAsync(compendium);
+        _unitOfWork.Compendia.Add(compendium);
         await _unitOfWork.SaveChangesAsync();
     }
 

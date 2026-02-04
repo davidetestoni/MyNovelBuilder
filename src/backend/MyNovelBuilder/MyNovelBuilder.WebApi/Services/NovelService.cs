@@ -51,7 +51,7 @@ public class NovelService : INovelService
     /// <inheritdoc />
     public async Task CreateAsync(Novel novel)
     {
-        await _unitOfWork.Novels.AddAsync(novel);
+        _unitOfWork.Novels.Add(novel);
         await _unitOfWork.SaveChangesAsync();
     }
 
