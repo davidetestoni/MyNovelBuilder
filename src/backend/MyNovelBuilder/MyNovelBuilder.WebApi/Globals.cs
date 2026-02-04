@@ -8,7 +8,7 @@ public static class Globals
     /// <summary>
     /// If the application is in testing mode.
     /// </summary>
-    public static bool Testing { get; } = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Testing";
+    public static bool Testing { get; } = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "test";
 
     /// <summary>
     /// The path to the data folder.
