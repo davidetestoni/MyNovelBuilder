@@ -97,6 +97,12 @@ public class TextChunker
                 // Check if it's followed by whitespace or a quote (typical sentence end)
                 if (IsValidSentenceEnd(text, i))
                 {
+                    // If followed by a quote, include the quote in the break
+                    if (i + 1 < text.Length && _quoteMarks.Contains(text[i + 1]))
+                    {
+                        return i + 2;
+                    }
+                    
                     return i + 1;
                 }
                 bestBreak = i + 1; // Store as potential break even if not ideal
