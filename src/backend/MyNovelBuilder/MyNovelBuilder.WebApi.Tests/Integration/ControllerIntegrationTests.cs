@@ -41,6 +41,16 @@ public class ControllerIntegrationTests  : IClassFixture<TestWebApplicationFacto
         dbContext.ChangeTracker.Clear();
         await dbContext.Database.EnsureDeletedAsync();
         await dbContext.Database.MigrateAsync();
+
+        if (Directory.Exists(Globals.DataFolder))
+        {
+            foreach (var directory in Directory.GetDirectories(Globals.DataFolder))
+            {
+                Directory.Delete(directory, true);
+            }
+        }
+
+        File.Delete(Path.Combine(Globals.DataFolder, "integrations.json"));
     }
     
         private async Task<Result<T, ApiErrorResponse>> SendRequestAsync<T>(HttpClient client,
