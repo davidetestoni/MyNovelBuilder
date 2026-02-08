@@ -99,6 +99,7 @@ builder.Services.AddScoped<ICompendiumService, CompendiumService>();
 builder.Services.AddScoped<ICompendiumRecordService, CompendiumRecordService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<INovelExportService, NovelExportService>();
 
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
