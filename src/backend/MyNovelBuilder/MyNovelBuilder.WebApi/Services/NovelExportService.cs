@@ -65,8 +65,15 @@ public partial class NovelExportService : INovelExportService
             return string.Empty;
         }
 
-        var stripped = StripHtmlRegex().Replace(input, string.Empty);
-        return System.Net.WebUtility.HtmlDecode(stripped);
+        // Replace </p><p> with newline and strip other HTML tags
+        var stripped = StripHtmlRegex().Replace(
+            input.Replace("\u003C/p\u003E\u003Cp\u003E", Environment.NewLine),
+            string.Empty);
+        
+        var decoded = System.Net.WebUtility.HtmlDecode(stripped);
+    
+        // Replace non-breaking spaces (0xA0) with regular spaces (0x20)
+        return decoded.Replace('\u00A0', ' ');
     }
 
     [GeneratedRegex("<.*?>")]
