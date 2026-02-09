@@ -139,7 +139,8 @@ var app = builder.Build();
 app.UseCors(b => b
     .AllowAnyOrigin()
     .AllowAnyMethod()
-    .AllowAnyHeader());
+    .AllowAnyHeader()
+    .WithExposedHeaders("Content-Disposition"));
 
 // Enable swagger
 app.UseSwagger();

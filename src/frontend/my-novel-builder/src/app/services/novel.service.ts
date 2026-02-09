@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { NovelDto } from '../types/dtos/novel/novel.dto';
 import { environment } from '../../environment';
@@ -84,11 +84,16 @@ export class NovelService {
   }
 
   deleteNovel(novelId: string): Observable<void> {
-    if (this.mocked) {
-      return mockObservable<void>(undefined);
-    }
+    return this.mocked
+      ? mockObservable<void>(undefined)
+      : this.http.delete<void>(`${this.baseUrl}/novel/${novelId}`);
+  }
 
-    return this.http.delete<void>(`${this.baseUrl}/novel/${novelId}`);
+  exportNovelToMarkdown(novelId: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(`${this.baseUrl}/novel/${novelId}/export/markdown`, {
+      responseType: 'blob',
+      observe: 'response',
+    });
   }
 
   private getFloatedMedia(): FloatedMedia {

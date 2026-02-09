@@ -17,6 +17,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { getFileNameFromResponse } from '../../utils/http.utils';
 
 @Component({
   selector: 'app-novel-settings',
@@ -146,5 +147,32 @@ export class NovelSettingsComponent {
       : [...this.novel.compendiumIds, compendiumId];
 
     this.onBlur();
+  }
+
+  exportAsMarkdown(): void {
+    if (this.novel === null) {
+      return;
+    }
+
+    this.novelService
+      .exportNovelToMarkdown(this.novel.id)
+      .subscribe((response) => {
+        const blob = response.body;
+        if (!blob) {
+          return;
+        }
+
+        const fileName = getFileNameFromResponse(
+          response,
+          `${this.novel?.id}.md`,
+        );
+
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(url);
+      });
   }
 }

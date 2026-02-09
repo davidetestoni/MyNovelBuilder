@@ -17,6 +17,12 @@
       </div>
       <div class="novel-settings-header-actions">
         <p-button
+          label="Export as Markdown"
+          variant="text"
+          icon="pi pi-download"
+          (onClick)="exportAsMarkdown()"
+        />
+        <p-button
           label="Prose"
           [routerLink]="['/novel', novel.id]"
           variant="text"
