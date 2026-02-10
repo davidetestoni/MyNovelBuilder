@@ -478,6 +478,14 @@ export class ProseEditorComponent implements OnDestroy {
 
         // Append the generated text at the end of the range in the Quill editor.
         this.lastSelection!.editor.insertText(contextInfo.textOffset, result);
+
+        const section =
+          this.prose.chapters[contextInfo.chapterIndex].sections[
+            contextInfo.sectionIndex
+          ];
+
+        section.text = this.lastSelection!.editor.getSemanticHTML();
+        this.saveProse();
       }
     });
   }
