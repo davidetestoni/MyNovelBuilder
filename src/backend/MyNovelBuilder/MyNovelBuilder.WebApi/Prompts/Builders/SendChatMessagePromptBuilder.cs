@@ -31,7 +31,7 @@ public class SendChatMessagePromptBuilder : PromptBuilder<SendChatMessageContext
                         || context.Client.CompendiumRecordIds.Contains(r.Id));
         
         Builder
-            .Replace("{{context}}", DecodeHtmlEntities(contextString))
+            .Replace("{{context}}", contextString)
             .Replace("{{chatHistory}}", BuildChatHistory(context.Client.PreviousMessages))
             .Replace("{{instructions}}", context.Client.UserMessage)
             .Replace("{{records}}", CreateCompendiumRecordsString(

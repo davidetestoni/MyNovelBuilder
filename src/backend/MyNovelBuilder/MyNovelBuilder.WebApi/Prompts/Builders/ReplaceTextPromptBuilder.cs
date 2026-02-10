@@ -1,4 +1,5 @@
 ﻿using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Extensions;
 
 namespace MyNovelBuilder.WebApi.Prompts.Builders;
 
@@ -23,10 +24,10 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
         
         var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
         var section = GetSection(chapter, context.Client.SectionIndex);
-        var text = StripHtmlTags(section?.Text ?? string.Empty);
+        var text = section?.Text.StripHtml() ?? string.Empty;
         
-        var textBefore = text[..context.Client.TextOffset];
-        var textAfter = text[(context.Client.TextOffset + context.Client.TextLength)..];
+        var textBefore = text[..context.Client.TextOffset].StripHtml();
+        var textAfter = text[(context.Client.TextOffset + context.Client.TextLength)..].StripHtml();
         
         var textToReplace = text.Substring(context.Client.TextOffset,
             context.Client.TextLength);
@@ -43,8 +44,8 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
         }
         
         Builder
-            .Replace("{{textBefore}}", DecodeHtmlEntities(textBefore))
-            .Replace("{{textAfter}}", DecodeHtmlEntities(textAfter))
+            .Replace("{{textBefore}}", textBefore)
+            .Replace("{{textAfter}}", textAfter)
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{textToReplace}}", textToReplace)
             .Replace("{{records}}", CreateCompendiumRecordsString(

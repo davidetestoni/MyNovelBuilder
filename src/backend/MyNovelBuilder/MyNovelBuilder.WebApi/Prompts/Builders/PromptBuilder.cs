@@ -12,7 +12,7 @@ namespace MyNovelBuilder.WebApi.Prompts.Builders;
 /// A builder for prompts.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
+public class PromptBuilder<T> where T : TextGenerationContextInfoDto
 {
     /// <summary>
     /// The backing string builder.
@@ -106,6 +106,14 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
         int? chapterIndex, int? sectionIndex)
     {
         var recordContext = record.Context;
+        
+        // If the novel has no chapters or sections,
+        // there can be no overrides, so we return the original context
+        if (prose.Chapters.Count == 0 || prose.Chapters.All(c => c.Sections.Count == 0))
+        {
+            return recordContext;
+        }
+        
         var recordOverrides = new List<RecordOverride>();
         
         var endChapterIndex = chapterIndex ?? prose.Chapters.Count - 1;
@@ -247,22 +255,6 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     }
     
     /// <summary>
-    /// Strips HTML tags from the text and decodes HTML entities.
-    /// </summary>
-    protected static string StripHtmlTags(string text)
-    {
-        return StripHtmlTagsRegex().Replace(text, string.Empty);
-    }
-    
-    /// <summary>
-    /// Decodes HTML entities in the text.
-    /// </summary>
-    protected static string DecodeHtmlEntities(string text)
-    {
-        return System.Net.WebUtility.HtmlDecode(text);
-    }
-    
-    /// <summary>
     /// Gets the chapter at the specified index.
     /// </summary>
     /// <exception cref="IndexOutOfRangeException">
@@ -315,11 +307,11 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
         
         foreach (var chapter in prose.Chapters)
         {
-            storyBuilder.AppendLine($"# {StripHtmlTags(chapter.Title)}\n\n");
+            storyBuilder.AppendLine($"# {chapter.Title.StripHtml()}\n\n");
             
             foreach (var section in chapter.Sections)
             {
-                storyBuilder.Append(StripHtmlTags(section.Text));
+                storyBuilder.Append(section.Text.StripHtml());
                 storyBuilder.Append("\n\n");
             }
         }
@@ -337,7 +329,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
         
         foreach (var section in chapter.Sections)
         {
-            chapterBuilder.Append(StripHtmlTags(section.Text));
+            chapterBuilder.Append(section.Text.StripHtml());
             chapterBuilder.Append("\n\n");
         }
         
@@ -352,7 +344,7 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
     {
         var chapter = GetChapter(prose, chapterIndex);
         var section = GetSection(chapter, sectionIndex);
-        var text = StripHtmlTags(section?.Text ?? string.Empty);
+        var text = section?.Text.StripHtml() ?? string.Empty;
         
         List<Section> previousSections;
         
@@ -382,14 +374,14 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
         // Append the summaries of the previous sections except the last one (up to 5)
         foreach (var previousSection in previousSections)
         {
-            contextBuilder.Append(StripHtmlTags(previousSection.Text));
+            contextBuilder.Append(previousSection.Text.StripHtml());
             contextBuilder.Append("\n\n");
         }
         
         // Append the text of the last previous section (if any)
         if (previousSections.Count != 0)
         {
-            contextBuilder.Append(StripHtmlTags(previousSections[^1].Text));
+            contextBuilder.Append(previousSections[^1].Text.StripHtml());
             contextBuilder.Append("\n\n");
         }
         
@@ -398,7 +390,4 @@ public partial class PromptBuilder<T> where T : TextGenerationContextInfoDto
 
         return contextBuilder.ToString();
     }
-
-    [GeneratedRegex("<.*?>")]
-    private static partial Regex StripHtmlTagsRegex();
 }

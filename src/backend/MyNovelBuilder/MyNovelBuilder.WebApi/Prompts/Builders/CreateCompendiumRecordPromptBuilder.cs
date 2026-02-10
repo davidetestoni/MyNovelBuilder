@@ -1,4 +1,5 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Extensions;
 
 namespace MyNovelBuilder.WebApi.Prompts.Builders;
 
@@ -24,7 +25,7 @@ public class CreateCompendiumRecordPromptBuilder : PromptBuilder<CreateCompendiu
         
         var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
         var section = GetSection(chapter, context.Client.SectionIndex);
-        var text = StripHtmlTags(section.Text);
+        var text = section?.Text.StripHtml() ?? string.Empty;
         
         var recordDetails = text.Substring(context.Client.TextOffset,
             context.Client.TextLength);
@@ -47,7 +48,7 @@ public class CreateCompendiumRecordPromptBuilder : PromptBuilder<CreateCompendiu
             FilterRecordsInContext(context.CompendiumRecords, recordDetails));
         
         Builder
-            .Replace("{{context}}", DecodeHtmlEntities(contextString))
+            .Replace("{{context}}", contextString)
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{recordDetails}}", recordDetails)
             .Replace("{{records}}", CreateCompendiumRecordsString(

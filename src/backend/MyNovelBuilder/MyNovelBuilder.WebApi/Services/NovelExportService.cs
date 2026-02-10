@@ -1,5 +1,5 @@
 using System.Text;
-using System.Text.RegularExpressions;
+using MyNovelBuilder.WebApi.Extensions;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -23,7 +23,7 @@ public partial class NovelExportService : INovelExportService
         var prose = await _novelService.GetProseAsync(novelId);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"# {StripHtml(novel.Title)}");
+        sb.AppendLine($"# {novel.Title.StripHtml()}");
         
         if (!string.IsNullOrWhiteSpace(novel.Author))
         {
@@ -40,10 +40,10 @@ public partial class NovelExportService : INovelExportService
 
         foreach (var chapter in prose.Chapters)
         {
-            sb.AppendLine($"## {StripHtml(chapter.Title)}");
+            sb.AppendLine($"## {chapter.Title.StripHtml()}");
             foreach (var section in chapter.Sections)
             {
-                var text = StripHtml(section.Text);
+                var text = section.Text.StripHtml();
 
                 if (string.IsNullOrWhiteSpace(text))
                 {
@@ -57,25 +57,4 @@ public partial class NovelExportService : INovelExportService
 
         return sb.ToString().TrimEnd();
     }
-
-    private static string StripHtml(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-        {
-            return string.Empty;
-        }
-
-        // Replace </p><p> with newline and strip other HTML tags
-        var stripped = StripHtmlRegex().Replace(
-            input.Replace("\u003C/p\u003E\u003Cp\u003E", Environment.NewLine),
-            string.Empty);
-        
-        var decoded = System.Net.WebUtility.HtmlDecode(stripped);
-    
-        // Replace non-breaking spaces (0xA0) with regular spaces (0x20)
-        return decoded.Replace('\u00A0', ' ');
-    }
-
-    [GeneratedRegex("<.*?>")]
-    private static partial Regex StripHtmlRegex();
 }

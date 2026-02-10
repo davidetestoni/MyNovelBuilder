@@ -24,12 +24,6 @@ public class PromptBuilderTests
                 .CreateCompendiumRecordsString(
                     records, prose, chapterIndex, sectionIndex);
         }
-
-        public new static string StripHtmlTags(string text)
-        {
-            return PromptBuilder<TextGenerationContextInfoDto>
-                .StripHtmlTags(text);
-        }
     }
 
     [Theory]
@@ -218,15 +212,5 @@ public class PromptBuilderTests
         builder.ReplacePlaceholders(context);
         
         Assert.Equal("Past tense", builder.ToString());
-    }
-
-    [Theory]
-    [InlineData("<p>Hello</p>", "Hello")]
-    [InlineData("Hello <br/> world", "Hello  world")]
-    [InlineData("<div>Test</div>", "Test")]
-    public void StripHtmlTags_RemovesTags(string input, string expected)
-    {
-        var result = TestPromptBuilder.StripHtmlTags(input);
-        Assert.Equal(expected, result);
     }
 }

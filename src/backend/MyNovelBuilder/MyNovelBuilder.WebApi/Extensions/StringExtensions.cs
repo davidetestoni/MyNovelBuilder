@@ -1,9 +1,11 @@
-﻿namespace MyNovelBuilder.WebApi.Extensions;
+﻿using System.Text.RegularExpressions;
+
+namespace MyNovelBuilder.WebApi.Extensions;
 
 /// <summary>
 /// Extension methods for strings.
 /// </summary>
-public static class StringExtensions
+public static partial class StringExtensions
 {
     /// <summary>
     /// Sanitizes a string for use as a file name.
@@ -48,4 +50,28 @@ public static class StringExtensions
         
         return occurrences;
     }
+    
+    /// <summary>
+    /// Strips HTML tags from a string and decodes HTML entities.
+    /// </summary>
+    public static string StripHtml(this string input)
+    {
+        if (string.IsNullOrEmpty(input))
+        {
+            return string.Empty;
+        }
+
+        // Replace </p><p> with newline and strip other HTML tags
+        var stripped = StripHtmlRegex().Replace(
+            input.Replace("\u003C/p\u003E\u003Cp\u003E", Environment.NewLine),
+            string.Empty);
+        
+        var decoded = System.Net.WebUtility.HtmlDecode(stripped);
+    
+        // Replace non-breaking spaces (0xA0) with regular spaces (0x20)
+        return decoded.Replace('\u00A0', ' ');
+    }
+
+    [GeneratedRegex("<.*?>")]
+    private static partial Regex StripHtmlRegex();
 }

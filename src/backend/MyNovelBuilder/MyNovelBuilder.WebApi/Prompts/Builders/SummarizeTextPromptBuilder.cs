@@ -1,4 +1,5 @@
 ﻿using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Extensions;
 
 namespace MyNovelBuilder.WebApi.Prompts.Builders;
 
@@ -26,10 +27,10 @@ public class SummarizeTextPromptBuilder : PromptBuilder<SummarizeTextContextInfo
         var sectionText = section?.Text ?? string.Empty;
         
         var recordsInContext = FilterRecordsInContext(
-            context.CompendiumRecords, StripHtmlTags(sectionText));
+            context.CompendiumRecords, sectionText.StripHtml());
         
         Builder
-            .Replace("{{context}}", DecodeHtmlEntities(StripHtmlTags(sectionText)))
+            .Replace("{{context}}", sectionText.StripHtml())
             .Replace("{{records}}", CreateCompendiumRecordsString(
                 recordsInContext.ToList(), context.Prose,
                 context.Client.ChapterIndex, context.Client.SectionIndex));
