@@ -32,6 +32,8 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
             context.Client.TextLength);
 
         var recordsInContext = FilterRecordsInContext(context.CompendiumRecords, textToReplace);
+        recordsInContext.UnionWith(FilterRecordsInContext(context.CompendiumRecords, textBefore));
+        recordsInContext.UnionWith(FilterRecordsInContext(context.CompendiumRecords, textAfter));
         
         // If there are instructions, also search for records in them
         if (!string.IsNullOrWhiteSpace(context.Client.Instructions))
