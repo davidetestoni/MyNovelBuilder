@@ -16,6 +16,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ButtonModule } from 'primeng/button';
+import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 
 @Component({
   selector: 'app-create-compendium-record',
@@ -30,6 +31,7 @@ import { ButtonModule } from 'primeng/button';
     SelectModule,
     CheckboxModule,
     ButtonModule,
+    AliasSuggestionsComponent,
   ],
   templateUrl: './create-compendium-record.component.html',
   styleUrl: './create-compendium-record.component.scss',
@@ -62,6 +64,20 @@ export class CreateCompendiumRecordComponent {
     CompendiumRecordType.Concept,
     CompendiumRecordType.Other,
   ];
+
+  addAlias(alias: string): void {
+    const currentAliasesValue = this.formGroup.get('aliases')?.value || '';
+    const currentAliases = currentAliasesValue
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+
+    if (!currentAliases.some((a) => a.toLowerCase() === alias.toLowerCase())) {
+      currentAliases.push(alias);
+      this.formGroup.get('aliases')?.setValue(currentAliases.join(', '));
+      this.formGroup.get('aliases')?.markAsDirty();
+    }
+  }
 
   createRecord(): void {
     this.compendiumService

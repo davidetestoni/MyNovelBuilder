@@ -1,0 +1,14 @@
+@if (suggestedAliases.length > 0) {
+  <div class="suggestions-container">
+    <span class="suggestions-label">Suggestions:</span>
+    <div class="suggestions-list">
+      @for (alias of suggestedAliases; track alias) {
+        <p-chip
+          [label]="alias"
+          (click)="addAlias(alias)"
+          class="suggestion-chip"
+        />
+      }
+    </div>
+  </div>
+}

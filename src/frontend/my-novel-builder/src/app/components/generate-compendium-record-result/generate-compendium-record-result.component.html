@@ -60,6 +60,11 @@
           formControlName="aliases"
           placeholder="Awesome record, Best record ever"
         />
+        <app-alias-suggestions
+          [name]="formGroup.get('name')?.value || ''"
+          [currentAliases]="formGroup.get('aliases')?.value || ''"
+          (aliasAdded)="addAlias($event)"
+        />
       </div>
 
       <!-- Context Readonly Textarea -->

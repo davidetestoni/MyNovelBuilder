@@ -30,6 +30,11 @@
           [(ngModel)]="record.aliases"
           (blur)="onBlur()"
         />
+        <app-alias-suggestions
+          [name]="record.name || ''"
+          [currentAliases]="record.aliases || ''"
+          (aliasAdded)="addAlias($event)"
+        />
       </div>
       <div class="compendium-record-always-included">
         <p-checkbox

@@ -19,6 +19,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
+import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 
 export interface GenerateCompendiumRecordComponentData {
   generatedText: string;
@@ -36,6 +37,7 @@ export interface GenerateCompendiumRecordComponentData {
     TextareaModule,
     SelectModule,
     ButtonModule,
+    AliasSuggestionsComponent,
   ],
   templateUrl: './generate-compendium-record-result.component.html',
   styleUrl: './generate-compendium-record-result.component.scss',
@@ -74,6 +76,20 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
 
   constructor() {
     this.data = this.config.data as GenerateCompendiumRecordComponentData;
+  }
+
+  addAlias(alias: string): void {
+    const currentAliasesValue = this.formGroup.get('aliases')?.value || '';
+    const currentAliases = currentAliasesValue
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+
+    if (!currentAliases.some((a) => a.toLowerCase() === alias.toLowerCase())) {
+      currentAliases.push(alias);
+      this.formGroup.get('aliases')?.setValue(currentAliases.join(', '));
+      this.formGroup.get('aliases')?.markAsDirty();
+    }
   }
 
   ngOnInit(): void {

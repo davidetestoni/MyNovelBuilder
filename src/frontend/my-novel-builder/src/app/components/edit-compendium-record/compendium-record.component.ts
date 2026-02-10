@@ -12,6 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 
 @Component({
   selector: 'app-compendium-record',
@@ -24,6 +25,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     ButtonModule,
     CheckboxModule,
     ConfirmDialogModule,
+    AliasSuggestionsComponent,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './compendium-record.component.html',
@@ -48,6 +50,20 @@ export class CompendiumRecordComponent {
   ];
 
   CompendiumRecordType = CompendiumRecordType;
+
+  addAlias(alias: string): void {
+    const currentAliasesValue = this.record.aliases || '';
+    const currentAliases = currentAliasesValue
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+
+    if (!currentAliases.some((a) => a.toLowerCase() === alias.toLowerCase())) {
+      currentAliases.push(alias);
+      this.record.aliases = currentAliases.join(', ');
+      this.updateRecord.emit(this.record);
+    }
+  }
 
   ngOnDestroy(): void {
     if (this.dialogRef) {

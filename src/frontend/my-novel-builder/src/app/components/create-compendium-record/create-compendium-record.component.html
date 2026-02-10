@@ -40,6 +40,11 @@
               formControlName="aliases"
               placeholder="Awesome record, Best record ever"
             />
+            <app-alias-suggestions
+              [name]="formGroup.get('name')?.value || ''"
+              [currentAliases]="formGroup.get('aliases')?.value || ''"
+              (aliasAdded)="addAlias($event)"
+            />
           </div>
           <div class="form-field">
             <div class="form-field-label">
