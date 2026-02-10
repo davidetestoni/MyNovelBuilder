@@ -1,10 +1,23 @@
 <div class="compendia-container">
-  <h1>Compendia</h1>
+  <div class="compendia-header">
+    <h1>Compendia</h1>
+    <input
+      pInputText
+      type="text"
+      placeholder="Search compendia or records..."
+      [(ngModel)]="filter"
+      class="compendia-filter"
+    />
+  </div>
   @if (compendia === null) {
     <p>Loading...</p>
   } @else {
     <div class="compendia-list">
-      @for (compendium of compendia; track compendium) {
+      <div class="add-compendium-card" (click)="openCreateCompendiumDialog()">
+        <i class="icon icon-plus"></i>
+        <span>Add Compendium</span>
+      </div>
+      @for (compendium of filteredCompendia; track compendium) {
         <div
           class="compendium-card"
           [routerLink]="['/compendium', compendium.id]"
@@ -50,10 +63,6 @@
           }
         </div>
       }
-      <div class="add-compendium-card" (click)="openCreateCompendiumDialog()">
-        <i class="icon icon-plus"></i>
-        <span>Add Compendium</span>
-      </div>
     </div>
   }
 </div>
