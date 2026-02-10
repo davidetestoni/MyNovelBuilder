@@ -48,6 +48,7 @@ public class CompendiumRecordService : ICompendiumRecordService
     public async Task CreateAsync(CompendiumRecord compendiumRecord)
     {
         _unitOfWork.CompendiumRecords.Add(compendiumRecord);
+        compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -55,6 +56,7 @@ public class CompendiumRecordService : ICompendiumRecordService
     public async Task UpdateAsync(CompendiumRecord compendiumRecord)
     {
         _unitOfWork.CompendiumRecords.Update(compendiumRecord);
+        compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -64,6 +66,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         var compendiumRecord = await GetByIdAsync(id);
         
         _unitOfWork.CompendiumRecords.Remove(compendiumRecord);
+        compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
     }
 
@@ -75,7 +78,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         
         if (!Directory.Exists(localPath))
         {
-            return Array.Empty<MediaRef>();
+            return [];
         }
         
         return Directory.GetFiles(localPath).Select(x => new MediaRef
@@ -123,11 +126,14 @@ public class CompendiumRecordService : ICompendiumRecordService
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, mediaBytes);
         
+        record.Compendium.UpdatedAt = DateTime.UtcNow;
+        
         if (isCurrent)
         {
             record.CurrentImageId = mediaId;
-            await UpdateAsync(record);
         }
+        
+        await _unitOfWork.SaveChangesAsync();
     }
 
     /// <inheritdoc />
@@ -154,8 +160,8 @@ public class CompendiumRecordService : ICompendiumRecordService
         }
         
         record.CurrentImageId = imageId;
-        
-        await UpdateAsync(record);
+        record.Compendium.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.SaveChangesAsync();
     }
 
     /// <inheritdoc />
@@ -178,5 +184,14 @@ public class CompendiumRecordService : ICompendiumRecordService
         {
             File.Delete(localPath);
         }
+        
+        record.Compendium.UpdatedAt = DateTime.UtcNow;
+        
+        if (record.CurrentImageId == mediaId)
+        {
+            record.CurrentImageId = null;
+        }
+        
+        await _unitOfWork.SaveChangesAsync();
     }
 }
