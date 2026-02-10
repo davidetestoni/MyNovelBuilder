@@ -66,6 +66,13 @@ export const routes: Routes = [
     },
   },
   {
+    path: 'compendium/:id/record/:recordId',
+    component: CompendiumComponent,
+    data: {
+      layoutType: LayoutType.Main,
+    },
+  },
+  {
     path: 'prompts',
     component: PromptsComponent,
     data: {

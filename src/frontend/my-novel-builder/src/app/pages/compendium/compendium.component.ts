@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { CompendiumService } from '../../services/compendium.service';
 import { FormsModule } from '@angular/forms';
@@ -33,6 +33,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 })
 export class CompendiumComponent implements OnInit {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
 
@@ -56,6 +57,15 @@ export class CompendiumComponent implements OnInit {
   ngOnInit(): void {
     this.compendiumId = this.route.snapshot.paramMap.get('id')!;
     this.getCompendium();
+
+    this.route.paramMap.subscribe((params) => {
+      const recordId = params.get('recordId');
+      if (this.records && recordId) {
+        this.currentRecord =
+          this.records.find((record) => record.id === recordId) ?? null;
+      }
+    });
+
     this.getRecords();
   }
 
@@ -74,6 +84,8 @@ export class CompendiumComponent implements OnInit {
   }
 
   getRecords(): void {
+    const recordId = this.route.snapshot.paramMap.get('recordId');
+
     this.compendiumService
       .getRecords(this.compendiumId)
       .subscribe((records) => {
@@ -85,12 +97,21 @@ export class CompendiumComponent implements OnInit {
             this.records.find(
               (record) => record.id === this.currentRecord!.id,
             ) ?? null;
+        } else if (recordId) {
+          this.currentRecord =
+            this.records.find((record) => record.id === recordId) ?? null;
         }
       });
   }
 
   setCurrentRecord(record: CompendiumRecordDto): void {
     this.currentRecord = record;
+    this.router.navigate([
+      '/compendium',
+      this.compendiumId,
+      'record',
+      record.id,
+    ]);
   }
 
   getRecordsOfType(type: CompendiumRecordType) {
@@ -135,7 +156,7 @@ export class CompendiumComponent implements OnInit {
       if (record) {
         // Select the newly created record, then refresh the records
         // (this will also update the current record)
-        this.currentRecord = record;
+        this.setCurrentRecord(record);
 
         this.getRecords();
       }
@@ -173,6 +194,7 @@ export class CompendiumComponent implements OnInit {
     this.compendiumService.deleteRecord(record.id).subscribe(() => {
       this.getRecords();
       this.currentRecord = null;
+      this.router.navigate(['/compendium', this.compendiumId]);
     });
   }
 
