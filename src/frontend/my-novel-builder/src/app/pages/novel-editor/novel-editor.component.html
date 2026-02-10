@@ -113,6 +113,18 @@
                 <span>Always included</span>
               </div>
             }
+            <a
+              class="external-link"
+              [routerLink]="[
+                '/compendium',
+                selectedRecord.compendiumId,
+                'record',
+                selectedRecord.id
+              ]"
+              target="_blank"
+            >
+              <i class="pi pi-external-link"></i>
+            </a>
           </div>
           @if (selectedRecord.media.length > 0) {
             <div class="record-media-grid">
