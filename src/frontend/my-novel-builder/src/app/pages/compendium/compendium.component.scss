@@ -62,7 +62,11 @@
         .compendium-records-actions {
           display: flex;
           flex-direction: row;
-          gap: 10px;;
+          gap: 10px;
+
+          .records-filter {
+            flex: 1;
+          }
         }
 
         .compendium-records-type {

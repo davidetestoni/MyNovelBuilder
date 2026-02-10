@@ -37,6 +37,13 @@
         @if (records !== null) {
           <div class="compendium-records">
             <div class="compendium-records-actions">
+              <input
+                pInputText
+                type="text"
+                placeholder="Search records..."
+                [(ngModel)]="filter"
+                class="records-filter"
+              />
               <p-button
                 label="Add Record"
                 (click)="openCreateRecordDialog()"

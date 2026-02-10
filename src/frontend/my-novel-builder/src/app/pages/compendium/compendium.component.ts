@@ -38,6 +38,7 @@ export class CompendiumComponent implements OnInit {
 
   compendium: CompendiumDto | null = null;
   records: CompendiumRecordDto[] | null = null;
+  filter = '';
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   compendiumId!: string;
   currentRecord: CompendiumRecordDto | null = null;
@@ -93,7 +94,23 @@ export class CompendiumComponent implements OnInit {
   }
 
   getRecordsOfType(type: CompendiumRecordType) {
-    return this.records!.filter((record) => record.type === type);
+    if (this.records === null) {
+      return [];
+    }
+
+    const typeRecords = this.records.filter((record) => record.type === type);
+
+    if (this.filter === '') {
+      return typeRecords;
+    }
+
+    const lowerFilter = this.filter.toLowerCase();
+
+    return typeRecords.filter(
+      (record) =>
+        record.name.toLowerCase().includes(lowerFilter) ||
+        record.aliases.toLowerCase().includes(lowerFilter),
+    );
   }
 
   getRecordImage(record: CompendiumRecordDto): string | null {
