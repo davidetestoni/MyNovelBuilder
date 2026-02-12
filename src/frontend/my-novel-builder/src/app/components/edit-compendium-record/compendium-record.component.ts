@@ -13,6 +13,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
+import { CodeEditorComponent } from '../code-editor/code-editor.component';
 
 @Component({
   selector: 'app-compendium-record',
@@ -26,6 +27,7 @@ import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestion
     CheckboxModule,
     ConfirmDialogModule,
     AliasSuggestionsComponent,
+    CodeEditorComponent,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './compendium-record.component.html',

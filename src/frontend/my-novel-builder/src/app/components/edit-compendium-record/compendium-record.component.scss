@@ -65,12 +65,9 @@
         margin-bottom: 5px;
       }
 
-      textarea {
+      app-code-editor {
         height: 300px;
         width: 100%;
-
-        /* Remove the handle */
-        resize: none;
       }
     }
 

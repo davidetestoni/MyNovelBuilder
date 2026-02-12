@@ -12,6 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { TextareaModule } from 'primeng/textarea';
+import { CodeEditorComponent } from '../code-editor/code-editor.component';
 
 @Component({
   selector: 'app-prompt',
@@ -24,6 +25,7 @@ import { TextareaModule } from 'primeng/textarea';
     TextareaModule,
     ButtonModule,
     ConfirmDialogModule,
+    CodeEditorComponent,
   ],
   providers: [ConfirmationService],
   templateUrl: './prompt.component.html',
@@ -42,6 +44,7 @@ export class PromptComponent {
     PromptType.ReplaceText,
     PromptType.CreateCompendiumRecord,
     PromptType.EditCompendiumRecord,
+    PromptType.SendChatMessage,
   ];
 
   promptMessageRoles: PromptMessageRole[] = [
@@ -52,6 +55,130 @@ export class PromptComponent {
 
   PromptType = PromptType;
   PromptMessageRole = PromptMessageRole;
+
+  keywordsByPromptType: Record<
+    string,
+    { keyword: string; description: string }[]
+  > = {
+    [PromptType.GenerateText]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content preceding the current position.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'The specific instructions for this generation.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.SummarizeText]: [
+      {
+        keyword: '{{context}}',
+        description: 'The text of the section to be summarized.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.ReplaceText]: [
+      {
+        keyword: '{{textBefore}}',
+        description: 'The story content before the selected text.',
+      },
+      {
+        keyword: '{{textAfter}}',
+        description: 'The story content after the selected text.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'The specific instructions for the replacement.',
+      },
+      {
+        keyword: '{{textToReplace}}',
+        description: 'The actual text that is being replaced.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.CreateCompendiumRecord]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content preceding the selection.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'User instructions for creating the record.',
+      },
+      {
+        keyword: '{{recordDetails}}',
+        description:
+          'The selected text used to extract record information.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.EditCompendiumRecord]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content preceding the selection.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'User instructions for editing the record.',
+      },
+      {
+        keyword: '{{recordDetails}}',
+        description:
+          'The selected text used to extract record information.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.SendChatMessage]: [
+      {
+        keyword: '{{context}}',
+        description:
+          'The story content (chapter or entire novel) relevant to the chat.',
+      },
+      {
+        keyword: '{{chatHistory}}',
+        description: 'The previous messages in the current chat session.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: "The user's latest message in the chat.",
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from selected compendium records.',
+      },
+    ],
+  };
+
+  commonKeywords = [
+    {
+      keyword: '{{novel.language}}',
+      description: 'The writing language set for the novel.',
+    },
+    {
+      keyword: '{{novel.pov}}',
+      description: 'The point of view and perspective of the novel.',
+    },
+    {
+      keyword: '{{novel.tense}}',
+      description: 'The writing tense of the novel.',
+    },
+  ];
 
   onBlur(): void {
     this.updatePrompt.emit(this.prompt);

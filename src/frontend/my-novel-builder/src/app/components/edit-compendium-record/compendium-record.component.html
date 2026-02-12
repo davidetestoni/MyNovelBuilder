@@ -49,12 +49,11 @@
         <label class="label">
           <span>Context</span>
         </label>
-        <textarea
-          pTextarea
+        <app-code-editor
           [(ngModel)]="record.context"
           (blur)="onBlur()"
-          [autoResize]="true"
-        ></textarea>
+          language="compendium"
+        ></app-code-editor>
       </div>
       <div class="compendium-record-media-container">
         <div class="label">

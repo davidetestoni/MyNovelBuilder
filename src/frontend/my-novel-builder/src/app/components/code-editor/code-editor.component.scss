@@ -1,0 +1,49 @@
+@use "../../../styles/colors" as *;
+
+:host {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+}
+
+.code-editor-container {
+  height: 100%;
+  min-height: 100px;
+  border: 1px solid $grey9;
+  border-radius: 4px;
+}
+
+.code-editor-container.no-border {
+  border: none;
+  border-radius: 0;
+}
+
+:host-context(.ng-invalid.ng-touched) .code-editor-container {
+  border-color: $invalid;
+}
+
+::ng-deep .cm-editor {
+  height: 100%;
+  background-color: var(--p-surface-800) !important;
+}
+
+::ng-deep .cm-editor * {
+  font-family: "JetBrains Mono", monospace !important;
+}
+
+::ng-deep .cm-placeholder,
+::ng-deep .cm-placeholder * {
+  font-family: sans-serif !important;
+}
+
+::ng-deep .cm-variable-highlight {
+  color: #ffcc80 !important;
+}
+
+::ng-deep .cm-block-highlight {
+  color: #7ca3d6 !important;
+}
+
+::ng-deep .cm-tag-highlight {
+  font-weight: bold !important;
+}
