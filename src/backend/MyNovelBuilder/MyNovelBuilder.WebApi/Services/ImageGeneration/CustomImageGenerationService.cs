@@ -2,9 +2,9 @@ using System.Text;
 using System.Text.Json;
 using Mapster;
 using MyNovelBuilder.WebApi.Dtos.Generate;
-using MyNovelBuilder.WebApi.Models.ImageGen;
+using MyNovelBuilder.WebApi.Models.ImageGeneration;
 
-namespace MyNovelBuilder.WebApi.Services;
+namespace MyNovelBuilder.WebApi.Services.ImageGeneration;
 
 /// <summary>
 /// Custom service for generating images.
@@ -28,7 +28,7 @@ public class CustomImageGenerationService : IImageGenerationService
     /// <inheritdoc />
     public async Task<byte[]> GenerateImageAsync(ImageGenRequestDto request)
     {
-        var payload = request.Adapt<ImageGenRequest>();
+        var payload = request.Adapt<ImageGenerationRequest>();
         var jsonPayload = JsonSerializer.Serialize(payload, _jsonSerializerOptions);
         using var response = await _httpClient.PostAsync("generate/image",
             new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
@@ -36,5 +36,11 @@ public class CustomImageGenerationService : IImageGenerationService
         response.EnsureSuccessStatusCode();
         
         return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    /// <inheritdoc />
+    public Task<IEnumerable<ImageGenerationModelInfo>> GetAvailableModelsAsync()
+    {
+        return Task.FromResult((IEnumerable<ImageGenerationModelInfo>)[]);
     }
 }

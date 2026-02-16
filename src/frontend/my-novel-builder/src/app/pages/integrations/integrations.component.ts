@@ -17,6 +17,7 @@ import { PasswordModule } from 'primeng/password';
 import { TtsProvider } from '../../types/enums/tts-provider';
 import { SelectModule } from 'primeng/select';
 import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
+import { ImageGenerationProvider } from '../../types/enums/image-generation-provider';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
 
@@ -36,6 +37,7 @@ import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
 export class IntegrationsComponent implements OnInit {
   protected readonly TextGenerationProvider = TextGenerationProvider;
   protected readonly TtsProvider = TtsProvider;
+  protected readonly ImageGenerationProvider = ImageGenerationProvider;
 
   private integrationsService = inject(IntegrationsService);
   private generateAudioService = inject(GenerateAudioService);
@@ -51,11 +53,16 @@ export class IntegrationsComponent implements OnInit {
     elevenLabsApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     unrealSpeechApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsVoiceId: new FormControl<string>(''),
+    imageGenerationProvider: new FormControl<ImageGenerationProvider>(
+      ImageGenerationProvider.DeApi,
+    ),
+    deApiApiKey: new FormControl<string>('', Validators.maxLength(1000)),
   });
   hasOpenRouterApiKey: boolean = false;
   hasGoogleGenAiApiKey: boolean = false;
   hasElevenLabsApiKey: boolean = false;
   hasUnrealSpeechApiKey: boolean = false;
+  hasDeApiApiKey: boolean = false;
 
   ttsProviderOptions = Object.values(TtsProvider).map((provider) => ({
     // camelCase to spaced Pascal Case for display
@@ -79,6 +86,17 @@ export class IntegrationsComponent implements OnInit {
     }),
   );
 
+  imageGenerationProviderOptions = Object.values(ImageGenerationProvider).map(
+    (provider) => ({
+      // camelCase to spaced Pascal Case for display
+      label: provider
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase())
+        .replace('Api', 'API'),
+      value: provider,
+    }),
+  );
+
   ngOnInit(): void {
     this.integrationsForm.controls.ttsProvider.valueChanges.subscribe(
       (provider) => {
@@ -94,9 +112,11 @@ export class IntegrationsComponent implements OnInit {
         this.hasGoogleGenAiApiKey = config.hasGoogleGenAiApiKey;
         this.hasElevenLabsApiKey = config.hasElevenLabsApiKey;
         this.hasUnrealSpeechApiKey = config.hasUnrealSpeechApiKey;
+        this.hasDeApiApiKey = config.hasDeApiApiKey;
         this.integrationsForm.patchValue({
           textGenerationProvider: config.textGenerationProvider,
           ttsProvider: config.ttsProvider,
+          imageGenerationProvider: config.imageGenerationProvider,
         });
 
         this.loadTtsVoices(config.ttsProvider, config.ttsVoiceId);
@@ -152,8 +172,11 @@ export class IntegrationsComponent implements OnInit {
         this.integrationsForm.value.elevenLabsApiKey || undefined,
       unrealSpeechApiKey:
         this.integrationsForm.value.unrealSpeechApiKey || undefined,
+      deApiApiKey: this.integrationsForm.value.deApiApiKey || undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
+      imageGenerationProvider:
+        this.integrationsForm.value.imageGenerationProvider,
     };
 
     this.integrationsService.updateIntegrationsConfig(updateDto).subscribe({
@@ -173,6 +196,10 @@ export class IntegrationsComponent implements OnInit {
         if (this.integrationsForm.value.unrealSpeechApiKey) {
           this.hasUnrealSpeechApiKey = true;
           this.integrationsForm.get('unrealSpeechApiKey')?.reset();
+        }
+        if (this.integrationsForm.value.deApiApiKey) {
+          this.hasDeApiApiKey = true;
+          this.integrationsForm.get('deApiApiKey')?.reset();
         }
         this.toastrService.success(
           'Integrations configuration updated successfully.',

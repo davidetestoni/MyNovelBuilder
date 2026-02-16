@@ -16,6 +16,7 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Middleware;
 using MyNovelBuilder.WebApi.Models.Errors;
 using MyNovelBuilder.WebApi.Services;
+using MyNovelBuilder.WebApi.Services.ImageGeneration;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
 using Serilog;
@@ -103,6 +104,8 @@ builder.Services.AddScoped<INovelExportService, NovelExportService>();
 
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
+
+// Text generation services
 builder.Services.AddKeyedSingleton<ITextGenerationService, OpenRouterTextGenerationService>(TextGenerationProvider.OpenRouter);
 builder.Services.AddKeyedSingleton<ITextGenerationService, GoogleGenAiTextGenerationService>(TextGenerationProvider
     .GoogleGenAi);
@@ -120,8 +123,11 @@ builder.Services.AddHttpClient<PocketTtsService>();
 builder.Services.AddHttpClient<UnrealSpeechTtsService>();
 builder.Services.AddHttpClient<VibeVoiceTtsService>();
 
-builder.Services.AddSingleton<IImageGenerationService, CustomImageGenerationService>();
+// Image generation services
+builder.Services.AddKeyedSingleton<IImageGenerationService, CustomImageGenerationService>(ImageGenerationProvider.Custom);
+builder.Services.AddKeyedSingleton<IImageGenerationService, DeApiImageGenerationService>(ImageGenerationProvider.DeApi);
 builder.Services.AddHttpClient<CustomImageGenerationService>();
+builder.Services.AddHttpClient<DeApiImageGenerationService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();

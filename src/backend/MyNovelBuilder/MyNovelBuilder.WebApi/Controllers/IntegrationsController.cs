@@ -36,8 +36,10 @@ public class IntegrationsController : ControllerBase
             HasGoogleGenAiApiKey = !string.IsNullOrWhiteSpace(config.GoogleGenAiApiKey),
             HasElevenLabsApiKey = !string.IsNullOrWhiteSpace(config.ElevenLabsApiKey),
             HasUnrealSpeechApiKey = !string.IsNullOrWhiteSpace(config.UnrealSpeechApiKey),
+            HasDeApiApiKey = !string.IsNullOrWhiteSpace(config.DeApiApiKey),
             TextGenerationProvider = config.TextGenerationProvider,
             TtsProvider = config.TtsProvider,
+            ImageGenerationProvider = config.ImageGenerationProvider,
             TtsVoiceId = config.TtsVoiceId,
         };
     }
@@ -69,6 +71,11 @@ public class IntegrationsController : ControllerBase
         {
             config.UnrealSpeechApiKey = dto.UnrealSpeechApiKey;
         }
+
+        if (!string.IsNullOrWhiteSpace(dto.DeApiApiKey))
+        {
+            config.DeApiApiKey = dto.DeApiApiKey;
+        }
         
         if (dto.TextGenerationProvider.HasValue)
         {
@@ -78,6 +85,11 @@ public class IntegrationsController : ControllerBase
         if (dto.TtsProvider.HasValue)
         {
             config.TtsProvider = dto.TtsProvider.Value;
+        }
+
+        if (dto.ImageGenerationProvider.HasValue)
+        {
+            config.ImageGenerationProvider = dto.ImageGenerationProvider.Value;
         }
         
         if (!string.IsNullOrWhiteSpace(dto.TtsVoiceId))

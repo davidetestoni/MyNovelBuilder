@@ -26,6 +26,11 @@ public class UpdateIntegrationsConfigDto
     /// The UnrealSpeech API key.
     /// </summary>
     public string? UnrealSpeechApiKey { get; set; }
+
+    /// <summary>
+    /// The DeAPI API key.
+    /// </summary>
+    public string? DeApiApiKey { get; init; }
     
     /// <summary>
     /// The Text Generation provider to use to generate text.
@@ -36,6 +41,11 @@ public class UpdateIntegrationsConfigDto
     /// The Text-to-Speech provider to use to generate speech.
     /// </summary>
     public TtsProvider? TtsProvider { get; init; }
+
+    /// <summary>
+    /// The Image Generation provider to use to generate images.
+    /// </summary>
+    public ImageGenerationProvider? ImageGenerationProvider { get; init; }
     
     /// <summary>
     /// The TTS voice ID to use for text-to-speech generation.

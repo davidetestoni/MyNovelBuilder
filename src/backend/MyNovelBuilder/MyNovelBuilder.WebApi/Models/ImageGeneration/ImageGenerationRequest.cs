@@ -1,9 +1,9 @@
-namespace MyNovelBuilder.WebApi.Models.ImageGen;
+namespace MyNovelBuilder.WebApi.Models.ImageGeneration;
 
 /// <summary>
 /// A request to generate an image.
 /// </summary>
-public class ImageGenRequest
+public class ImageGenerationRequest
 {
     /// <summary>
     /// The model ID to use for generating the image.

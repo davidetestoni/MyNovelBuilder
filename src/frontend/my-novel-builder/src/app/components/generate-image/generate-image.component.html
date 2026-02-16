@@ -4,6 +4,18 @@
       <div class="form-row">
         <div class="form-column left-column">
           <div class="form-field">
+            <label for="model" class="form-field-label">Model *</label>
+            <p-select
+              id="model"
+              formControlName="model"
+              [options]="modelOptions"
+              [filter]="true"
+              placeholder="Select a model"
+              [style]="{ width: '100%' }"
+              appendTo="body"
+            />
+          </div>
+          <div class="form-field">
             <label for="prompt" class="form-field-label">Prompt</label>
             <textarea
               pTextarea
@@ -27,15 +39,17 @@
         <p-button
           label="{{ isGenerating ? 'Generating...' : 'Generate' }}"
           (click)="generateImage()"
-          [disabled]="isGenerating || formGroup.invalid || formGroup.pristine"
+          [disabled]="isGenerating || formGroup.invalid"
           [loading]="isGenerating"
           variant="text"
         />
-        <p-button
-          label="Accept"
-          (click)="accept()"
-          [disabled]="imageBlob === null"
-        />
+        @if (imageBlob !== null) {
+          <p-button
+            label="Accept"
+            (click)="accept()"
+            [disabled]="imageBlob === null"
+          />
+        }
       </div>
     </form>
   </div>

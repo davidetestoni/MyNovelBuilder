@@ -1,9 +1,10 @@
 import { HttpClient, HttpEvent } from '@angular/common/http';
 import { environment } from '../../environment';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ImageGenRequestDto } from '../types/dtos/generate/image-gen-request.dto';
-import { mockedImageGenerationResponse } from './mock';
+import { mockedImageGenerationResponse, mockObservable } from './mock';
+import { ImageGenerationModelInfoDto } from '../types/dtos/generate/image-generation-model-info.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -22,5 +23,16 @@ export class GenerateImageService {
           reportProgress: true,
           responseType: 'blob',
         });
+  }
+
+  getAvailableModels(): Observable<ImageGenerationModelInfoDto[]> {
+    return this.mocked
+      ? mockObservable<ImageGenerationModelInfoDto[]>([
+          { modelId: 'z-image/turbo', name: 'Z-Image Turbo' },
+          { modelId: 'z-image/hd', name: 'Z-Image HD' },
+        ])
+      : this.http.get<ImageGenerationModelInfoDto[]>(
+          `${this.baseUrl}/generate/image/models`,
+        );
   }
 }

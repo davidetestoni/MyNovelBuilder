@@ -21,6 +21,7 @@ import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-te
 import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
 import { TtsProvider } from '../types/enums/tts-provider';
 import { TextGenerationProvider } from '../types/enums/text-generation-provider';
+import { ImageGenerationProvider } from '../types/enums/image-generation-provider';
 import { ChatMetadata } from '../types/dtos/chats/chat-metadata';
 import { ChatMessageRole } from '../types/enums/chat-message-role';
 import { Chat } from '../types/dtos/chats/chat';
@@ -395,8 +396,10 @@ export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   hasGoogleGenAiApiKey: false,
   hasElevenLabsApiKey: false,
   hasUnrealSpeechApiKey: false,
+  hasDeApiApiKey: false,
   textGenerationProvider: TextGenerationProvider.OpenRouter,
   ttsProvider: TtsProvider.Custom,
+  imageGenerationProvider: ImageGenerationProvider.DeApi,
   ttsVoiceId: 'voice-1',
 };
 

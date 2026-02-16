@@ -27,6 +27,11 @@ public class IntegrationsConfigDto
     /// Indicates whether an UnrealSpeech API key is configured.
     /// </summary>
     public required bool HasUnrealSpeechApiKey { get; init; }
+
+    /// <summary>
+    /// Indicates whether a DeAPI API key is configured.
+    /// </summary>
+    public required bool HasDeApiApiKey { get; init; }
     
     /// <summary>
     /// The configured Text Generation provider.
@@ -37,6 +42,11 @@ public class IntegrationsConfigDto
     /// The configured Text-to-Speech provider.
     /// </summary>
     public required TtsProvider TtsProvider { get; init; }
+
+    /// <summary>
+    /// The configured Image Generation provider.
+    /// </summary>
+    public required ImageGenerationProvider ImageGenerationProvider { get; init; }
     
     /// <summary>
     /// The TTS voice ID to use for text-to-speech generation.

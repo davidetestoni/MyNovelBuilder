@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -15,6 +15,8 @@ import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
+import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-generation-model-info.dto';
 
 @Component({
   selector: 'app-generate-image',
@@ -25,14 +27,16 @@ import { ButtonModule } from 'primeng/button';
     ToastrModule,
     TextareaModule,
     ButtonModule,
+    SelectModule,
   ],
   templateUrl: './generate-image.component.html',
   styleUrl: './generate-image.component.scss',
 })
-export class GenerateImageComponent {
+export class GenerateImageComponent implements OnInit {
   dialogRef = inject(DynamicDialogRef);
 
-  models: string[] = ['z-image/turbo']; // TODO: Get models from API
+  models: ImageGenerationModelInfoDto[] = [];
+  modelOptions: { label: string; value: string }[] = [];
   readonly generateImageService: GenerateImageService =
     inject(GenerateImageService);
   readonly localStorageService: LocalStorageService =
@@ -54,10 +58,6 @@ export class GenerateImageComponent {
       LocalStorageKey.LastImagePrompt,
     );
 
-    this.formGroup.patchValue({
-      model: this.models[0],
-    });
-
     if (prompt !== null && prompt.trim() !== '') {
       this.formGroup.patchValue({
         prompt,
@@ -66,16 +66,44 @@ export class GenerateImageComponent {
     }
   }
 
+  ngOnInit(): void {
+    this.getModels();
+  }
+
+  getModels() {
+    this.generateImageService.getAvailableModels().subscribe((models) => {
+      this.models = models;
+      this.modelOptions = models.map((m) => ({
+        label: m.name,
+        value: m.modelId,
+      }));
+
+      const lastModel = this.localStorageService.getStringForKey(
+        LocalStorageKey.LastImageModel,
+      );
+
+      if (lastModel && this.modelOptions.some((o) => o.value === lastModel)) {
+        this.formGroup.patchValue({ model: lastModel });
+      } else if (this.modelOptions.length > 0) {
+        this.formGroup.patchValue({ model: this.modelOptions[0].value });
+      }
+    });
+  }
+
   generateImage(): void {
     if (this.formGroup.invalid) {
       this.toastrService.error('Please fill out all fields');
       return;
     }
 
-    // Save the prompt
+    // Save the prompt and model
     this.localStorageService.setStringForKey(
       LocalStorageKey.LastImagePrompt,
       this.formGroup.get('prompt')!.value!,
+    );
+    this.localStorageService.setStringForKey(
+      LocalStorageKey.LastImageModel,
+      this.formGroup.get('model')!.value!,
     );
 
     this.isGenerating = true;
@@ -98,6 +126,13 @@ export class GenerateImageComponent {
                 this.sanitizer.bypassSecurityTrustUrl(objectURL);
             }
           }
+        },
+        error: (err) => {
+          console.error('Image generation failed', err);
+          this.toastrService.error(
+            'Image generation failed. Please try again.',
+          );
+          this.isGenerating = false;
         },
         complete: () => {
           this.isGenerating = false;
