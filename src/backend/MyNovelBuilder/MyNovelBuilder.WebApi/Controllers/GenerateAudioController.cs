@@ -6,6 +6,9 @@ using MyNovelBuilder.WebApi.Prompts;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
+using NLayer.NAudioSupport;
 
 namespace MyNovelBuilder.WebApi.Controllers;
 
@@ -97,6 +100,44 @@ public class GenerateAudioController : ControllerBase
                 ]
             );
     }
+    
+    private static async Task<Stream> ConvertMp3ToWavStreamAsync(
+        Stream mp3Stream,
+        CancellationToken cancellationToken)
+    {
+        Stream? bufferedMp3 = null;
+        var sourceStream = mp3Stream;
+
+        if (!mp3Stream.CanSeek)
+        {
+            bufferedMp3 = new MemoryStream();
+            await mp3Stream.CopyToAsync(bufferedMp3, cancellationToken);
+            bufferedMp3.Position = 0;
+            sourceStream = bufferedMp3;
+        }
+        else
+        {
+            mp3Stream.Position = 0;
+        }
+
+        try
+        {
+            var builder = new Mp3FileReaderBase.FrameDecompressorBuilder(wf => new Mp3FrameDecompressor(wf));
+            await using var reader = new Mp3FileReaderBase(sourceStream, builder);
+            var sampleProvider = reader.ToSampleProvider();
+            var pcm16Provider = new SampleToWaveProvider16(sampleProvider);
+            using var wavBuffer = new MemoryStream();
+            WaveFileWriter.WriteWavFileToStream(wavBuffer, pcm16Provider);
+            return new MemoryStream(wavBuffer.ToArray());
+        }
+        finally
+        {
+            if (bufferedMp3 is not null)
+            {
+                await bufferedMp3.DisposeAsync();
+            }
+        }
+    }
 
     /// <summary>
     /// Generate audio from text.
@@ -165,21 +206,19 @@ public class GenerateAudioController : ControllerBase
             var audioBytes = await ttsService.GenerateAudioAsync(dto);
             audioStream = new MemoryStream(audioBytes);
         }
-        
-        var mimeType = ttsService.OutputAudioFormat switch 
+
+        if (ttsService.OutputAudioFormat == AudioFormat.Mp3)
         {
-            AudioFormat.Mp3 => "audio/mp3",
-            AudioFormat.Wav => "audio/wav",
-            _ => "application/octet-stream"
-        };
-        var fileName = ttsService.OutputAudioFormat switch 
-        {
-            AudioFormat.Mp3 => "audio.mp3",
-            AudioFormat.Wav => "audio.wav",
-            _ => "audio.bin"
-        };
+            var originalStream = audioStream;
+            await using (originalStream)
+            {
+                audioStream = await ConvertMp3ToWavStreamAsync(
+                    originalStream,
+                    HttpContext.RequestAborted);
+            }
+        }
         
-        return File(audioStream, mimeType, fileName);
+        return File(audioStream, "audio/wav", "audio.wav");
     }
 
     /// <summary>

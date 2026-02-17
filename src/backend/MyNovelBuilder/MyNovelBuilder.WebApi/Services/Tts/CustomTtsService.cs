@@ -27,7 +27,7 @@ public class CustomTtsService : ITtsService
     public bool SupportsEmphasisTags => false;
     
     /// <inheritdoc />
-    public AudioFormat OutputAudioFormat => AudioFormat.Wav;
+    public AudioFormat OutputAudioFormat => AudioFormat.Mp3;
     
     /// <summary></summary>
     public CustomTtsService(
