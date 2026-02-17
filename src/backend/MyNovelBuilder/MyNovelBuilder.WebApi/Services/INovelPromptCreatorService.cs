@@ -1,12 +1,12 @@
-﻿using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
 
 namespace MyNovelBuilder.WebApi.Services;
 
 /// <summary>
-/// Service for creating prompts.
+/// Service for creating novel-scoped prompts.
 /// </summary>
-public interface IPromptCreatorService
+public interface INovelPromptCreatorService
 {
     /// <summary>
     /// Create a prompt based on the request.

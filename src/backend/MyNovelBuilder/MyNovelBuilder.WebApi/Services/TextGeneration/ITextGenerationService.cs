@@ -23,6 +23,16 @@ public interface ITextGenerationService
         string model,
         IEnumerable<PromptMessageDto> messages,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Describe an image.
+    /// </summary>
+    Task<string> DescribeImageAsync(
+        string model,
+        IEnumerable<PromptMessageDto> messages,
+        byte[] imageBytes,
+        string imageMimeType,
+        CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get available text generation models.

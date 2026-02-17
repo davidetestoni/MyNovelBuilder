@@ -25,16 +25,15 @@
           <span>Available Keywords</span>
         </div>
         <div class="keywords-list">
-          @for (item of commonKeywords; track item.keyword) {
-            <div class="keyword-item">
-              <span class="keyword">{{ item.keyword }}</span>
-              <span class="description">{{ item.description }}</span>
-            </div>
+          @if (prompt.type !== PromptType.DescribeImage) {
+            @for (item of commonKeywords; track item.keyword) {
+              <div class="keyword-item">
+                <span class="keyword">{{ item.keyword }}</span>
+                <span class="description">{{ item.description }}</span>
+              </div>
+            }
           }
-          @for (
-            item of keywordsByPromptType[prompt.type];
-            track item.keyword
-          ) {
+          @for (item of keywordsByPromptType[prompt.type]; track item.keyword) {
             <div class="keyword-item">
               <span class="keyword">{{ item.keyword }}</span>
               <span class="description">{{ item.description }}</span>

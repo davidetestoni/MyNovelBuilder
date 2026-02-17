@@ -16,7 +16,8 @@ namespace MyNovelBuilder.WebApi.Controllers;
 public class GenerateTextController : ControllerBase
 {
     private readonly ILogger<GenerateTextController> _logger;
-    private readonly IPromptCreatorService _promptCreatorService;
+    private readonly INovelPromptCreatorService _novelPromptCreatorService;
+    private readonly ICompendiumPromptCreatorService _compendiumPromptCreatorService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
     private readonly HybridCache _hybridCache;
@@ -25,13 +26,15 @@ public class GenerateTextController : ControllerBase
     /// <summary></summary>
     public GenerateTextController(
         ILogger<GenerateTextController> logger,
-        IPromptCreatorService promptCreatorService,
+        INovelPromptCreatorService novelPromptCreatorService,
+        ICompendiumPromptCreatorService compendiumPromptCreatorService,
         IServiceProvider serviceProvider,
         IIntegrationsService integrationsService,
         HybridCache hybridCache)
     {
         _logger = logger;
-        _promptCreatorService = promptCreatorService;
+        _novelPromptCreatorService = novelPromptCreatorService;
+        _compendiumPromptCreatorService = compendiumPromptCreatorService;
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
         _hybridCache = hybridCache;
@@ -71,7 +74,7 @@ public class GenerateTextController : ControllerBase
         
         HttpContext.Response.Headers.Append("Content-Type", "text/event-stream");
         
-        var prompt = await _promptCreatorService.CreatePromptAsync(dto);
+        var prompt = await _novelPromptCreatorService.CreatePromptAsync(dto);
         
         await foreach (var chunk in textGenerationService.GenerateStreamedAsync(dto.Model, prompt, cancellationToken))
         {
@@ -85,6 +88,47 @@ public class GenerateTextController : ControllerBase
             await HttpContext.Response.WriteAsync(json + "\n", cancellationToken);
             await HttpContext.Response.Body.FlushAsync(cancellationToken);
         }
+    }
+
+    /// <summary>
+    /// Describe an image.
+    /// </summary>
+    [HttpPost("describe-image")]
+    public async Task<ActionResult<string>> DescribeImageAsync(
+        IFormFile image,
+        [FromForm] DescribeImageRequestDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (image.Length == 0)
+        {
+            return BadRequest("Image file is required.");
+        }
+
+        await using var imageStream = image.OpenReadStream();
+        using var ms = new MemoryStream();
+        await imageStream.CopyToAsync(ms, cancellationToken);
+        var imageBytes = ms.ToArray();
+
+        var prompt = await _compendiumPromptCreatorService.CreatePromptAsync(
+            new CompendiumGenerateTextRequestDto
+            {
+                Model = dto.Model,
+                PromptId = dto.PromptId,
+                CompendiumId = dto.CompendiumId,
+                ContextInfo = new DescribeImageContextInfoDto
+                {
+                    Instructions = dto.Instructions
+                }
+            });
+        var textGenerationService = await GetTextGenerationServiceAsync();
+        var description = await textGenerationService.DescribeImageAsync(
+            dto.Model,
+            prompt,
+            imageBytes,
+            string.IsNullOrWhiteSpace(image.ContentType) ? "image/png" : image.ContentType,
+            cancellationToken);
+
+        return Ok(description);
     }
     
     /// <summary>
@@ -103,7 +147,8 @@ public class GenerateTextController : ControllerBase
         
                 return models.Select(m => new TextGenerationModelInfoDto
                 {
-                    Id = m.Id
+                    Id = m.Id,
+                    IsVisionCapable = m.IsVisionCapable
                 });
             },
             new HybridCacheEntryOptions

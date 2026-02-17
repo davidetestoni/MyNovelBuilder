@@ -1,0 +1,46 @@
+textarea {
+  width: 100%;
+  resize: none;
+}
+
+.form-container {
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.form-row {
+  min-height: 420px;
+}
+
+.form-column {
+  width: unset;
+}
+
+.left-column {
+  flex: 1;
+}
+
+.image-column {
+  min-width: 280px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.source-image {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 1rem;
+
+  img {
+    max-width: 100%;
+    max-height: 420px;
+    object-fit: contain;
+    border-radius: 5px;
+  }
+}

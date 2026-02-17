@@ -8,8 +8,8 @@ import {
 } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
-  GenerateTextRequestDto,
-  TextGenerationContextInfoDto,
+  NovelGenerateTextRequestDto,
+  NovelTextGenerationContextInfoDto,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { GenerateTextService } from '../../services/generate-text.service';
@@ -22,7 +22,7 @@ import { ButtonModule } from 'primeng/button';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
-  contextInfo: TextGenerationContextInfoDto;
+  contextInfo: NovelTextGenerationContextInfoDto;
   instructionsRequired: boolean;
   novelId: string;
 }
@@ -134,7 +134,7 @@ export class GenerateTextComponent implements OnInit {
       );
     }
 
-    this.dialogRef.close(<GenerateTextRequestDto>{
+    this.dialogRef.close(<NovelGenerateTextRequestDto>{
       promptId: this.formGroup.get('promptId')!.value,
       model: this.formGroup.get('model')!.value,
       contextInfo: {

@@ -6,7 +6,11 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogConfig,
+  DynamicDialogRef,
+} from 'primeng/dynamicdialog';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { CompendiumService } from '../../services/compendium.service';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
@@ -17,6 +21,8 @@ import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ButtonModule } from 'primeng/button';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
+import { DescribeImageComponent } from '../describe-image/describe-image.component';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-create-compendium-record',
@@ -32,14 +38,18 @@ import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestion
     CheckboxModule,
     ButtonModule,
     AliasSuggestionsComponent,
+    TooltipModule,
   ],
+  providers: [DialogService],
   templateUrl: './create-compendium-record.component.html',
   styleUrl: './create-compendium-record.component.scss',
 })
 export class CreateCompendiumRecordComponent {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
+  private dialogService = inject(DialogService);
   private toastr = inject(ToastrService);
+  private describeImageDialogRef: DynamicDialogRef | null = null;
 
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
@@ -64,6 +74,12 @@ export class CreateCompendiumRecordComponent {
     CompendiumRecordType.Concept,
     CompendiumRecordType.Other,
   ];
+
+  ngOnDestroy(): void {
+    if (this.describeImageDialogRef) {
+      this.describeImageDialogRef.close();
+    }
+  }
 
   addAlias(alias: string): void {
     const currentAliasesValue = this.formGroup.get('aliases')?.value || '';
@@ -122,5 +138,42 @@ export class CreateCompendiumRecordComponent {
 
       reader.readAsDataURL(file);
     }
+  }
+
+  generateContextFromImage(): void {
+    if (this.imageFile === null) {
+      return;
+    }
+
+    this.describeImageDialogRef = this.dialogService.open(DescribeImageComponent, {
+      header: 'Describe Image',
+      width: '70vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      closable: true,
+      closeOnEscape: true,
+      modal: true,
+      dismissableMask: true,
+      data: {
+        image: this.imageFile,
+        compendiumId: this.config.data.compendiumId,
+      },
+    });
+
+    this.describeImageDialogRef?.onClose.subscribe((description: string) => {
+      if (!description || description.trim() === '') {
+        return;
+      }
+
+      const currentContext = this.formGroup.get('context')!.value?.trim() ?? '';
+      const updatedContext =
+        currentContext.length > 0
+          ? `${currentContext}\n\n${description.trim()}`
+          : description.trim();
+
+      this.formGroup.get('context')!.setValue(updatedContext);
+      this.formGroup.get('context')!.markAsDirty();
+      this.formGroup.get('context')!.markAsTouched();
+    });
   }
 }

@@ -22,7 +22,7 @@ public class PromptBuilderTests
         {
             return PromptBuilder<TextGenerationContextInfoDto>
                 .CreateCompendiumRecordsString(
-                    records, prose, chapterIndex, sectionIndex);
+                    records, (prose, chapterIndex, sectionIndex));
         }
     }
 

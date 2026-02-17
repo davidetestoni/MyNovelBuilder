@@ -67,6 +67,24 @@
               rows="5"
             ></textarea>
           </div>
+          <div class="form-field">
+            <div
+              [pTooltip]="
+                imageFile === null
+                  ? 'You should first upload an image.'
+                  : ''
+              "
+              tooltipPosition="top"
+            >
+              <p-button
+                label="Generate from image"
+                type="button"
+                [outlined]="true"
+                (click)="generateContextFromImage()"
+                [disabled]="imageFile === null"
+              />
+            </div>
+          </div>
         </div>
         <div class="form-column">
           <div class="form-field">

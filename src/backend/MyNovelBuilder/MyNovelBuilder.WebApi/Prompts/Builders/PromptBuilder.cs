@@ -76,9 +76,7 @@ public class PromptBuilder<T> where T : TextGenerationContextInfoDto
     /// </summary>
     protected static string CreateCompendiumRecordsString(
         IList<CompendiumRecord> records,
-        Prose prose,
-        int? chapterIndex,
-        int? sectionIndex)
+        (Prose prose, int? chapterIndex, int? sectionIndex)? proseInfo = null)
     {
         var recordsBuilder = new StringBuilder();
         
@@ -88,8 +86,17 @@ public class PromptBuilder<T> where T : TextGenerationContextInfoDto
             recordsBuilder.Append(" (");
             recordsBuilder.Append(record.Type);
             recordsBuilder.Append(")\n");
-            recordsBuilder.Append(
-                ApplyContextOverrides(record, prose, chapterIndex, sectionIndex));
+
+            if (proseInfo.HasValue)
+            {
+                recordsBuilder.Append(
+                    ApplyContextOverrides(
+                        record,
+                        proseInfo.Value.prose, 
+                        proseInfo.Value.chapterIndex, 
+                        proseInfo.Value.sectionIndex));    
+            }
+            
             recordsBuilder.Append("\n\n");
         }
         

@@ -104,7 +104,8 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INovelExportService, NovelExportService>();
 
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
-builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
+builder.Services.AddSingleton<INovelPromptCreatorService, NovelPromptCreatorService>();
+builder.Services.AddSingleton<ICompendiumPromptCreatorService, CompendiumPromptCreatorService>();
 
 // Text generation services
 builder.Services.RegisterKeyedServicesFromAssembly<ITextGenerationService>();

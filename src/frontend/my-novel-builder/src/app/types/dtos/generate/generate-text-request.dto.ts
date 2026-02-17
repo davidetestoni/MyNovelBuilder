@@ -1,41 +1,32 @@
 import { ChatMessageRole } from '../../enums/chat-message-role';
 
-export interface GenerateTextRequestDto {
+export interface NovelGenerateTextRequestDto {
   model: string;
   promptId: string;
   novelId: string;
-  contextInfo: TextGenerationContextInfoDto;
+  contextInfo: NovelTextGenerationContextInfoDto;
 }
 
-export interface TextGenerationContextInfoDto {
-  $type: TextGenerationType;
+export interface NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType;
 }
 
-export interface GenerateTextContextInfoDto extends TextGenerationContextInfoDto {
-  $type: TextGenerationType.GenerateText;
+export interface GenerateTextContextInfoDto extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.GenerateText;
   chapterIndex: number;
   sectionIndex: number;
   textOffset: number;
   instructions: string | null;
 }
 
-export interface SummarizeTextContextInfoDto extends TextGenerationContextInfoDto {
-  $type: TextGenerationType.SummarizeText;
+export interface SummarizeTextContextInfoDto extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.SummarizeText;
   chapterIndex: number;
   sectionIndex: number;
 }
 
-export interface ReplaceTextContextInfoDto extends TextGenerationContextInfoDto {
-  $type: TextGenerationType.ReplaceText;
-  chapterIndex: number;
-  sectionIndex: number;
-  textOffset: number;
-  textLength: number;
-  instructions: string | null;
-}
-
-export interface CreateCompendiumRecordContextInfoDto extends TextGenerationContextInfoDto {
-  $type: TextGenerationType.CreateCompendiumRecord;
+export interface ReplaceTextContextInfoDto extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.ReplaceText;
   chapterIndex: number;
   sectionIndex: number;
   textOffset: number;
@@ -43,8 +34,17 @@ export interface CreateCompendiumRecordContextInfoDto extends TextGenerationCont
   instructions: string | null;
 }
 
-export interface EditCompendiumRecordContextInfoDto extends TextGenerationContextInfoDto {
-  $type: TextGenerationType.EditCompendiumRecord;
+export interface CreateCompendiumRecordContextInfoDto extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.CreateCompendiumRecord;
+  chapterIndex: number;
+  sectionIndex: number;
+  textOffset: number;
+  textLength: number;
+  instructions: string | null;
+}
+
+export interface EditCompendiumRecordContextInfoDto extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.EditCompendiumRecord;
   chapterIndex: number;
   sectionIndex: number;
   textOffset: number;
@@ -58,8 +58,8 @@ export interface ChatMessageDto {
   textContent: string;
 }
 
-export interface SendChatMessageContextInfoDto extends TextGenerationContextInfoDto {
-  $type: TextGenerationType.SendChatMessage;
+export interface SendChatMessageContextInfoDto extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.SendChatMessage;
   chapterIndex: number | null;
   userMessage: string;
   previousMessages: ChatMessageDto[];
@@ -67,7 +67,7 @@ export interface SendChatMessageContextInfoDto extends TextGenerationContextInfo
   compendiumRecordIds: string[];
 }
 
-export enum TextGenerationType {
+export enum NovelTextGenerationType {
   GenerateText = 'generateText',
   SummarizeText = 'summarizeText',
   ReplaceText = 'replaceText',

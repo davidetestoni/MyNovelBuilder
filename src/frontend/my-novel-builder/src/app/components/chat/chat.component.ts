@@ -43,9 +43,9 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 import {
-  GenerateTextRequestDto,
+  NovelGenerateTextRequestDto,
   SendChatMessageContextInfoDto,
-  TextGenerationType,
+  NovelTextGenerationType,
   ChatMessageDto,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptType } from '../../types/enums/prompt-type';
@@ -411,7 +411,7 @@ export class ChatComponent
       .map((m) => ({ role: m.role, textContent: m.textContent }));
 
     const contextInfo: SendChatMessageContextInfoDto = {
-      $type: TextGenerationType.SendChatMessage,
+      $type: NovelTextGenerationType.SendChatMessage,
       chapterIndex: this.currentChat.context.chapterIndex,
       userMessage: userMessageContent,
       previousMessages,
@@ -419,7 +419,7 @@ export class ChatComponent
       compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
     };
 
-    const request: GenerateTextRequestDto = {
+    const request: NovelGenerateTextRequestDto = {
       model: this.selectedModel,
       promptId: this.selectedPromptId,
       novelId: this.currentChat.context.novelId,

@@ -1,0 +1,87 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-row">
+        <div class="form-column left-column">
+          <div class="form-field">
+            <label for="promptId" class="form-field-label">Prompt *</label>
+            <p-select
+              id="promptId"
+              formControlName="promptId"
+              [options]="prompts"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select a prompt"
+              [style]="{ width: '100%' }"
+              [disabled]="isLoadingPrompts || prompts.length === 0"
+            />
+          </div>
+          <div class="form-field">
+            <label for="model" class="form-field-label">Model *</label>
+            <p-select
+              id="model"
+              formControlName="model"
+              [options]="models"
+              [filter]="true"
+              placeholder="Select a model"
+              [style]="{ width: '100%' }"
+              appendTo="body"
+              [disabled]="isLoadingModels || models.length === 0"
+            />
+          </div>
+          <div class="form-field">
+            <label for="instructions" class="form-field-label">Instructions</label>
+            <textarea
+              pTextarea
+              id="instructions"
+              formControlName="instructions"
+              placeholder="Additional instructions for how to describe the image..."
+              [autoResize]="true"
+              rows="4"
+            ></textarea>
+          </div>
+          @if (description !== null) {
+            <div class="form-field">
+              <label for="description" class="form-field-label">Description</label>
+              <textarea
+                pTextarea
+                id="description"
+                [ngModel]="description"
+                (ngModelChange)="description = $event"
+                [ngModelOptions]="{ standalone: true }"
+                [autoResize]="true"
+                rows="7"
+              ></textarea>
+            </div>
+          }
+        </div>
+        @if (imagePreview !== null) {
+          <div class="form-column image-column">
+            <div class="source-image">
+              <img [src]="imagePreview" alt="Image to describe" />
+            </div>
+          </div>
+        }
+      </div>
+      <div class="form-buttons-container">
+        <p-button
+          label="{{ isGenerating ? 'Describing...' : 'Describe' }}"
+          (click)="describeImage()"
+          [disabled]="
+            isGenerating ||
+            formGroup.invalid ||
+            isLoadingPrompts ||
+            isLoadingModels ||
+            prompts.length === 0 ||
+            models.length === 0
+          "
+          [loading]="isGenerating"
+          variant="text"
+        />
+        @if (description !== null && description.trim() !== '') {
+          <p-button label="Accept" (click)="accept()" />
+        }
+      </div>
+    </form>
+  </div>
+</div>

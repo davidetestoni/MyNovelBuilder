@@ -3,10 +3,9 @@ import { Observable, map } from 'rxjs';
 import { environment } from '../../environment';
 import { mockedTextGenerationResponse } from './mock';
 import { Injectable, inject } from '@angular/core';
-import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
-import { Moment } from 'moment';
-import moment from 'moment';
+import { NovelGenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
+import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
 
 @Injectable({
   providedIn: 'root',
@@ -17,7 +16,9 @@ export class GenerateTextService {
   private baseUrl = environment.api.baseUrl;
   private mocked = environment.mocked;
 
-  generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>> {
+  generateText(
+    request: NovelGenerateTextRequestDto,
+  ): Observable<HttpEvent<string>> {
     // Add the model to the start of the recently used models list
     this.saveRecentlyUsedModel(request.model);
 
@@ -30,21 +31,51 @@ export class GenerateTextService {
         });
   }
 
+  describeImage(image: Blob, request: DescribeImageRequestDto): Observable<string> {
+    this.saveRecentlyUsedModel(request.model);
+
+    if (this.mocked) {
+      return new Observable((observer) => {
+        observer.next(
+          'A generated image description. This is mocked data from the frontend service.',
+        );
+        observer.complete();
+      });
+    }
+
+    const formData = new FormData();
+    formData.append('image', image, 'image.png');
+    formData.append('model', request.model);
+    formData.append('promptId', request.promptId);
+    formData.append('compendiumId', request.compendiumId);
+
+    if (request.instructions !== null && request.instructions.trim() !== '') {
+      formData.append('instructions', request.instructions);
+    }
+
+    return this.http.post(`${this.baseUrl}/generate/text/describe-image`, formData, {
+      responseType: 'text',
+    });
+  }
+
   getAvailableModels(): Observable<string[]> {
-    return this.mocked
-      ? new Observable((observer) => {
-          observer.next(['mocked-model']);
-          observer.complete();
-        })
-      : this.http
-          .get<
-            TextGenerationModelInfoDto[]
-          >(`${this.baseUrl}/generate/text/models`)
-          .pipe(
-            map((models) => {
-              return this.sortModels(models.map((model) => model.id));
-            }),
-          );
+    return this.getAvailableModelInfos().pipe(
+      map((models) => {
+        return this.sortModels(models.map((model) => model.id));
+      }),
+    );
+  }
+
+  getAvailableVisionModels(): Observable<string[]> {
+    return this.getAvailableModelInfos().pipe(
+      map((models) =>
+        this.sortModels(
+          models
+            .filter((model) => model.isVisionCapable ?? false)
+            .map((model) => model.id),
+        ),
+      ),
+    );
   }
 
   private saveRecentlyUsedModel(model: string): void {
@@ -99,5 +130,16 @@ export class GenerateTextService {
     models.unshift(...recentlyUsedModels);
 
     return models;
+  }
+
+  private getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
+    return this.mocked
+      ? new Observable((observer) => {
+          observer.next([{ id: 'mocked-model', isVisionCapable: true }]);
+          observer.complete();
+        })
+      : this.http.get<TextGenerationModelInfoDto[]>(
+          `${this.baseUrl}/generate/text/models`,
+        );
   }
 }

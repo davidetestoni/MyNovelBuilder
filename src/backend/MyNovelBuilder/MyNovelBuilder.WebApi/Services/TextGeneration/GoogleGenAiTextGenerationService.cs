@@ -117,6 +117,98 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     }
 
     /// <inheritdoc />
+    public async Task<string> DescribeImageAsync(
+        string model,
+        IEnumerable<PromptMessageDto> messages,
+        byte[] imageBytes,
+        string imageMimeType,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var client = await GetGoogleGenAiClientAsync();
+
+        var messageList = messages.ToList();
+        var systemPrompt = messageList.FirstOrDefault(m => m.Role is PromptMessageRole.System);
+        var lastUserMessageIndex = messageList.FindLastIndex(m => m.Role is PromptMessageRole.User);
+
+        var conversationMessages = new List<Google.GenAI.Types.Content>();
+        for (var i = 0; i < messageList.Count; i++)
+        {
+            var message = messageList[i];
+            if (message.Role is PromptMessageRole.System)
+            {
+                continue;
+            }
+
+            if (message.Role is PromptMessageRole.User && i == lastUserMessageIndex)
+            {
+                conversationMessages.Add(new Google.GenAI.Types.Content
+                {
+                    Role = "user",
+                    Parts =
+                    [
+                        ToPart(message.Message),
+                        new Google.GenAI.Types.Part
+                        {
+                            InlineData = new Blob
+                            {
+                                Data = imageBytes,
+                                MimeType = imageMimeType
+                            }
+                        }
+                    ]
+                });
+
+                continue;
+            }
+
+            conversationMessages.Add(ToContent(message));
+        }
+
+        if (lastUserMessageIndex < 0)
+        {
+            conversationMessages.Add(new Google.GenAI.Types.Content
+            {
+                Role = "user",
+                Parts =
+                [
+                    ToPart("Please describe this image."),
+                    new Google.GenAI.Types.Part
+                    {
+                        InlineData = new Blob
+                        {
+                            Data = imageBytes,
+                            MimeType = imageMimeType
+                        }
+                    }
+                ]
+            });
+        }
+
+        var response = await client.Models.GenerateContentAsync(
+            model,
+            conversationMessages,
+            new Google.GenAI.Types.GenerateContentConfig
+            {
+                SystemInstruction = systemPrompt is null
+                    ? null
+                    : new Google.GenAI.Types.Content
+                    {
+                        Parts = [ToPart(systemPrompt.Message)],
+                        Role = "model"
+                    }
+            });
+
+        var text = response.Candidates?
+            .SelectMany(c => c.Content?.Parts ?? [])
+            .Select(p => p.Text)
+            .FirstOrDefault(t => !string.IsNullOrWhiteSpace(t));
+
+        return text ?? throw new ApiException(ErrorCodes.ExternalServiceError,
+            "Google GenAI returned no response.");
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
     {
         var client = await GetGoogleGenAiClientAsync();
@@ -130,7 +222,8 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
             .Where(m => m.SupportedActions is not null && m.SupportedActions.Contains("generateContent"))
             .Select(m => new TextGenerationModelInfo
         {
-            Id = m.Name!
+            Id = m.Name!,
+            IsVisionCapable = IsVisionCapable(m.Name)
         }));
 
         while (pager.HasMorePages)
@@ -140,7 +233,8 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                 .Where(m => m.SupportedActions is not null && m.SupportedActions.Contains("generateContent"))
                 .Select(m => new TextGenerationModelInfo
             {
-                Id = m.Name!
+                Id = m.Name!,
+                IsVisionCapable = IsVisionCapable(m.Name)
             }));
         }
         
@@ -164,4 +258,16 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     
     private static Google.GenAI.Types.Part ToPart(string text) =>
         new() { Text = text };
+
+    private static bool IsVisionCapable(string? modelName)
+    {
+        if (string.IsNullOrWhiteSpace(modelName))
+        {
+            return false;
+        }
+
+        var value = modelName.ToLowerInvariant();
+        return value.StartsWith("models/gemini-")
+               && !value.Contains("embedding");
+    }
 }

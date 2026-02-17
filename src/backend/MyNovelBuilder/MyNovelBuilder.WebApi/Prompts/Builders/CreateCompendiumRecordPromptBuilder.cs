@@ -52,8 +52,10 @@ public class CreateCompendiumRecordPromptBuilder : PromptBuilder<CreateCompendiu
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{recordDetails}}", recordDetails)
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(), context.Prose,
-                context.Client.ChapterIndex, context.Client.SectionIndex));
+                recordsInContext.ToList(), (
+                    context.Prose,
+                    context.Client.ChapterIndex,
+                    context.Client.SectionIndex)));
 
         return this;
     }

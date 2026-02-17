@@ -38,8 +38,10 @@ public class GenerateTextPromptBuilder : PromptBuilder<GenerateTextContextInfoDt
             .Replace("{{context}}", contextString)
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(), context.Prose,
-                context.Client.ChapterIndex, context.Client.SectionIndex));
+                recordsInContext.ToList(), (
+                    context.Prose,
+                    context.Client.ChapterIndex,
+                    context.Client.SectionIndex)));
         
         return this;
     }

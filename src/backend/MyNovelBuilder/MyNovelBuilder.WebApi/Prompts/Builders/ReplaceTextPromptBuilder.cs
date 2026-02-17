@@ -49,8 +49,10 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{textToReplace}}", textToReplace)
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(), context.Prose,
-                context.Client.ChapterIndex, context.Client.SectionIndex));
+                recordsInContext.ToList(), (
+                    context.Prose,
+                    context.Client.ChapterIndex,
+                    context.Client.SectionIndex)));
         
         return this;
     }

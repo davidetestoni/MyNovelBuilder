@@ -1,5 +1,7 @@
 ﻿using System.ClientModel;
+using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Nodes;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
@@ -118,14 +120,96 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
+    public async Task<string> DescribeImageAsync(
+        string model,
+        IEnumerable<PromptMessageDto> messages,
+        byte[] imageBytes,
+        string imageMimeType,
+        CancellationToken cancellationToken = default)
     {
         var client = await GetOpenAiClientAsync();
-        var models = await client.GetOpenAIModelClient().GetModelsAsync();
+        var chatClient = client.GetChatClient(model);
 
-        return models.Value.Select(m => new TextGenerationModelInfo
+        var promptMessages = messages.ToList();
+        var lastUserMessageIndex = promptMessages.FindLastIndex(m => m.Role is PromptMessageRole.User);
+        var chatMessages = new List<ChatMessage>();
+
+        for (var i = 0; i < promptMessages.Count; i++)
         {
-            Id = m.Id
+            var message = promptMessages[i];
+
+            if (message.Role is PromptMessageRole.User && i == lastUserMessageIndex)
+            {
+                chatMessages.Add(new UserChatMessage(new List<ChatMessageContentPart>
+                {
+                    ChatMessageContentPart.CreateTextPart(message.Message),
+                    ChatMessageContentPart.CreateImagePart(BinaryData.FromBytes(imageBytes), imageMimeType)
+                }));
+                continue;
+            }
+
+            chatMessages.Add(ToChatMessage(message));
+        }
+
+        if (lastUserMessageIndex < 0)
+        {
+            chatMessages.Add(new UserChatMessage(new List<ChatMessageContentPart>
+            {
+                ChatMessageContentPart.CreateTextPart("Please describe this image."),
+                ChatMessageContentPart.CreateImagePart(BinaryData.FromBytes(imageBytes), imageMimeType)
+            }));
+        }
+
+        ClientResult<ChatCompletion> response;
+        try
+        {
+            response = await chatClient.CompleteChatAsync(chatMessages, cancellationToken: cancellationToken);
+        }
+        catch (ClientResultException ex)
+        {
+            throw ToApiException(ex);
+        }
+
+        return response?.Value.Content[0].Text
+               ?? throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
+    }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
+    {
+        var config = await _integrationsService.GetConfigAsync();
+
+        if (string.IsNullOrWhiteSpace(config.OpenRouterApiKey))
+        {
+            throw new ApiException(ErrorCodes.MissingOrInvalidServiceCredentials,
+                "OpenRouter API key is missing in integrations configuration.");
+        }
+
+        using var httpClient = new HttpClient
+        {
+            BaseAddress = new Uri("https://openrouter.ai/api/v1/")
+        };
+        using var request = new HttpRequestMessage(HttpMethod.Get, "models");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.OpenRouterApiKey);
+        
+        using var response = await httpClient.SendAsync(request);
+        var json = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ApiException(ErrorCodes.ExternalServiceError,
+                $"OpenRouter models request failed with status {(int)response.StatusCode}.");
+        }
+
+        var root = JsonNode.Parse(json);
+        var data = root?["data"]?.AsArray() ?? [];
+
+        return data
+            .Where(m => !string.IsNullOrWhiteSpace(m?["id"]?.GetValue<string>()))
+            .Select(m => new TextGenerationModelInfo
+        {
+            Id = m?["id"]?.GetValue<string>() ?? string.Empty,
+            IsVisionCapable = HasImageInputModality(m)
         });
     }
 
@@ -142,5 +226,17 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     {
         var message = $"OpenRouter request failed with status {ex.Status}: {ex.Message}";
         return new ApiException(ErrorCodes.ExternalServiceError, message);
+    }
+
+    private static bool HasImageInputModality(JsonNode? model)
+    {
+        var modalities = model?["architecture"]?["input_modalities"]?.AsArray();
+        if (modalities is null)
+        {
+            return false;
+        }
+
+        return modalities.Any(m =>
+            string.Equals(m?.GetValue<string>(), "image", StringComparison.OrdinalIgnoreCase));
     }
 }

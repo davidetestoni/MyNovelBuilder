@@ -34,4 +34,9 @@ public enum PromptType
     /// A system prompt for chat interactions.
     /// </summary>
     SendChatMessage = 5,
+    
+    /// <summary>
+    /// A prompt for describing an image.
+    /// </summary>
+    DescribeImage = 6,
 }

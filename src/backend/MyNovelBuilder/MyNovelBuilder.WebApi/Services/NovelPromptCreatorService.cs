@@ -1,4 +1,4 @@
-﻿using MyNovelBuilder.WebApi.Data;
+using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
@@ -10,21 +10,22 @@ using MyNovelBuilder.WebApi.Prompts.Builders;
 namespace MyNovelBuilder.WebApi.Services;
 
 /// <summary>
-/// Service for creating prompts.
+/// Service for creating novel-scoped prompts.
 /// </summary>
-public class PromptCreatorService : IPromptCreatorService
+public class NovelPromptCreatorService : INovelPromptCreatorService
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private readonly ILogger<PromptCreatorService> _logger;
+    private readonly ILogger<NovelPromptCreatorService> _logger;
 
     /// <summary></summary>
-    public PromptCreatorService(IServiceScopeFactory serviceScopeFactory,
-        ILogger<PromptCreatorService> logger)
+    public NovelPromptCreatorService(
+        IServiceScopeFactory serviceScopeFactory,
+        ILogger<NovelPromptCreatorService> logger)
     {
         _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
     }
-    
+
     /// <inheritdoc />
     public async Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(
         GenerateTextRequestDto request)
@@ -32,16 +33,14 @@ public class PromptCreatorService : IPromptCreatorService
         using var scope = _serviceScopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var novelService = scope.ServiceProvider.GetRequiredService<INovelService>();
-        
+
         var prompt = await unitOfWork.Prompts.GetByIdAsync(request.PromptId);
-        
         if (prompt is null)
         {
             throw new ApiException(ErrorCodes.PromptNotFound,
                 $"Prompt with ID {request.PromptId} not found.");
         }
-        
-        // Make sure the prompt and payload types match
+
         var requiredContextType = prompt.Type switch
         {
             PromptType.GenerateText => typeof(GenerateTextContextInfoDto),
@@ -50,17 +49,17 @@ public class PromptCreatorService : IPromptCreatorService
             PromptType.CreateCompendiumRecord => typeof(CreateCompendiumRecordContextInfoDto),
             PromptType.EditCompendiumRecord => typeof(EditCompendiumRecordContextInfoDto),
             PromptType.SendChatMessage => typeof(SendChatMessageContextInfoDto),
-            _ => throw new NotImplementedException("Unknown prompt type.")
+            _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
+                "This prompt type is not valid for novel prompt generation.")
         };
-        
+
         if (request.ContextInfo.GetType() != requiredContextType)
         {
             throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "The prompt context is invalid.");
         }
-        
+
         var novel = await unitOfWork.Novels.GetWithReferencesByIdAsync(request.NovelId);
-        
         if (novel is null)
         {
             throw new ApiException(ErrorCodes.NovelNotFound,
@@ -68,15 +67,11 @@ public class PromptCreatorService : IPromptCreatorService
         }
 
         var prose = await novelService.GetProseAsync(request.NovelId);
-        
         var recordsTasks = novel.Compendia.Select(compendium =>
             unitOfWork.CompendiumRecords.GetByCompendiumIdAsync(compendium.Id));
-        
         var recordsLists = await Task.WhenAll(recordsTasks);
-        var records = recordsLists.SelectMany(r => r).ToList(); // Flatten
+        var records = recordsLists.SelectMany(r => r).ToList();
 
-        // We need to use a switch statement here because we need
-        // to know the type of context at runtime
         var messages = request.ContextInfo switch
         {
             GenerateTextContextInfoDto g => GetPromptMessages(g, prompt, novel, prose, records),
@@ -85,11 +80,11 @@ public class PromptCreatorService : IPromptCreatorService
             CreateCompendiumRecordContextInfoDto c => GetPromptMessages(c, prompt, novel, prose, records),
             EditCompendiumRecordContextInfoDto e => GetPromptMessages(e, prompt, novel, prose, records),
             SendChatMessageContextInfoDto m => GetPromptMessages(m, prompt, novel, prose, records),
-            _ => throw new NotImplementedException("Unknown context type.")
+            _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
+                "The prompt context is invalid.")
         };
-        
-        _logger.LogInformation("Sending prompt with messages: {@Messages}", messages);
-        
+
+        _logger.LogInformation("Sending novel prompt with messages: {@Messages}", messages);
         return messages;
     }
 
@@ -102,7 +97,6 @@ public class PromptCreatorService : IPromptCreatorService
             Role = message.Role,
             Message = clientContext switch
             {
-                // TODO: Find a better way to do this...
                 GenerateTextContextInfoDto g => new GenerateTextPromptBuilder(message.Message)
                     .ReplacePlaceholders(new PromptBuilderContext<GenerateTextContextInfoDto>
                     {
@@ -143,7 +137,8 @@ public class PromptCreatorService : IPromptCreatorService
                         Prose = prose,
                         CompendiumRecords = records
                     }).ToString(),
-                _ => throw new NotImplementedException("Unknown context type.")
+                _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
+                    "The prompt context is invalid.")
             }
         });
     }

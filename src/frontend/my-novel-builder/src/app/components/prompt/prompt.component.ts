@@ -45,6 +45,7 @@ export class PromptComponent {
     PromptType.CreateCompendiumRecord,
     PromptType.EditCompendiumRecord,
     PromptType.SendChatMessage,
+    PromptType.DescribeImage,
   ];
 
   promptMessageRoles: PromptMessageRole[] = [
@@ -117,8 +118,7 @@ export class PromptComponent {
       },
       {
         keyword: '{{recordDetails}}',
-        description:
-          'The selected text used to extract record information.',
+        description: 'The selected text used to extract record information.',
       },
       {
         keyword: '{{records}}',
@@ -136,8 +136,7 @@ export class PromptComponent {
       },
       {
         keyword: '{{recordDetails}}',
-        description:
-          'The selected text used to extract record information.',
+        description: 'The selected text used to extract record information.',
       },
       {
         keyword: '{{records}}',
@@ -161,6 +160,17 @@ export class PromptComponent {
       {
         keyword: '{{records}}',
         description: 'Information from selected compendium records.',
+      },
+    ],
+    [PromptType.DescribeImage]: [
+      {
+        keyword: '{{instructions}}',
+        description: 'Additional instructions for how to describe the image.',
+      },
+      {
+        keyword: '{{records}}',
+        description:
+          "Information from other compendium records in the record's compendium.",
       },
     ],
   };

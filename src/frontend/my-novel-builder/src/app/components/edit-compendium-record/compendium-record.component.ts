@@ -17,7 +17,6 @@ import { CodeEditorComponent } from '../code-editor/code-editor.component';
 import { EditImageComponent } from '../edit-image/edit-image.component';
 import { HttpClient } from '@angular/common/http';
 import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
-import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-compendium-record',
@@ -45,7 +44,6 @@ export class CompendiumRecordComponent {
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
   private http = inject(HttpClient);
-  private toastr = inject(ToastrService);
   private dialogRef: DynamicDialogRef | null = null;
 
   recordTypes: CompendiumRecordType[] = [
