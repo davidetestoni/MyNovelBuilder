@@ -57,8 +57,16 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
-        
-        var response = await chatClient.CompleteChatAsync(chatMessages, cancellationToken: cancellationToken);
+
+        ClientResult<ChatCompletion> response;
+        try
+        {
+            response = await chatClient.CompleteChatAsync(chatMessages, cancellationToken: cancellationToken);
+        }
+        catch (ClientResultException ex)
+        {
+            throw ToApiException(ex);
+        }
 
         return response?.Value.Content[0].Text
             ?? throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
@@ -75,8 +83,27 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
 
-        await foreach (var update in chatClient.CompleteChatStreamingAsync(chatMessages, cancellationToken: cancellationToken))
+        var updates = chatClient.CompleteChatStreamingAsync(chatMessages, cancellationToken: cancellationToken);
+        await using var updateEnumerator = updates.GetAsyncEnumerator(cancellationToken);
+
+        while (true)
         {
+            StreamingChatCompletionUpdate update;
+
+            try
+            {
+                if (!await updateEnumerator.MoveNextAsync())
+                {
+                    break;
+                }
+
+                update = updateEnumerator.Current;
+            }
+            catch (ClientResultException ex)
+            {
+                throw ToApiException(ex);
+            }
+
             foreach (var message in update.ContentUpdate)
             {
                 if (!string.IsNullOrWhiteSpace(message.Refusal))
@@ -110,4 +137,10 @@ public class OpenRouterTextGenerationService : ITextGenerationService
             PromptMessageRole.Assistant => new AssistantChatMessage(message.Message),
             _ => throw new NotSupportedException($"Unsupported message role: {message.Role}")
         };
+
+    private static ApiException ToApiException(ClientResultException ex)
+    {
+        var message = $"OpenRouter request failed with status {ex.Status}: {ex.Message}";
+        return new ApiException(ErrorCodes.ExternalServiceError, message);
+    }
 }
