@@ -93,12 +93,21 @@ export class CompendiumRecordComponent {
   }
 
   removeMedia(mediaId: string): void {
-    this.record.media = this.record.media.filter(
-      (media) => media.id !== mediaId,
-    );
-    this.compendiumService
-      .deleteRecordMedia(this.record.id, mediaId)
-      .subscribe();
+    this.confirmationService.confirm({
+      message:
+        'Are you sure you want to delete this media? This action cannot be undone.',
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.record.media = this.record.media.filter(
+          (media) => media.id !== mediaId,
+        );
+        this.compendiumService
+          .deleteRecordMedia(this.record.id, mediaId)
+          .subscribe();
+      },
+    });
   }
 
   removeRecord(): void {
