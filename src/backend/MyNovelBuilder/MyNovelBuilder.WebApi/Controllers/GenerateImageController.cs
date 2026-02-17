@@ -52,12 +52,33 @@ public class GenerateImageController : ControllerBase
     /// Generate an image.
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult> GenerateImageAsync(ImageGenRequestDto dto)
+    public async Task<ActionResult> GenerateImageAsync(ImageGenerationRequestDto dto)
     {
         var imageGen = await GetImageGenerationServiceAsync();
         var image = await imageGen.GenerateImageAsync(dto);
         
         return File(image, "image/png", "image.png");
+    }
+    
+    /// <summary>
+    /// Edit an existing image.
+    /// </summary>
+    [HttpPost("edit")]
+    public async Task<ActionResult> EditImageAsync(IFormFile image, [FromForm] ImageGenerationRequestDto dto)
+    {
+        if (image.Length == 0)
+        {
+            return BadRequest("Image file is required.");
+        }
+
+        await using var imageStream = image.OpenReadStream();
+        using var ms = new MemoryStream();
+        await imageStream.CopyToAsync(ms);
+        var imageBytes = ms.ToArray();
+        var imageGen = await GetImageGenerationServiceAsync();
+        var editedImage = await imageGen.EditImageAsync(imageBytes, dto);
+        
+        return File(editedImage, "image/png", "edited_image.png");
     }
 
     /// <summary>
@@ -79,6 +100,7 @@ public class GenerateImageController : ControllerBase
                 {
                     ModelId = m.ModelId,
                     Name = m.Name,
+                    IsImageEditor = m.IsImageEditor,
                 });
             },
             new HybridCacheEntryOptions

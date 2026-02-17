@@ -1,0 +1,74 @@
+textarea {
+  height: 100%;
+  width: 100%;
+
+  /* Remove the handle */
+  resize: none;
+}
+
+input:not([type="checkbox"]) {
+  width: 100%;
+}
+
+.form-container {
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.form-row {
+  height: 400px;
+  display: flex;
+}
+
+.form-column {
+  width: unset;
+  flex: 1;
+}
+
+.left-column {
+  flex: 1;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.image-previews {
+  display: flex;
+  gap: 1rem;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.image-preview-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: center;
+  flex: 1;
+}
+
+.preview-label {
+  font-size: 0.8rem;
+  color: var(--text-color-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.preview-image {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 1rem;
+  overflow: hidden;
+  width: 100%;
+
+  img {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 5px;
+  }
+}

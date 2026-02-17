@@ -115,6 +115,26 @@
             border: 1px solid $grey18;
           }
 
+          .compendium-record-media-edit {
+            position: absolute;
+            top: 10px;
+            right: 35px;
+            width: 18px;
+            border: none;
+            padding: 0;
+            margin: 0;
+            opacity: 30%;
+            font-size: 0.8rem;
+            transition: opacity 0.3s;
+            filter: $grey13filter;
+            cursor: pointer;
+
+            &:hover {
+              opacity: 100%;
+              filter: $blackfilter;
+            }
+          }
+
           .compendium-record-media-remove {
             position: absolute;
             top: 10px;

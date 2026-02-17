@@ -14,6 +14,10 @@ import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 import { CodeEditorComponent } from '../code-editor/code-editor.component';
+import { EditImageComponent } from '../edit-image/edit-image.component';
+import { HttpClient } from '@angular/common/http';
+import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-compendium-record',
@@ -40,6 +44,8 @@ export class CompendiumRecordComponent {
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
+  private http = inject(HttpClient);
+  private toastr = inject(ToastrService);
   private dialogRef: DynamicDialogRef | null = null;
 
   recordTypes: CompendiumRecordType[] = [
@@ -167,6 +173,49 @@ export class CompendiumRecordComponent {
               });
           });
       }
+    });
+  }
+
+  editImage(media: CompendiumRecordMediaDto) {
+    if (media.isVideo) return;
+
+    this.http.get(media.url, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const file = new File([blob], 'image.png', { type: blob.type });
+
+        this.dialogRef = this.dialogService.open(EditImageComponent, {
+          header: 'Edit Image',
+          width: '70vw',
+          contentStyle: { overflow: 'auto' },
+          baseZIndex: 10000,
+          closable: true,
+          closeOnEscape: true,
+          modal: true,
+          dismissableMask: true,
+          data: {
+            image: file,
+          },
+        });
+
+        this.dialogRef?.onClose.subscribe((editedImage: Blob) => {
+          if (editedImage) {
+            this.compendiumService
+              .uploadRecordMedia(this.record.id, editedImage, media.isCurrent)
+              .subscribe(() => {
+                this.compendiumService
+                  .getRecord(this.record.id)
+                  .subscribe((record) => {
+                    this.record.media = record.media;
+                    this.updateRecord.emit(this.record);
+                  });
+              });
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Failed to download image', err);
+        this.toastr.error('Failed to download image for editing.');
+      },
     });
   }
 }

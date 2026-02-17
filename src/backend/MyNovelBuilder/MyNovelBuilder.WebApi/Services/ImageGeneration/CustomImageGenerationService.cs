@@ -30,7 +30,7 @@ public class CustomImageGenerationService : IImageGenerationService
     }
     
     /// <inheritdoc />
-    public async Task<byte[]> GenerateImageAsync(ImageGenRequestDto request)
+    public async Task<byte[]> GenerateImageAsync(ImageGenerationRequestDto request)
     {
         var payload = request.Adapt<ImageGenerationRequest>();
         var jsonPayload = JsonSerializer.Serialize(payload, _jsonSerializerOptions);
@@ -40,6 +40,12 @@ public class CustomImageGenerationService : IImageGenerationService
         response.EnsureSuccessStatusCode();
         
         return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    /// <inheritdoc />
+    public Task<byte[]> EditImageAsync(byte[] imageBytes, ImageGenerationRequestDto request)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

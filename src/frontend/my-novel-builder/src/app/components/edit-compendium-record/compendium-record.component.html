@@ -76,6 +76,13 @@
                 <video autoplay muted loop src="{{ media.url }}"></video>
               }
 
+              @if (!media.isVideo) {
+                <i
+                  class="compendium-record-media-edit icon icon-edit"
+                  (click)="editImage(media)"
+                ></i>
+              }
+
               <i
                 class="compendium-record-media-remove icon icon-close"
                 (click)="removeMedia(media.id)"

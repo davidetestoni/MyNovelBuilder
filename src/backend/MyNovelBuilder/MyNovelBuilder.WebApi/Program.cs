@@ -152,7 +152,12 @@ Directory.CreateDirectory(Globals.StaticFilesRoot);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(Globals.StaticFilesRoot),
-    RequestPath = "/static"
+    RequestPath = "/static",
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers.Append(
+            "Access-Control-Allow-Origin", "*");
+    }
 });
 
 app.MapControllers();

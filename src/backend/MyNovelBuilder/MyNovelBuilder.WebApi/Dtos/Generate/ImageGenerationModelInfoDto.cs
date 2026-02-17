@@ -14,4 +14,9 @@ public class ImageGenerationModelInfoDto
     /// The name of the image generation model.
     /// </summary>
     public required string Name { get; set; }
+    
+    /// <summary>
+    /// Whether this model is an image editor.
+    /// </summary>
+    public required bool IsImageEditor { get; set; }
 }

@@ -3,7 +3,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 /// <summary>
 /// DTO for an image generation request.
 /// </summary>
-public class ImageGenRequestDto
+public class ImageGenerationRequestDto
 {
     /// <summary>
     /// The model ID to use for generating the image.

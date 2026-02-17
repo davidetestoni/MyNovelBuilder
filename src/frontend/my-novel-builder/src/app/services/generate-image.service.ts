@@ -25,11 +25,37 @@ export class GenerateImageService {
         });
   }
 
+  editImage(
+    image: File,
+    request: ImageGenRequestDto,
+  ): Observable<HttpEvent<Blob>> {
+    if (this.mocked) {
+      return mockedImageGenerationResponse();
+    }
+
+    const formData = new FormData();
+    formData.append('image', image);
+    formData.append('modelId', request.modelId);
+    formData.append('prompt', request.prompt);
+    formData.append('width', request.width.toString());
+    formData.append('height', request.height.toString());
+
+    return this.http.post(`${this.baseUrl}/generate/image/edit`, formData, {
+      observe: 'events',
+      reportProgress: true,
+      responseType: 'blob',
+    });
+  }
+
   getAvailableModels(): Observable<ImageGenerationModelInfoDto[]> {
     return this.mocked
       ? mockObservable<ImageGenerationModelInfoDto[]>([
-          { modelId: 'z-image/turbo', name: 'Z-Image Turbo' },
-          { modelId: 'z-image/hd', name: 'Z-Image HD' },
+          {
+            modelId: 'z-image/turbo',
+            name: 'Z-Image Turbo',
+            isImageEditor: false,
+          },
+          { modelId: 'z-image/hd', name: 'Z-Image HD', isImageEditor: true },
         ])
       : this.http.get<ImageGenerationModelInfoDto[]>(
           `${this.baseUrl}/generate/image/models`,

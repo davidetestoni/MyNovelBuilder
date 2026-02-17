@@ -8,7 +8,7 @@ import {
 } from '@angular/forms';
 import { GenerateImageService } from '../../services/generate-image.service';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { HttpEvent, HttpEventType } from '@angular/common/http';
@@ -19,7 +19,7 @@ import { SelectModule } from 'primeng/select';
 import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-generation-model-info.dto';
 
 @Component({
-  selector: 'app-generate-image',
+  selector: 'app-edit-image',
   standalone: true,
   imports: [
     FormsModule,
@@ -29,11 +29,12 @@ import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-gen
     ButtonModule,
     SelectModule,
   ],
-  templateUrl: './generate-image.component.html',
-  styleUrl: './generate-image.component.scss',
+  templateUrl: './edit-image.component.html',
+  styleUrl: './edit-image.component.scss',
 })
-export class GenerateImageComponent implements OnInit {
+export class EditImageComponent implements OnInit {
   dialogRef = inject(DynamicDialogRef);
+  config = inject(DynamicDialogConfig);
 
   models: ImageGenerationModelInfoDto[] = [];
   modelOptions: { label: string; value: string }[] = [];
@@ -53,6 +54,11 @@ export class GenerateImageComponent implements OnInit {
   imagePreview: SafeUrl | null = null;
   isGenerating = false;
 
+  originalImage: File | null = null;
+  originalImagePreview: SafeUrl | null = null;
+  width = 0;
+  height = 0;
+
   constructor() {
     const prompt = this.localStorageService.getStringForKey(
       LocalStorageKey.LastImagePrompt,
@@ -64,6 +70,21 @@ export class GenerateImageComponent implements OnInit {
       });
       this.formGroup.markAsDirty();
     }
+
+    if (this.config.data?.image) {
+      this.originalImage = this.config.data.image;
+      const objectURL = URL.createObjectURL(this.originalImage!);
+      this.originalImagePreview =
+        this.sanitizer.bypassSecurityTrustUrl(objectURL);
+
+      // We need to get width and height from the image
+      const img = new Image();
+      img.onload = () => {
+        this.width = img.width;
+        this.height = img.height;
+      };
+      img.src = objectURL;
+    }
   }
 
   ngOnInit(): void {
@@ -72,8 +93,8 @@ export class GenerateImageComponent implements OnInit {
 
   getModels() {
     this.generateImageService.getAvailableModels().subscribe((models) => {
-      this.models = models.filter((m) => !m.isImageEditor);
-      this.modelOptions = models.map((m) => ({
+      this.models = models.filter((m) => m.isImageEditor);
+      this.modelOptions = this.models.map((m) => ({
         label: m.name,
         value: m.modelId,
       }));
@@ -90,8 +111,8 @@ export class GenerateImageComponent implements OnInit {
     });
   }
 
-  generateImage(): void {
-    if (this.formGroup.invalid) {
+  editImage(): void {
+    if (this.formGroup.invalid || !this.originalImage) {
       this.toastrService.error('Please fill out all fields');
       return;
     }
@@ -109,11 +130,11 @@ export class GenerateImageComponent implements OnInit {
     this.isGenerating = true;
 
     this.generateImageService
-      .generateImage({
+      .editImage(this.originalImage, {
         modelId: this.formGroup.get('model')!.value!,
         prompt: this.formGroup.get('prompt')!.value!,
-        width: 832,
-        height: 1248,
+        width: this.width,
+        height: this.height,
       })
       .subscribe({
         next: (event: HttpEvent<Blob>) => {
@@ -128,10 +149,8 @@ export class GenerateImageComponent implements OnInit {
           }
         },
         error: (err) => {
-          console.error('Image generation failed', err);
-          this.toastrService.error(
-            'Image generation failed. Please try again.',
-          );
+          console.error('Image editing failed', err);
+          this.toastrService.error('Image editing failed. Please try again.');
           this.isGenerating = false;
         },
         complete: () => {

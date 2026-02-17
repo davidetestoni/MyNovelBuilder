@@ -11,7 +11,12 @@ public interface IImageGenerationService
     /// <summary>
     /// Generate an image from the given prompt.
     /// </summary>
-    Task<byte[]> GenerateImageAsync(ImageGenRequestDto request);
+    Task<byte[]> GenerateImageAsync(ImageGenerationRequestDto request);
+
+    /// <summary>
+    /// Edit an existing image based on the given prompt.
+    /// </summary>
+    Task<byte[]> EditImageAsync(byte[] imageBytes, ImageGenerationRequestDto request);
     
     /// <summary>
     /// Get a list of available image generation models.
