@@ -150,7 +150,6 @@ export class EditImageComponent implements OnInit {
         },
         error: (err) => {
           console.error('Image editing failed', err);
-          this.toastrService.error('Image editing failed. Please try again.');
           this.isGenerating = false;
         },
         complete: () => {

@@ -6,9 +6,10 @@ import Nora from '@primeuix/themes/aura';
 import { definePreset } from '@primeuix/themes';
 
 import { routes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideToastr } from 'ngx-toastr';
 import { provideMarkdown } from 'ngx-markdown';
+import { apiErrorInterceptor } from './interceptors/api-error.interceptor';
 
 const primeNgTheme = definePreset(Nora, {
   semantic: {
@@ -33,7 +34,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideAnimations(),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([apiErrorInterceptor])),
     provideToastr(),
     provideMarkdown(),
     providePrimeNG({

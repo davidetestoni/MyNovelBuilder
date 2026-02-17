@@ -223,7 +223,6 @@ export class CompendiumRecordComponent {
       },
       error: (err) => {
         console.error('Failed to download image', err);
-        this.toastr.error('Failed to download image for editing.');
       },
     });
   }

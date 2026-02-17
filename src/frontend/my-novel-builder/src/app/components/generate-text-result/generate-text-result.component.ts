@@ -8,7 +8,6 @@ import {
 } from '@angular/common/http';
 import { GenerateTextService } from '../../services/generate-text.service';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
-import { ToastrService } from 'ngx-toastr';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
 
@@ -32,7 +31,6 @@ export class GenerateTextResultComponent implements OnInit {
 
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
-  readonly toastr: ToastrService = inject(ToastrService);
   isGenerating = true;
   generatedText = '';
 
@@ -81,10 +79,7 @@ export class GenerateTextResultComponent implements OnInit {
         }
       },
       error: (error) => {
-        this.toastr.error(
-          error.message,
-          'An error occurred while generating the text',
-        );
+        console.error('Error generating text:', error);
         this.isGenerating = false;
       },
     });

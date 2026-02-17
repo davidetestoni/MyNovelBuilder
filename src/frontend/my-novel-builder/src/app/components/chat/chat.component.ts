@@ -463,7 +463,6 @@ export class ChatComponent
       },
       error: (err) => {
         console.error('Error generating text:', err);
-        this.toastr.error('Failed to generate response');
         this.isGenerating = false;
         // Remove the empty assistant message if it failed
         if (!assistantMessage.textContent) {

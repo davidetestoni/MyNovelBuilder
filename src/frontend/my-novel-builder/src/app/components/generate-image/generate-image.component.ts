@@ -129,9 +129,6 @@ export class GenerateImageComponent implements OnInit {
         },
         error: (err) => {
           console.error('Image generation failed', err);
-          this.toastrService.error(
-            'Image generation failed. Please try again.',
-          );
           this.isGenerating = false;
         },
         complete: () => {

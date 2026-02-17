@@ -122,7 +122,6 @@ export class IntegrationsComponent implements OnInit {
         this.loadTtsVoices(config.ttsProvider, config.ttsVoiceId);
       },
       error: (error) => {
-        this.toastrService.error('Failed to load integrations configuration.');
         console.error('Error loading configuration:', error);
       },
     });
@@ -150,7 +149,6 @@ export class IntegrationsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading TTS voices:', error);
-        this.toastrService.error('Failed to load TTS voices.');
         this.ttsVoiceOptions = [];
       },
     });
@@ -206,9 +204,6 @@ export class IntegrationsComponent implements OnInit {
         );
       },
       error: (error) => {
-        this.toastrService.error(
-          'Failed to update integrations configuration.',
-        );
         console.error('Error updating configuration:', error);
       },
     });
