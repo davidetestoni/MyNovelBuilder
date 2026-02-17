@@ -4,11 +4,14 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 
+using MyNovelBuilder.WebApi.Attributes;
+
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Service for generating audio using ElevenLabs TTS.
 /// </summary>
+[RegisterKeyedService(TtsProvider.ElevenLabs, useHttpClient: true)]
 public class ElevenLabsTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;

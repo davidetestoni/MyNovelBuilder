@@ -5,11 +5,14 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.Tts;
 
+using MyNovelBuilder.WebApi.Attributes;
+
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Custom service for generating audio using TTS.
 /// </summary>
+[RegisterKeyedService(TtsProvider.Custom, useHttpClient: true)]
 public class CustomTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;

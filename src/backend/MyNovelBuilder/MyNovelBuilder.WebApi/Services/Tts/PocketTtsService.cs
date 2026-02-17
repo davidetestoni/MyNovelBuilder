@@ -1,11 +1,14 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 
+using MyNovelBuilder.WebApi.Attributes;
+
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Text-to-speech service implementation for Pocket TTS.
 /// </summary>
+[RegisterKeyedService(TtsProvider.PocketTts, useHttpClient: true)]
 public class PocketTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;

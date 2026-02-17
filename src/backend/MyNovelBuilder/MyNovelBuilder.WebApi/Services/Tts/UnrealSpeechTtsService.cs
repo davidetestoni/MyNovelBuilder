@@ -6,11 +6,14 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
 
+using MyNovelBuilder.WebApi.Attributes;
+
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Text-to-speech service from unrealspeech.com.
 /// </summary>
+[RegisterKeyedService(TtsProvider.UnrealSpeech, useHttpClient: true)]
 public class UnrealSpeechTtsService : ITtsService
 {
     private readonly ILogger<UnrealSpeechTtsService> _logger;

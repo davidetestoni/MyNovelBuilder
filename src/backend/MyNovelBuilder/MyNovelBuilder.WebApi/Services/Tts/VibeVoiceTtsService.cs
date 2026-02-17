@@ -3,11 +3,14 @@ using System.Text.Json;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 
+using MyNovelBuilder.WebApi.Attributes;
+
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
 /// <summary>
 /// Text-to-speech service for VibeVoice.
 /// </summary>
+[RegisterKeyedService(TtsProvider.VibeVoice, useHttpClient: true)]
 public class VibeVoiceTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;

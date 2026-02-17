@@ -4,11 +4,15 @@ using Mapster;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Models.ImageGeneration;
 
+using MyNovelBuilder.WebApi.Attributes;
+using MyNovelBuilder.WebApi.Enums;
+
 namespace MyNovelBuilder.WebApi.Services.ImageGeneration;
 
 /// <summary>
 /// Custom service for generating images.
 /// </summary>
+[RegisterKeyedService(ImageGenerationProvider.Custom, useHttpClient: true)]
 public class CustomImageGenerationService : IImageGenerationService
 {
     private readonly HttpClient _httpClient;

@@ -5,20 +5,24 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.ImageGeneration;
 
+using MyNovelBuilder.WebApi.Attributes;
+using MyNovelBuilder.WebApi.Enums;
+
 namespace MyNovelBuilder.WebApi.Services.ImageGeneration;
 
 /// <summary>
 /// Service for generating images using DeAPI.
 /// </summary>
-public class DeApiImageGenerationService : IImageGenerationService
+[RegisterKeyedService(ImageGenerationProvider.DeApi, useHttpClient: true)]
+public class DeApiService : IImageGenerationService
 {
-    private readonly ILogger<DeApiImageGenerationService> _logger;
+    private readonly ILogger<DeApiService> _logger;
     private readonly HttpClient _httpClient;
     private readonly IIntegrationsService _integrationsService;
 
     /// <summary></summary>
-    public DeApiImageGenerationService(
-        ILogger<DeApiImageGenerationService> logger,
+    public DeApiService(
+        ILogger<DeApiService> logger,
         HttpClient httpClient,
         IIntegrationsService integrationsService)
     {
@@ -29,7 +33,7 @@ public class DeApiImageGenerationService : IImageGenerationService
     }
     
     /// <inheritdoc />
-    public async Task<byte[]> GenerateImageAsync(ImageGenRequestDto request)
+    public async Task<byte[]> GenerateImageAsync(ImageGenerationRequestDto request)
     {
         var config = await _integrationsService.GetConfigAsync();
         var apiKey = config.DeApiApiKey;
@@ -121,6 +125,12 @@ public class DeApiImageGenerationService : IImageGenerationService
         _logger.LogError("DeAPI image generation timed out. Request ID: {RequestId}", requestId);
         throw new ApiException(ErrorCodes.ExternalServiceError,
             "Image generation with DeAPI timed out.");
+    }
+
+    /// <inheritdoc />
+    public async Task<byte[]> EditImageAsync(byte[] imageBytes, ImageGenerationRequestDto request)
+    {
+        var config = await _integrationsService.GetConfigAsync();
     }
 
     /// <inheritdoc />

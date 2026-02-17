@@ -5,12 +5,14 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
 using OpenAI.Models;
+using MyNovelBuilder.WebApi.Attributes;
 
 namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 
 /// <summary>
 /// Service for generating text using Google's GenAI API.
 /// </summary>
+[RegisterKeyedService(TextGenerationProvider.GoogleGenAi)]
 public class GoogleGenAiTextGenerationService : ITextGenerationService
 {
     private readonly IIntegrationsService _integrationsService;

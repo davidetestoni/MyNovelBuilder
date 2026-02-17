@@ -14,6 +14,7 @@ using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Data.Repositories;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Middleware;
+using MyNovelBuilder.WebApi.Extensions;
 using MyNovelBuilder.WebApi.Models.Errors;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.ImageGeneration;
@@ -106,28 +107,13 @@ builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<IPromptCreatorService, PromptCreatorService>();
 
 // Text generation services
-builder.Services.AddKeyedSingleton<ITextGenerationService, OpenRouterTextGenerationService>(TextGenerationProvider.OpenRouter);
-builder.Services.AddKeyedSingleton<ITextGenerationService, GoogleGenAiTextGenerationService>(TextGenerationProvider
-    .GoogleGenAi);
+builder.Services.RegisterKeyedServicesFromAssembly<ITextGenerationService>();
 
 // TTS services
-builder.Services.AddKeyedSingleton<ITtsService, CustomTtsService>(TtsProvider.Custom);
-builder.Services.AddKeyedSingleton<ITtsService, ElevenLabsTtsService>(TtsProvider.ElevenLabs);
-builder.Services.AddKeyedSingleton<ITtsService, KokoroTtsService>(TtsProvider.Kokoro);
-builder.Services.AddKeyedSingleton<ITtsService, PocketTtsService>(TtsProvider.PocketTts);
-builder.Services.AddKeyedSingleton<ITtsService, UnrealSpeechTtsService>(TtsProvider.UnrealSpeech);
-builder.Services.AddKeyedSingleton<ITtsService, VibeVoiceTtsService>(TtsProvider.VibeVoice);
-builder.Services.AddHttpClient<CustomTtsService>();
-builder.Services.AddHttpClient<ElevenLabsTtsService>();
-builder.Services.AddHttpClient<PocketTtsService>();
-builder.Services.AddHttpClient<UnrealSpeechTtsService>();
-builder.Services.AddHttpClient<VibeVoiceTtsService>();
+builder.Services.RegisterKeyedServicesFromAssembly<ITtsService>();
 
 // Image generation services
-builder.Services.AddKeyedSingleton<IImageGenerationService, CustomImageGenerationService>(ImageGenerationProvider.Custom);
-builder.Services.AddKeyedSingleton<IImageGenerationService, DeApiImageGenerationService>(ImageGenerationProvider.DeApi);
-builder.Services.AddHttpClient<CustomImageGenerationService>();
-builder.Services.AddHttpClient<DeApiImageGenerationService>();
+builder.Services.RegisterKeyedServicesFromAssembly<IImageGenerationService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();

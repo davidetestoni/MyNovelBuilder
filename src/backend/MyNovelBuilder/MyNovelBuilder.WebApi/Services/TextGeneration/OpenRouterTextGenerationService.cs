@@ -6,12 +6,14 @@ using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
 using OpenAI;
 using OpenAI.Chat;
+using MyNovelBuilder.WebApi.Attributes;
 
 namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 
 /// <summary>
 /// Service for generating text using OpenRouter's OpenAI-compatible API.
 /// </summary>
+[RegisterKeyedService(TextGenerationProvider.OpenRouter)]
 public class OpenRouterTextGenerationService : ITextGenerationService
 {
     private readonly IIntegrationsService _integrationsService;
