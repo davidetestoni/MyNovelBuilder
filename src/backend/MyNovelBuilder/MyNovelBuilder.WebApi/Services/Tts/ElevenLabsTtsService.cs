@@ -7,6 +7,7 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 
 using MyNovelBuilder.WebApi.Attributes;
+using MyNovelBuilder.WebApi.Helpers;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
@@ -22,7 +23,7 @@ public class ElevenLabsTtsService : ITtsService
     public bool SupportsEmphasisTags => true;
     
     /// <inheritdoc />
-    public AudioFormat OutputAudioFormat => AudioFormat.Mp3;
+    public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
     /// <summary></summary>
     public ElevenLabsTtsService(
@@ -50,9 +51,16 @@ public class ElevenLabsTtsService : ITtsService
             new TextToSpeechRequest(
                 new Voice(config.TtsVoiceId, string.Empty),
                 request.Message,
-                model: new Model("eleven_v3")));
+                model: new Model("eleven_v3"),
+                outputFormat: OutputFormat.PCM_24000));
+        
+        using var finalAudio = new MemoryStream();
+        await using var writer = new NAudio.Wave.WaveFileWriter(finalAudio,
+            new NAudio.Wave.WaveFormat(24000, 16, 1));
 
-        return voiceClip.ClipData.ToArray();
+        await writer.WriteAsync(voiceClip.ClipData.ToArray());
+
+        return finalAudio.ToArray();
     }
     
     /// <inheritdoc />
@@ -69,19 +77,22 @@ public class ElevenLabsTtsService : ITtsService
         }
         
         var client = new ElevenLabsClient(apiKey);
-        
-        var ms = new MemoryStream();
-        await client.TextToSpeechEndpoint.TextToSpeechAsync(
-            new TextToSpeechRequest(
-                new Voice(config.TtsVoiceId, string.Empty),
-                request.Message,
-                model: new Model("eleven_v3")),
-            partialClipCallback: async partialClip =>
-            {
-                await ms.WriteAsync(partialClip.ClipData);
-            });
 
-        return ms;
+        return new PcmWavStreamingStream(
+            sampleRate: 24000,
+            channels: 1,
+            bitsPerSample: 16,
+            producer: async (writeAsync, ct) =>
+            {
+                await client.TextToSpeechEndpoint.TextToSpeechAsync(
+                    new TextToSpeechRequest(
+                        new Voice(config.TtsVoiceId, string.Empty),
+                        request.Message,
+                        model: new Model("eleven_v3"),
+                        outputFormat: OutputFormat.PCM_24000),
+                    partialClipCallback: partialClip => writeAsync(partialClip.ClipData), cancellationToken: ct);
+            },
+            ct: CancellationToken.None);
     }
 
     /// <inheritdoc />
@@ -110,4 +121,5 @@ public class ElevenLabsTtsService : ITtsService
             Name = v.Name,
         });
     }
+
 }
