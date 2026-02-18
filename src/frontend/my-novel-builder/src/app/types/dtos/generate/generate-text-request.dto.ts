@@ -1,14 +1,18 @@
 import { ChatMessageRole } from '../../enums/chat-message-role';
 
-export interface NovelGenerateTextRequestDto {
+export interface GenerateTextRequestDto {
   model: string;
   promptId: string;
-  novelId: string;
-  contextInfo: NovelTextGenerationContextInfoDto;
+  contextInfo: TextGenerationContextInfoDto;
 }
+
+export type TextGenerationContextInfoDto =
+  | NovelTextGenerationContextInfoDto
+  | CompendiumTextGenerationContextInfoDto;
 
 export interface NovelTextGenerationContextInfoDto {
   $type: NovelTextGenerationType;
+  novelId: string;
 }
 
 export interface GenerateTextContextInfoDto extends NovelTextGenerationContextInfoDto {
@@ -74,4 +78,27 @@ export enum NovelTextGenerationType {
   CreateCompendiumRecord = 'createCompendiumRecord',
   EditCompendiumRecord = 'editCompendiumRecord',
   SendChatMessage = 'sendChatMessage',
+}
+
+export interface CompendiumTextGenerationContextInfoDto {
+  $type: CompendiumTextGenerationType;
+  compendiumId: string;
+}
+
+export interface DescribeImageContextInfoDto
+  extends CompendiumTextGenerationContextInfoDto {
+  $type: CompendiumTextGenerationType.DescribeImage;
+  instructions: string | null;
+}
+
+export interface CreateCompendiumRecordImageGenerationPromptContextInfoDto
+  extends CompendiumTextGenerationContextInfoDto {
+  $type: CompendiumTextGenerationType.CreateCompendiumRecordImageGenerationPrompt;
+  compendiumRecordId: string;
+  instructions: string | null;
+}
+
+export enum CompendiumTextGenerationType {
+  DescribeImage = 'describeImage',
+  CreateCompendiumRecordImageGenerationPrompt = 'createCompendiumRecordImageGenerationPrompt',
 }

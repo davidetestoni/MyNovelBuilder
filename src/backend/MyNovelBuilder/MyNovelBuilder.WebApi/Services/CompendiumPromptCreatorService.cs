@@ -28,7 +28,7 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
 
     /// <inheritdoc />
     public async Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(
-        CompendiumGenerateTextRequestDto request)
+        GenerateTextRequestDto request)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
@@ -38,6 +38,12 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
         {
             throw new ApiException(ErrorCodes.PromptNotFound,
                 $"Prompt with ID {request.PromptId} not found.");
+        }
+
+        if (request.ContextInfo is not CompendiumTextGenerationContextInfoDto compendiumContextInfo)
+        {
+            throw new ApiException(ErrorCodes.InvalidPromptContext,
+                "The prompt context is invalid.");
         }
 
         var requiredContextType = prompt.Type switch
@@ -55,11 +61,11 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                 "The prompt context is invalid.");
         }
 
-        var compendium = await unitOfWork.Compendia.GetWithRecordsByIdAsync(request.CompendiumId);
+        var compendium = await unitOfWork.Compendia.GetWithRecordsByIdAsync(compendiumContextInfo.CompendiumId);
         if (compendium is null)
         {
             throw new ApiException(ErrorCodes.CompendiumNotFound,
-                $"Compendium with ID {request.CompendiumId} not found.");
+                $"Compendium with ID {compendiumContextInfo.CompendiumId} not found.");
         }
 
         var messages = request.ContextInfo switch
@@ -73,7 +79,7 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
 
         _logger.LogInformation(
             "Sending compendium prompt with messages for compendium {CompendiumId}: {@Messages}",
-            request.CompendiumId, messages);
+            compendiumContextInfo.CompendiumId, messages);
 
         return messages;
     }

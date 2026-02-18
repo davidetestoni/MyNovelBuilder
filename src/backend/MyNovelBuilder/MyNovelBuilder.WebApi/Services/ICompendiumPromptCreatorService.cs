@@ -11,5 +11,5 @@ public interface ICompendiumPromptCreatorService
     /// <summary>
     /// Create a prompt based on the request.
     /// </summary>
-    Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(CompendiumGenerateTextRequestDto request);
+    Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(GenerateTextRequestDto request);
 }

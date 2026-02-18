@@ -12,15 +12,39 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 [JsonDerivedType(typeof(CreateCompendiumRecordContextInfoDto), typeDiscriminator: "createCompendiumRecord")]
 [JsonDerivedType(typeof(EditCompendiumRecordContextInfoDto), typeDiscriminator: "editCompendiumRecord")]
 [JsonDerivedType(typeof(SendChatMessageContextInfoDto), typeDiscriminator: "sendChatMessage")]
-public class TextGenerationContextInfoDto
+[JsonDerivedType(typeof(DescribeImageContextInfoDto), typeDiscriminator: "describeImage")]
+[JsonDerivedType(typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto), typeDiscriminator: "createCompendiumRecordImageGenerationPrompt")]
+public abstract class TextGenerationContextInfoDto
 {
     
 }
 
 /// <summary>
+/// DTO for the context information for text generation that is scoped to a specific novel.
+/// </summary>
+public abstract class NovelTextGenerationContextInfoDto : TextGenerationContextInfoDto
+{
+    /// <summary>
+    /// The ID of the novel.
+    /// </summary>
+    public required Guid NovelId { get; set; }
+}
+
+/// <summary>
+/// DTO for the context information for text generation that is scoped to a specific compendium.
+/// </summary>
+public abstract class CompendiumTextGenerationContextInfoDto : TextGenerationContextInfoDto
+{
+    /// <summary>
+    /// The ID of the compendium.
+    /// </summary>
+    public required Guid CompendiumId { get; set; }
+}
+
+/// <summary>
 /// DTO for the context information for text generation.
 /// </summary>
-public class GenerateTextContextInfoDto : TextGenerationContextInfoDto
+public class GenerateTextContextInfoDto : NovelTextGenerationContextInfoDto
 {
     /// <summary>
     /// The index of the chapter.
@@ -46,7 +70,7 @@ public class GenerateTextContextInfoDto : TextGenerationContextInfoDto
 /// <summary>
 /// DTO for the context information for text summarization.
 /// </summary>
-public class SummarizeTextContextInfoDto : TextGenerationContextInfoDto
+public class SummarizeTextContextInfoDto : NovelTextGenerationContextInfoDto
 {
     /// <summary>
     /// The index of the chapter.
@@ -62,7 +86,7 @@ public class SummarizeTextContextInfoDto : TextGenerationContextInfoDto
 /// <summary>
 /// DTO for the context information for text replacement.
 /// </summary>
-public class ReplaceTextContextInfoDto : TextGenerationContextInfoDto
+public class ReplaceTextContextInfoDto : NovelTextGenerationContextInfoDto
 {
     /// <summary>
     /// The index of the chapter.
@@ -93,7 +117,7 @@ public class ReplaceTextContextInfoDto : TextGenerationContextInfoDto
 /// <summary>
 /// DTO for the context information for creating a compendium record.
 /// </summary>
-public class CreateCompendiumRecordContextInfoDto : TextGenerationContextInfoDto
+public class CreateCompendiumRecordContextInfoDto : NovelTextGenerationContextInfoDto
 {
     /// <summary>
     /// The index of the chapter.
@@ -124,7 +148,7 @@ public class CreateCompendiumRecordContextInfoDto : TextGenerationContextInfoDto
 /// <summary>
 /// DTO for the context information for editing a compendium record.
 /// </summary>
-public class EditCompendiumRecordContextInfoDto : TextGenerationContextInfoDto
+public class EditCompendiumRecordContextInfoDto : NovelTextGenerationContextInfoDto
 {
     /// <summary>
     /// The index of the chapter.
@@ -176,7 +200,7 @@ public class ChatMessageDto
 /// <summary>
 /// DTO for the context information for sending a chat message.
 /// </summary>
-public class SendChatMessageContextInfoDto : TextGenerationContextInfoDto
+public class SendChatMessageContextInfoDto : NovelTextGenerationContextInfoDto
 {
     /// <summary>
     /// The id of the chapter associated with the chat context.
@@ -206,4 +230,31 @@ public class SendChatMessageContextInfoDto : TextGenerationContextInfoDto
     /// The records must belong to compendia associated with the specified novel.
     /// </summary>
     public IEnumerable<Guid> CompendiumRecordIds { get; set; } = new List<Guid>();
+}
+
+/// <summary>
+/// DTO for the context information for image description.
+/// </summary>
+public class DescribeImageContextInfoDto : CompendiumTextGenerationContextInfoDto
+{
+    /// <summary>
+    /// Additional instructions for the image description.
+    /// </summary>
+    public string? Instructions { get; set; }
+}
+
+/// <summary>
+/// DTO for the context information for generating an image generation prompt for a compendium record.
+/// </summary>
+public class CreateCompendiumRecordImageGenerationPromptContextInfoDto : CompendiumTextGenerationContextInfoDto
+{
+    /// <summary>
+    /// The ID of the compendium record for which to generate an image generation prompt.
+    /// </summary>
+    public Guid CompendiumRecordId { get; set; }
+    
+    /// <summary>
+    /// Any additional instructions for the image generation prompt generation.
+    /// </summary>
+    public string? Instructions { get; set; }
 }

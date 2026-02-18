@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { NovelGenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
+import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
 import {
   HttpEvent,
   HttpEventType,
@@ -13,7 +13,7 @@ import { ButtonModule } from 'primeng/button';
 
 export interface GenerateTextResultComponentData {
   textToReplace: string; // In HTML format
-  request: NovelGenerateTextRequestDto;
+  request: GenerateTextRequestDto;
 }
 
 @Component({

@@ -3,7 +3,7 @@ import { Observable, map } from 'rxjs';
 import { environment } from '../../environment';
 import { mockedTextGenerationResponse } from './mock';
 import { Injectable, inject } from '@angular/core';
-import { NovelGenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
+import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
 
@@ -17,7 +17,7 @@ export class GenerateTextService {
   private mocked = environment.mocked;
 
   generateText(
-    request: NovelGenerateTextRequestDto,
+    request: GenerateTextRequestDto,
   ): Observable<HttpEvent<string>> {
     // Add the model to the start of the recently used models list
     this.saveRecentlyUsedModel(request.model);

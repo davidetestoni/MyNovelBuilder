@@ -25,6 +25,11 @@ public class PromptBuilderTests
                     records, (prose, chapterIndex, sectionIndex));
         }
     }
+    
+    private class TestTextGenerationContextInfoDto : NovelTextGenerationContextInfoDto
+    {
+        
+    }
 
     [Theory]
     [InlineData("Vera", "Vera was there.", true)]
@@ -152,10 +157,21 @@ public class PromptBuilderTests
     [InlineData(WritingPov.ThirdPersonOmniscient, "The novel is written in third person (omniscient)")]
     public void ReplacePlaceholders_GeneratesCorrectPovString(WritingPov pov, string expectedPart)
     {
-        var novel = new Novel { Title = "Test", Pov = pov, Language = WritingLanguage.English, Tense = WritingTense.Past };
+        var novel = new Novel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test", 
+            Pov = pov, 
+            Language = WritingLanguage.English,
+            Tense = WritingTense.Past
+        };
+        
         var context = new PromptBuilderContext<TextGenerationContextInfoDto>
         {
-            Client = new TextGenerationContextInfoDto(),
+            Client = new TestTextGenerationContextInfoDto
+            {
+                NovelId = novel.Id
+            },
             Novel = novel,
             Prose = new Prose(),
             CompendiumRecords = new List<CompendiumRecord>()
@@ -172,6 +188,7 @@ public class PromptBuilderTests
     {
         var novel = new Novel 
         { 
+            Id = Guid.NewGuid(),
             Title = "Test",
             Pov = WritingPov.ThirdPersonLimited, 
             Language = WritingLanguage.English, 
@@ -184,7 +201,10 @@ public class PromptBuilderTests
         };
         var context = new PromptBuilderContext<TextGenerationContextInfoDto>
         {
-            Client = new TextGenerationContextInfoDto(),
+            Client = new TestTextGenerationContextInfoDto
+            {
+                NovelId = novel.Id
+            },
             Novel = novel,
             Prose = new Prose(),
             CompendiumRecords = new List<CompendiumRecord>()
@@ -199,10 +219,19 @@ public class PromptBuilderTests
     [Fact]
     public void ReplacePlaceholders_GeneratesCorrectTenseString()
     {
-        var novel = new Novel { Title = "Test", Tense = WritingTense.Past, Language = WritingLanguage.English };
+        var novel = new Novel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test",
+            Tense = WritingTense.Past,
+            Language = WritingLanguage.English
+        };
         var context = new PromptBuilderContext<TextGenerationContextInfoDto>
         {
-            Client = new TextGenerationContextInfoDto(),
+            Client = new TestTextGenerationContextInfoDto
+            {
+                NovelId = novel.Id
+            },
             Novel = novel,
             Prose = new Prose(),
             CompendiumRecords = new List<CompendiumRecord>()

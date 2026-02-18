@@ -41,6 +41,12 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                 $"Prompt with ID {request.PromptId} not found.");
         }
 
+        if (request.ContextInfo is not NovelTextGenerationContextInfoDto novelContextInfo)
+        {
+            throw new ApiException(ErrorCodes.InvalidPromptContext,
+                "The prompt context is invalid.");
+        }
+
         var requiredContextType = prompt.Type switch
         {
             PromptType.GenerateText => typeof(GenerateTextContextInfoDto),
@@ -59,14 +65,14 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                 "The prompt context is invalid.");
         }
 
-        var novel = await unitOfWork.Novels.GetWithReferencesByIdAsync(request.NovelId);
+        var novel = await unitOfWork.Novels.GetWithReferencesByIdAsync(novelContextInfo.NovelId);
         if (novel is null)
         {
             throw new ApiException(ErrorCodes.NovelNotFound,
-                $"Novel with ID {request.NovelId} not found.");
+                $"Novel with ID {novelContextInfo.NovelId} not found.");
         }
 
-        var prose = await novelService.GetProseAsync(request.NovelId);
+        var prose = await novelService.GetProseAsync(novelContextInfo.NovelId);
         var recordsTasks = novel.Compendia.Select(compendium =>
             unitOfWork.CompendiumRecords.GetByCompendiumIdAsync(compendium.Id));
         var recordsLists = await Task.WhenAll(recordsTasks);

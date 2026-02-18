@@ -35,7 +35,7 @@ import {
 import {
   CreateCompendiumRecordContextInfoDto,
   GenerateTextContextInfoDto,
-  NovelGenerateTextRequestDto,
+  GenerateTextRequestDto,
   ReplaceTextContextInfoDto,
   SummarizeTextContextInfoDto,
   NovelTextGenerationType,
@@ -352,15 +352,15 @@ export class ProseEditorComponent implements OnDestroy {
         instructionsRequired: false,
         contextInfo: <SummarizeTextContextInfoDto>{
           $type: NovelTextGenerationType.SummarizeText,
+          novelId: this.novelId,
           chapterIndex: chapterIndex,
           sectionIndex: sectionIndex,
         },
-        novelId: this.novelId,
       },
     });
 
     this.dialogRef?.onClose.subscribe(
-      (request: NovelGenerateTextRequestDto) => {
+      (request: GenerateTextRequestDto) => {
         if (request) {
           this.generateSectionSummary(chapterIndex, sectionIndex, request);
         }
@@ -371,7 +371,7 @@ export class ProseEditorComponent implements OnDestroy {
   generateSectionSummary(
     chapterIndex: number,
     sectionIndex: number,
-    request: NovelGenerateTextRequestDto,
+    request: GenerateTextRequestDto,
   ) {
     // Clear the current summary
     this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
@@ -439,18 +439,18 @@ export class ProseEditorComponent implements OnDestroy {
         prompts: prompts,
         contextInfo: <GenerateTextContextInfoDto>{
           $type: NovelTextGenerationType.GenerateText,
+          novelId: this.novelId,
           chapterIndex: this.lastSelection!.chapterIndex,
           sectionIndex: this.lastSelection!.sectionIndex,
           textOffset: this.lastSelection!.range.index,
           instructions: null,
         },
         instructionsRequired: true, // This should be defined by the prompt
-        novelId: this.novelId,
       },
     });
 
     this.dialogRef?.onClose.subscribe(
-      (request: NovelGenerateTextRequestDto) => {
+      (request: GenerateTextRequestDto) => {
         if (request) {
           this.openGenerateTextResultDialog(request);
         }
@@ -458,7 +458,7 @@ export class ProseEditorComponent implements OnDestroy {
     );
   }
 
-  openGenerateTextResultDialog(request: NovelGenerateTextRequestDto) {
+  openGenerateTextResultDialog(request: GenerateTextRequestDto) {
     this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
       header: 'Generate Text',
       width: '50vw',
@@ -521,6 +521,7 @@ export class ProseEditorComponent implements OnDestroy {
         prompts: prompts,
         contextInfo: <ReplaceTextContextInfoDto>{
           $type: NovelTextGenerationType.ReplaceText,
+          novelId: this.novelId,
           chapterIndex: this.lastSelection!.chapterIndex,
           sectionIndex: this.lastSelection!.sectionIndex,
           textOffset: this.lastSelection!.range.index,
@@ -528,12 +529,11 @@ export class ProseEditorComponent implements OnDestroy {
           instructions: null,
         },
         instructionsRequired: true, // This should be defined by the prompt
-        novelId: this.novelId,
       },
     });
 
     this.dialogRef?.onClose.subscribe(
-      (request: NovelGenerateTextRequestDto) => {
+      (request: GenerateTextRequestDto) => {
         if (request) {
           this.openReplaceTextResultDialog(request);
         }
@@ -541,7 +541,7 @@ export class ProseEditorComponent implements OnDestroy {
     );
   }
 
-  openReplaceTextResultDialog(request: NovelGenerateTextRequestDto) {
+  openReplaceTextResultDialog(request: GenerateTextRequestDto) {
     this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
       header: 'Replace Text',
       width: '50vw',
@@ -598,6 +598,7 @@ export class ProseEditorComponent implements OnDestroy {
         prompts: prompts,
         contextInfo: <CreateCompendiumRecordContextInfoDto>{
           $type: NovelTextGenerationType.CreateCompendiumRecord,
+          novelId: this.novelId,
           chapterIndex: this.lastSelection!.chapterIndex,
           sectionIndex: this.lastSelection!.sectionIndex,
           textOffset: this.lastSelection!.range.index,
@@ -605,12 +606,11 @@ export class ProseEditorComponent implements OnDestroy {
           instructions: null,
         },
         instructionsRequired: true,
-        novelId: this.novelId,
       },
     });
 
     this.dialogRef?.onClose.subscribe(
-      (request: NovelGenerateTextRequestDto) => {
+      (request: GenerateTextRequestDto) => {
         if (request) {
           this.dialogRef = this.dialogService.open(
             GenerateTextResultComponent,

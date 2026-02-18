@@ -16,11 +16,6 @@ public class GenerateTextRequestDto
     public Guid PromptId { get; set; }
     
     /// <summary>
-    /// The novel ID.
-    /// </summary>
-    public Guid NovelId { get; set; }
-    
-    /// <summary>
     /// The context information.
     /// </summary>
     public required TextGenerationContextInfoDto ContextInfo { get; set; }

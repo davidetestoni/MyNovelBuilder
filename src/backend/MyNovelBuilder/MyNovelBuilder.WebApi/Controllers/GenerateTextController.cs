@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Hybrid;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Dtos.Prompt;
+using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 
@@ -73,9 +75,14 @@ public class GenerateTextController : ControllerBase
         var textGenerationService = await GetTextGenerationServiceAsync();
         
         HttpContext.Response.Headers.Append("Content-Type", "text/event-stream");
-        
-        var prompt = await _novelPromptCreatorService.CreatePromptAsync(dto);
-        
+
+        var prompt = dto.ContextInfo switch
+        {
+            NovelTextGenerationContextInfoDto => await _novelPromptCreatorService.CreatePromptAsync(dto),
+            CompendiumTextGenerationContextInfoDto => await _compendiumPromptCreatorService.CreatePromptAsync(dto),
+            _ => throw new ApiException(ErrorCodes.InvalidPromptContext, "The prompt context is invalid.")
+        };
+
         await foreach (var chunk in textGenerationService.GenerateStreamedAsync(dto.Model, prompt, cancellationToken))
         {
             var responseDto = new GenerateTextResponseChunkDto
@@ -110,16 +117,17 @@ public class GenerateTextController : ControllerBase
         var imageBytes = ms.ToArray();
 
         var prompt = await _compendiumPromptCreatorService.CreatePromptAsync(
-            new CompendiumGenerateTextRequestDto
+            new GenerateTextRequestDto
             {
                 Model = dto.Model,
                 PromptId = dto.PromptId,
-                CompendiumId = dto.CompendiumId,
                 ContextInfo = new DescribeImageContextInfoDto
                 {
+                    CompendiumId = dto.CompendiumId,
                     Instructions = dto.Instructions
                 }
             });
+        
         var textGenerationService = await GetTextGenerationServiceAsync();
         var description = await textGenerationService.DescribeImageAsync(
             dto.Model,

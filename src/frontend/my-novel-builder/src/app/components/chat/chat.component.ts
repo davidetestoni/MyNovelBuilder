@@ -43,7 +43,7 @@ import {
   HttpResponse,
 } from '@angular/common/http';
 import {
-  NovelGenerateTextRequestDto,
+  GenerateTextRequestDto,
   SendChatMessageContextInfoDto,
   NovelTextGenerationType,
   ChatMessageDto,
@@ -412,6 +412,7 @@ export class ChatComponent
 
     const contextInfo: SendChatMessageContextInfoDto = {
       $type: NovelTextGenerationType.SendChatMessage,
+      novelId: this.currentChat.context.novelId,
       chapterIndex: this.currentChat.context.chapterIndex,
       userMessage: userMessageContent,
       previousMessages,
@@ -419,10 +420,9 @@ export class ChatComponent
       compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
     };
 
-    const request: NovelGenerateTextRequestDto = {
+    const request: GenerateTextRequestDto = {
       model: this.selectedModel,
       promptId: this.selectedPromptId,
-      novelId: this.currentChat.context.novelId,
       contextInfo: contextInfo,
     };
 
