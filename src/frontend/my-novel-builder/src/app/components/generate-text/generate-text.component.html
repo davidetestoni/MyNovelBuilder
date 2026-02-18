@@ -13,11 +13,11 @@
           [style]="{ width: '100%' }"
         />
       </div>
-      @if (instructionsRequired) {
+      @if (showInstructions) {
         <div class="form-field">
-          <label for="instructions" class="form-field-label"
-            >Instructions *</label
-          >
+          <label for="instructions" class="form-field-label">
+            Instructions@if (instructionsRequired) { * }
+          </label>
           <textarea
             pTextarea
             id="instructions"

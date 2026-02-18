@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -8,7 +8,11 @@ import {
 } from '@angular/forms';
 import { GenerateImageService } from '../../services/generate-image.service';
 import { LocalStorageService } from '../../services/local-storage.service';
-import { DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogConfig,
+  DynamicDialogRef,
+} from 'primeng/dynamicdialog';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { HttpEvent, HttpEventType } from '@angular/common/http';
@@ -17,6 +21,28 @@ import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-generation-model-info.dto';
+import { PromptService } from '../../services/prompt.service';
+import { PromptType } from '../../types/enums/prompt-type';
+import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
+import {
+  CompendiumTextGenerationType,
+  CreateCompendiumRecordImageGenerationPromptContextInfoDto,
+  GenerateTextRequestDto,
+} from '../../types/dtos/generate/generate-text-request.dto';
+import {
+  GenerateTextComponent,
+  GenerateTextComponentData,
+} from '../generate-text/generate-text.component';
+import {
+  GenerateTextResultComponent,
+  GenerateTextResultComponentData,
+} from '../generate-text-result/generate-text-result.component';
+
+export interface GenerateImageComponentData {
+  enablePromptGeneration?: boolean;
+  compendiumId?: string;
+  compendiumRecordId?: string;
+}
 
 @Component({
   selector: 'app-generate-image',
@@ -32,8 +58,9 @@ import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-gen
   templateUrl: './generate-image.component.html',
   styleUrl: './generate-image.component.scss',
 })
-export class GenerateImageComponent implements OnInit {
+export class GenerateImageComponent implements OnInit, OnDestroy {
   dialogRef = inject(DynamicDialogRef);
+  config = inject(DynamicDialogConfig);
 
   models: ImageGenerationModelInfoDto[] = [];
   modelOptions: { label: string; value: string }[] = [];
@@ -43,6 +70,13 @@ export class GenerateImageComponent implements OnInit {
     inject(LocalStorageService);
   readonly toastrService: ToastrService = inject(ToastrService);
   readonly sanitizer: DomSanitizer = inject(DomSanitizer);
+  readonly promptService: PromptService = inject(PromptService);
+  readonly dialogService: DialogService = inject(DialogService);
+
+  data!: GenerateImageComponentData;
+  promptGenerationPrompts: PromptDto[] = [];
+  promptGenerationDialogRef: DynamicDialogRef | null = null;
+  isLoadingPromptGenerationPrompts = false;
 
   formGroup = new FormGroup({
     prompt: new FormControl('', [Validators.required]),
@@ -54,6 +88,8 @@ export class GenerateImageComponent implements OnInit {
   isGenerating = false;
 
   constructor() {
+    this.data = (this.config.data ?? {}) as GenerateImageComponentData;
+
     const prompt = this.localStorageService.getStringForKey(
       LocalStorageKey.LastImagePrompt,
     );
@@ -68,6 +104,14 @@ export class GenerateImageComponent implements OnInit {
 
   ngOnInit(): void {
     this.getModels();
+
+    if (this.isPromptGenerationEnabled()) {
+      this.getPromptGenerationPrompts();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.promptGenerationDialogRef?.close();
   }
 
   getModels() {
@@ -139,5 +183,115 @@ export class GenerateImageComponent implements OnInit {
 
   accept(): void {
     this.dialogRef.close(this.imageBlob);
+  }
+
+  canGeneratePrompt(): boolean {
+    return (
+      this.isPromptGenerationEnabled() && this.promptGenerationPrompts.length > 0
+    );
+  }
+
+  openGeneratePromptDialog(): void {
+    if (!this.canGeneratePrompt()) {
+      return;
+    }
+
+    this.promptGenerationDialogRef = this.dialogService.open(
+      GenerateTextComponent,
+      {
+        header: 'Generate Prompt',
+        width: '50vw',
+        contentStyle: { overflow: 'auto' },
+        baseZIndex: 11000,
+        modal: true,
+        closable: true,
+        closeOnEscape: true,
+        dismissableMask: true,
+        data: <GenerateTextComponentData>{
+          prompts: this.promptGenerationPrompts,
+          contextInfo: <CreateCompendiumRecordImageGenerationPromptContextInfoDto>{
+            $type:
+              CompendiumTextGenerationType.CreateCompendiumRecordImageGenerationPrompt,
+            compendiumId: this.data.compendiumId!,
+            compendiumRecordId: this.data.compendiumRecordId!,
+            instructions: null,
+          },
+          instructionsRequired: false,
+          showInstructions: true,
+        },
+      },
+    );
+
+    this.promptGenerationDialogRef?.onClose.subscribe(
+      (request: GenerateTextRequestDto) => {
+        if (request) {
+          this.openGeneratePromptResultDialog(request);
+        }
+      },
+    );
+  }
+
+  private openGeneratePromptResultDialog(request: GenerateTextRequestDto): void {
+    this.promptGenerationDialogRef = this.dialogService.open(
+      GenerateTextResultComponent,
+      {
+        header: 'Generate Prompt',
+        width: '50vw',
+        contentStyle: { overflow: 'auto' },
+        baseZIndex: 11000,
+        modal: true,
+        closable: true,
+        closeOnEscape: true,
+        dismissableMask: true,
+        data: <GenerateTextResultComponentData>{
+          request,
+          textToReplace: '',
+        },
+      },
+    );
+
+    this.promptGenerationDialogRef?.onClose.subscribe(
+      (result: string | 'back' | undefined) => {
+        if (result === 'back') {
+          this.openGeneratePromptDialog();
+        } else if (result && result.trim() !== '') {
+          this.formGroup.patchValue({ prompt: result.trim() });
+          this.formGroup.markAsDirty();
+        }
+      },
+    );
+  }
+
+  private getPromptGenerationPrompts(): void {
+    this.isLoadingPromptGenerationPrompts = true;
+
+    this.promptService.getPrompts().subscribe({
+      next: (prompts) => {
+        this.promptGenerationPrompts = prompts.filter(
+          (p) =>
+            p.type === PromptType.CreateCompendiumRecordImageGenerationPrompt,
+        );
+
+        if (this.promptGenerationPrompts.length === 0) {
+          this.toastrService.warning(
+            'No prompts are available for image prompt generation',
+          );
+        }
+      },
+      error: () => {
+        this.toastrService.error('Failed to load prompt-generation prompts');
+      },
+      complete: () => {
+        this.isLoadingPromptGenerationPrompts = false;
+      },
+    });
+  }
+
+  isPromptGenerationEnabled(): boolean {
+    return (
+      this.data.enablePromptGeneration === true &&
+      !!this.data.compendiumId &&
+      !!this.data.compendiumRecordId
+    );
   }
 }

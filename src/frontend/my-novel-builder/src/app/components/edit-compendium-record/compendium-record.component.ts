@@ -5,7 +5,10 @@ import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { TitleCasePipe } from '@angular/common';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { GenerateImageComponent } from '../generate-image/generate-image.component';
+import {
+  GenerateImageComponent,
+  GenerateImageComponentData,
+} from '../generate-image/generate-image.component';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
@@ -38,6 +41,7 @@ import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/com
 })
 export class CompendiumRecordComponent {
   @Input() record!: CompendiumRecordDto;
+  @Input() compendiumId!: string;
   @Output() updateRecord = new EventEmitter<CompendiumRecordDto>();
   @Output() deleteRecord = new EventEmitter<CompendiumRecordDto>();
   readonly compendiumService: CompendiumService = inject(CompendiumService);
@@ -160,6 +164,11 @@ export class CompendiumRecordComponent {
       closeOnEscape: true,
       modal: true,
       dismissableMask: true,
+      data: <GenerateImageComponentData>{
+        enablePromptGeneration: true,
+        compendiumId: this.compendiumId,
+        compendiumRecordId: this.record.id,
+      },
     });
 
     this.dialogRef?.onClose.subscribe((image: Blob) => {

@@ -95,6 +95,7 @@
         <div class="compendium-record">
           <app-compendium-record
             [record]="currentRecord"
+            [compendiumId]="compendiumId"
             (updateRecord)="updateRecord($event)"
             (deleteRecord)="deleteRecord($event)"
           />

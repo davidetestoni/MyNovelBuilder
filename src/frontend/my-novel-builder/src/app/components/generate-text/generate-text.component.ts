@@ -9,7 +9,7 @@ import {
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
   GenerateTextRequestDto,
-  NovelTextGenerationContextInfoDto,
+  TextGenerationContextInfoDto,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { GenerateTextService } from '../../services/generate-text.service';
@@ -22,8 +22,9 @@ import { ButtonModule } from 'primeng/button';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
-  contextInfo: NovelTextGenerationContextInfoDto;
+  contextInfo: TextGenerationContextInfoDto;
   instructionsRequired: boolean;
+  showInstructions?: boolean;
 }
 
 @Component({
@@ -45,6 +46,7 @@ export class GenerateTextComponent implements OnInit {
 
   data!: GenerateTextComponentData;
   instructionsRequired = false;
+  showInstructions = false;
   models: string[] = [];
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
@@ -89,14 +91,20 @@ export class GenerateTextComponent implements OnInit {
       this.formGroup.patchValue({ promptId: promptId });
     }
 
-    if (!this.data.instructionsRequired) {
+    this.instructionsRequired = this.data.instructionsRequired;
+    this.showInstructions =
+      this.data.showInstructions ?? this.data.instructionsRequired;
+
+    if (!this.showInstructions) {
       this.formGroup.get('instructions')!.disable();
-    } else {
+    } else if (this.instructionsRequired) {
       // Add the validators
       this.formGroup.get('instructions')!.setValidators([Validators.required]);
+    } else {
+      this.formGroup.get('instructions')!.clearValidators();
     }
 
-    this.instructionsRequired = this.data.instructionsRequired;
+    this.formGroup.get('instructions')!.updateValueAndValidity();
   }
 
   ngOnInit(): void {
@@ -133,13 +141,18 @@ export class GenerateTextComponent implements OnInit {
       );
     }
 
+    let contextInfo: TextGenerationContextInfoDto = this.data.contextInfo;
+    if ('instructions' in contextInfo) {
+      contextInfo = <TextGenerationContextInfoDto>(<unknown>{
+        ...contextInfo,
+        instructions: this.formGroup.get('instructions')!.value,
+      });
+    }
+
     this.dialogRef.close(<GenerateTextRequestDto>{
       promptId: this.formGroup.get('promptId')!.value,
       model: this.formGroup.get('model')!.value,
-      contextInfo: {
-        ...this.data.contextInfo,
-        instructions: this.formGroup.get('instructions')!.value,
-      },
+      contextInfo,
     });
   }
 

@@ -36,6 +36,18 @@
         }
       </div>
       <div class="form-buttons-container">
+        @if (isPromptGenerationEnabled()) {
+          <p-button
+            label="Generate prompt"
+            (click)="openGeneratePromptDialog()"
+            [disabled]="
+              isGenerating ||
+              isLoadingPromptGenerationPrompts ||
+              !canGeneratePrompt()
+            "
+            variant="text"
+          />
+        }
         <p-button
           label="{{ isGenerating ? 'Generating...' : 'Generate' }}"
           (click)="generateImage()"
