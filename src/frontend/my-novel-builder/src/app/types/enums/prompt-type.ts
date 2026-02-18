@@ -6,4 +6,5 @@ export enum PromptType {
   EditCompendiumRecord = 'editCompendiumRecord',
   SendChatMessage = 'sendChatMessage',
   DescribeImage = 'describeImage',
+  CreateCompendiumRecordImageGenerationPrompt = 'createCompendiumRecordImageGenerationPrompt',
 }

@@ -39,4 +39,9 @@ public enum PromptType
     /// A prompt for describing an image.
     /// </summary>
     DescribeImage = 6,
+
+    /// <summary>
+    /// A prompt for generating an image prompt for a compendium record.
+    /// </summary>
+    CreateCompendiumRecordImageGenerationPrompt = 7,
 }

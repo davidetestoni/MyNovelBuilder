@@ -32,6 +32,7 @@ export class PromptsComponent implements OnInit, OnDestroy {
     PromptType.EditCompendiumRecord,
     PromptType.SendChatMessage,
     PromptType.DescribeImage,
+    PromptType.CreateCompendiumRecordImageGenerationPrompt,
   ];
 
   ngOnInit(): void {

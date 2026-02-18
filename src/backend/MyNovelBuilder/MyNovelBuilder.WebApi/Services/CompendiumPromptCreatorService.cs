@@ -43,6 +43,8 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
         var requiredContextType = prompt.Type switch
         {
             PromptType.DescribeImage => typeof(DescribeImageContextInfoDto),
+            PromptType.CreateCompendiumRecordImageGenerationPrompt =>
+                typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "This prompt type is not valid for compendium prompt generation.")
         };
@@ -63,6 +65,8 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
         var messages = request.ContextInfo switch
         {
             DescribeImageContextInfoDto d => GetPromptMessages(d, prompt, compendium.Records.ToList()),
+            CreateCompendiumRecordImageGenerationPromptContextInfoDto c =>
+                GetPromptMessages(c, prompt, compendium.Records.ToList()),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "The prompt context is invalid.")
         };
@@ -76,8 +80,8 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
 
     private static IEnumerable<PromptMessageDto> GetPromptMessages<T>(
         T clientContext,
-        Data.Entities.Prompt prompt,
-        List<Data.Entities.CompendiumRecord> records)
+        Prompt prompt,
+        List<CompendiumRecord> records)
         where T : CompendiumTextGenerationContextInfoDto
     {
         return prompt.Messages.Select(message => new PromptMessageDto
@@ -89,6 +93,9 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                     .ReplacePlaceholders(new PromptBuilderContext<DescribeImageContextInfoDto>
                     {
                         Client = d,
+                        // TODO: Instead of passing an empty novel and prose,
+                        //  we should consider refactoring the prompt builders
+                        //  to not require these if they are not needed for the specific prompt type.
                         Novel = new Novel
                         {
                             Title = string.Empty
@@ -96,6 +103,19 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                         Prose = new Prose(),
                         CompendiumRecords = records
                     }).ToString(),
+                CreateCompendiumRecordImageGenerationPromptContextInfoDto c =>
+                    new CreateCompendiumRecordImageGenerationPromptBuilder(message.Message)
+                        .ReplacePlaceholders(
+                            new PromptBuilderContext<CreateCompendiumRecordImageGenerationPromptContextInfoDto>
+                            {
+                                Client = c,
+                                Novel = new Novel
+                                {
+                                    Title = string.Empty
+                                },
+                                Prose = new Prose(),
+                                CompendiumRecords = records
+                            }).ToString(),
                 _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                     "The prompt context is invalid.")
             }

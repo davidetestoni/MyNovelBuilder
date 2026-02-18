@@ -46,6 +46,7 @@ export class PromptComponent {
     PromptType.EditCompendiumRecord,
     PromptType.SendChatMessage,
     PromptType.DescribeImage,
+    PromptType.CreateCompendiumRecordImageGenerationPrompt,
   ];
 
   promptMessageRoles: PromptMessageRole[] = [
@@ -173,9 +174,24 @@ export class PromptComponent {
           "Information from other compendium records in the record's compendium.",
       },
     ],
+    [PromptType.CreateCompendiumRecordImageGenerationPrompt]: [
+      {
+        keyword: '{{record}}',
+        description:
+          'The full record context for the selected compendium record.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'Additional instructions for generating the image prompt.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from other compendium records for context.',
+      },
+    ],
   };
 
-  commonKeywords = [
+  novelKeywords = [
     {
       keyword: '{{novel.language}}',
       description: 'The writing language set for the novel.',
@@ -222,5 +238,16 @@ export class PromptComponent {
         this.deletePrompt.emit(this.prompt);
       },
     });
+  }
+
+  isNovelPrompt(promptType: PromptType): boolean {
+    return [
+      PromptType.GenerateText,
+      PromptType.SummarizeText,
+      PromptType.ReplaceText,
+      PromptType.CreateCompendiumRecord,
+      PromptType.EditCompendiumRecord,
+      PromptType.SendChatMessage,
+    ].includes(promptType);
   }
 }

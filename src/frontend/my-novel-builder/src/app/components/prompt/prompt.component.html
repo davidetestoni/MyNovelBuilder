@@ -25,8 +25,8 @@
           <span>Available Keywords</span>
         </div>
         <div class="keywords-list">
-          @if (prompt.type !== PromptType.DescribeImage) {
-            @for (item of commonKeywords; track item.keyword) {
+          @if (isNovelPrompt(prompt.type)) {
+            @for (item of novelKeywords; track item.keyword) {
               <div class="keyword-item">
                 <span class="keyword">{{ item.keyword }}</span>
                 <span class="description">{{ item.description }}</span>

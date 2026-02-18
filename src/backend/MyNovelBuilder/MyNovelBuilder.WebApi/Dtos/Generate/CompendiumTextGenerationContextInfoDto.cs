@@ -6,6 +6,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 /// DTO for compendium-scoped text generation context information.
 /// </summary>
 [JsonDerivedType(typeof(DescribeImageContextInfoDto), typeDiscriminator: "describeImage")]
+[JsonDerivedType(typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto), typeDiscriminator: "createCompendiumRecordImageGenerationPrompt")]
 public class CompendiumTextGenerationContextInfoDto : TextGenerationContextInfoDto
 {
 }
@@ -17,6 +18,22 @@ public class DescribeImageContextInfoDto : CompendiumTextGenerationContextInfoDt
 {
     /// <summary>
     /// Additional instructions for the image description.
+    /// </summary>
+    public string? Instructions { get; set; }
+}
+
+/// <summary>
+/// DTO for the context information for generating an image generation prompt for a compendium record.
+/// </summary>
+public class CreateCompendiumRecordImageGenerationPromptContextInfoDto : CompendiumTextGenerationContextInfoDto
+{
+    /// <summary>
+    /// The ID of the compendium record for which to generate an image generation prompt.
+    /// </summary>
+    public Guid CompendiumRecordId { get; set; }
+    
+    /// <summary>
+    /// Any additional instructions for the image generation prompt generation.
     /// </summary>
     public string? Instructions { get; set; }
 }

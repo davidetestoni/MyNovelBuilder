@@ -15,6 +15,14 @@ export interface DescribeImageContextInfoDto
   instructions: string | null;
 }
 
+export interface CreateCompendiumRecordImageGenerationPromptContextInfoDto
+  extends CompendiumTextGenerationContextInfoDto {
+  $type: CompendiumTextGenerationType.CreateCompendiumRecordImageGenerationPrompt;
+  compendiumRecordId: string;
+  instructions: string | null;
+}
+
 export enum CompendiumTextGenerationType {
   DescribeImage = 'describeImage',
+  CreateCompendiumRecordImageGenerationPrompt = 'createCompendiumRecordImageGenerationPrompt',
 }
