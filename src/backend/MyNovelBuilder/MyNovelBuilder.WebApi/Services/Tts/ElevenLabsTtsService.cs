@@ -1,5 +1,7 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
+using ElevenLabs;
+using ElevenLabs.Models;
+using ElevenLabs.TextToSpeech;
+using ElevenLabs.Voices;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
@@ -11,12 +13,10 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 /// <summary>
 /// Service for generating audio using ElevenLabs TTS.
 /// </summary>
-[RegisterKeyedService(TtsProvider.ElevenLabs, useHttpClient: true)]
+[RegisterKeyedService(TtsProvider.ElevenLabs)]
 public class ElevenLabsTtsService : ITtsService
 {
-    private readonly HttpClient _httpClient;
     private readonly IIntegrationsService _integrationsService;
-    private readonly ILogger<ElevenLabsTtsService> _logger;
 
     /// <inheritdoc />
     public bool SupportsEmphasisTags => true;
@@ -26,16 +26,11 @@ public class ElevenLabsTtsService : ITtsService
 
     /// <summary></summary>
     public ElevenLabsTtsService(
-        ILogger<ElevenLabsTtsService> logger,
-        HttpClient httpClient,
         IIntegrationsService integrationsService)
     {
-        _httpClient = httpClient;
         _integrationsService = integrationsService;
-        _logger = logger;
-        _httpClient.BaseAddress = new Uri("https://api.elevenlabs.io/v2/");
     }
-
+    
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
     {
@@ -49,40 +44,44 @@ public class ElevenLabsTtsService : ITtsService
                 "ElevenLabs API key is missing.");
         }
         
-        var httpRequest = new HttpRequestMessage
-        {
-            Method = HttpMethod.Post,
-            RequestUri = new Uri(
-                _httpClient.BaseAddress!,
-                $"text-to-speech/{config.TtsVoiceId}"),
-            Content = new StringContent(
-                JsonSerializer.Serialize(new
-                {
-                    text = request.Message,
-                    model_id = "eleven_v3",
-                }),
-                System.Text.Encoding.UTF8,
-                "application/json")
-        };
-        httpRequest.Headers.TryAddWithoutValidation("xi-api-key", apiKey);
-        
-        using var response = await _httpClient.SendAsync(httpRequest);
+        var client = new ElevenLabsClient(apiKey);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _logger.LogError("ElevenLabs TTS generation failed: {ErrorContent}", errorContent);
-            throw new ApiException(ErrorCodes.ExternalServiceError,
-                $"ElevenLabs refused to generate audio: {errorContent}");
-        }
-        
-        return await response.Content.ReadAsByteArrayAsync();
+        var voiceClip = await client.TextToSpeechEndpoint.TextToSpeechAsync(
+            new TextToSpeechRequest(
+                new Voice(config.TtsVoiceId, string.Empty),
+                request.Message,
+                model: new Model("eleven_v3")));
+
+        return voiceClip.ClipData.ToArray();
     }
     
     /// <inheritdoc />
-    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
     {
-        throw new NotImplementedException();
+        var config = await _integrationsService.GetConfigAsync();
+        var apiKey = config.ElevenLabsApiKey;
+        
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new ApiException(
+                ErrorCodes.MissingOrInvalidServiceCredentials,
+                "ElevenLabs API key is missing.");
+        }
+        
+        var client = new ElevenLabsClient(apiKey);
+        
+        var ms = new MemoryStream();
+        await client.TextToSpeechEndpoint.TextToSpeechAsync(
+            new TextToSpeechRequest(
+                new Voice(config.TtsVoiceId, string.Empty),
+                request.Message,
+                model: new Model("eleven_v3")),
+            partialClipCallback: async partialClip =>
+            {
+                await ms.WriteAsync(partialClip.ClipData);
+            });
+
+        return ms;
     }
 
     /// <inheritdoc />
@@ -98,32 +97,17 @@ public class ElevenLabsTtsService : ITtsService
                 "ElevenLabs API key is missing.");
         }
         
-        var httpRequest = new HttpRequestMessage
+        var client = new ElevenLabsClient(apiKey);
+
+        var voices = await client.VoicesV2Endpoint.GetVoicesAsync(new VoiceQuery
         {
-            Method = HttpMethod.Get,
-            RequestUri = new Uri(_httpClient.BaseAddress!, "voices"),
-        };
-        httpRequest.Headers.TryAddWithoutValidation("xi-api-key", apiKey);
+            PageSize = 100
+        });
         
-        // Response is in the format:
-        // { "voices": [ { "voice_id": "...", "name": "..." }, ... ] }
-        using var response = await _httpClient.SendAsync(httpRequest);
-        var jsonResponse = await response.Content.ReadAsStringAsync();
-        
-        if (!response.IsSuccessStatusCode)
+        return voices.Voices.Select(v => new TtsVoiceDto
         {
-            _logger.LogError("ElevenLabs GetVoices failed: {Response}", jsonResponse);
-            throw new ApiException(ErrorCodes.ExternalServiceError,
-                $"ElevenLabs refused to provide voices: {jsonResponse}");
-        }
-        
-        var responseObject = JsonNode.Parse(jsonResponse);
-        var voicesArray = responseObject!["voices"]!.AsArray();
-        
-        return voicesArray.Select(v => new TtsVoiceDto
-        {
-            VoiceId = v!["voice_id"]!.GetValue<string>(),
-            Name = v["name"]!.GetValue<string>(),
+            VoiceId = v.Id,
+            Name = v.Name,
         });
     }
 }

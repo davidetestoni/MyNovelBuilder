@@ -105,6 +105,8 @@ public class GenerateAudioController : ControllerBase
         Stream mp3Stream,
         CancellationToken cancellationToken)
     {
+        // TODO: Make this not blocking by streaming the conversion
+        //  instead of buffering the entire MP3 in memory first.
         Stream? bufferedMp3 = null;
         var sourceStream = mp3Stream;
 
