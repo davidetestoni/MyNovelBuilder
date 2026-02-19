@@ -1,0 +1,30 @@
+<div class="storyline">
+  @if (events.length === 0) {
+    <div class="storyline-empty">No story events yet.</div>
+  } @else {
+    <div class="storyline-scroll">
+      <div class="storyline-track" role="list">
+        @for (event of events; track event.chapterIndex + '-' + event.sectionIndex + '-' + event.storyEventIndex) {
+          <div class="storyline-item" role="listitem">
+            <div class="storyline-connector"></div>
+            <button
+              class="storyline-card"
+              type="button"
+              (click)="selectChapter(event)"
+            >
+              @if (event.date) {
+                <div class="storyline-date">{{ event.date }}</div>
+              }
+              <div class="storyline-body">
+                <div class="storyline-title">{{ event.title }}</div>
+                @if (event.description) {
+                  <div class="storyline-description">{{ event.description }}</div>
+                }
+              </div>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

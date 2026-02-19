@@ -1,0 +1,114 @@
+@use "../../../styles/colors.scss" as *;
+
+:host {
+  display: block;
+}
+
+.storyline {
+  width: 100%;
+}
+
+.storyline-empty {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: $grey11;
+}
+
+.storyline-scroll {
+  overflow-x: auto;
+  padding: 1rem 0.5rem;
+}
+
+.storyline-track {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  width: max-content;
+  position: relative;
+}
+
+.storyline-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.storyline-connector {
+  position: absolute;
+  top: 70px;
+  left: -0.5rem;
+  right: -0.5rem;
+  height: 2px;
+  background-color: $grey4;
+  z-index: 0;
+}
+
+.storyline-item:first-child .storyline-connector {
+  left: 50%;
+}
+
+.storyline-item:last-child .storyline-connector {
+  right: 50%;
+}
+
+.storyline-card {
+  background-color: $grey1;
+  border: 1px solid $grey4;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+  height: 140px;
+  overflow: hidden;
+  text-align: left;
+  width: 350px;
+  min-width: 350px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $grey18;
+    outline-offset: 2px;
+  }
+}
+
+.storyline-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.storyline-date {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  color: $grey12;
+}
+
+.storyline-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.storyline-description {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: $grey13;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}

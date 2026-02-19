@@ -12,10 +12,17 @@ export interface Section {
   text: string;
   images: string[];
   recordOverrides: RecordOverride[];
+  storyEvents: StoryEvent[];
 }
 
 export interface RecordOverride {
   compendiumRecordId: string;
   keyword: string;
+  description: string;
+}
+
+export interface StoryEvent {
+  title: string;
+  date: string;
   description: string;
 }

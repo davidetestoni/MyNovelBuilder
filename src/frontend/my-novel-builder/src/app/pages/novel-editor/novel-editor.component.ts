@@ -17,6 +17,7 @@ import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
+import { StorylineComponent } from '../../components/storyline/storyline.component';
 
 @Component({
   selector: 'app-novel-editor',
@@ -26,6 +27,7 @@ import { InputTextModule } from 'primeng/inputtext';
     RouterModule,
     SpacedPipe,
     ProseEditorComponent,
+    StorylineComponent,
     ButtonModule,
     SelectModule,
     InputTextModule,
@@ -63,6 +65,7 @@ export class NovelEditorComponent {
   lastHoveredFloatingMediaId: string | null = null;
   zoomedMedia: CompendiumRecordMediaDto | null = null;
   selectedChapterIndex: number | null = null;
+  isStoryTimelineOpen = signal(false);
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -206,5 +209,9 @@ export class NovelEditorComponent {
   onProseImageClicked(imageUrl: string): void {
     // TODO: This could be done better
     this.zoomMedia({ id: '', url: imageUrl, isCurrent: false, isVideo: false });
+  }
+
+  toggleStoryTimeline(): void {
+    this.isStoryTimelineOpen.update((isOpen) => !isOpen);
   }
 }

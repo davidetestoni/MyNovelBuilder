@@ -199,6 +199,28 @@
         </div>
       }
     </div>
+    <div class="story-timeline" [class.is-open]="isStoryTimelineOpen()">
+      <div class="story-timeline-handle">
+        <p-button
+          label="Storyline"
+          [icon]="isStoryTimelineOpen() ? 'pi pi-chevron-down' : 'pi pi-chevron-up'"
+          iconPos="right"
+          variant="text"
+          size="small"
+          (onClick)="toggleStoryTimeline()"
+        />
+      </div>
+      <div class="story-timeline-panel">
+        @if (isStoryTimelineOpen()) {
+          <div class="story-timeline-body">
+            <app-storyline
+              [prose]="prose()"
+              (chapterSelected)="selectedChapterIndex = $event"
+            ></app-storyline>
+          </div>
+        }
+      </div>
+    </div>
     @if (zoomedMedia !== null) {
       <div class="zoomed-media-overlay" (click)="unzoomMedia()">
         <div class="zoomed-media">

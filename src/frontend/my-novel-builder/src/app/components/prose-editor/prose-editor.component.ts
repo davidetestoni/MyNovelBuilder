@@ -160,6 +160,7 @@ export class ProseEditorComponent implements OnDestroy {
       text: '',
       images: [],
       recordOverrides: [],
+      storyEvents: [],
     });
     this.saveProse();
   }
