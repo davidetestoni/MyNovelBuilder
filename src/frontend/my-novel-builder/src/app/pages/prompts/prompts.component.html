@@ -11,22 +11,25 @@
             Add Prompt
           </p-button>
         </div>
-        <div class="prompt-types-list">
-          @for (type of promptTypes; track type) {
-            @if (getPromptsOfType(type).length > 0) {
-              <div class="prompts-type">
-                <div class="prompts-type-name">
-                  <span>{{ type | spaced }}</span>
-                </div>
-                <div class="prompts-list">
-                  @for (prompt of getPromptsOfType(type); track prompt.id) {
-                    <div class="prompt" (click)="setCurrentPrompt(prompt)">
-                      <span>{{ prompt.name }}</span>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
+        <div class="prompts-filters">
+          <p-select
+            [(ngModel)]="selectedPromptType"
+            [options]="promptTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Select Prompt Type"
+            [style]="{ width: '100%' }"
+          />
+        </div>
+        <div class="prompts-list">
+          @for (prompt of getFilteredPrompts(); track prompt.id) {
+            <div
+              class="prompt"
+              [class.selected]="currentPrompt?.id === prompt.id"
+              (click)="setCurrentPrompt(prompt)"
+            >
+              <span>{{ prompt.name }}</span>
+            </div>
           }
         </div>
       </div>

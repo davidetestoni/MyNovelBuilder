@@ -4,17 +4,17 @@ import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptService } from '../../services/prompt.service';
 import { PromptType } from '../../types/enums/prompt-type';
 import { CreatePromptComponent } from '../../components/create-prompt/create-prompt.component';
-import { SpacedPipe } from '../../pipes/spaced.pipe';
 import { PromptComponent } from '../../components/prompt/prompt.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
 
 @Component({
   selector: 'app-prompts',
   standalone: true,
   templateUrl: './prompts.component.html',
   styleUrl: './prompts.component.scss',
-  imports: [FormsModule, SpacedPipe, PromptComponent, ButtonModule],
+  imports: [FormsModule, PromptComponent, ButtonModule, SelectModule],
   providers: [DialogService],
 })
 export class PromptsComponent implements OnInit, OnDestroy {
@@ -23,7 +23,6 @@ export class PromptsComponent implements OnInit, OnDestroy {
   private dialogRef: DynamicDialogRef | null = null;
   readonly promptService: PromptService = inject(PromptService);
   currentPrompt: PromptDto | null = null;
-
   promptTypes: PromptType[] = [
     PromptType.GenerateText,
     PromptType.SummarizeText,
@@ -35,6 +34,11 @@ export class PromptsComponent implements OnInit, OnDestroy {
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
   ];
+  selectedPromptType: PromptType = this.promptTypes[0];
+  promptTypeOptions = this.promptTypes.map((type) => ({
+    label: this.formatPromptType(type),
+    value: type,
+  }));
 
   ngOnInit(): void {
     this.getPrompts();
@@ -85,8 +89,21 @@ export class PromptsComponent implements OnInit, OnDestroy {
     });
   }
 
-  getPromptsOfType(type: PromptType): PromptDto[] {
-    return this.prompts?.filter((p) => p.type === type) || [];
+  getFilteredPrompts(): PromptDto[] {
+    if (!this.prompts) {
+      return [];
+    }
+
+    return this.prompts.filter((prompt) => prompt.type === this.selectedPromptType);
+  }
+
+  private formatPromptType(value: string): string {
+    if (!value || value.length === 0) {
+      return '';
+    }
+
+    const replaced = value.replace(/([a-z])([A-Z])/g, '$1 $2');
+    return replaced.charAt(0).toUpperCase() + replaced.slice(1);
   }
 
   updatePrompt(prompt: PromptDto): void {
