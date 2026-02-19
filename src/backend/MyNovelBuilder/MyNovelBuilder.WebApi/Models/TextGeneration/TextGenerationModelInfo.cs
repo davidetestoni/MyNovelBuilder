@@ -14,4 +14,9 @@ public class TextGenerationModelInfo
     /// Whether the model can accept image input.
     /// </summary>
     public bool IsVisionCapable { get; set; }
+    
+    /// <summary>
+    /// Whether the model supports structured outputs (JSON schema response format).
+    /// </summary>
+    public bool SupportsStructuredOutputs { get; set; }
 }

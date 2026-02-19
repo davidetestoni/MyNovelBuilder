@@ -83,7 +83,11 @@ public class GenerateTextController : ControllerBase
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext, "The prompt context is invalid.")
         };
 
-        await foreach (var chunk in textGenerationService.GenerateStreamedAsync(dto.Model, prompt, cancellationToken))
+        await foreach (var chunk in textGenerationService.GenerateStreamedAsync( 
+                           dto.Model,
+                           prompt,
+                           dto.ContextInfo.GetStructuredOutputOptions(),
+                           cancellationToken))
         {
             var responseDto = new GenerateTextResponseChunkDto
             {
@@ -156,7 +160,8 @@ public class GenerateTextController : ControllerBase
                 return models.Select(m => new TextGenerationModelInfoDto
                 {
                     Id = m.Id,
-                    IsVisionCapable = m.IsVisionCapable
+                    IsVisionCapable = m.IsVisionCapable,
+                    SupportsStructuredOutputs = m.SupportsStructuredOutputs
                 });
             },
             new HybridCacheEntryOptions

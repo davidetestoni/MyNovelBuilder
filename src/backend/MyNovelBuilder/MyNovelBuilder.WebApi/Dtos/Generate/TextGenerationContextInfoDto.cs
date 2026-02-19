@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.TextGeneration;
 
 namespace MyNovelBuilder.WebApi.Dtos.Generate;
 
@@ -14,9 +15,13 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 [JsonDerivedType(typeof(SendChatMessageContextInfoDto), typeDiscriminator: "sendChatMessage")]
 [JsonDerivedType(typeof(DescribeImageContextInfoDto), typeDiscriminator: "describeImage")]
 [JsonDerivedType(typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto), typeDiscriminator: "createCompendiumRecordImageGenerationPrompt")]
+[JsonDerivedType(typeof(CreateStoryEventsContextInfoDto), typeDiscriminator: "createStoryEvents")]
 public abstract class TextGenerationContextInfoDto
 {
-    
+    /// <summary>
+    /// Gets structured output options for this context, if any.
+    /// </summary>
+    public virtual StructuredOutputOptions? GetStructuredOutputOptions() => null;
 }
 
 /// <summary>
@@ -257,4 +262,39 @@ public class CreateCompendiumRecordImageGenerationPromptContextInfoDto : Compend
     /// Any additional instructions for the image generation prompt generation.
     /// </summary>
     public string? Instructions { get; set; }
+}
+
+/// <summary>
+/// DTO for the context information for creating story events.
+/// </summary>
+public class CreateStoryEventsContextInfoDto : NovelTextGenerationContextInfoDto
+{
+    private const string _storyEventsJsonSchema = """
+                                                  {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "title": { "type": "string" },
+                                                        "date": { "type": "string" },
+                                                        "description": { "type": "string" }
+                                                      },
+                                                      "required": ["title", "date", "description"],
+                                                      "additionalProperties": false
+                                                    }
+                                                  }
+                                                  """;
+
+    /// <summary>
+    /// The index of the chapter.
+    /// </summary>
+    public int ChapterIndex { get; set; }
+
+    /// <inheritdoc />
+    public override StructuredOutputOptions? GetStructuredOutputOptions() => new()
+    {
+        SchemaName = "story_events",
+        JsonSchema = _storyEventsJsonSchema,
+        Strict = true
+    };
 }

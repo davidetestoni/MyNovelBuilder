@@ -216,11 +216,14 @@
             <app-storyline
               [prose]="prose()"
               [selectedChapterIndex]="selectedChapterIndex"
+              [prompts]="prompts"
+              [novelId]="novelId"
               (chapterSelected)="selectedChapterIndex = $event"
               (storyEventCreated)="createStoryEvent($event)"
               (storyEventUpdated)="updateStoryEvent($event)"
               (storyEventsReordered)="reorderStoryEvents($event)"
               (storyEventRemoved)="removeStoryEvent($event)"
+              (storyEventsGenerated)="addGeneratedStoryEvents($event)"
             ></app-storyline>
           </div>
         }

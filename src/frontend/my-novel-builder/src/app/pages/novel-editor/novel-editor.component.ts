@@ -333,4 +333,41 @@ export class NovelEditorComponent {
 
     this.updateProse({ ...prose, chapters: updatedChapters });
   }
+
+  addGeneratedStoryEvents(
+    chapters: { chapterIndex: number; storyEvents: StoryEvent[] }[],
+  ): void {
+    const prose = this.prose();
+    if (!prose || chapters.length === 0) {
+      return;
+    }
+
+    const updates = new Map<number, StoryEvent[]>();
+    for (const chapter of chapters) {
+      if (
+        Number.isInteger(chapter.chapterIndex) &&
+        prose.chapters[chapter.chapterIndex]
+      ) {
+        updates.set(chapter.chapterIndex, chapter.storyEvents);
+      }
+    }
+
+    if (updates.size === 0) {
+      return;
+    }
+
+    const updatedChapters = prose.chapters.map((chapter, chapterIndex) => {
+      const generatedEvents = updates.get(chapterIndex);
+      if (!generatedEvents || generatedEvents.length === 0) {
+        return chapter;
+      }
+
+      return {
+        ...chapter,
+        storyEvents: [...(chapter.storyEvents || []), ...generatedEvents],
+      };
+    });
+
+    this.updateProse({ ...prose, chapters: updatedChapters });
+  }
 }

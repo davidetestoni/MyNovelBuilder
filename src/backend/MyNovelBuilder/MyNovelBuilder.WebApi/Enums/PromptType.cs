@@ -44,4 +44,9 @@ public enum PromptType
     /// A prompt for generating an image prompt for a compendium record.
     /// </summary>
     CreateCompendiumRecordImageGenerationPrompt = 7,
+
+    /// <summary>
+    /// A prompt for creating story events.
+    /// </summary>
+    CreateStoryEvents = 8,
 }

@@ -47,6 +47,7 @@ export class PromptComponent {
     PromptType.SendChatMessage,
     PromptType.DescribeImage,
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
+    PromptType.CreateStoryEvents,
   ];
 
   promptMessageRoles: PromptMessageRole[] = [
@@ -189,6 +190,16 @@ export class PromptComponent {
         description: 'Information from other compendium records for context.',
       },
     ],
+    [PromptType.CreateStoryEvents]: [
+      {
+        keyword: '{{context}}',
+        description: 'The content of the chapter or the whole novel.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
   };
 
   novelKeywords = [
@@ -248,6 +259,7 @@ export class PromptComponent {
       PromptType.CreateCompendiumRecord,
       PromptType.EditCompendiumRecord,
       PromptType.SendChatMessage,
+      PromptType.CreateStoryEvents,
     ].includes(promptType);
   }
 }

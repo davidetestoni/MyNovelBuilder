@@ -4,7 +4,6 @@ using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
-using OpenAI.Models;
 using MyNovelBuilder.WebApi.Attributes;
 
 namespace MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -47,6 +46,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     public async Task<string> GenerateAsync(
         string model,
         IEnumerable<PromptMessageDto> messages,
+        StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
         var client = await GetGoogleGenAiClientAsync();
@@ -60,17 +60,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                 .Where(m => m.Role is not PromptMessageRole.System)
                 .Select(ToContent)
                 .ToList(),
-            new Google.GenAI.Types.GenerateContentConfig
-            {
-                SystemInstruction = systemPrompt is null
-                    ? null 
-                    : new Google.GenAI.Types.Content
-                {
-                    Parts = [ToPart(systemPrompt.Message)],
-                    Role = "model"
-                }
-            }
-            );
+            CreateGenerateContentConfig(systemPrompt, structuredOutputOptions));
 
         return response.Candidates![0].Content!.Parts![0].Text!;
     }
@@ -78,6 +68,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async IAsyncEnumerable<string> GenerateStreamedAsync(string model,
         IEnumerable<PromptMessageDto> messages,
+        StructuredOutputOptions? structuredOutputOptions = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var client = await GetGoogleGenAiClientAsync();
@@ -89,16 +80,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
             .Select(ToContent)
             .ToList();
         
-        var config = new Google.GenAI.Types.GenerateContentConfig
-        {
-            SystemInstruction = systemPrompt is null
-                ? null 
-                : new Google.GenAI.Types.Content
-            {
-                Parts = [ToPart(systemPrompt.Message)],
-                Role = "model"
-            }
-        };
+        var config = CreateGenerateContentConfig(systemPrompt, structuredOutputOptions);
 
         await foreach (var chunk in client.Models.GenerateContentStreamAsync(
                            model, conversationMessages, config).WithCancellation(cancellationToken))
@@ -223,7 +205,8 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
             .Select(m => new TextGenerationModelInfo
         {
             Id = m.Name!,
-            IsVisionCapable = IsVisionCapable(m.Name)
+            IsVisionCapable = IsVisionCapable(m.Name),
+            SupportsStructuredOutputs = SupportsStructuredOutputs(m.Name)
         }));
 
         while (pager.HasMorePages)
@@ -234,7 +217,8 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                 .Select(m => new TextGenerationModelInfo
             {
                 Id = m.Name!,
-                IsVisionCapable = IsVisionCapable(m.Name)
+                IsVisionCapable = IsVisionCapable(m.Name),
+                SupportsStructuredOutputs = SupportsStructuredOutputs(m.Name)
             }));
         }
         
@@ -269,5 +253,46 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         var value = modelName.ToLowerInvariant();
         return value.StartsWith("models/gemini-")
                && !value.Contains("embedding");
+    }
+
+    private static bool SupportsStructuredOutputs(string? modelName)
+    {
+        if (string.IsNullOrWhiteSpace(modelName))
+        {
+            return false;
+        }
+
+        // Google JSON-schema structured output is supported for Gemini models.
+        var value = modelName.ToLowerInvariant();
+        return value.StartsWith("models/gemini-")
+               && !value.Contains("embedding")
+               && !value.Contains("tts")
+               && !value.Contains("native-audio")
+               && !value.Contains("live");
+    }
+
+    private static GenerateContentConfig CreateGenerateContentConfig(
+        PromptMessageDto? systemPrompt,
+        StructuredOutputOptions? structuredOutputOptions = null)
+    {
+        var config = new GenerateContentConfig
+        {
+            SystemInstruction = systemPrompt is null
+                ? null
+                : new Content
+                {
+                    Parts = [ToPart(systemPrompt.Message)],
+                    Role = "model"
+                }
+        };
+
+        if (structuredOutputOptions is null)
+        {
+            return config;
+        }
+
+        config.ResponseMimeType = "application/json";
+        config.ResponseJsonSchema = structuredOutputOptions.JsonSchema;
+        return config;
     }
 }

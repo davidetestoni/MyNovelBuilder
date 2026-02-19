@@ -23,6 +23,12 @@ export interface GenerateTextContextInfoDto extends NovelTextGenerationContextIn
   instructions: string | null;
 }
 
+export interface CreateStoryEventsContextInfoDto
+  extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.CreateStoryEvents;
+  chapterIndex: number;
+}
+
 export interface SummarizeTextContextInfoDto extends NovelTextGenerationContextInfoDto {
   $type: NovelTextGenerationType.SummarizeText;
   chapterIndex: number;
@@ -78,6 +84,7 @@ export enum NovelTextGenerationType {
   CreateCompendiumRecord = 'createCompendiumRecord',
   EditCompendiumRecord = 'editCompendiumRecord',
   SendChatMessage = 'sendChatMessage',
+  CreateStoryEvents = 'createStoryEvents',
 }
 
 export interface CompendiumTextGenerationContextInfoDto {

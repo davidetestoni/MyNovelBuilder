@@ -14,6 +14,7 @@ public interface ITextGenerationService
     Task<string> GenerateAsync(
         string model,
         IEnumerable<PromptMessageDto> messages,
+        StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default);
     
     /// <summary>
@@ -22,6 +23,7 @@ public interface ITextGenerationService
     IAsyncEnumerable<string> GenerateStreamedAsync(
         string model,
         IEnumerable<PromptMessageDto> messages,
+        StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

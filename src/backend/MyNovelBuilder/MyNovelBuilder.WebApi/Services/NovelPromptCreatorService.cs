@@ -55,6 +55,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             PromptType.CreateCompendiumRecord => typeof(CreateCompendiumRecordContextInfoDto),
             PromptType.EditCompendiumRecord => typeof(EditCompendiumRecordContextInfoDto),
             PromptType.SendChatMessage => typeof(SendChatMessageContextInfoDto),
+            PromptType.CreateStoryEvents => typeof(CreateStoryEventsContextInfoDto),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "This prompt type is not valid for novel prompt generation.")
         };
@@ -86,6 +87,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             CreateCompendiumRecordContextInfoDto c => GetPromptMessages(c, prompt, novel, prose, records),
             EditCompendiumRecordContextInfoDto e => GetPromptMessages(e, prompt, novel, prose, records),
             SendChatMessageContextInfoDto m => GetPromptMessages(m, prompt, novel, prose, records),
+            CreateStoryEventsContextInfoDto s => GetPromptMessages(s, prompt, novel, prose, records),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "The prompt context is invalid.")
         };
@@ -137,6 +139,14 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                     }).ToString(),
                 SendChatMessageContextInfoDto s => new SendChatMessagePromptBuilder(message.Message)
                     .ReplacePlaceholders(new PromptBuilderContext<SendChatMessageContextInfoDto>
+                    {
+                        Client = s,
+                        Novel = novel,
+                        Prose = prose,
+                        CompendiumRecords = records
+                    }).ToString(),
+                CreateStoryEventsContextInfoDto s => new CreateStoryEventsPromptBuilder(message.Message)
+                    .ReplacePlaceholders(new PromptBuilderContext<CreateStoryEventsContextInfoDto>
                     {
                         Client = s,
                         Novel = novel,

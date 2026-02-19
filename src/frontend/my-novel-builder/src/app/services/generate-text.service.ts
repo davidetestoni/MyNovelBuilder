@@ -1,11 +1,18 @@
-import { HttpClient, HttpEvent } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { HttpClient, HttpEvent, HttpEventType, HttpResponse } from '@angular/common/http';
+import { Observable, map, filter } from 'rxjs';
 import { environment } from '../../environment';
 import { mockedTextGenerationResponse } from './mock';
 import { Injectable, inject } from '@angular/core';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
+import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
+
+export interface GenerateTextCompletion {
+  content: string;
+  rawResponse: string;
+  parseError: string | null;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -29,6 +36,59 @@ export class GenerateTextService {
           reportProgress: true,
           responseType: 'text',
         });
+  }
+
+  generateTextCompletion(
+    request: GenerateTextRequestDto,
+  ): Observable<GenerateTextCompletion> {
+    this.saveRecentlyUsedModel(request.model);
+
+    if (this.mocked) {
+      return new Observable((observer) => {
+        const mockedContent = JSON.stringify([
+          {
+            title: 'Mocked Story Event',
+            date: 'Day 1',
+            description: 'A mocked story event description.',
+          },
+        ]);
+        observer.next({
+          content: mockedContent,
+          rawResponse: mockedContent,
+          parseError: null,
+        });
+        observer.complete();
+      });
+    }
+
+    return this.http
+      .post(`${this.baseUrl}/generate/text/streamed`, request, {
+        observe: 'events',
+        reportProgress: true,
+        responseType: 'text',
+      })
+      .pipe(
+        filter((event) => event.type === HttpEventType.Response),
+        map((event) => {
+          const response = event as HttpResponse<string>;
+          const rawResponse = response.body ?? '';
+          try {
+            const responseChunks = rawResponse
+              .split('\n')
+              .filter((item) => item.length > 0)
+              .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+            const content = responseChunks.map((item) => item.content).join('');
+            return { content, rawResponse, parseError: null };
+          } catch (error) {
+            return {
+              content: '',
+              rawResponse,
+              parseError:
+                error instanceof Error ? error.message : 'Unable to parse response',
+            };
+          }
+        }),
+      );
   }
 
   describeImage(image: Blob, request: DescribeImageRequestDto): Observable<string> {
@@ -72,6 +132,18 @@ export class GenerateTextService {
         this.sortModels(
           models
             .filter((model) => model.isVisionCapable ?? false)
+            .map((model) => model.id),
+        ),
+      ),
+    );
+  }
+
+  getAvailableStructuredOutputModels(): Observable<string[]> {
+    return this.getAvailableModelInfos().pipe(
+      map((models) =>
+        this.sortModels(
+          models
+            .filter((model) => model.supportsStructuredOutputs ?? false)
             .map((model) => model.id),
         ),
       ),
@@ -135,7 +207,13 @@ export class GenerateTextService {
   private getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
     return this.mocked
       ? new Observable((observer) => {
-          observer.next([{ id: 'mocked-model', isVisionCapable: true }]);
+          observer.next([
+            {
+              id: 'mocked-model',
+              isVisionCapable: true,
+              supportsStructuredOutputs: true,
+            },
+          ]);
           observer.complete();
         })
       : this.http.get<TextGenerationModelInfoDto[]>(

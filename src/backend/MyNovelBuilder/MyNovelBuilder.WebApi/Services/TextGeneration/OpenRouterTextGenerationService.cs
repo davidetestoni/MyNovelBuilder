@@ -53,17 +53,22 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     public async Task<string> GenerateAsync(
         string model,
         IEnumerable<PromptMessageDto> messages,
+        StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
         var client = await GetOpenAiClientAsync();
         var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
+        var completionOptions = CreateChatCompletionOptions(structuredOutputOptions);
 
         ClientResult<ChatCompletion> response;
         try
         {
-            response = await chatClient.CompleteChatAsync(chatMessages, cancellationToken: cancellationToken);
+            response = await chatClient.CompleteChatAsync(
+                chatMessages,
+                completionOptions,
+                cancellationToken: cancellationToken);
         }
         catch (ClientResultException ex)
         {
@@ -78,14 +83,19 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     public async IAsyncEnumerable<string> GenerateStreamedAsync(
         string model,
         IEnumerable<PromptMessageDto> messages,
+        StructuredOutputOptions? structuredOutputOptions = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var client = await GetOpenAiClientAsync();
         var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
+        var completionOptions = CreateChatCompletionOptions(structuredOutputOptions);
 
-        var updates = chatClient.CompleteChatStreamingAsync(chatMessages, cancellationToken: cancellationToken);
+        var updates = chatClient.CompleteChatStreamingAsync(
+            chatMessages,
+            completionOptions,
+            cancellationToken: cancellationToken);
         await using var updateEnumerator = updates.GetAsyncEnumerator(cancellationToken);
 
         while (true)
@@ -209,7 +219,8 @@ public class OpenRouterTextGenerationService : ITextGenerationService
             .Select(m => new TextGenerationModelInfo
         {
             Id = m?["id"]?.GetValue<string>() ?? string.Empty,
-            IsVisionCapable = HasImageInputModality(m)
+            IsVisionCapable = HasImageInputModality(m),
+            SupportsStructuredOutputs = SupportsStructuredOutputs(m)
         });
     }
 
@@ -221,6 +232,24 @@ public class OpenRouterTextGenerationService : ITextGenerationService
             PromptMessageRole.Assistant => new AssistantChatMessage(message.Message),
             _ => throw new NotSupportedException($"Unsupported message role: {message.Role}")
         };
+
+    private static ChatCompletionOptions CreateChatCompletionOptions(
+        StructuredOutputOptions? structuredOutputOptions)
+    {
+        var options = new ChatCompletionOptions();
+
+        if (structuredOutputOptions is null)
+        {
+            return options;
+        }
+
+        options.ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
+            structuredOutputOptions.SchemaName,
+            jsonSchema: BinaryData.FromString(structuredOutputOptions.JsonSchema),
+            jsonSchemaIsStrict: structuredOutputOptions.Strict);
+
+        return options;
+    }
 
     private static ApiException ToApiException(ClientResultException ex)
     {
@@ -238,5 +267,17 @@ public class OpenRouterTextGenerationService : ITextGenerationService
 
         return modalities.Any(m =>
             string.Equals(m?.GetValue<string>(), "image", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool SupportsStructuredOutputs(JsonNode? model)
+    {
+        var parameters = model?["supported_parameters"]?.AsArray();
+        if (parameters is null)
+        {
+            return false;
+        }
+
+        return parameters.Any(p =>
+            string.Equals(p?.GetValue<string>(), "structured_outputs", StringComparison.OrdinalIgnoreCase));
     }
 }

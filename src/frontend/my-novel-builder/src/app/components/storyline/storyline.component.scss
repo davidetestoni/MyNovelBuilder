@@ -40,6 +40,22 @@
   gap: 1rem;
 }
 
+.storyline-chapter-events-empty {
+  position: relative;
+  width: 0;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 70px;
+    left: -0.5rem;
+    right: -0.5rem;
+    height: 2px;
+    background-color: $grey4;
+    z-index: 0;
+  }
+}
+
 .storyline-item-add {
   justify-content: center;
 }
@@ -276,6 +292,46 @@
 
     i {
       filter: $whitefilter;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $grey18;
+    outline-offset: 2px;
+  }
+}
+
+.generate-story-events-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 350px;
+  min-width: 350px;
+  height: 140px;
+  border: 2px dashed $grey9;
+  border-radius: 10px;
+  color: $grey12;
+  cursor: pointer;
+  transition: 0.3s;
+  user-select: none;
+  background-color: $grey2;
+  position: relative;
+  z-index: 1;
+
+  i {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 0.5rem;
+    color: $grey12;
+  }
+
+  &:hover {
+    border-color: $grey18;
+    color: $grey18;
+
+    i {
+      color: $grey18;
     }
   }
 

@@ -17,6 +17,12 @@ import {
   StoryEventDialogData,
   StoryEventDialogResult,
 } from '../story-event-dialog/story-event-dialog.component';
+import {
+  GenerateStoryEventsDialogComponent,
+  GenerateStoryEventsDialogData,
+  GenerateStoryEventsDialogResult,
+} from '../generate-story-events-dialog/generate-story-events-dialog.component';
+import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 
 interface StorylineTimelineEvent extends StoryEvent {
   chapterTitle: string;
@@ -67,12 +73,17 @@ export class StorylineComponent implements OnDestroy {
 
   @Input() prose: Prose | null = null;
   @Input() selectedChapterIndex: number | null = null;
+  @Input() prompts: PromptDto[] | null = null;
+  @Input() novelId!: string;
   @Output() chapterSelected = new EventEmitter<number>();
   @Output() storyEventRemoved = new EventEmitter<StorylineEventReference>();
   @Output() storyEventCreated = new EventEmitter<StorylineEventCreateRequest>();
   @Output() storyEventUpdated = new EventEmitter<StorylineEventUpdateRequest>();
   @Output() storyEventsReordered =
     new EventEmitter<StorylineEventReorderRequest>();
+  @Output() storyEventsGenerated = new EventEmitter<
+    { chapterIndex: number; storyEvents: StoryEvent[] }[]
+  >();
 
   get chapterGroups(): StorylineChapterGroup[] {
     if (!this.prose) {
@@ -216,6 +227,49 @@ export class StorylineComponent implements OnDestroy {
           storyEventIndex: event.storyEventIndex,
           storyEvent: result.storyEvent,
         });
+      },
+    );
+  }
+
+  openGenerateStoryEventsDialog(interactionEvent?: Event): void {
+    if (interactionEvent) {
+      interactionEvent.stopPropagation();
+      interactionEvent.preventDefault();
+    }
+
+    if (!this.canCreateStoryEvent) {
+      return;
+    }
+
+    const data: GenerateStoryEventsDialogData = {
+      chapters: this.getDialogChapters(),
+      selectedChapterIndex: this.selectedChapterIndex,
+      prompts: this.prompts ?? [],
+      novelId: this.novelId,
+    };
+
+    this.dialogRef = this.dialogService.open(
+      GenerateStoryEventsDialogComponent,
+      {
+        header: 'Generate Story Events',
+        width: '45vw',
+        contentStyle: { overflow: 'auto' },
+        baseZIndex: 10000,
+        closable: true,
+        closeOnEscape: true,
+        modal: true,
+        dismissableMask: true,
+        data,
+      },
+    );
+
+    this.dialogRef?.onClose.subscribe(
+      (result: GenerateStoryEventsDialogResult | undefined) => {
+        if (!result || !result.chapters.length) {
+          return;
+        }
+
+        this.storyEventsGenerated.emit(result.chapters);
       },
     );
   }

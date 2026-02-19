@@ -19,6 +19,7 @@
 
           <div
             class="storyline-chapter-events"
+            [class.storyline-chapter-events-empty]="chapter.events.length === 0"
             cdkDropList
             cdkDropListOrientation="horizontal"
             [id]="getDropListId(chapter.chapterIndex)"
@@ -101,6 +102,20 @@
             >
               <i class="icon icon-plus"></i>
               <span>Add Story Event</span>
+            </div>
+          </div>
+          <div class="storyline-item storyline-item-add" role="listitem">
+            <div class="storyline-connector"></div>
+            <div
+              class="generate-story-events-card"
+              role="button"
+              tabindex="0"
+              (click)="openGenerateStoryEventsDialog($event)"
+              (keydown.enter)="openGenerateStoryEventsDialog($event)"
+              (keydown.space)="openGenerateStoryEventsDialog($event)"
+            >
+              <i class="pi pi-bolt"></i>
+              <span>Generate Story Events</span>
             </div>
           </div>
         }
