@@ -215,7 +215,12 @@
           <div class="story-timeline-body">
             <app-storyline
               [prose]="prose()"
+              [selectedChapterIndex]="selectedChapterIndex"
               (chapterSelected)="selectedChapterIndex = $event"
+              (storyEventCreated)="createStoryEvent($event)"
+              (storyEventUpdated)="updateStoryEvent($event)"
+              (storyEventsReordered)="reorderStoryEvents($event)"
+              (storyEventRemoved)="removeStoryEvent($event)"
             ></app-storyline>
           </div>
         }

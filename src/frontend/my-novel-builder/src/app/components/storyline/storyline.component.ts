@@ -1,6 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  Output,
+  inject,
+} from '@angular/core';
+import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { Prose, StoryEvent } from '../../types/dtos/novel/prose';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import {
+  StoryEventDialogComponent,
+  StoryEventDialogData,
+  StoryEventDialogResult,
+} from '../story-event-dialog/story-event-dialog.component';
 
 interface StorylineTimelineEvent extends StoryEvent {
   chapterTitle: string;
@@ -8,40 +24,249 @@ interface StorylineTimelineEvent extends StoryEvent {
   storyEventIndex: number;
 }
 
+interface StorylineChapterGroup {
+  chapterTitle: string;
+  chapterIndex: number;
+  events: StorylineTimelineEvent[];
+}
+
+interface StorylineEventReference {
+  chapterIndex: number;
+  storyEventIndex: number;
+}
+
+interface StorylineEventCreateRequest {
+  chapterIndex: number;
+  storyEvent: StoryEvent;
+}
+
+interface StorylineEventUpdateRequest {
+  chapterIndex: number;
+  storyEventIndex: number;
+  storyEvent: StoryEvent;
+}
+
+interface StorylineEventReorderRequest {
+  chapterIndex: number;
+  previousIndex: number;
+  currentIndex: number;
+}
+
 @Component({
   selector: 'app-storyline',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ConfirmDialogModule, DragDropModule],
+  providers: [DialogService, ConfirmationService],
   templateUrl: './storyline.component.html',
   styleUrl: './storyline.component.scss',
 })
-export class StorylineComponent {
-  @Input() prose: Prose | null = null;
-  @Output() chapterSelected = new EventEmitter<number>();
+export class StorylineComponent implements OnDestroy {
+  private dialogService = inject(DialogService);
+  private confirmationService = inject(ConfirmationService);
+  private dialogRef: DynamicDialogRef | null = null;
 
-  get events(): StorylineTimelineEvent[] {
+  @Input() prose: Prose | null = null;
+  @Input() selectedChapterIndex: number | null = null;
+  @Output() chapterSelected = new EventEmitter<number>();
+  @Output() storyEventRemoved = new EventEmitter<StorylineEventReference>();
+  @Output() storyEventCreated = new EventEmitter<StorylineEventCreateRequest>();
+  @Output() storyEventUpdated = new EventEmitter<StorylineEventUpdateRequest>();
+  @Output() storyEventsReordered =
+    new EventEmitter<StorylineEventReorderRequest>();
+
+  get chapterGroups(): StorylineChapterGroup[] {
     if (!this.prose) {
       return [];
     }
 
-    const events: StorylineTimelineEvent[] = [];
-    this.prose.chapters.forEach((chapter, chapterIndex) => {
-      (chapter.storyEvents || []).forEach((storyEvent, storyEventIndex) => {
-        events.push({
+    return this.prose.chapters.map((chapter, chapterIndex) => {
+      const events = (chapter.storyEvents || []).map(
+        (storyEvent, storyEventIndex) => ({
           title: storyEvent.title?.trim() || 'Story Event',
           date: storyEvent.date?.trim() || '',
           description: storyEvent.description?.trim() || '',
           chapterTitle: chapter.title,
           chapterIndex,
           storyEventIndex,
-        });
-      });
-    });
+        }),
+      );
 
-    return events;
+      return {
+        chapterTitle: chapter.title,
+        chapterIndex,
+        events,
+      };
+    });
+  }
+
+  get canCreateStoryEvent(): boolean {
+    return (this.prose?.chapters.length || 0) > 0;
+  }
+
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
   }
 
   selectChapter(event: StorylineTimelineEvent): void {
     this.chapterSelected.emit(event.chapterIndex);
+  }
+
+  selectChapterByIndex(chapterIndex: number): void {
+    this.chapterSelected.emit(chapterIndex);
+  }
+
+  onStoryEventDrop(
+    event: CdkDragDrop<StorylineTimelineEvent[]>,
+    chapterIndex: number,
+  ): void {
+    if (event.previousIndex === event.currentIndex) {
+      return;
+    }
+
+    this.storyEventsReordered.emit({
+      chapterIndex,
+      previousIndex: event.previousIndex,
+      currentIndex: event.currentIndex,
+    });
+  }
+
+  selectChapterFromKeyboard(
+    event: StorylineTimelineEvent,
+    keyboardEvent: KeyboardEvent,
+  ): void {
+    if (keyboardEvent.key !== 'Enter' && keyboardEvent.key !== ' ') {
+      return;
+    }
+
+    keyboardEvent.preventDefault();
+    this.selectChapter(event);
+  }
+
+  removeStoryEvent(
+    event: StorylineTimelineEvent,
+    interactionEvent: Event,
+  ): void {
+    interactionEvent.stopPropagation();
+    interactionEvent.preventDefault();
+
+    this.confirmationService.confirm({
+      message:
+        'Are you sure you want to remove this story event? This action cannot be undone.',
+      header: 'Confirm Story Event Removal',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.storyEventRemoved.emit({
+          chapterIndex: event.chapterIndex,
+          storyEventIndex: event.storyEventIndex,
+        });
+      },
+    });
+  }
+
+  openCreateStoryEventDialog(interactionEvent?: Event): void {
+    if (interactionEvent) {
+      interactionEvent.stopPropagation();
+      interactionEvent.preventDefault();
+    }
+
+    const chapterIndex = this.getTargetChapterIndex();
+    if (chapterIndex === null) {
+      return;
+    }
+
+    this.openStoryEventDialog(
+      {
+        mode: 'create',
+        chapters: this.getDialogChapters(),
+        selectedChapterIndex: chapterIndex,
+      },
+      (result) => {
+        this.storyEventCreated.emit({
+          chapterIndex: result.chapterIndex,
+          storyEvent: result.storyEvent,
+        });
+      },
+    );
+  }
+
+  openEditStoryEventDialog(
+    event: StorylineTimelineEvent,
+    interactionEvent: Event,
+  ): void {
+    interactionEvent.stopPropagation();
+    interactionEvent.preventDefault();
+
+    this.openStoryEventDialog(
+      {
+        mode: 'edit',
+        chapters: this.getDialogChapters(),
+        selectedChapterIndex: event.chapterIndex,
+        storyEvent: {
+          title: event.title,
+          date: event.date,
+          description: event.description,
+        },
+      },
+      (result) => {
+        this.storyEventUpdated.emit({
+          chapterIndex: event.chapterIndex,
+          storyEventIndex: event.storyEventIndex,
+          storyEvent: result.storyEvent,
+        });
+      },
+    );
+  }
+
+  private getTargetChapterIndex(): number | null {
+    if (!this.canCreateStoryEvent) {
+      return null;
+    }
+
+    return (this.prose?.chapters.length || 1) - 1;
+  }
+
+  private openStoryEventDialog(
+    data: StoryEventDialogData,
+    onClose: (result: StoryEventDialogResult) => void,
+  ): void {
+    this.dialogRef = this.dialogService.open(StoryEventDialogComponent, {
+      header: data.mode === 'edit' ? 'Edit Story Event' : 'Create Story Event',
+      width: '45vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      closable: true,
+      closeOnEscape: true,
+      modal: true,
+      dismissableMask: true,
+      data,
+    });
+
+    this.dialogRef?.onClose.subscribe(
+      (result: StoryEventDialogResult | undefined) => {
+        if (!result) {
+          return;
+        }
+
+        onClose(result);
+      },
+    );
+  }
+
+  private getDialogChapters(): { label: string; value: number }[] {
+    if (!this.prose) {
+      return [];
+    }
+
+    return this.prose.chapters.map((chapter, chapterIndex) => ({
+      label: chapter.title,
+      value: chapterIndex,
+    }));
+  }
+
+  getDropListId(chapterIndex: number): string {
+    return `storyline-drop-list-${chapterIndex}`;
   }
 }

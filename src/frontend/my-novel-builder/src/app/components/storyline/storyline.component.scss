@@ -34,6 +34,21 @@
   align-items: center;
 }
 
+.storyline-chapter-events {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+}
+
+.storyline-item-add {
+  justify-content: center;
+}
+
+.storyline-item-chip {
+  justify-content: center;
+  min-height: 140px;
+}
+
 .storyline-connector {
   position: absolute;
   top: 70px;
@@ -44,11 +59,15 @@
   z-index: 0;
 }
 
-.storyline-item:first-child .storyline-connector {
+.storyline-track > .storyline-item:first-child .storyline-connector {
   left: 50%;
 }
 
-.storyline-item:last-child .storyline-connector {
+.storyline-track > .storyline-item:last-child .storyline-connector {
+  right: 50%;
+}
+
+.storyline-track > .storyline-chapter-events:last-child .storyline-item:last-child .storyline-connector {
   right: 50%;
 }
 
@@ -84,6 +103,54 @@
   }
 }
 
+.storyline-chapter-chip {
+  border: 1px solid $grey6;
+  background-color: $grey2;
+  color: $grey15;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+
+  &:hover {
+    border-color: $grey9;
+    color: $grey18;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $grey18;
+    outline-offset: 2px;
+  }
+}
+
+.storyline-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.storyline-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.storyline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .storyline-title {
   font-weight: 600;
   font-size: 0.9rem;
@@ -94,6 +161,29 @@
   margin-bottom: 0.75rem;
   font-size: 0.75rem;
   color: $grey12;
+}
+
+.storyline-drag-handle {
+  opacity: 35%;
+  font-size: 0.75rem;
+  cursor: grab;
+  color: $grey13;
+  margin-top: -1px;
+  margin-bottom: 0.75rem;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:hover {
+    opacity: 100%;
+    color: $grey18;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $grey18;
+    outline-offset: 1px;
+  }
 }
 
 .storyline-body {
@@ -111,4 +201,100 @@
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+}
+
+.storyline-remove {
+  border: none;
+  padding: 0;
+  opacity: 30%;
+  font-size: 0.8rem;
+  transition: opacity 0.3s;
+  filter: $grey13filter;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 100%;
+    filter: $whitefilter;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $grey18;
+    outline-offset: 1px;
+  }
+}
+
+.storyline-edit {
+  border: none;
+  padding: 0;
+  opacity: 30%;
+  margin-top: 2px;
+  width: 18px;
+  font-size: 0.8rem;
+  transition: opacity 0.3s;
+  filter: $grey13filter;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 100%;
+    filter: $whitefilter;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $grey18;
+    outline-offset: 1px;
+  }
+}
+
+.add-story-event-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 350px;
+  min-width: 350px;
+  height: 140px;
+  border: 2px dashed $grey13;
+  border-radius: 10px;
+  color: $grey13;
+  cursor: pointer;
+  transition: 0.3s;
+  user-select: none;
+  background-color: $grey1;
+  position: relative;
+  z-index: 1;
+
+  i {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 0.5rem;
+    filter: $grey13filter;
+  }
+
+  &:hover {
+    border-color: $grey18;
+    color: $grey18;
+
+    i {
+      filter: $whitefilter;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $grey18;
+    outline-offset: 2px;
+  }
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.35;
+}
+
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 10px;
+  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.16);
+}
+
+.cdk-drop-list-dragging .storyline-item:not(.cdk-drag-placeholder) {
+  transition: transform 180ms cubic-bezier(0, 0, 0.2, 1);
 }

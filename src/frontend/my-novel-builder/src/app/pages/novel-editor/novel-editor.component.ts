@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { NovelService } from '../../services/novel.service';
-import { Prose } from '../../types/dtos/novel/prose';
+import { Prose, StoryEvent } from '../../types/dtos/novel/prose';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { CompendiumService } from '../../services/compendium.service';
 import { FormsModule } from '@angular/forms';
@@ -213,5 +213,124 @@ export class NovelEditorComponent {
 
   toggleStoryTimeline(): void {
     this.isStoryTimelineOpen.update((isOpen) => !isOpen);
+  }
+
+  removeStoryEvent(event: {
+    chapterIndex: number;
+    storyEventIndex: number;
+  }): void {
+    const prose = this.prose();
+    if (!prose) {
+      return;
+    }
+
+    const chapter = prose.chapters[event.chapterIndex];
+    if (!chapter?.storyEvents?.[event.storyEventIndex]) {
+      return;
+    }
+
+    const updatedChapters = prose.chapters.map((currentChapter, chapterIndex) =>
+      chapterIndex === event.chapterIndex
+        ? {
+            ...currentChapter,
+            storyEvents: (currentChapter.storyEvents || []).filter(
+              (_, storyEventIndex) => storyEventIndex !== event.storyEventIndex,
+            ),
+          }
+        : currentChapter,
+    );
+
+    this.updateProse({ ...prose, chapters: updatedChapters });
+  }
+
+  createStoryEvent(event: {
+    chapterIndex: number;
+    storyEvent: StoryEvent;
+  }): void {
+    const prose = this.prose();
+    if (!prose || !prose.chapters[event.chapterIndex]) {
+      return;
+    }
+
+    const updatedChapters = prose.chapters.map((chapter, chapterIndex) =>
+      chapterIndex === event.chapterIndex
+        ? {
+            ...chapter,
+            storyEvents: [...(chapter.storyEvents || []), event.storyEvent],
+          }
+        : chapter,
+    );
+
+    this.updateProse({ ...prose, chapters: updatedChapters });
+  }
+
+  updateStoryEvent(event: {
+    chapterIndex: number;
+    storyEventIndex: number;
+    storyEvent: StoryEvent;
+  }): void {
+    const prose = this.prose();
+    if (!prose) {
+      return;
+    }
+
+    const chapter = prose.chapters[event.chapterIndex];
+    if (!chapter?.storyEvents?.[event.storyEventIndex]) {
+      return;
+    }
+
+    const updatedChapters = prose.chapters.map((currentChapter, chapterIndex) =>
+      chapterIndex === event.chapterIndex
+        ? {
+            ...currentChapter,
+            storyEvents: (currentChapter.storyEvents || []).map(
+              (storyEvent, storyEventIndex) =>
+                storyEventIndex === event.storyEventIndex
+                  ? event.storyEvent
+                  : storyEvent,
+            ),
+          }
+        : currentChapter,
+    );
+
+    this.updateProse({ ...prose, chapters: updatedChapters });
+  }
+
+  reorderStoryEvents(event: {
+    chapterIndex: number;
+    previousIndex: number;
+    currentIndex: number;
+  }): void {
+    const prose = this.prose();
+    if (!prose) {
+      return;
+    }
+
+    const chapter = prose.chapters[event.chapterIndex];
+    const storyEvents = [...(chapter?.storyEvents || [])];
+    if (
+      !chapter ||
+      event.previousIndex < 0 ||
+      event.currentIndex < 0 ||
+      event.previousIndex >= storyEvents.length ||
+      event.currentIndex >= storyEvents.length ||
+      event.previousIndex === event.currentIndex
+    ) {
+      return;
+    }
+
+    const [movedStoryEvent] = storyEvents.splice(event.previousIndex, 1);
+    storyEvents.splice(event.currentIndex, 0, movedStoryEvent);
+
+    const updatedChapters = prose.chapters.map((currentChapter, chapterIndex) =>
+      chapterIndex === event.chapterIndex
+        ? {
+            ...currentChapter,
+            storyEvents,
+          }
+        : currentChapter,
+    );
+
+    this.updateProse({ ...prose, chapters: updatedChapters });
   }
 }
