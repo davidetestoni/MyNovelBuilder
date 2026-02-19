@@ -26,10 +26,10 @@ public class NovelExportController : ControllerBase
     /// Exports a novel to Markdown.
     /// </summary>
     [HttpGet("markdown")]
-    public async Task<IActionResult> ExportToMarkdown(Guid novelId)
+    public async Task<IActionResult> ExportToMarkdown(Guid novelId, CancellationToken cancellationToken = default)
     {
-        var novel = await _novelService.GetByIdAsync(novelId);
-        var markdown = await _novelExportService.ExportToMarkdownAsync(novelId);
+        var novel = await _novelService.GetByIdAsync(novelId, cancellationToken);
+        var markdown = await _novelExportService.ExportToMarkdownAsync(novelId, cancellationToken);
         var fileName = $"{novel.Title.SanitizeFileName().ToLower().Replace(" ", "_")}.md";
         return File(Encoding.UTF8.GetBytes(markdown), "text/markdown", fileName);
     }

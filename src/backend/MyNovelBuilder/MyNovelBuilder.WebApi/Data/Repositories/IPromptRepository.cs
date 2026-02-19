@@ -10,5 +10,5 @@ public interface IPromptRepository : IRepository<Prompt>
     /// <summary>
     /// Get a prompt by its ID, including its messages.
     /// </summary>
-    Task<Prompt?> GetWithMessagesByIdAsync(Guid id);
+    Task<Prompt?> GetWithMessagesByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

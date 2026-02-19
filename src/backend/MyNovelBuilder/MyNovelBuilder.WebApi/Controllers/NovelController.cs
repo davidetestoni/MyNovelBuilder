@@ -37,9 +37,9 @@ public class NovelController : ControllerBase
     /// Get a novel by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    public async Task<NovelDto> GetNovelById(Guid id)
+    public async Task<NovelDto> GetNovelById(Guid id, CancellationToken cancellationToken = default)
     {
-        var novel = await _novelService.GetByIdAsync(id);
+        var novel = await _novelService.GetByIdAsync(id, cancellationToken);
         var dto = novel.Adapt<NovelDto>();
         AddCoverImageUrl(dto);
         
@@ -50,18 +50,18 @@ public class NovelController : ControllerBase
     /// Get the prose of a novel by its ID.
     /// </summary>
     [HttpGet("{id:guid}/prose")]
-    public async Task<Prose> GetNovelProse(Guid id)
+    public async Task<Prose> GetNovelProse(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _novelService.GetProseAsync(id);
+        return await _novelService.GetProseAsync(id, cancellationToken);
     }
 
     /// <summary>
     /// Get all novels.
     /// </summary>
     [HttpGet("/api/novels")]
-    public async Task<IEnumerable<NovelDto>> GetAllNovels()
+    public async Task<IEnumerable<NovelDto>> GetAllNovels(CancellationToken cancellationToken = default)
     {
-        var novels = await _novelService.GetAllAsync();
+        var novels = await _novelService.GetAllAsync(cancellationToken);
         return novels.Adapt<IEnumerable<NovelDto>>()
             .Select(dto =>
             {
@@ -74,10 +74,12 @@ public class NovelController : ControllerBase
     /// Create a novel.
     /// </summary>
     [HttpPost]
-    public async Task<NovelDto> CreateNovel(CreateNovelDto createNovelDto)
+    public async Task<NovelDto> CreateNovel(
+        CreateNovelDto createNovelDto,
+        CancellationToken cancellationToken = default)
     {
         var novel = createNovelDto.Adapt<Novel>();
-        await _novelService.CreateAsync(novel);
+        await _novelService.CreateAsync(novel, cancellationToken);
         
         var dto = novel.Adapt<NovelDto>();
         AddCoverImageUrl(dto);
@@ -89,22 +91,26 @@ public class NovelController : ControllerBase
     /// Update a novel.
     /// </summary>
     [HttpPut]
-    public async Task<NovelDto> UpdateNovel(UpdateNovelDto updateNovelDto)
+    public async Task<NovelDto> UpdateNovel(
+        UpdateNovelDto updateNovelDto,
+        CancellationToken cancellationToken = default)
     {
-        var novel = await _novelService.GetByIdAsync(updateNovelDto.Id);
+        var novel = await _novelService.GetByIdAsync(updateNovelDto.Id, cancellationToken);
         updateNovelDto.Adapt(novel);
         
         // For each compendium id, asynchronously get the
         // compendium and check if it exists,
         // then add it to the novel's compendia.
         novel.Compendia = await Task.WhenAll(updateNovelDto.CompendiumIds
-            .Select(async id => await _compendiumService.GetByIdAsync(id)));
+            .Select(id => _compendiumService.GetByIdAsync(id, cancellationToken)));
 
         // If the main character ID is not null, get the
         // compendium record and set it as the main character.
         if (updateNovelDto.MainCharacterId is not null)
         {
-            novel.MainCharacter = await _compendiumRecordService.GetByIdAsync(updateNovelDto.MainCharacterId.Value);
+            novel.MainCharacter = await _compendiumRecordService.GetByIdAsync(
+                updateNovelDto.MainCharacterId.Value,
+                cancellationToken);
             
             // The main character must be part of a compendium that
             // is in the novel's compendia.
@@ -118,7 +124,7 @@ public class NovelController : ControllerBase
         
         novel.UpdatedAt = DateTime.UtcNow;
         
-        await _novelService.UpdateAsync(novel);
+        await _novelService.UpdateAsync(novel, cancellationToken);
         
         var dto = novel.Adapt<NovelDto>();
         AddCoverImageUrl(dto);
@@ -130,41 +136,47 @@ public class NovelController : ControllerBase
     /// Update the prose of a novel.
     /// </summary>
     [HttpPut("{id:guid}/prose")]
-    public async Task UpdateNovelProse(Guid id, Prose prose)
+    public async Task UpdateNovelProse(Guid id, Prose prose, CancellationToken cancellationToken = default)
     {
-        await _novelService.UpdateProseAsync(id, prose);
+        await _novelService.UpdateProseAsync(id, prose, cancellationToken);
         
         // Also update the novel's updated at time.
-        var novel = await _novelService.GetByIdAsync(id);
+        var novel = await _novelService.GetByIdAsync(id, cancellationToken);
         novel.UpdatedAt = DateTime.UtcNow;
-        await _novelService.UpdateAsync(novel);
+        await _novelService.UpdateAsync(novel, cancellationToken);
     }
     
     /// <summary>
     /// Delete a novel by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    public async Task DeleteNovel(Guid id)
+    public async Task DeleteNovel(Guid id, CancellationToken cancellationToken = default)
     {
-        await _novelService.DeleteAsync(id);
+        await _novelService.DeleteAsync(id, cancellationToken);
     }
     
     /// <summary>
     /// Upload a new cover image for a novel.
     /// </summary>
     [HttpPost("{id:guid}/cover-image")]
-    public async Task UploadCoverImage(Guid id, IFormFile file)
+    public async Task UploadCoverImage(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
     {
-        await _novelService.UploadCoverImageAsync(id, file);
+        await _novelService.UploadCoverImageAsync(id, file, cancellationToken);
     }
 
     /// <summary>
     /// Upload a new prose image for a novel.
     /// </summary>
     [HttpPost("{id:guid}/prose-image")]
-    public async Task<IActionResult> UploadProseImage(Guid id, IFormFile file)
+    public async Task<IActionResult> UploadProseImage(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
     {
-        var location = await _novelService.UploadProseImageAsync(id, file);
+        var location = await _novelService.UploadProseImageAsync(id, file, cancellationToken);
         return Ok(JsonSerializer.Serialize(location));
     }
 

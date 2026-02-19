@@ -10,5 +10,5 @@ public interface INovelRepository : IRepository<Novel>
     /// <summary>
     /// Get a novel by its ID, including its references.
     /// </summary>
-    Task<Novel?> GetWithReferencesByIdAsync(Guid id);
+    Task<Novel?> GetWithReferencesByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

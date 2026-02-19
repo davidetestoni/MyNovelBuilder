@@ -10,5 +10,5 @@ public interface ICompendiumRepository : IRepository<Compendium>
     /// <summary>
     /// Get a compendium by its ID, including its records.
     /// </summary>
-    Task<Compendium?> GetWithRecordsByIdAsync(Guid id);
+    Task<Compendium?> GetWithRecordsByIdAsync(Guid id, CancellationToken cancellationToken = default);
 }

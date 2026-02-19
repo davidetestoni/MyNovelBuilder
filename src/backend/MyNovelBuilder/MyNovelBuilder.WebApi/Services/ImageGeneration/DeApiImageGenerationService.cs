@@ -32,9 +32,9 @@ public class DeApiImageGenerationService : IImageGenerationService
         _httpClient.BaseAddress = new Uri("https://api.deapi.ai/api/v1/client/");
     }
 
-    private async Task<string> GetApiKeyAsync()
+    private async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var apiKey = config.DeApiApiKey;
 
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -47,9 +47,11 @@ public class DeApiImageGenerationService : IImageGenerationService
     }
 
     /// <inheritdoc />
-    public async Task<byte[]> GenerateImageAsync(ImageGenerationRequestDto request)
+    public async Task<byte[]> GenerateImageAsync(
+        ImageGenerationRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var apiKey = await GetApiKeyAsync();
+        var apiKey = await GetApiKeyAsync(cancellationToken);
 
         var httpRequest = new HttpRequestMessage
         {
@@ -68,8 +70,8 @@ public class DeApiImageGenerationService : IImageGenerationService
         };
         httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
         
-        using var response = await _httpClient.SendAsync(httpRequest);
-        var jsonResponse = await response.Content.ReadAsStringAsync();
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         
         if (!response.IsSuccessStatusCode)
         {
@@ -82,13 +84,16 @@ public class DeApiImageGenerationService : IImageGenerationService
         var responseObject = JsonNode.Parse(jsonResponse)!;
         var requestId = responseObject["data"]!["request_id"]!.GetValue<string>();
 
-        return await PollForResultAsync(requestId, apiKey);
+        return await PollForResultAsync(requestId, apiKey, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<byte[]> EditImageAsync(byte[] imageBytes, ImageGenerationRequestDto request)
+    public async Task<byte[]> EditImageAsync(
+        byte[] imageBytes,
+        ImageGenerationRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var apiKey = await GetApiKeyAsync();
+        var apiKey = await GetApiKeyAsync(cancellationToken);
 
         var content = new MultipartFormDataContent();
         content.Add(new StringContent(request.Prompt), "prompt");
@@ -107,8 +112,8 @@ public class DeApiImageGenerationService : IImageGenerationService
         };
         httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
         
-        using var response = await _httpClient.SendAsync(httpRequest);
-        var jsonResponse = await response.Content.ReadAsStringAsync();
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         
         if (!response.IsSuccessStatusCode)
         {
@@ -121,10 +126,13 @@ public class DeApiImageGenerationService : IImageGenerationService
         var responseObject = JsonNode.Parse(jsonResponse)!;
         var requestId = responseObject["data"]!["request_id"]!.GetValue<string>();
 
-        return await PollForResultAsync(requestId, apiKey);
+        return await PollForResultAsync(requestId, apiKey, cancellationToken);
     }
 
-    private async Task<byte[]> PollForResultAsync(string requestId, string apiKey)
+    private async Task<byte[]> PollForResultAsync(
+        string requestId,
+        string apiKey,
+        CancellationToken cancellationToken = default)
     {
         var timeout = TimeSpan.FromMinutes(5);
         var startTime = DateTime.UtcNow;
@@ -132,7 +140,7 @@ public class DeApiImageGenerationService : IImageGenerationService
         // Polling
         while (DateTime.UtcNow - startTime < timeout)
         {
-            await Task.Delay(2000);
+            await Task.Delay(2000, cancellationToken);
 
             var statusRequest = new HttpRequestMessage
             {
@@ -141,8 +149,8 @@ public class DeApiImageGenerationService : IImageGenerationService
             };
             statusRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
 
-            using var statusResponse = await _httpClient.SendAsync(statusRequest);
-            var statusJson = await statusResponse.Content.ReadAsStringAsync();
+            using var statusResponse = await _httpClient.SendAsync(statusRequest, cancellationToken);
+            var statusJson = await statusResponse.Content.ReadAsStringAsync(cancellationToken);
 
             if (!statusResponse.IsSuccessStatusCode)
             {
@@ -161,7 +169,7 @@ public class DeApiImageGenerationService : IImageGenerationService
             if (status == "done")
             {
                 var imageUrl = statusObject["data"]!["result_url"]!.GetValue<string>();
-                return await _httpClient.GetByteArrayAsync(imageUrl);
+                return await _httpClient.GetByteArrayAsync(imageUrl, cancellationToken);
             }
 
             if (status == "error")
@@ -180,9 +188,10 @@ public class DeApiImageGenerationService : IImageGenerationService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<ImageGenerationModelInfo>> GetAvailableModelsAsync()
+    public async Task<IEnumerable<ImageGenerationModelInfo>> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var apiKey = await GetApiKeyAsync();
+        var apiKey = await GetApiKeyAsync(cancellationToken);
         
         var request = new HttpRequestMessage
         {
@@ -191,8 +200,8 @@ public class DeApiImageGenerationService : IImageGenerationService
         };
         request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
         
-        using var response = await _httpClient.SendAsync(request);
-        var jsonResponse = await response.Content.ReadAsStringAsync();
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         
         if (!response.IsSuccessStatusCode)
         {

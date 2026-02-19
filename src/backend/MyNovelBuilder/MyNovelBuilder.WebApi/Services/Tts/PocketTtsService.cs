@@ -50,22 +50,27 @@ public class PocketTtsService : ITtsService
     }
     
     /// <inheritdoc/>
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
+    public async Task<byte[]> GenerateAudioAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         
         using var response = await _httpClient.PostAsync(
             "http://localhost:8000/tts", CreateRequestContent(
-                request.Message, config.TtsVoiceId));
+                request.Message, config.TtsVoiceId),
+            cancellationToken);
         
         // The response is a wav file, so just return it
-        return await response.Content.ReadAsByteArrayAsync();
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
     
     /// <inheritdoc />
-    public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public async Task<Stream> GenerateAudioStreamAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         
         using var httpRequest = new HttpRequestMessage();
         httpRequest.RequestUri = new Uri("http://localhost:8000/tts");
@@ -74,12 +79,14 @@ public class PocketTtsService : ITtsService
             request.Message, config.TtsVoiceId);
         
         var response = await _httpClient.SendAsync(
-            httpRequest, HttpCompletionOption.ResponseHeadersRead);
+            httpRequest,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
         
-        return await response.Content.ReadAsStreamAsync();
+        return await response.Content.ReadAsStreamAsync(cancellationToken);
     }
     
     /// <inheritdoc/>
-    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync() =>
+    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IEnumerable<TtsVoiceDto>>(_voices);
 }

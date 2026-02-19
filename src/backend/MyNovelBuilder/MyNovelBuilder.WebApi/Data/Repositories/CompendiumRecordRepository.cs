@@ -14,18 +14,18 @@ public class CompendiumRecordRepository : Repository<CompendiumRecord>, ICompend
     }
 
     /// <inheritdoc />
-    public async Task<CompendiumRecord?> GetWithCompendiumByIdAsync(Guid id)
+    public async Task<CompendiumRecord?> GetWithCompendiumByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await Context.Set<CompendiumRecord>()
             .Include(cr => cr.Compendium)
-            .FirstOrDefaultAsync(cr => cr.Id == id);
+            .FirstOrDefaultAsync(cr => cr.Id == id, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<CompendiumRecord>> GetByCompendiumIdAsync(Guid compendiumId)
+    public async Task<IEnumerable<CompendiumRecord>> GetByCompendiumIdAsync(Guid compendiumId, CancellationToken cancellationToken = default)
     {
         return await Context.Set<CompendiumRecord>()
             .Where(cr => cr.Compendium.Id == compendiumId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 }

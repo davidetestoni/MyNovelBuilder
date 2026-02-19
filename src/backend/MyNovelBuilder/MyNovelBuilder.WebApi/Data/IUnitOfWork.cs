@@ -30,5 +30,5 @@ public interface IUnitOfWork : IDisposable, IAsyncDisposable
     /// <summary>
     /// Complete the current transaction.
     /// </summary>
-    Task<int> SaveChangesAsync();
+    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

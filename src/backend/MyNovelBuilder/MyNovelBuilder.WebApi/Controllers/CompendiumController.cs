@@ -32,11 +32,11 @@ public class CompendiumController : ControllerBase
     /// Get a compendium by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    public async Task<CompendiumDto> GetCompendiumById(Guid id)
+    public async Task<CompendiumDto> GetCompendiumById(Guid id, CancellationToken cancellationToken = default)
     {
-        var compendium = await _compendiumService.GetByIdAsync(id);
+        var compendium = await _compendiumService.GetByIdAsync(id, cancellationToken);
         var dto = compendium.Adapt<CompendiumDto>();
-        await AddRecordsAsync(dto);
+        await AddRecordsAsync(dto, cancellationToken);
         
         return dto;
     }
@@ -45,11 +45,11 @@ public class CompendiumController : ControllerBase
     /// Get all compendia.
     /// </summary>
     [HttpGet("/api/compendia")]
-    public async Task<IEnumerable<CompendiumDto>> GetAllCompendia()
+    public async Task<IEnumerable<CompendiumDto>> GetAllCompendia(CancellationToken cancellationToken = default)
     {
-        var compendia = await _compendiumService.GetAllAsync();
+        var compendia = await _compendiumService.GetAllAsync(cancellationToken);
         var dtos = compendia.Adapt<IEnumerable<CompendiumDto>>().ToList();
-        var tasks = dtos.Select(AddRecordsAsync);
+        var tasks = dtos.Select(dto => AddRecordsAsync(dto, cancellationToken));
         await Task.WhenAll(tasks);
         
         return dtos;
@@ -59,13 +59,15 @@ public class CompendiumController : ControllerBase
     /// Create a compendium.
     /// </summary>
     [HttpPost]
-    public async Task<CompendiumDto> CreateCompendium(CreateCompendiumDto createCompendiumDto)
+    public async Task<CompendiumDto> CreateCompendium(
+        CreateCompendiumDto createCompendiumDto,
+        CancellationToken cancellationToken = default)
     {
         var compendium = createCompendiumDto.Adapt<Compendium>();
-        await _compendiumService.CreateAsync(compendium);
+        await _compendiumService.CreateAsync(compendium, cancellationToken);
         
         var dto = compendium.Adapt<CompendiumDto>();
-        await AddRecordsAsync(dto);
+        await AddRecordsAsync(dto, cancellationToken);
         
         return dto;
     }
@@ -74,14 +76,16 @@ public class CompendiumController : ControllerBase
     /// Update a compendium.
     /// </summary>
     [HttpPut]
-    public async Task<CompendiumDto> UpdateCompendium(UpdateCompendiumDto compendiumDto)
+    public async Task<CompendiumDto> UpdateCompendium(
+        UpdateCompendiumDto compendiumDto,
+        CancellationToken cancellationToken = default)
     {
-        var compendium = await _compendiumService.GetByIdAsync(compendiumDto.Id);
+        var compendium = await _compendiumService.GetByIdAsync(compendiumDto.Id, cancellationToken);
         compendiumDto.Adapt(compendium);
-        await _compendiumService.UpdateAsync(compendium);
+        await _compendiumService.UpdateAsync(compendium, cancellationToken);
         
         var dto = compendium.Adapt<CompendiumDto>();
-        await AddRecordsAsync(dto);
+        await AddRecordsAsync(dto, cancellationToken);
         
         return dto;
     }
@@ -90,23 +94,27 @@ public class CompendiumController : ControllerBase
     /// Delete a compendium by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    public async Task DeleteCompendium(Guid id)
+    public async Task DeleteCompendium(Guid id, CancellationToken cancellationToken = default)
     {
         // Delete all records associated with the compendium.
-        var records = await _compendiumRecordService.GetByCompendiumIdAsync(id);
+        var records = await _compendiumRecordService.GetByCompendiumIdAsync(id, cancellationToken);
         
         foreach (var record in records)
         {
-            await _compendiumRecordService.DeleteAsync(record.Id);
+            await _compendiumRecordService.DeleteAsync(record.Id, cancellationToken);
         }
         
-        await _compendiumService.DeleteAsync(id);
+        await _compendiumService.DeleteAsync(id, cancellationToken);
     }
     
-    private async Task AddRecordsAsync(CompendiumDto compendiumDto)
+    private async Task AddRecordsAsync(
+        CompendiumDto compendiumDto,
+        CancellationToken cancellationToken = default)
     {
         var recordDtos = new List<CompendiumRecordOverviewDto>();
-        var records = await _compendiumRecordService.GetByCompendiumIdAsync(compendiumDto.Id);
+        var records = await _compendiumRecordService.GetByCompendiumIdAsync(
+            compendiumDto.Id,
+            cancellationToken);
         
         var request = _httpContextAccessor.HttpContext!.Request;
         var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";

@@ -14,11 +14,11 @@ public class NovelRepository : Repository<Novel>, INovelRepository
     }
 
     /// <inheritdoc />
-    public async Task<Novel?> GetWithReferencesByIdAsync(Guid id)
+    public async Task<Novel?> GetWithReferencesByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await Context.Set<Novel>()
             .Include(n => n.MainCharacter)
             .Include(n => n.Compendia)
-            .FirstOrDefaultAsync(n => n.Id == id);
+            .FirstOrDefaultAsync(n => n.Id == id, cancellationToken);
     }
 }

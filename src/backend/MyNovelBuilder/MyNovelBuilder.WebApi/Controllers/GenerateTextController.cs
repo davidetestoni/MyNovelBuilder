@@ -48,9 +48,10 @@ public class GenerateTextController : ControllerBase
         _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     }
     
-    private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync()
+    private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync(
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var textGenerationService = _serviceProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
 
         if (textGenerationService is null)
@@ -72,14 +73,14 @@ public class GenerateTextController : ControllerBase
     public async Task GenerateStreamedTextAsync(GenerateTextRequestDto dto,
         CancellationToken cancellationToken = default)
     {
-        var textGenerationService = await GetTextGenerationServiceAsync();
+        var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
         
         HttpContext.Response.Headers.Append("Content-Type", "text/event-stream");
 
         var prompt = dto.ContextInfo switch
         {
-            NovelTextGenerationContextInfoDto => await _novelPromptCreatorService.CreatePromptAsync(dto),
-            CompendiumTextGenerationContextInfoDto => await _compendiumPromptCreatorService.CreatePromptAsync(dto),
+            NovelTextGenerationContextInfoDto => await _novelPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
+            CompendiumTextGenerationContextInfoDto => await _compendiumPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext, "The prompt context is invalid.")
         };
 
@@ -130,9 +131,10 @@ public class GenerateTextController : ControllerBase
                     CompendiumId = dto.CompendiumId,
                     Instructions = dto.Instructions
                 }
-            });
+            },
+            cancellationToken);
         
-        var textGenerationService = await GetTextGenerationServiceAsync();
+        var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
         var description = await textGenerationService.DescribeImageAsync(
             dto.Model,
             prompt,
@@ -147,15 +149,16 @@ public class GenerateTextController : ControllerBase
     /// Get available text generation models.
     /// </summary>
     [HttpGet("models")]
-    public async Task<IEnumerable<TextGenerationModelInfoDto>> GetAvailableModelsAsync()
+    public async Task<IEnumerable<TextGenerationModelInfoDto>> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         return await _hybridCache.GetOrCreateAsync(
             $"textgen-{config.TextGenerationProvider}-models",
-            async _ =>
+            async token =>
             {
-                var textGenerationService = await GetTextGenerationServiceAsync();
-                var models = await textGenerationService.GetAvailableModelsAsync();
+                var textGenerationService = await GetTextGenerationServiceAsync(token);
+                var models = await textGenerationService.GetAvailableModelsAsync(token);
         
                 return models.Select(m => new TextGenerationModelInfoDto
                 {
@@ -169,7 +172,8 @@ public class GenerateTextController : ControllerBase
                 Expiration = TimeSpan.FromHours(6),
                 LocalCacheExpiration = TimeSpan.FromHours(6)
             },
-            tags: ["textgen", config.TextGenerationProvider.ToString(), "models"]
+            tags: ["textgen", config.TextGenerationProvider.ToString(), "models"],
+            cancellationToken: cancellationToken
         );
     }
 }

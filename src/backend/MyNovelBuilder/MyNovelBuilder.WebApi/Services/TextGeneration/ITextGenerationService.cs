@@ -39,5 +39,6 @@ public interface ITextGenerationService
     /// <summary>
     /// Get available text generation models.
     /// </summary>
-    Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync();
+    Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default);
 }

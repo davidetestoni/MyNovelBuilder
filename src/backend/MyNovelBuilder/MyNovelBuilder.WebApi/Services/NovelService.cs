@@ -30,9 +30,9 @@ public class NovelService : INovelService
     }
     
     /// <inheritdoc />
-    public async Task<Novel> GetByIdAsync(Guid id)
+    public async Task<Novel> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var novel = await _unitOfWork.Novels.GetWithReferencesByIdAsync(id);
+        var novel = await _unitOfWork.Novels.GetWithReferencesByIdAsync(id, cancellationToken);
 
         if (novel is null)
         {
@@ -43,38 +43,38 @@ public class NovelService : INovelService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<Novel>> GetAllAsync()
+    public async Task<IEnumerable<Novel>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.Novels.GetAllAsync();
+        return await _unitOfWork.Novels.GetAllAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task CreateAsync(Novel novel)
+    public async Task CreateAsync(Novel novel, CancellationToken cancellationToken = default)
     {
         _unitOfWork.Novels.Add(novel);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(Novel novel)
+    public async Task UpdateAsync(Novel novel, CancellationToken cancellationToken = default)
     {
         _unitOfWork.Novels.Update(novel);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var novel = await GetByIdAsync(id);
+        var novel = await GetByIdAsync(id, cancellationToken);
         
         _unitOfWork.Novels.Remove(novel);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         
         DeleteCoverImage(id);
     }
 
     /// <inheritdoc />
-    public async Task<Prose> GetProseAsync(Guid id)
+    public async Task<Prose> GetProseAsync(Guid id, CancellationToken cancellationToken = default)
     {
         // Prose is stored as a JSON file instead of a database JSON column
         // to be kinder to the database and to allow for easier editing
@@ -88,22 +88,22 @@ public class NovelService : INovelService
         {
             var prose = new Prose();
             proseJson = JsonSerializer.Serialize(prose, _jsonSerializerOptions);
-            await File.WriteAllTextAsync(path, proseJson);
+            await File.WriteAllTextAsync(path, proseJson, cancellationToken);
             return prose;
         }
         
-        proseJson = await File.ReadAllTextAsync(path);
+        proseJson = await File.ReadAllTextAsync(path, cancellationToken);
         return JsonSerializer.Deserialize<Prose>(proseJson, _jsonSerializerOptions)!;
     }
 
     /// <inheritdoc />
-    public async Task UpdateProseAsync(Guid id, Prose prose)
+    public async Task UpdateProseAsync(Guid id, Prose prose, CancellationToken cancellationToken = default)
     {
         var path = Path.Combine(Globals.DataFolder, "novels", id.ToString(), "prose.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         
         var proseJson = JsonSerializer.Serialize(prose, _jsonSerializerOptions);
-        await File.WriteAllTextAsync(path, proseJson);
+        await File.WriteAllTextAsync(path, proseJson, cancellationToken);
     }
 
     private static string? GetLocalCoverImageFilePath(Guid id)
@@ -138,15 +138,15 @@ public class NovelService : INovelService
     }
 
     /// <inheritdoc />
-    public async Task UploadCoverImageAsync(Guid id, IFormFile file)
+    public async Task UploadCoverImageAsync(Guid id, IFormFile file, CancellationToken cancellationToken = default)
     {   
-        if (!await _unitOfWork.Novels.ExistsAsync(id))
+        if (!await _unitOfWork.Novels.ExistsAsync(id, cancellationToken))
         {
             throw new ApiException(ErrorCodes.NovelNotFound, $"Novel with ID {id} was not found.");
         }
         
         using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
+        await file.CopyToAsync(memoryStream, cancellationToken);
         var imageBytes = memoryStream.ToArray();
         
         // If it's not a PNG file, convert it to PNG using ImageSharp.
@@ -154,7 +154,7 @@ public class NovelService : INovelService
         {
             using var image = Image.Load(imageBytes);
             using var outputStream = new MemoryStream();
-            await image.SaveAsPngAsync(outputStream);
+            await image.SaveAsPngAsync(outputStream, cancellationToken);
             imageBytes = outputStream.ToArray();
         }
         
@@ -164,7 +164,7 @@ public class NovelService : INovelService
         var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), $"cover_{Guid.NewGuid()}.png");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllBytesAsync(path, imageBytes);
+        await File.WriteAllBytesAsync(path, imageBytes, cancellationToken);
         
         if (existingCoverPath is not null)
         {
@@ -184,14 +184,14 @@ public class NovelService : INovelService
     }
 
     /// <inheritdoc />
-    public async Task<string> UploadProseImageAsync(Guid id, IFormFile file)
+    public async Task<string> UploadProseImageAsync(Guid id, IFormFile file, CancellationToken cancellationToken = default)
     {
         var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "prose-images");
         Directory.CreateDirectory(path);
         
         var filePath = Path.Combine(path, $"{Guid.NewGuid()}.png");
         using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
+        await file.CopyToAsync(memoryStream, cancellationToken);
         var imageBytes = memoryStream.ToArray();
         
         // Convert to PNG using ImageSharp.
@@ -199,11 +199,11 @@ public class NovelService : INovelService
         {
             using var image = Image.Load(imageBytes);
             using var outputStream = new MemoryStream();
-            await image.SaveAsPngAsync(outputStream);
+            await image.SaveAsPngAsync(outputStream, cancellationToken);
             imageBytes = outputStream.ToArray();
         }
         
-        await File.WriteAllBytesAsync(filePath, imageBytes);
+        await File.WriteAllBytesAsync(filePath, imageBytes, cancellationToken);
         return Path.GetFileName(filePath);
     }
 }

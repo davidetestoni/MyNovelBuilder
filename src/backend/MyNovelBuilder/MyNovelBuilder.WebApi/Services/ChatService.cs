@@ -30,7 +30,7 @@ public class ChatService : IChatService
         Path.Combine(GetChatsDirectoryPath(), $"{id}.json");
 
     /// <inheritdoc/>
-    public async Task<Chat> GetByIdAsync(Guid id)
+    public async Task<Chat> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var path = GetChatFilePath(id);
 
@@ -40,12 +40,12 @@ public class ChatService : IChatService
                 ErrorCodes.ChatNotFound, $"Chat with ID {id} was not found.");
         }
         
-        var json = await File.ReadAllTextAsync(path);
+        var json = await File.ReadAllTextAsync(path, cancellationToken);
         return JsonSerializer.Deserialize<Chat>(json, _jsonSerializerOptions)!;
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<ChatMetadata>> GetAllMetadataAsync()
+    public async Task<IEnumerable<ChatMetadata>> GetAllMetadataAsync(CancellationToken cancellationToken = default)
     {
         var path = GetChatsDirectoryPath();
         Directory.CreateDirectory(path);
@@ -54,7 +54,7 @@ public class ChatService : IChatService
         
         foreach (var file in Directory.GetFiles(path, "*.json"))
         {
-            var json = await File.ReadAllTextAsync(file);
+            var json = await File.ReadAllTextAsync(file, cancellationToken);
             var chat = JsonSerializer.Deserialize<Chat>(json, _jsonSerializerOptions)!;
             var metadata = new ChatMetadata
             {
@@ -74,17 +74,17 @@ public class ChatService : IChatService
     }
 
     /// <inheritdoc/>
-    public async Task CreateAsync(Chat chat)
+    public async Task CreateAsync(Chat chat, CancellationToken cancellationToken = default)
     {
         var path = GetChatFilePath(chat.Id);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         
         var json = JsonSerializer.Serialize(chat, _jsonSerializerOptions);
-        await File.WriteAllTextAsync(path, json);
+        await File.WriteAllTextAsync(path, json, cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task UpdateAsync(Guid id, Chat chat)
+    public async Task UpdateAsync(Guid id, Chat chat, CancellationToken cancellationToken = default)
     {
         var path = GetChatFilePath(id);
         
@@ -95,11 +95,11 @@ public class ChatService : IChatService
         }
         
         var json = JsonSerializer.Serialize(chat, _jsonSerializerOptions);
-        await File.WriteAllTextAsync(path, json);
+        await File.WriteAllTextAsync(path, json, cancellationToken);
     }
 
     /// <inheritdoc/>
-    public Task DeleteAsync(Guid id)
+    public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var path = GetChatFilePath(id);
         

@@ -22,16 +22,16 @@ public interface ITtsService
     /// Generate audio bytes from the given text.
     /// Returns the entire audio as a byte array.
     /// </summary>
-    Task<byte[]> GenerateAudioAsync(TtsRequestDto request);
+    Task<byte[]> GenerateAudioAsync(TtsRequestDto request, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Generate audio stream from the given text.
     /// Returns the audio as an encoded stream.
     /// </summary>
-    Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request);
+    Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get a list of available voices.
     /// </summary>
-    Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync();
+    Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default);
 }

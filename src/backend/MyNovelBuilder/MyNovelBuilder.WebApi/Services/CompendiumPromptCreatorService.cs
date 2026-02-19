@@ -28,12 +28,13 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
 
     /// <inheritdoc />
     public async Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(
-        GenerateTextRequestDto request)
+        GenerateTextRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
-        var prompt = await unitOfWork.Prompts.GetByIdAsync(request.PromptId);
+        var prompt = await unitOfWork.Prompts.GetByIdAsync(request.PromptId, cancellationToken);
         if (prompt is null)
         {
             throw new ApiException(ErrorCodes.PromptNotFound,
@@ -61,7 +62,7 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                 "The prompt context is invalid.");
         }
 
-        var compendium = await unitOfWork.Compendia.GetWithRecordsByIdAsync(compendiumContextInfo.CompendiumId);
+        var compendium = await unitOfWork.Compendia.GetWithRecordsByIdAsync(compendiumContextInfo.CompendiumId, cancellationToken);
         if (compendium is null)
         {
             throw new ApiException(ErrorCodes.CompendiumNotFound,

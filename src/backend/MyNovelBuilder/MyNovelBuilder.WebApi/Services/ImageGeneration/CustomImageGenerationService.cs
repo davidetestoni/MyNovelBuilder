@@ -30,26 +30,33 @@ public class CustomImageGenerationService : IImageGenerationService
     }
     
     /// <inheritdoc />
-    public async Task<byte[]> GenerateImageAsync(ImageGenerationRequestDto request)
+    public async Task<byte[]> GenerateImageAsync(
+        ImageGenerationRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         var payload = request.Adapt<ImageGenerationRequest>();
         var jsonPayload = JsonSerializer.Serialize(payload, _jsonSerializerOptions);
-        using var response = await _httpClient.PostAsync("generate/image",
-            new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
+        using var response = await _httpClient.PostAsync(
+            "generate/image",
+            new StringContent(jsonPayload, Encoding.UTF8, "application/json"),
+            cancellationToken);
         
         response.EnsureSuccessStatusCode();
         
-        return await response.Content.ReadAsByteArrayAsync();
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<byte[]> EditImageAsync(byte[] imageBytes, ImageGenerationRequestDto request)
+    public Task<byte[]> EditImageAsync(
+        byte[] imageBytes,
+        ImageGenerationRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc />
-    public Task<IEnumerable<ImageGenerationModelInfo>> GetAvailableModelsAsync()
+    public Task<IEnumerable<ImageGenerationModelInfo>> GetAvailableModelsAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult((IEnumerable<ImageGenerationModelInfo>)[]);
     }

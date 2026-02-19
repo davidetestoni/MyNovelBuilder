@@ -40,37 +40,43 @@ public class CustomTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
+    public async Task<byte[]> GenerateAudioAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         
         var jsonPayload = JsonSerializer.Serialize(new TtsRequest
         {
             Message = request.Message,
             VoiceId = config.TtsVoiceId
         }, _jsonSerializerOptions);
-        using var response = await _httpClient.PostAsync("generate/audio",
-            new StringContent(jsonPayload, Encoding.UTF8, "application/json"));
+        using var response = await _httpClient.PostAsync(
+            "generate/audio",
+            new StringContent(jsonPayload, Encoding.UTF8, "application/json"),
+            cancellationToken);
         
         response.EnsureSuccessStatusCode();
         
-        return await response.Content.ReadAsByteArrayAsync();
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public Task<Stream> GenerateAudioStreamAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync()
+    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.GetAsync("tts/speakers");
+        using var response = await _httpClient.GetAsync("tts/speakers", cancellationToken);
         
         response.EnsureSuccessStatusCode();
         
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var voices = JsonSerializer.Deserialize<IEnumerable<TtsVoice>>(
             json, _jsonSerializerOptions);
         

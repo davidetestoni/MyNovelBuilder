@@ -27,9 +27,9 @@ public class IntegrationsController : ControllerBase
     /// Get the integrations' configuration.
     /// </summary>
     [HttpGet("config")]
-    public async Task<IntegrationsConfigDto> GetIntegrationsConfig()
+    public async Task<IntegrationsConfigDto> GetIntegrationsConfig(CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         return new IntegrationsConfigDto
         {
             HasOpenRouterApiKey = !string.IsNullOrWhiteSpace(config.OpenRouterApiKey),
@@ -48,9 +48,11 @@ public class IntegrationsController : ControllerBase
     /// Update the integrations' configuration.
     /// </summary>
     [HttpPut("config")]
-    public async Task<IActionResult> UpdateIntegrationsConfig([FromBody] UpdateIntegrationsConfigDto dto)
+    public async Task<IActionResult> UpdateIntegrationsConfig(
+        [FromBody] UpdateIntegrationsConfigDto dto,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         
         if (!string.IsNullOrWhiteSpace(dto.OpenRouterApiKey))
         {
@@ -97,7 +99,7 @@ public class IntegrationsController : ControllerBase
             config.TtsVoiceId = dto.TtsVoiceId;
         }
         
-        await _integrationsService.UpdateConfigAsync(config);
+        await _integrationsService.UpdateConfigAsync(config, cancellationToken);
         _logger.LogInformation("Integrations config updated");
         return NoContent();
     }

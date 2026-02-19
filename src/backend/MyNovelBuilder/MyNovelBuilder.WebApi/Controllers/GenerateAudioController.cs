@@ -35,7 +35,8 @@ public class GenerateAudioController : ControllerBase
     }
     
     private async ValueTask<ITtsService> GetTtsServiceAsync(
-        TtsProvider? provider = null)
+        TtsProvider? provider = null,
+        CancellationToken cancellationToken = default)
     {
         TtsProvider ttsProvider;
         
@@ -45,7 +46,7 @@ public class GenerateAudioController : ControllerBase
         }
         else
         {
-            var config = await _integrationsService.GetConfigAsync();
+            var config = await _integrationsService.GetConfigAsync(cancellationToken);
             ttsProvider = config.TtsProvider;
         }
         
@@ -63,9 +64,10 @@ public class GenerateAudioController : ControllerBase
         return ttsService;
     }
     
-    private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync()
+    private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync(
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var textGenerationService = _serviceProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
 
         if (textGenerationService is null)
@@ -80,9 +82,11 @@ public class GenerateAudioController : ControllerBase
         return textGenerationService;
     }
     
-    private async Task<string> GetEmphasizedTextAsync(string inputText)
+    private async Task<string> GetEmphasizedTextAsync(
+        string inputText,
+        CancellationToken cancellationToken = default)
     {
-        var textGenerationService = await GetTextGenerationServiceAsync();
+        var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
         return await textGenerationService
             .GenerateAsync(
                 "anthropic/claude-sonnet-4", // TODO: Make configurable
@@ -97,7 +101,8 @@ public class GenerateAudioController : ControllerBase
                         Role = PromptMessageRole.User,
                         Message = $"Here's the text that needs to be enriched:\n{inputText}"
                     }
-                ]
+                ],
+                cancellationToken: cancellationToken
             );
     }
     
@@ -145,22 +150,24 @@ public class GenerateAudioController : ControllerBase
     /// Generate audio from text.
     /// </summary>
     [HttpPost("tts")]
-    public async Task<ActionResult> GenerateAudioAsync(TtsRequestDto dto)
+    public async Task<ActionResult> GenerateAudioAsync(
+        TtsRequestDto dto,
+        CancellationToken cancellationToken = default)
     {
-        var ttsService = await GetTtsServiceAsync();
+        var ttsService = await GetTtsServiceAsync(cancellationToken: cancellationToken);
         
         _logger.LogInformation("Generating audio for text: {Text}", dto.Message);
         
         // Emphasis
         if (ttsService.SupportsEmphasisTags)
         {
-            var emphasizedText = await GetEmphasizedTextAsync(dto.Message);
+            var emphasizedText = await GetEmphasizedTextAsync(dto.Message, cancellationToken);
             dto.Message = emphasizedText.Trim();
             
             _logger.LogInformation("Emphasized text: {EmphasizedText}", dto.Message);
         }
         
-        var ttsResponse = await ttsService.GenerateAudioAsync(dto);
+        var ttsResponse = await ttsService.GenerateAudioAsync(dto, cancellationToken);
         var mimeType = ttsService.OutputAudioFormat switch 
         {
             AudioFormat.Mp3 => "audio/mp3",
@@ -181,16 +188,18 @@ public class GenerateAudioController : ControllerBase
     /// Generate audio stream from text.
     /// </summary>
     [HttpPost("tts/stream")]
-    public async Task<ActionResult> GenerateAudioStreamAsync(TtsRequestDto dto)
+    public async Task<ActionResult> GenerateAudioStreamAsync(
+        TtsRequestDto dto,
+        CancellationToken cancellationToken = default)
     {
-        var ttsService = await GetTtsServiceAsync();
+        var ttsService = await GetTtsServiceAsync(cancellationToken: cancellationToken);
         
         _logger.LogInformation("Generating audio stream for text: {Text}", dto.Message);
         
         // Emphasis
         if (ttsService.SupportsEmphasisTags)
         {
-            var emphasizedText = await GetEmphasizedTextAsync(dto.Message);
+            var emphasizedText = await GetEmphasizedTextAsync(dto.Message, cancellationToken);
             dto.Message = emphasizedText.Trim();
             
             _logger.LogInformation("Emphasized text: {EmphasizedText}", dto.Message);
@@ -200,12 +209,12 @@ public class GenerateAudioController : ControllerBase
 
         try
         {
-            audioStream = await ttsService.GenerateAudioStreamAsync(dto);
+            audioStream = await ttsService.GenerateAudioStreamAsync(dto, cancellationToken);
         }
         catch (NotImplementedException)
         {
             // Fallback to non-streaming
-            var audioBytes = await ttsService.GenerateAudioAsync(dto);
+            var audioBytes = await ttsService.GenerateAudioAsync(dto, cancellationToken);
             audioStream = new MemoryStream(audioBytes);
         }
 
@@ -216,7 +225,7 @@ public class GenerateAudioController : ControllerBase
             {
                 audioStream = await ConvertMp3ToWavStreamAsync(
                     originalStream,
-                    HttpContext.RequestAborted);
+                    cancellationToken);
             }
         }
         
@@ -228,11 +237,12 @@ public class GenerateAudioController : ControllerBase
     /// </summary>
     [HttpGet("tts/voices")]
     public async Task<ActionResult<IEnumerable<TtsVoiceDto>>> GetVoices(
-        [FromQuery] TtsProvider? provider)
+        [FromQuery] TtsProvider? provider,
+        CancellationToken cancellationToken = default)
     {
-        var ttsService = await GetTtsServiceAsync(provider);
+        var ttsService = await GetTtsServiceAsync(provider, cancellationToken);
         
-        var voices = await ttsService.GetVoicesAsync();
+        var voices = await ttsService.GetVoicesAsync(cancellationToken);
         
         return Ok(voices);
     }

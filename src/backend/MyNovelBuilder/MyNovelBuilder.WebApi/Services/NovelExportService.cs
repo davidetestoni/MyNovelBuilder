@@ -17,10 +17,10 @@ public partial class NovelExportService : INovelExportService
     }
 
     /// <inheritdoc />
-    public async Task<string> ExportToMarkdownAsync(Guid novelId)
+    public async Task<string> ExportToMarkdownAsync(Guid novelId, CancellationToken cancellationToken = default)
     {
-        var novel = await _novelService.GetByIdAsync(novelId);
-        var prose = await _novelService.GetProseAsync(novelId);
+        var novel = await _novelService.GetByIdAsync(novelId, cancellationToken);
+        var prose = await _novelService.GetProseAsync(novelId, cancellationToken);
 
         var sb = new StringBuilder();
         sb.AppendLine($"# {novel.Title.StripHtml()}");

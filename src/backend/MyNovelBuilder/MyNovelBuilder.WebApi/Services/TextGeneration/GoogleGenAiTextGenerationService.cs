@@ -24,14 +24,15 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         _integrationsService = integrationsService;
     }
     
-    private async ValueTask<Google.GenAI.Client> GetGoogleGenAiClientAsync()
+    private async ValueTask<Google.GenAI.Client> GetGoogleGenAiClientAsync(
+        CancellationToken cancellationToken = default)
     {
         if (_googleGenAiClient is not null)
         {
             return _googleGenAiClient;
         }
 
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(config.GoogleGenAiApiKey))
         {
@@ -49,7 +50,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
-        var client = await GetGoogleGenAiClientAsync();
+        var client = await GetGoogleGenAiClientAsync(cancellationToken);
         
         var messageList = messages.ToList();
         var systemPrompt = messageList.FirstOrDefault(m => m.Role is PromptMessageRole.System);
@@ -60,7 +61,8 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                 .Where(m => m.Role is not PromptMessageRole.System)
                 .Select(ToContent)
                 .ToList(),
-            CreateGenerateContentConfig(systemPrompt, structuredOutputOptions));
+            CreateGenerateContentConfig(systemPrompt, structuredOutputOptions))
+            .WaitAsync(cancellationToken);
 
         return response.Candidates![0].Content!.Parts![0].Text!;
     }
@@ -71,7 +73,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         StructuredOutputOptions? structuredOutputOptions = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var client = await GetGoogleGenAiClientAsync();
+        var client = await GetGoogleGenAiClientAsync(cancellationToken);
         
         var messageList = messages.ToList();
         var systemPrompt = messageList.FirstOrDefault(m => m.Role is PromptMessageRole.System);
@@ -107,7 +109,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var client = await GetGoogleGenAiClientAsync();
+        var client = await GetGoogleGenAiClientAsync(cancellationToken);
 
         var messageList = messages.ToList();
         var systemPrompt = messageList.FirstOrDefault(m => m.Role is PromptMessageRole.System);
@@ -179,7 +181,8 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                         Parts = [ToPart(systemPrompt.Message)],
                         Role = "model"
                     }
-            });
+            })
+            .WaitAsync(cancellationToken);
 
         var text = response.Candidates?
             .SelectMany(c => c.Content?.Parts ?? [])
@@ -191,15 +194,16 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
+    public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var client = await GetGoogleGenAiClientAsync();
+        var client = await GetGoogleGenAiClientAsync(cancellationToken);
         var models = new List<TextGenerationModelInfo>();
         
         var pager = await client.Models.ListAsync(new ListModelsConfig
         {
             PageSize = 1000
-        });
+        }).WaitAsync(cancellationToken);
         models.AddRange(pager.CurrentPage
             .Where(m => m.SupportedActions is not null && m.SupportedActions.Contains("generateContent"))
             .Select(m => new TextGenerationModelInfo
@@ -211,7 +215,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
 
         while (pager.HasMorePages)
         {
-            await pager.NextPageAsync();
+            await pager.NextPageAsync().WaitAsync(cancellationToken);
             models.AddRange(pager.CurrentPage
                 .Where(m => m.SupportedActions is not null && m.SupportedActions.Contains("generateContent"))
                 .Select(m => new TextGenerationModelInfo

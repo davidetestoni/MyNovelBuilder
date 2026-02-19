@@ -25,9 +25,9 @@ public class PromptController : ControllerBase
     /// Get a prompt by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    public async Task<PromptDto> GetPromptById(Guid id)
+    public async Task<PromptDto> GetPromptById(Guid id, CancellationToken cancellationToken = default)
     {
-        var prompt = await _promptService.GetByIdAsync(id);
+        var prompt = await _promptService.GetByIdAsync(id, cancellationToken);
         return prompt.Adapt<PromptDto>();
     }
     
@@ -35,9 +35,9 @@ public class PromptController : ControllerBase
     /// Get all prompts.
     /// </summary>
     [HttpGet("/api/prompts")]
-    public async Task<IEnumerable<PromptDto>> GetAllPrompts()
+    public async Task<IEnumerable<PromptDto>> GetAllPrompts(CancellationToken cancellationToken = default)
     {
-        var prompts = await _promptService.GetAllAsync();
+        var prompts = await _promptService.GetAllAsync(cancellationToken);
         return prompts.Adapt<IEnumerable<PromptDto>>();
     }
     
@@ -45,10 +45,12 @@ public class PromptController : ControllerBase
     /// Create a prompt.
     /// </summary>
     [HttpPost]
-    public async Task<PromptDto> CreatePrompt(CreatePromptDto createPromptDto)
+    public async Task<PromptDto> CreatePrompt(
+        CreatePromptDto createPromptDto,
+        CancellationToken cancellationToken = default)
     {
         var prompt = createPromptDto.Adapt<Prompt>();
-        await _promptService.CreateAsync(prompt);
+        await _promptService.CreateAsync(prompt, cancellationToken);
         return prompt.Adapt<PromptDto>();
     }
     
@@ -56,10 +58,12 @@ public class PromptController : ControllerBase
     /// Update a prompt.
     /// </summary>
     [HttpPut]
-    public async Task<PromptDto> UpdatePrompt(UpdatePromptDto updatePromptDto)
+    public async Task<PromptDto> UpdatePrompt(
+        UpdatePromptDto updatePromptDto,
+        CancellationToken cancellationToken = default)
     {
         var prompt = updatePromptDto.Adapt<Prompt>();
-        await _promptService.UpdateAsync(prompt);
+        await _promptService.UpdateAsync(prompt, cancellationToken);
         return prompt.Adapt<PromptDto>();
     }
     
@@ -67,8 +71,8 @@ public class PromptController : ControllerBase
     /// Delete a prompt by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    public async Task DeletePrompt(Guid id)
+    public async Task DeletePrompt(Guid id, CancellationToken cancellationToken = default)
     {
-        await _promptService.DeleteAsync(id);
+        await _promptService.DeleteAsync(id, cancellationToken);
     }
 }

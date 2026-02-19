@@ -95,23 +95,27 @@ public class KokoroTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
+    public async Task<byte[]> GenerateAudioAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         _logger.LogInformation("Generating audio using Kokoro TTS");
         
         // Download the model if not present
+        cancellationToken.ThrowIfCancellationRequested();
         await KokoroTTS.LoadModelAsync(model: KModel.float32);
         
         var synth = new KokoroWavSynthesizer("kokoro.onnx");
         var voice = KokoroVoiceManager.GetVoice(config.TtsVoiceId);
 
+        cancellationToken.ThrowIfCancellationRequested();
         var audioBytes = await synth.SynthesizeAsync(request.Message, voice);
         
         // The bytes aren't in wav format, so we need to encode them
         using var ms = new MemoryStream();
         await using var writer = new WaveFileWriter(ms, KokoroPlayback.waveFormat);
-        await writer.WriteAsync(audioBytes);
+        await writer.WriteAsync(audioBytes, cancellationToken);
 
         ms.Seek(0, SeekOrigin.Begin);
 
@@ -119,13 +123,15 @@ public class KokoroTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public Task<Stream> GenerateAudioStreamAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc />
-    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync()
+    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_voices.Select(v => new TtsVoiceDto
         {

@@ -24,7 +24,7 @@ public class IntegrationsService : IIntegrationsService
     }
     
     /// <inheritdoc />
-    public async ValueTask<IntegrationsConfig> GetConfigAsync()
+    public async ValueTask<IntegrationsConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
         if (_cachedConfig is not null)
         {
@@ -40,25 +40,25 @@ public class IntegrationsService : IIntegrationsService
         {
             var defaultConfig = new IntegrationsConfig();
             configJson = JsonSerializer.Serialize(defaultConfig, _jsonSerializerOptions);
-            await File.WriteAllTextAsync(path, configJson);
+            await File.WriteAllTextAsync(path, configJson, cancellationToken);
             _cachedConfig = defaultConfig;
             return defaultConfig;
         }
         
-        configJson = await File.ReadAllTextAsync(path);
+        configJson = await File.ReadAllTextAsync(path, cancellationToken);
         var config = JsonSerializer.Deserialize<IntegrationsConfig>(configJson, _jsonSerializerOptions)!;
         _cachedConfig = config;
         return config;
     }
 
     /// <inheritdoc />
-    public async Task UpdateConfigAsync(IntegrationsConfig config)
+    public async Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default)
     {
         var path = Path.Combine(Globals.DataFolder, "integrations.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         
         var configJson = JsonSerializer.Serialize(config, _jsonSerializerOptions);
-        await File.WriteAllTextAsync(path, configJson);
+        await File.WriteAllTextAsync(path, configJson, cancellationToken);
         _cachedConfig = config;
     }
 }

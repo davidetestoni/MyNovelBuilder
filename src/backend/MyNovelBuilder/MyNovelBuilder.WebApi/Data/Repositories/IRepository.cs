@@ -11,22 +11,24 @@ public interface IRepository<TEntity> where TEntity : Entity
     /// <summary>
     /// Check if an entity with a given ID exists.
     /// </summary>
-    Task<bool> ExistsAsync(Guid id);
+    Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get an entity by its ID. Returns null if not found.
     /// </summary>
-    Task<TEntity?> GetByIdAsync(Guid id);
+    Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get all entities.
     /// </summary>
-    Task<IEnumerable<TEntity>> GetAllAsync();
+    Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Find entities based on a predicate.
     /// </summary>
-    Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate);
+    Task<IEnumerable<TEntity>> FindAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Add an entity.

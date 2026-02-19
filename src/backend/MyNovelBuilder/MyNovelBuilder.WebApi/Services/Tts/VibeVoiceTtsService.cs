@@ -36,9 +36,11 @@ public class VibeVoiceTtsService : ITtsService
     }
     
     /// <inheritdoc/>
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
+    public async Task<byte[]> GenerateAudioAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         
         // The websocket accepts query parameters for text and voice
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
@@ -49,8 +51,7 @@ public class VibeVoiceTtsService : ITtsService
         
         using var ws = new ClientWebSocket();
         
-        // TODO: Pass cancellation token down from higher level
-        var ct = CancellationToken.None;
+        var ct = cancellationToken;
         await ws.ConnectAsync(uriBuilder.Uri, ct);
         
         var buffer = new byte[64 * 1024];
@@ -115,9 +116,11 @@ public class VibeVoiceTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public async Task<Stream> GenerateAudioStreamAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
@@ -126,7 +129,6 @@ public class VibeVoiceTtsService : ITtsService
         uriBuilder.Query = query.ToString();
         
         var ws = new ClientWebSocket();
-        var cancellationToken = CancellationToken.None;
         await ws.ConnectAsync(uriBuilder.Uri, cancellationToken);
 
         return new PcmWavStreamingStream(
@@ -185,14 +187,14 @@ public class VibeVoiceTtsService : ITtsService
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync()
+    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync($"http://{_host}/config");
+        var response = await _httpClient.GetAsync($"http://{_host}/config", cancellationToken);
         response.EnsureSuccessStatusCode();
 
         // The returned JSON is in the format:
         // { "voices": ["voice1", "voice2", ...], ... }
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
         using var document = JsonDocument.Parse(json);
         var voices = document.RootElement.GetProperty("voices").EnumerateArray()
             .Select(v => new TtsVoiceDto

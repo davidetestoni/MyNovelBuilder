@@ -11,5 +11,5 @@ public interface INovelPromptCreatorService
     /// <summary>
     /// Create a prompt based on the request.
     /// </summary>
-    Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(GenerateTextRequestDto request);
+    Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(GenerateTextRequestDto request, CancellationToken cancellationToken = default);
 }

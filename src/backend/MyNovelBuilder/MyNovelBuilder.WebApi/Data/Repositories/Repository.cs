@@ -27,27 +27,33 @@ public class Repository<TEntity> :
     /// <summary>
     /// Check if an entity with a given ID exists.
     /// </summary>
-    public async Task<bool> ExistsAsync(Guid id)
+    public async Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await Context.Set<TEntity>().AnyAsync(e => e.Id == id);
+        return await Context.Set<TEntity>().AnyAsync(
+            e => e.Id == id,
+            cancellationToken);
     }
     
     /// <inheritdoc />
-    public async Task<TEntity?> GetByIdAsync(Guid id)
+    public async Task<TEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await Context.Set<TEntity>().FindAsync(id);
+        return await Context.Set<TEntity>().FindAsync([id], cancellationToken);
     }
     
     /// <inheritdoc />
-    public async Task<IEnumerable<TEntity>> GetAllAsync()
+    public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await Context.Set<TEntity>().ToListAsync();
+        return await Context.Set<TEntity>().ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TEntity>> FindAsync(Expression<Func<TEntity, bool>> predicate)
+    public async Task<IEnumerable<TEntity>> FindAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        CancellationToken cancellationToken = default)
     {
-        return await Context.Set<TEntity>().Where(predicate).ToListAsync();
+        return await Context.Set<TEntity>()
+            .Where(predicate)
+            .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />

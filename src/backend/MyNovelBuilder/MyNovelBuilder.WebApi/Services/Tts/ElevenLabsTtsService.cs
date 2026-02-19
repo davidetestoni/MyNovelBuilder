@@ -33,9 +33,11 @@ public class ElevenLabsTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
+    public async Task<byte[]> GenerateAudioAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var apiKey = config.ElevenLabsApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -52,21 +54,24 @@ public class ElevenLabsTtsService : ITtsService
                 new Voice(config.TtsVoiceId, string.Empty),
                 request.Message,
                 model: new Model("eleven_v3"),
-                outputFormat: OutputFormat.PCM_24000));
+                outputFormat: OutputFormat.PCM_24000),
+            cancellationToken: cancellationToken);
         
         using var finalAudio = new MemoryStream();
         await using var writer = new NAudio.Wave.WaveFileWriter(finalAudio,
             new NAudio.Wave.WaveFormat(24000, 16, 1));
 
-        await writer.WriteAsync(voiceClip.ClipData.ToArray());
+        await writer.WriteAsync(voiceClip.ClipData.ToArray(), cancellationToken);
 
         return finalAudio.ToArray();
     }
     
     /// <inheritdoc />
-    public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public async Task<Stream> GenerateAudioStreamAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var apiKey = config.ElevenLabsApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -92,13 +97,13 @@ public class ElevenLabsTtsService : ITtsService
                         outputFormat: OutputFormat.PCM_24000),
                     partialClipCallback: partialClip => writeAsync(partialClip.ClipData), cancellationToken: ct);
             },
-            ct: CancellationToken.None);
+            ct: cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync()
+    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var apiKey = config.ElevenLabsApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -113,7 +118,7 @@ public class ElevenLabsTtsService : ITtsService
         var voices = await client.VoicesV2Endpoint.GetVoicesAsync(new VoiceQuery
         {
             PageSize = 100
-        });
+        }, cancellationToken);
         
         return voices.Voices.Select(v => new TtsVoiceDto
         {

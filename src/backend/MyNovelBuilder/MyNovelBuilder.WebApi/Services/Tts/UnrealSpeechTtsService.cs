@@ -81,9 +81,11 @@ public class UnrealSpeechTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request)
+    public async Task<byte[]> GenerateAudioAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var apiKey = config.UnrealSpeechApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -111,9 +113,9 @@ public class UnrealSpeechTtsService : ITtsService
         };
         httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
         
-        using var response = await _httpClient.SendAsync(httpRequest);
+        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
         
-        var jsonResponse = await response.Content.ReadAsStringAsync();
+        var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         
         if (!response.IsSuccessStatusCode)
         {
@@ -128,28 +130,30 @@ public class UnrealSpeechTtsService : ITtsService
 
         // Wait for the audio to be generated and uploaded to S3
         // This service is pretty unreliable...
-        await Task.Delay(15000);
+        await Task.Delay(15000, cancellationToken);
         
         // Read the audio from the output uri
         // We use a brand new HttpClient here, otherwise it has the
         // Authorization header set and the request fails
         // (although we should be using the IHttpClientFactory to create it...)
         using var httpClient = new HttpClient();
-        using var audioResponse = await httpClient.GetAsync(outputUri);
+        using var audioResponse = await httpClient.GetAsync(outputUri, cancellationToken);
         
         if (!audioResponse.IsSuccessStatusCode)
         {
             throw new ApiException(ErrorCodes.ExternalServiceError,
-                $"Failed to fetch the generated audio file from the output uri: {await audioResponse.Content.ReadAsStringAsync()}");
+                $"Failed to fetch the generated audio file from the output uri: {await audioResponse.Content.ReadAsStringAsync(cancellationToken)}");
         }
         
-        return await audioResponse.Content.ReadAsByteArrayAsync();
+        return await audioResponse.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request)
+    public async Task<Stream> GenerateAudioStreamAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         
         // This endpoint only supports text up to 1000 characters
         var textChunks = new TextChunker(1000).ChunkText(request.Message).ToList();
@@ -159,7 +163,7 @@ public class UnrealSpeechTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync()
+    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_voices.Select(v => new TtsVoiceDto
         {

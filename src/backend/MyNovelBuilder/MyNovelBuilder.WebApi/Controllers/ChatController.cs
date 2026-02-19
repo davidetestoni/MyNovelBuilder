@@ -24,25 +24,25 @@ public class ChatController : ControllerBase
     /// Get metadata for all chats.
     /// </summary>
     [HttpGet("/api/chats")]
-    public async Task<IEnumerable<ChatMetadata>> GetAllChatMetadata()
+    public async Task<IEnumerable<ChatMetadata>> GetAllChatMetadata(CancellationToken cancellationToken = default)
     {
-        return await _chatService.GetAllMetadataAsync();
+        return await _chatService.GetAllMetadataAsync(cancellationToken);
     }
     
     /// <summary>
     /// Get a chat by its ID.
     /// </summary>
     [HttpGet("{id:guid}")]
-    public async Task<Chat> GetChatById(Guid id)
+    public async Task<Chat> GetChatById(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _chatService.GetByIdAsync(id);
+        return await _chatService.GetByIdAsync(id, cancellationToken);
     }
 
     /// <summary>
     /// Create a chat.
     /// </summary>
     [HttpPost]
-    public async Task<Chat> CreateChat(CreateChatDto dto)
+    public async Task<Chat> CreateChat(CreateChatDto dto, CancellationToken cancellationToken = default)
     {
         var chat = new Chat
         {
@@ -56,7 +56,7 @@ public class ChatController : ControllerBase
             }
         };
         
-        await _chatService.CreateAsync(chat);
+        await _chatService.CreateAsync(chat, cancellationToken);
         return chat;
     }
 
@@ -64,9 +64,9 @@ public class ChatController : ControllerBase
     /// Update a chat.
     /// </summary>
     [HttpPut("{id:guid}")]
-    public async Task UpdateChat(Guid id, UpdateChatDto dto)
+    public async Task UpdateChat(Guid id, UpdateChatDto dto, CancellationToken cancellationToken = default)
     { 
-        var chat = await _chatService.GetByIdAsync(id);
+        var chat = await _chatService.GetByIdAsync(id, cancellationToken);
         chat.UpdatedAt = DateTime.UtcNow;
         chat.Name = dto.Name;
         chat.Context.ChapterIndex = dto.ChapterIndex;
@@ -74,15 +74,15 @@ public class ChatController : ControllerBase
         chat.Context.CompendiumRecordIds = dto.CompendiumRecordIds.ToList();
         chat.Messages = dto.Messages.ToList();
         
-        await _chatService.UpdateAsync(id, chat);
+        await _chatService.UpdateAsync(id, chat, cancellationToken);
     }
 
     /// <summary>
     /// Delete a chat by its ID.
     /// </summary>
     [HttpDelete("{id:guid}")]
-    public async Task DeleteChat(Guid id)
+    public async Task DeleteChat(Guid id, CancellationToken cancellationToken = default)
     {
-        await _chatService.DeleteAsync(id);
+        await _chatService.DeleteAsync(id, cancellationToken);
     }
 }

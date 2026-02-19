@@ -31,9 +31,10 @@ public class GenerateImageController : ControllerBase
         _hybridCache = hybridCache;
     }
 
-    private async ValueTask<IImageGenerationService> GetImageGenerationServiceAsync()
+    private async ValueTask<IImageGenerationService> GetImageGenerationServiceAsync(
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var imageGenerationService = _serviceProvider.GetKeyedService<IImageGenerationService>(config.ImageGenerationProvider);
 
         if (imageGenerationService is null)
@@ -52,10 +53,12 @@ public class GenerateImageController : ControllerBase
     /// Generate an image.
     /// </summary>
     [HttpPost]
-    public async Task<ActionResult> GenerateImageAsync(ImageGenerationRequestDto dto)
+    public async Task<ActionResult> GenerateImageAsync(
+        ImageGenerationRequestDto dto,
+        CancellationToken cancellationToken = default)
     {
-        var imageGen = await GetImageGenerationServiceAsync();
-        var image = await imageGen.GenerateImageAsync(dto);
+        var imageGen = await GetImageGenerationServiceAsync(cancellationToken);
+        var image = await imageGen.GenerateImageAsync(dto, cancellationToken);
         
         return File(image, "image/png", "image.png");
     }
@@ -64,7 +67,10 @@ public class GenerateImageController : ControllerBase
     /// Edit an existing image.
     /// </summary>
     [HttpPost("edit")]
-    public async Task<ActionResult> EditImageAsync(IFormFile image, [FromForm] ImageGenerationRequestDto dto)
+    public async Task<ActionResult> EditImageAsync(
+        IFormFile image,
+        [FromForm] ImageGenerationRequestDto dto,
+        CancellationToken cancellationToken = default)
     {
         if (image.Length == 0)
         {
@@ -73,10 +79,10 @@ public class GenerateImageController : ControllerBase
 
         await using var imageStream = image.OpenReadStream();
         using var ms = new MemoryStream();
-        await imageStream.CopyToAsync(ms);
+        await imageStream.CopyToAsync(ms, cancellationToken);
         var imageBytes = ms.ToArray();
-        var imageGen = await GetImageGenerationServiceAsync();
-        var editedImage = await imageGen.EditImageAsync(imageBytes, dto);
+        var imageGen = await GetImageGenerationServiceAsync(cancellationToken);
+        var editedImage = await imageGen.EditImageAsync(imageBytes, dto, cancellationToken);
         
         return File(editedImage, "image/png", "edited_image.png");
     }
@@ -86,15 +92,16 @@ public class GenerateImageController : ControllerBase
     /// </summary>
     /// <returns></returns>
     [HttpGet("models")]
-    public async Task<IEnumerable<ImageGenerationModelInfoDto>> GetAvailableModelsAsync()
+    public async Task<IEnumerable<ImageGenerationModelInfoDto>> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
         return await _hybridCache.GetOrCreateAsync(
             $"imagegen-{config.ImageGenerationProvider}-models",
-            async _ =>
+            async token =>
             {
-                var imageGenerationService = await GetImageGenerationServiceAsync();
-                var models = await imageGenerationService.GetAvailableModelsAsync();
+                var imageGenerationService = await GetImageGenerationServiceAsync(token);
+                var models = await imageGenerationService.GetAvailableModelsAsync(token);
 
                 return models.Select(m => new ImageGenerationModelInfoDto
                 {
@@ -108,7 +115,8 @@ public class GenerateImageController : ControllerBase
                 Expiration = TimeSpan.FromHours(6),
                 LocalCacheExpiration = TimeSpan.FromHours(6)
             },
-            tags: ["imagegen", config.ImageGenerationProvider.ToString(), "models"]
+            tags: ["imagegen", config.ImageGenerationProvider.ToString(), "models"],
+            cancellationToken: cancellationToken
         );
     }
 }

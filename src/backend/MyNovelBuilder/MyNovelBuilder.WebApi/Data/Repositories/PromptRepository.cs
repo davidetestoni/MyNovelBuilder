@@ -14,10 +14,10 @@ public class PromptRepository : Repository<Prompt>, IPromptRepository
     }
 
     /// <inheritdoc />
-    public async Task<Prompt?> GetWithMessagesByIdAsync(Guid id)
+    public async Task<Prompt?> GetWithMessagesByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await Context.Set<Prompt>()
             .Include(p => p.Messages)
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 }

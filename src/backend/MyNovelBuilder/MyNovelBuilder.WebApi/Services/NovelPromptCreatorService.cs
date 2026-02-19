@@ -28,13 +28,14 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
 
     /// <inheritdoc />
     public async Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(
-        GenerateTextRequestDto request)
+        GenerateTextRequestDto request,
+        CancellationToken cancellationToken = default)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var novelService = scope.ServiceProvider.GetRequiredService<INovelService>();
 
-        var prompt = await unitOfWork.Prompts.GetByIdAsync(request.PromptId);
+        var prompt = await unitOfWork.Prompts.GetByIdAsync(request.PromptId, cancellationToken);
         if (prompt is null)
         {
             throw new ApiException(ErrorCodes.PromptNotFound,
@@ -66,16 +67,16 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                 "The prompt context is invalid.");
         }
 
-        var novel = await unitOfWork.Novels.GetWithReferencesByIdAsync(novelContextInfo.NovelId);
+        var novel = await unitOfWork.Novels.GetWithReferencesByIdAsync(novelContextInfo.NovelId, cancellationToken);
         if (novel is null)
         {
             throw new ApiException(ErrorCodes.NovelNotFound,
                 $"Novel with ID {novelContextInfo.NovelId} not found.");
         }
 
-        var prose = await novelService.GetProseAsync(novelContextInfo.NovelId);
+        var prose = await novelService.GetProseAsync(novelContextInfo.NovelId, cancellationToken);
         var recordsTasks = novel.Compendia.Select(compendium =>
-            unitOfWork.CompendiumRecords.GetByCompendiumIdAsync(compendium.Id));
+            unitOfWork.CompendiumRecords.GetByCompendiumIdAsync(compendium.Id, cancellationToken));
         var recordsLists = await Task.WhenAll(recordsTasks);
         var records = recordsLists.SelectMany(r => r).ToList();
 

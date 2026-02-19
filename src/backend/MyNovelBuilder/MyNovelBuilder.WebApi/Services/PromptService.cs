@@ -18,9 +18,9 @@ public class PromptService : IPromptService
     }
     
     /// <inheritdoc />
-    public async Task<Prompt> GetByIdAsync(Guid id)
+    public async Task<Prompt> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var prompt = await _unitOfWork.Prompts.GetByIdAsync(id);
+        var prompt = await _unitOfWork.Prompts.GetByIdAsync(id, cancellationToken);
         
         if (prompt is null)
         {
@@ -31,31 +31,31 @@ public class PromptService : IPromptService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<Prompt>> GetAllAsync()
+    public async Task<IEnumerable<Prompt>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.Prompts.GetAllAsync();
+        return await _unitOfWork.Prompts.GetAllAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task CreateAsync(Prompt prompt)
+    public async Task CreateAsync(Prompt prompt, CancellationToken cancellationToken = default)
     {
         _unitOfWork.Prompts.Add(prompt);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(Prompt prompt)
+    public async Task UpdateAsync(Prompt prompt, CancellationToken cancellationToken = default)
     {
         _unitOfWork.Prompts.Update(prompt);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var prompt = await GetByIdAsync(id);
+        var prompt = await GetByIdAsync(id, cancellationToken);
         
         _unitOfWork.Prompts.Remove(prompt);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

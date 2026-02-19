@@ -28,14 +28,15 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         _integrationsService = integrationsService;
     }
     
-    private async ValueTask<OpenAIClient> GetOpenAiClientAsync()
+    private async ValueTask<OpenAIClient> GetOpenAiClientAsync(
+        CancellationToken cancellationToken = default)
     {
         if (_openAiClient is not null)
         {
             return _openAiClient;
         }
 
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(config.OpenRouterApiKey))
         {
@@ -56,7 +57,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
-        var client = await GetOpenAiClientAsync();
+        var client = await GetOpenAiClientAsync(cancellationToken);
         var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
@@ -86,7 +87,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         StructuredOutputOptions? structuredOutputOptions = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var client = await GetOpenAiClientAsync();
+        var client = await GetOpenAiClientAsync(cancellationToken);
         var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
@@ -137,7 +138,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         string imageMimeType,
         CancellationToken cancellationToken = default)
     {
-        var client = await GetOpenAiClientAsync();
+        var client = await GetOpenAiClientAsync(cancellationToken);
         var chatClient = client.GetChatClient(model);
 
         var promptMessages = messages.ToList();
@@ -185,9 +186,10 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync()
+    public async Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync(
+        CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
 
         if (string.IsNullOrWhiteSpace(config.OpenRouterApiKey))
         {
@@ -202,8 +204,8 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         using var request = new HttpRequestMessage(HttpMethod.Get, "models");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.OpenRouterApiKey);
         
-        using var response = await httpClient.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
         {

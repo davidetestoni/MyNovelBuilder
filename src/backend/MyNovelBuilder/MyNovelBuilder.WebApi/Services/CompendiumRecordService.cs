@@ -20,9 +20,11 @@ public class CompendiumRecordService : ICompendiumRecordService
     }
     
     /// <inheritdoc />
-    public async Task<CompendiumRecord> GetByIdAsync(Guid id)
+    public async Task<CompendiumRecord> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var compendiumRecord = await _unitOfWork.CompendiumRecords.GetWithCompendiumByIdAsync(id);
+        var compendiumRecord = await _unitOfWork.CompendiumRecords.GetWithCompendiumByIdAsync(
+            id,
+            cancellationToken);
 
         if (compendiumRecord is null)
         {
@@ -33,47 +35,55 @@ public class CompendiumRecordService : ICompendiumRecordService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<CompendiumRecord>> GetByCompendiumIdAsync(Guid compendiumId)
+    public async Task<IEnumerable<CompendiumRecord>> GetByCompendiumIdAsync(
+        Guid compendiumId,
+        CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.CompendiumRecords.GetByCompendiumIdAsync(compendiumId);
+        return await _unitOfWork.CompendiumRecords.GetByCompendiumIdAsync(compendiumId, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<CompendiumRecord>> GetAllAsync()
+    public async Task<IEnumerable<CompendiumRecord>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _unitOfWork.CompendiumRecords.GetAllAsync();
+        return await _unitOfWork.CompendiumRecords.GetAllAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task CreateAsync(CompendiumRecord compendiumRecord)
+    public async Task CreateAsync(
+        CompendiumRecord compendiumRecord,
+        CancellationToken cancellationToken = default)
     {
         _unitOfWork.CompendiumRecords.Add(compendiumRecord);
         compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(CompendiumRecord compendiumRecord)
+    public async Task UpdateAsync(
+        CompendiumRecord compendiumRecord,
+        CancellationToken cancellationToken = default)
     {
         _unitOfWork.CompendiumRecords.Update(compendiumRecord);
         compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var compendiumRecord = await GetByIdAsync(id);
+        var compendiumRecord = await GetByIdAsync(id, cancellationToken);
         
         _unitOfWork.CompendiumRecords.Remove(compendiumRecord);
         compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<MediaRef>> GetGalleryMediaAsync(Guid id)
+    public async Task<IEnumerable<MediaRef>> GetGalleryMediaAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
     {
-        var record = await GetByIdAsync(id);
+        var record = await GetByIdAsync(id, cancellationToken);
         var localPath = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery");
         
         if (!Directory.Exists(localPath))
@@ -90,7 +100,11 @@ public class CompendiumRecordService : ICompendiumRecordService
     }
 
     /// <inheritdoc />
-    public async Task UploadMediaAsync(Guid id, IFormFile file, bool isCurrent = false)
+    public async Task UploadMediaAsync(
+        Guid id,
+        IFormFile file,
+        bool isCurrent = false,
+        CancellationToken cancellationToken = default)
     {
         // If it's a video, it cannot be set as current
         if (file.ContentType.StartsWith("video/") && isCurrent)
@@ -98,9 +112,9 @@ public class CompendiumRecordService : ICompendiumRecordService
             isCurrent = false;
         }
         
-        var record = await GetByIdAsync(id);
+        var record = await GetByIdAsync(id, cancellationToken);
         using var memoryStream = new MemoryStream();
-        await file.CopyToAsync(memoryStream);
+        await file.CopyToAsync(memoryStream, cancellationToken);
         var mediaBytes = memoryStream.ToArray();
         var extension = Path.GetExtension(file.FileName);
         
@@ -110,7 +124,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         {
             using var image = Image.Load(mediaBytes);
             using var outputStream = new MemoryStream();
-            await image.SaveAsPngAsync(outputStream);
+            await image.SaveAsPngAsync(outputStream, cancellationToken);
             mediaBytes = outputStream.ToArray();
             extension = ".png";
         }
@@ -124,7 +138,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         var path = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{mediaId}{extension}");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await File.WriteAllBytesAsync(path, mediaBytes);
+        await File.WriteAllBytesAsync(path, mediaBytes, cancellationToken);
         
         record.Compendium.UpdatedAt = DateTime.UtcNow;
         
@@ -133,13 +147,16 @@ public class CompendiumRecordService : ICompendiumRecordService
             record.CurrentImageId = mediaId;
         }
         
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task SetCurrentImageAsync(Guid id, Guid imageId)
+    public async Task SetCurrentImageAsync(
+        Guid id,
+        Guid imageId,
+        CancellationToken cancellationToken = default)
     {
-        var record = await GetByIdAsync(id);
+        var record = await GetByIdAsync(id, cancellationToken);
         
         // If the image is not a .png file, it cannot be set as
         // the current image.
@@ -161,13 +178,16 @@ public class CompendiumRecordService : ICompendiumRecordService
         
         record.CurrentImageId = imageId;
         record.Compendium.UpdatedAt = DateTime.UtcNow;
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task DeleteMediaAsync(Guid id, Guid mediaId)
+    public async Task DeleteMediaAsync(
+        Guid id,
+        Guid mediaId,
+        CancellationToken cancellationToken = default)
     {
-        var record = await GetByIdAsync(id);
+        var record = await GetByIdAsync(id, cancellationToken);
         var folderPath = Path.Combine(
             Globals.StaticFilesRoot, 
             "compendium",
@@ -192,6 +212,6 @@ public class CompendiumRecordService : ICompendiumRecordService
             record.CurrentImageId = null;
         }
         
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

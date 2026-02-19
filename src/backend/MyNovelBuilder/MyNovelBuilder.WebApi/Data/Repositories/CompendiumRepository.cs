@@ -14,10 +14,10 @@ public class CompendiumRepository : Repository<Compendium>, ICompendiumRepositor
     }
 
     /// <inheritdoc />
-    public async Task<Compendium?> GetWithRecordsByIdAsync(Guid id)
+    public async Task<Compendium?> GetWithRecordsByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await Context.Set<Compendium>()
             .Include(c => c.Records)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 }
