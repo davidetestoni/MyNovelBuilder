@@ -5,6 +5,7 @@ export interface Prose {
 export interface Chapter {
   title: string;
   sections: Section[];
+  storyEvents: StoryEvent[];
 }
 
 export interface Section {
@@ -12,7 +13,6 @@ export interface Section {
   text: string;
   images: string[];
   recordOverrides: RecordOverride[];
-  storyEvents: StoryEvent[];
 }
 
 export interface RecordOverride {

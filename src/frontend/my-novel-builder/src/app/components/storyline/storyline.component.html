@@ -4,7 +4,10 @@
   } @else {
     <div class="storyline-scroll">
       <div class="storyline-track" role="list">
-        @for (event of events; track event.chapterIndex + '-' + event.sectionIndex + '-' + event.storyEventIndex) {
+        @for (
+          event of events;
+          track event.chapterIndex + "-" + event.storyEventIndex
+        ) {
           <div class="storyline-item" role="listitem">
             <div class="storyline-connector"></div>
             <button
@@ -18,7 +21,9 @@
               <div class="storyline-body">
                 <div class="storyline-title">{{ event.title }}</div>
                 @if (event.description) {
-                  <div class="storyline-description">{{ event.description }}</div>
+                  <div class="storyline-description">
+                    {{ event.description }}
+                  </div>
                 }
               </div>
             </button>

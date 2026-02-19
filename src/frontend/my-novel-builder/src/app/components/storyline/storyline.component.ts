@@ -5,7 +5,6 @@ import { Prose, StoryEvent } from '../../types/dtos/novel/prose';
 interface StorylineTimelineEvent extends StoryEvent {
   chapterTitle: string;
   chapterIndex: number;
-  sectionIndex: number;
   storyEventIndex: number;
 }
 
@@ -27,17 +26,14 @@ export class StorylineComponent {
 
     const events: StorylineTimelineEvent[] = [];
     this.prose.chapters.forEach((chapter, chapterIndex) => {
-      chapter.sections.forEach((section, sectionIndex) => {
-        (section.storyEvents || []).forEach((storyEvent, storyEventIndex) => {
-          events.push({
-            title: storyEvent.title?.trim() || 'Story Event',
-            date: storyEvent.date?.trim() || '',
-            description: storyEvent.description?.trim() || '',
-            chapterTitle: chapter.title,
-            chapterIndex,
-            sectionIndex,
-            storyEventIndex,
-          });
+      (chapter.storyEvents || []).forEach((storyEvent, storyEventIndex) => {
+        events.push({
+          title: storyEvent.title?.trim() || 'Story Event',
+          date: storyEvent.date?.trim() || '',
+          description: storyEvent.description?.trim() || '',
+          chapterTitle: chapter.title,
+          chapterIndex,
+          storyEventIndex,
         });
       });
     });

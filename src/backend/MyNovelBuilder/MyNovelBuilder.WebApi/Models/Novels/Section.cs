@@ -24,9 +24,4 @@ public class Section
     /// The record overrides associated with the section.
     /// </summary>
     public RecordOverride[] RecordOverrides { get; set; } = [];
-    
-    /// <summary>
-    /// The story events associated with the section.
-    /// </summary>
-    public StoryEvent[] StoryEvents { get; set; } = [];
 }

@@ -128,6 +128,7 @@ export class ProseEditorComponent implements OnDestroy {
     this.prose.chapters = this.prose.chapters.concat({
       title: `Chapter ${this.prose.chapters.length + 1}`,
       sections: [],
+      storyEvents: [],
     });
     this.saveProse();
   }
@@ -160,7 +161,6 @@ export class ProseEditorComponent implements OnDestroy {
       text: '',
       images: [],
       recordOverrides: [],
-      storyEvents: [],
     });
     this.saveProse();
   }
@@ -360,13 +360,11 @@ export class ProseEditorComponent implements OnDestroy {
       },
     });
 
-    this.dialogRef?.onClose.subscribe(
-      (request: GenerateTextRequestDto) => {
-        if (request) {
-          this.generateSectionSummary(chapterIndex, sectionIndex, request);
-        }
-      },
-    );
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.generateSectionSummary(chapterIndex, sectionIndex, request);
+      }
+    });
   }
 
   generateSectionSummary(
@@ -450,13 +448,11 @@ export class ProseEditorComponent implements OnDestroy {
       },
     });
 
-    this.dialogRef?.onClose.subscribe(
-      (request: GenerateTextRequestDto) => {
-        if (request) {
-          this.openGenerateTextResultDialog(request);
-        }
-      },
-    );
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.openGenerateTextResultDialog(request);
+      }
+    });
   }
 
   openGenerateTextResultDialog(request: GenerateTextRequestDto) {
@@ -533,13 +529,11 @@ export class ProseEditorComponent implements OnDestroy {
       },
     });
 
-    this.dialogRef?.onClose.subscribe(
-      (request: GenerateTextRequestDto) => {
-        if (request) {
-          this.openReplaceTextResultDialog(request);
-        }
-      },
-    );
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.openReplaceTextResultDialog(request);
+      }
+    });
   }
 
   openReplaceTextResultDialog(request: GenerateTextRequestDto) {
@@ -610,59 +604,54 @@ export class ProseEditorComponent implements OnDestroy {
       },
     });
 
-    this.dialogRef?.onClose.subscribe(
-      (request: GenerateTextRequestDto) => {
-        if (request) {
-          this.dialogRef = this.dialogService.open(
-            GenerateTextResultComponent,
-            {
-              header: 'Create Compendium Record',
-              width: '50vw',
-              contentStyle: { overflow: 'auto' },
-              baseZIndex: 10000,
-              modal: true,
-              closable: true,
-              closeOnEscape: true,
-              dismissableMask: true,
-              data: <GenerateTextResultComponentData>{
-                request: request,
-                textToReplace: '',
-              },
-            },
-          );
-          this.dialogRef?.onClose.subscribe(
-            (result: string | 'back' | undefined) => {
-              if (result === 'back') {
-                this.openCreateCompendiumRecordDialog();
-              } else if (result) {
-                this.dialogRef = this.dialogService.open(
-                  GenerateCompendiumRecordResultComponent,
-                  {
-                    header: 'Create Compendium Record',
-                    width: '50vw',
-                    contentStyle: { overflow: 'auto' },
-                    baseZIndex: 10000,
-                    modal: true,
-                    closable: true,
-                    closeOnEscape: true,
-                    dismissableMask: true,
-                    data: <GenerateCompendiumRecordComponentData>{
-                      generatedText: result,
-                      novelId: this.novelId,
-                    },
+    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
+      if (request) {
+        this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
+          header: 'Create Compendium Record',
+          width: '50vw',
+          contentStyle: { overflow: 'auto' },
+          baseZIndex: 10000,
+          modal: true,
+          closable: true,
+          closeOnEscape: true,
+          dismissableMask: true,
+          data: <GenerateTextResultComponentData>{
+            request: request,
+            textToReplace: '',
+          },
+        });
+        this.dialogRef?.onClose.subscribe(
+          (result: string | 'back' | undefined) => {
+            if (result === 'back') {
+              this.openCreateCompendiumRecordDialog();
+            } else if (result) {
+              this.dialogRef = this.dialogService.open(
+                GenerateCompendiumRecordResultComponent,
+                {
+                  header: 'Create Compendium Record',
+                  width: '50vw',
+                  contentStyle: { overflow: 'auto' },
+                  baseZIndex: 10000,
+                  modal: true,
+                  closable: true,
+                  closeOnEscape: true,
+                  dismissableMask: true,
+                  data: <GenerateCompendiumRecordComponentData>{
+                    generatedText: result,
+                    novelId: this.novelId,
                   },
-                );
-                this.dialogRef?.onClose.subscribe((changed) => {
-                  if (changed === true) {
-                    this.recordsChange.emit();
-                  }
-                });
-              }
-            },
-          );
-        }
-      },
-    );
+                },
+              );
+              this.dialogRef?.onClose.subscribe((changed) => {
+                if (changed === true) {
+                  this.recordsChange.emit();
+                }
+              });
+            }
+          },
+        );
+      }
+    });
   }
 
   addProseImage(chapterIndex: number, sectionIndex: number) {

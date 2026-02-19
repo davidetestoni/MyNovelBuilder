@@ -86,13 +86,13 @@ export const mockedProse: Prose = {
           text: '<p>' + loremIpsum({ count: 15, units: 'sentences' }) + '</p>',
           images: [],
           recordOverrides: [],
-          storyEvents: Array(6)
-            .fill(0)
-            .map((__, storyIndex) => ({
-              title: `Story Event ${storyIndex + 1}`,
-              date: `Day ${index * 6 + storyIndex + 1}`,
-              description: loremIpsum({ count: 1, units: 'sentences' }),
-            })),
+        })),
+      storyEvents: Array(6)
+        .fill(0)
+        .map((__, storyIndex) => ({
+          title: `Story Event ${storyIndex + 1}`,
+          date: `Day ${index * 6 + storyIndex + 1}`,
+          description: loremIpsum({ count: 1, units: 'sentences' }),
         })),
     })),
 };

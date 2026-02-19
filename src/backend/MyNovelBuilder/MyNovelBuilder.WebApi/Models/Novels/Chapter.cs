@@ -14,4 +14,9 @@ public class Chapter
     /// The sections of the chapter.
     /// </summary>
     public IList<Section> Sections { get; set; } = Array.Empty<Section>();
+    
+    /// <summary>
+    /// The story events associated with the chapter.
+    /// </summary>
+    public StoryEvent[] StoryEvents { get; set; } = [];
 }
