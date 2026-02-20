@@ -1,5 +1,7 @@
 namespace MyNovelBuilder.WebApi.Dtos.Generate;
 
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// DTO for describing an image.
 /// </summary>
@@ -13,11 +15,13 @@ public class DescribeImageRequestDto
     /// <summary>
     /// The prompt ID.
     /// </summary>
+    [JsonRequired]
     public Guid PromptId { get; set; }
     
     /// <summary>
     /// The compendium ID.
     /// </summary>
+    [JsonRequired]
     public Guid CompendiumId { get; set; }
     
     /// <summary>

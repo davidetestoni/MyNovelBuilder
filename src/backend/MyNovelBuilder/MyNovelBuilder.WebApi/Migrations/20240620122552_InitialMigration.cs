@@ -10,13 +10,13 @@ namespace MyNovelBuilder.WebApi.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-
+            // Intentionally empty: this placeholder migration does not apply schema changes.
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-
+            // Intentionally empty: no schema changes were applied in Up, so there is nothing to revert.
         }
     }
 }

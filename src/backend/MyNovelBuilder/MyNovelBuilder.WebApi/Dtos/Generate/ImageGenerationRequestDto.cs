@@ -1,5 +1,8 @@
 namespace MyNovelBuilder.WebApi.Dtos.Generate;
 
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
 /// <summary>
 /// DTO for an image generation request.
 /// </summary>
@@ -18,10 +21,14 @@ public class ImageGenerationRequestDto
     /// <summary>
     /// The width of the image to generate, in pixels.
     /// </summary>
+    [JsonRequired]
+    [Range(1, 10_000)]
     public int Width { get; set; }
     
     /// <summary>
     /// The height of the image to generate, in pixels.
     /// </summary>
+    [JsonRequired]
+    [Range(1, 10_000)]
     public int Height { get; set; }
 }
