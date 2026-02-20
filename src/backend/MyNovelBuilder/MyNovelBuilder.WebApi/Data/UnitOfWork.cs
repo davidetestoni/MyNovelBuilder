@@ -10,17 +10,13 @@ public class UnitOfWork : IUnitOfWork
     private readonly AppDbContext _context;
 
     /// <summary></summary>
-    public UnitOfWork(AppDbContext context,
-        INovelRepository novelRepository,
-        ICompendiumRepository compendiumRepository,
-        ICompendiumRecordRepository compendiumRecordRepository,
-        IPromptRepository promptRepository)
+    public UnitOfWork(AppDbContext context)
     {
         _context = context;
-        Novels = novelRepository;
-        Compendia = compendiumRepository;
-        CompendiumRecords = compendiumRecordRepository;
-        Prompts = promptRepository;
+        Novels = new NovelRepository(_context);
+        Compendia = new CompendiumRepository(_context);
+        CompendiumRecords = new CompendiumRecordRepository(_context);
+        Prompts = new PromptRepository(_context);
     }
     
     /// <inheritdoc />
