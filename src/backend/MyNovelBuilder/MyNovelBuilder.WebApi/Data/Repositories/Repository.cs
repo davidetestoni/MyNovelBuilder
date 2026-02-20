@@ -9,15 +9,13 @@ namespace MyNovelBuilder.WebApi.Data.Repositories;
 /// Base repository for all entities.
 /// </summary>
 public class Repository<TEntity> :
-    IRepository<TEntity>, IDisposable, IAsyncDisposable where TEntity : Entity
+    IRepository<TEntity> where TEntity : Entity
 {
     /// <summary>
     /// The database context.
     /// </summary>
     protected readonly AppDbContext Context;
     
-    private bool _disposed;
-
     /// <summary></summary>
     public Repository(AppDbContext context)
     {
@@ -78,32 +76,5 @@ public class Repository<TEntity> :
     public void Remove(TEntity entity)
     {
         Context.Set<TEntity>().Remove(entity);
-    }
-    
-    /// <summary>
-    /// Dispose the database context.
-    /// </summary>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed && disposing)
-        {
-            Context.Dispose();
-        }
-        
-        _disposed = true;
-    }
-    
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <inheritdoc />
-    public async ValueTask DisposeAsync()
-    {
-        await Context.DisposeAsync();
-        GC.SuppressFinalize(this);
     }
 }

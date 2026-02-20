@@ -8,7 +8,6 @@ namespace MyNovelBuilder.WebApi.Data;
 public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _context;
-    private bool _disposed;
 
     /// <summary></summary>
     public UnitOfWork(AppDbContext context,
@@ -40,33 +39,5 @@ public class UnitOfWork : IUnitOfWork
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return await _context.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Dispose the database context.
-    /// </summary>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposed && disposing)
-        {
-            _context.Dispose();
-        }
-        
-        _disposed = true;
-    }
-    
-    /// <inheritdoc />
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    /// <inheritdoc />
-    public async ValueTask DisposeAsync()
-    {
-        await _context.DisposeAsync();
-        GC.SuppressFinalize(this);
     }
 }

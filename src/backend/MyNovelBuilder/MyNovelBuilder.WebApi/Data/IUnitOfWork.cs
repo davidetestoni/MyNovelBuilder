@@ -5,7 +5,7 @@ namespace MyNovelBuilder.WebApi.Data;
 /// <summary>
 /// Interface for the Unit of Work pattern.
 /// </summary>
-public interface IUnitOfWork : IDisposable, IAsyncDisposable
+public interface IUnitOfWork
 {
     /// <summary>
     /// Repository for novels.
