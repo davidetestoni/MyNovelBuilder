@@ -24,6 +24,15 @@ public sealed class PcmWavStreamingStream : Stream
     private readonly short _channels;
     private readonly short _bitsPerSample;
 
+    /// <summary>
+    /// Initializes a stream that prepends a WAV header and then streams PCM chunks from an async producer.
+    /// </summary>
+    /// <param name="sampleRate">PCM sample rate in Hz.</param>
+    /// <param name="channels">Number of channels (for example, 1 for mono or 2 for stereo).</param>
+    /// <param name="bitsPerSample">Bits per sample (for example, 16).</param>
+    /// <param name="producer">Async producer callback that pushes PCM chunks into this stream.</param>
+    /// <param name="ct">Cancellation token used by the producer loop.</param>
+    /// <param name="onDispose">Optional callback invoked when the stream is disposed.</param>
     public PcmWavStreamingStream(
         int sampleRate,
         short channels,
@@ -71,9 +80,24 @@ public sealed class PcmWavStreamingStream : Stream
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Reads bytes from the stream, blocking until data is available or the stream completes.
+    /// </summary>
+    /// <param name="buffer">Destination buffer.</param>
+    /// <param name="offset">Offset in <paramref name="buffer"/> where data is written.</param>
+    /// <param name="count">Maximum number of bytes to read.</param>
+    /// <returns>The number of bytes read.</returns>
     public override int Read(byte[] buffer, int offset, int count)
         => ReadAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
 
+    /// <summary>
+    /// Asynchronously reads bytes from the stream, first emitting the WAV header and then PCM data.
+    /// </summary>
+    /// <param name="buffer">Destination buffer.</param>
+    /// <param name="offset">Offset in <paramref name="buffer"/> where data is written.</param>
+    /// <param name="count">Maximum number of bytes to read.</param>
+    /// <param name="cancellationToken">Cancellation token for waiting on incoming data.</param>
+    /// <returns>A task that resolves to the number of bytes read.</returns>
     public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
         if (!_headerWritten)
@@ -143,6 +167,13 @@ public sealed class PcmWavStreamingStream : Stream
         return totalRead;
     }
 
+    /// <summary>
+    /// Creates a RIFF/WAVE header configured for PCM data with an unspecified (max-size) data length.
+    /// </summary>
+    /// <param name="sampleRate">PCM sample rate in Hz.</param>
+    /// <param name="channels">Number of channels.</param>
+    /// <param name="bitsPerSample">Bits per sample.</param>
+    /// <returns>The WAV header bytes.</returns>
     public static byte[] CreateWavHeader(int sampleRate, short channels, short bitsPerSample)
     {
         using var ms = new MemoryStream();
@@ -172,21 +203,66 @@ public sealed class PcmWavStreamingStream : Stream
         return ms.ToArray();
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the stream supports reading.
+    /// </summary>
     public override bool CanRead => true;
+
+    /// <summary>
+    /// Gets a value indicating whether the stream supports seeking.
+    /// </summary>
     public override bool CanSeek => false;
+
+    /// <summary>
+    /// Gets a value indicating whether the stream supports writing.
+    /// </summary>
     public override bool CanWrite => false;
+
+    /// <summary>
+    /// Gets the length of the stream. This operation is not supported.
+    /// </summary>
     public override long Length => throw new NotSupportedException();
+
+    /// <summary>
+    /// Gets or sets the current position in the stream. This operation is not supported.
+    /// </summary>
     public override long Position
     {
         get => throw new NotSupportedException();
         set => throw new NotSupportedException();
     }
 
+    /// <summary>
+    /// Flush is a no-op because this stream is read-only.
+    /// </summary>
     public override void Flush() { }
+
+    /// <summary>
+    /// Seeks to a position in the stream. This operation is not supported.
+    /// </summary>
+    /// <param name="offset">Byte offset relative to <paramref name="origin"/>.</param>
+    /// <param name="origin">Reference point for <paramref name="offset"/>.</param>
+    /// <returns>This method always throws.</returns>
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    /// <summary>
+    /// Sets stream length. This operation is not supported.
+    /// </summary>
+    /// <param name="value">The desired length.</param>
     public override void SetLength(long value) => throw new NotSupportedException();
+
+    /// <summary>
+    /// Writes to the stream. This operation is not supported.
+    /// </summary>
+    /// <param name="buffer">Source buffer.</param>
+    /// <param name="offset">Offset in <paramref name="buffer"/> to start reading from.</param>
+    /// <param name="count">Number of bytes to write.</param>
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
+    /// <summary>
+    /// Releases stream resources and invokes the optional dispose callback.
+    /// </summary>
+    /// <param name="disposing">Whether managed resources should be disposed.</param>
     protected override void Dispose(bool disposing)
     {
         if (disposing)
