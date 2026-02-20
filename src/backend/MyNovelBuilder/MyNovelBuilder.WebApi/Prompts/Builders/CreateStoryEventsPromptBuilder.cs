@@ -1,4 +1,6 @@
+using System.Text.Json;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Models.Novels;
 
 namespace MyNovelBuilder.WebApi.Prompts.Builders;
 
@@ -21,11 +23,19 @@ public class CreateStoryEventsPromptBuilder : PromptBuilder<CreateStoryEventsCon
         base.ReplacePlaceholders(context);
 
         var contextString = GetWholeChapter(context.Prose, context.Client.ChapterIndex);
+        var previousChapter = context.Client.ChapterIndex > 0
+            ? GetChapter(context.Prose, context.Client.ChapterIndex - 1)
+            : null;
+        var nextChapter = context.Client.ChapterIndex < context.Prose.Chapters.Count - 1
+            ? GetChapter(context.Prose, context.Client.ChapterIndex + 1)
+            : null;
 
         var recordsInContext = FilterRecordsInContext(context.CompendiumRecords, contextString);
 
         Builder
             .Replace("{{context}}", contextString)
+            .Replace("{{previousChapterEvents}}", SerializeStoryEvents(previousChapter))
+            .Replace("{{nextChapterEvents}}", SerializeStoryEvents(nextChapter))
             .Replace("{{records}}", CreateCompendiumRecordsString(
                 recordsInContext.ToList(),
                 (
@@ -35,5 +45,10 @@ public class CreateStoryEventsPromptBuilder : PromptBuilder<CreateStoryEventsCon
                 )));
 
         return this;
+    }
+
+    private static string SerializeStoryEvents(Chapter? chapter)
+    {
+        return JsonSerializer.Serialize(chapter?.StoryEvents ?? []);
     }
 }

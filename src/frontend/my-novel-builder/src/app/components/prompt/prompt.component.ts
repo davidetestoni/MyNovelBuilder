@@ -196,6 +196,16 @@ export class PromptComponent {
         description: 'The content of the chapter or the whole novel.',
       },
       {
+        keyword: '{{previousChapterEvents}}',
+        description:
+          'A JSON array of story events from the previous chapter, if it exists.',
+      },
+      {
+        keyword: '{{nextChapterEvents}}',
+        description:
+          'A JSON array of story events from the next chapter, if it exists.',
+      },
+      {
         keyword: '{{records}}',
         description: 'Information from relevant compendium records.',
       },
