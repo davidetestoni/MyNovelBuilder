@@ -2,11 +2,11 @@
   <router-outlet></router-outlet>
 </ng-template>
 
-@if (layoutType === LayoutType.Main) {
+@if (layoutType() === LayoutType.Main) {
   <app-main-layout>
     <router-outlet></router-outlet>
   </app-main-layout>
-} @else if (layoutType === LayoutType.Empty) {
+} @else if (layoutType() === LayoutType.Empty) {
   <app-empty-layout>
     <router-outlet></router-outlet>
   </app-empty-layout>

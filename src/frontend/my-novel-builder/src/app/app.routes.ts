@@ -8,6 +8,11 @@ import { PromptsComponent } from './pages/prompts/prompts.component';
 import { NovelSettingsComponent } from './pages/novel-settings/novel-settings.component';
 import { IntegrationsComponent } from './pages/integrations/integrations.component';
 import { ChatsComponent } from './pages/chats/chats.component';
+import { AppRouteData } from './types/router/app-route-data';
+
+const mainLayoutData = {
+  layoutType: LayoutType.Main,
+} as const satisfies AppRouteData;
 
 export const routes: Routes = [
   // Redirect / to /novels
@@ -19,71 +24,51 @@ export const routes: Routes = [
   {
     path: 'novels',
     component: NovelsComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'chat',
     component: ChatsComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'chat/:id',
     component: ChatsComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'compendia',
     component: CompendiaComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'novel/:id',
     component: NovelEditorComponent,
-    data: {
-      layoutType: LayoutType.Main, // TODO: Add a layout type for the editor
-    },
+    data: mainLayoutData, // TODO: Add a layout type for the editor
   },
   {
     path: 'novel/:id/settings',
     component: NovelSettingsComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'compendium/:id',
     component: CompendiumComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'compendium/:id/record/:recordId',
     component: CompendiumComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'prompts',
     component: PromptsComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
   {
     path: 'integrations',
     component: IntegrationsComponent,
-    data: {
-      layoutType: LayoutType.Main,
-    },
+    data: mainLayoutData,
   },
 ];
