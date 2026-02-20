@@ -129,6 +129,8 @@ builder.Services.AddHybridCache();
 
 var app = builder.Build();
 
+app.UseResponseCompression();
+
 app.UseCors(b => b
     .AllowAnyOrigin()
     .AllowAnyMethod()
@@ -162,8 +164,6 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.MapControllers();
-
-app.UseResponseCompression();
 
 await app.RunAsync();
 
