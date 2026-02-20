@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Novels;
 using SixLabors.ImageSharp;
 
@@ -20,13 +21,7 @@ public class NovelService : INovelService
     public NovelService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        
-        _jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true
-        };
-        _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        _jsonSerializerOptions = JsonDefaults.Options;
     }
     
     /// <inheritdoc />

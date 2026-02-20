@@ -1,5 +1,5 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Integrations;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -15,12 +15,7 @@ public class IntegrationsService : IIntegrationsService
     /// <summary></summary>
     public IntegrationsService()
     {
-        _jsonSerializerOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            WriteIndented = true
-        };
-        _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        _jsonSerializerOptions = JsonDefaults.Options;
     }
     
     /// <inheritdoc />
