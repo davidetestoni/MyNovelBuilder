@@ -47,7 +47,7 @@
   &::before {
     content: "";
     position: absolute;
-    top: 70px;
+    top: 100px;
     left: -0.5rem;
     right: -0.5rem;
     height: 2px;
@@ -62,12 +62,12 @@
 
 .storyline-item-chip {
   justify-content: center;
-  min-height: 140px;
+  min-height: 200px;
 }
 
 .storyline-connector {
   position: absolute;
-  top: 70px;
+  top: 100px;
   left: -0.5rem;
   right: -0.5rem;
   height: 2px;
@@ -83,7 +83,10 @@
   right: 50%;
 }
 
-.storyline-track > .storyline-chapter-events:last-child .storyline-item:last-child .storyline-connector {
+.storyline-track
+  > .storyline-chapter-events:last-child
+  .storyline-item:last-child
+  .storyline-connector {
   right: 50%;
 }
 
@@ -93,7 +96,7 @@
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-  height: 140px;
+  height: 200px;
   overflow: hidden;
   text-align: left;
   width: 350px;
@@ -215,7 +218,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  line-clamp: 6;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
 }
 
@@ -268,7 +272,7 @@
   align-items: center;
   width: 350px;
   min-width: 350px;
-  height: 140px;
+  height: 200px;
   border: 2px dashed $grey13;
   border-radius: 10px;
   color: $grey13;
@@ -308,7 +312,7 @@
   align-items: center;
   width: 350px;
   min-width: 350px;
-  height: 140px;
+  height: 200px;
   border: 2px dashed $grey9;
   border-radius: 10px;
   color: $grey12;

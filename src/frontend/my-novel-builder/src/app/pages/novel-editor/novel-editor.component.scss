@@ -361,12 +361,14 @@
       background-color: transparent;
       border-top: 1px solid transparent;
       box-shadow: none;
-      transition: max-height 0.2s ease, opacity 0.2s ease;
+      transition:
+        max-height 0.2s ease,
+        opacity 0.2s ease;
     }
 
     &.is-open {
       .story-timeline-panel {
-        max-height: 220px;
+        max-height: 320px;
         opacity: 1;
         background-color: $grey0;
         border-top: 1px solid $grey4;
