@@ -54,7 +54,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         CancellationToken cancellationToken = default)
     {
         _unitOfWork.CompendiumRecords.Add(compendiumRecord);
-        compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.Compendia.Update(compendiumRecord.Compendium);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
@@ -64,7 +64,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         CancellationToken cancellationToken = default)
     {
         _unitOfWork.CompendiumRecords.Update(compendiumRecord);
-        compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.Compendia.Update(compendiumRecord.Compendium);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
@@ -74,7 +74,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         var compendiumRecord = await GetByIdAsync(id, cancellationToken);
         
         _unitOfWork.CompendiumRecords.Remove(compendiumRecord);
-        compendiumRecord.Compendium.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.Compendia.Update(compendiumRecord.Compendium);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
@@ -140,7 +140,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, mediaBytes, cancellationToken);
         
-        record.Compendium.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.Compendia.Update(record.Compendium);
         
         if (isCurrent)
         {
@@ -177,7 +177,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         }
         
         record.CurrentImageId = imageId;
-        record.Compendium.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.Compendia.Update(record.Compendium);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
@@ -205,7 +205,7 @@ public class CompendiumRecordService : ICompendiumRecordService
             File.Delete(localPath);
         }
         
-        record.Compendium.UpdatedAt = DateTime.UtcNow;
+        _unitOfWork.Compendia.Update(record.Compendium);
         
         if (record.CurrentImageId == mediaId)
         {

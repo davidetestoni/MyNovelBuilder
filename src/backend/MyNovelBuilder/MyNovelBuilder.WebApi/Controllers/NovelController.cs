@@ -122,8 +122,6 @@ public class NovelController : ControllerBase
             }
         }
         
-        novel.UpdatedAt = DateTime.UtcNow;
-        
         await _novelService.UpdateAsync(novel, cancellationToken);
         
         var dto = novel.Adapt<NovelDto>();
@@ -142,7 +140,6 @@ public class NovelController : ControllerBase
         
         // Also update the novel's updated at time.
         var novel = await _novelService.GetByIdAsync(id, cancellationToken);
-        novel.UpdatedAt = DateTime.UtcNow;
         await _novelService.UpdateAsync(novel, cancellationToken);
     }
     
