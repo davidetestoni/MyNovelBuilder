@@ -5,46 +5,29 @@ import {
 import { inject } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { catchError, throwError } from 'rxjs';
+import { ApiErrorDto } from '../types/dtos/errors/api-error.dto';
 
-type ApiErrorDto = {
-  code?: string;
-  message?: string;
-};
+const isApiErrorDto = (payload: object): payload is ApiErrorDto => {
+  const value = payload as { code?: unknown; message?: unknown };
 
-const parseApiError = (payload: unknown): ApiErrorDto | null => {
-  if (!payload) {
-    return null;
-  }
+  const hasValidCode =
+    value.code === undefined || typeof value.code === 'string';
+  const hasValidMessage =
+    value.message === undefined || typeof value.message === 'string';
 
-  if (typeof payload === 'string') {
-    const trimmed = payload.trim();
-    if (trimmed.length === 0) {
-      return null;
-    }
-
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === 'object') {
-        return parsed as ApiErrorDto;
-      }
-    } catch {
-      return { message: trimmed };
-    }
-  }
-
-  if (typeof payload === 'object') {
-    return payload as ApiErrorDto;
-  }
-
-  return null;
+  return hasValidCode && hasValidMessage;
 };
 
 const extractErrorMessage = (error: HttpErrorResponse): string | null => {
-  const apiError = parseApiError(error.error);
-  if (!apiError) {
+  if (!error.error || typeof error.error !== 'object') {
     return null;
   }
 
+  if (!isApiErrorDto(error.error)) {
+    return null;
+  }
+
+  const apiError = error.error;
   const message = apiError.message;
   if (typeof message === 'string' && message.trim().length > 0) {
     return message;
