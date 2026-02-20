@@ -11,20 +11,24 @@ public class UnitOfWork : IUnitOfWork
     private bool _disposed;
 
     /// <summary></summary>
-    public UnitOfWork(AppDbContext context)
+    public UnitOfWork(AppDbContext context,
+        INovelRepository novelRepository,
+        ICompendiumRepository compendiumRepository,
+        ICompendiumRecordRepository compendiumRecordRepository,
+        IPromptRepository promptRepository)
     {
         _context = context;
-        Novels = new NovelRepository(_context);
-        Compendia = new CompendiumRepository(_context);
-        CompendiumRecords = new CompendiumRecordRepository(_context);
-        Prompts = new PromptRepository(_context);
+        Novels = novelRepository;
+        Compendia = compendiumRepository;
+        CompendiumRecords = compendiumRecordRepository;
+        Prompts = promptRepository;
     }
     
     /// <inheritdoc />
-    public INovelRepository Novels { get; private set; }
+    public INovelRepository Novels { get; }
     
     /// <inheritdoc />
-    public ICompendiumRepository Compendia { get; set; }
+    public ICompendiumRepository Compendia { get; }
 
     /// <inheritdoc />
     public ICompendiumRecordRepository CompendiumRecords { get; }
