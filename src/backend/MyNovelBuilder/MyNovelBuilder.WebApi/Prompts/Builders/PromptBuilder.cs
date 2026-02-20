@@ -96,6 +96,10 @@ public class PromptBuilder<T> where T : TextGenerationContextInfoDto
                         proseInfo.Value.chapterIndex, 
                         proseInfo.Value.sectionIndex));    
             }
+            else
+            {
+                recordsBuilder.Append(record.Context);
+            }
             
             recordsBuilder.Append("\n\n");
         }
