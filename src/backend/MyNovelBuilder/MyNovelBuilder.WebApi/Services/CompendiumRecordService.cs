@@ -2,7 +2,9 @@
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.Media;
+using MyNovelBuilder.WebApi.Options;
 using SixLabors.ImageSharp;
+using Microsoft.Extensions.Options;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -12,11 +14,15 @@ namespace MyNovelBuilder.WebApi.Services;
 public class CompendiumRecordService : ICompendiumRecordService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly string _staticFilesRoot;
 
     /// <summary></summary>
-    public CompendiumRecordService(IUnitOfWork unitOfWork)
+    public CompendiumRecordService(
+        IUnitOfWork unitOfWork,
+        IOptions<AppStorageOptions> storageOptions)
     {
         _unitOfWork = unitOfWork;
+        _staticFilesRoot = storageOptions.Value.StaticFilesRoot;
     }
     
     /// <inheritdoc />
@@ -84,7 +90,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         CancellationToken cancellationToken = default)
     {
         var record = await GetByIdAsync(id, cancellationToken);
-        var localPath = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery");
+        var localPath = Path.Combine(_staticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery");
         
         if (!Directory.Exists(localPath))
         {
@@ -135,7 +141,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         }
         
         var mediaId = Guid.NewGuid();
-        var path = Path.Combine(Globals.StaticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{mediaId}{extension}");
+        var path = Path.Combine(_staticFilesRoot, "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", $"{mediaId}{extension}");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, mediaBytes, cancellationToken);
@@ -161,7 +167,7 @@ public class CompendiumRecordService : ICompendiumRecordService
         // If the image is not a .png file, it cannot be set as
         // the current image.
         var localPath = Path.Combine(
-            Globals.StaticFilesRoot, 
+            _staticFilesRoot, 
             "compendium",
             record.Compendium.Id.ToString(),
             "records",
@@ -189,7 +195,7 @@ public class CompendiumRecordService : ICompendiumRecordService
     {
         var record = await GetByIdAsync(id, cancellationToken);
         var folderPath = Path.Combine(
-            Globals.StaticFilesRoot, 
+            _staticFilesRoot, 
             "compendium",
             record.Compendium.Id.ToString(),
             "records",

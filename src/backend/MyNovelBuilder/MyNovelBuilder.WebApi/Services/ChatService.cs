@@ -1,7 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.Chats;
+using MyNovelBuilder.WebApi.Options;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -11,9 +13,10 @@ namespace MyNovelBuilder.WebApi.Services;
 public class ChatService : IChatService
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly string _dataFolder;
     
     /// <summary></summary>
-    public ChatService()
+    public ChatService(IOptions<AppStorageOptions> storageOptions)
     {
         _jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -21,12 +24,13 @@ public class ChatService : IChatService
             WriteIndented = true
         };
         _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        _dataFolder = storageOptions.Value.DataFolder;
     }
 
-    private static string GetChatsDirectoryPath() => 
-        Path.Combine(Globals.DataFolder, "chats");
+    private string GetChatsDirectoryPath() => 
+        Path.Combine(_dataFolder, "chats");
     
-    private static string GetChatFilePath(Guid id) =>
+    private string GetChatFilePath(Guid id) =>
         Path.Combine(GetChatsDirectoryPath(), $"{id}.json");
 
     /// <inheritdoc/>

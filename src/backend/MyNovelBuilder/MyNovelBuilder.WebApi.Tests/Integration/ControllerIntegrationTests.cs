@@ -4,9 +4,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Errors;
+using MyNovelBuilder.WebApi.Options;
 using MyNovelBuilder.WebApi.Tests.Factories;
 using MyNovelBuilder.WebApi.Tests.Utils;
 using Xunit.Abstractions;
@@ -19,6 +21,7 @@ public class ControllerIntegrationTests  : IClassFixture<TestWebApplicationFacto
     protected TestWebApplicationFactory<Program> Factory { get; }
     private JsonSerializerOptions JsonOptions { get; } = new();
     protected IUnitOfWork UnitOfWork => Factory.Services.GetRequiredService<IUnitOfWork>();
+    protected AppStorageOptions StorageOptions => Factory.Services.GetRequiredService<IOptions<AppStorageOptions>>().Value;
     
     protected ControllerIntegrationTests(TestWebApplicationFactory<Program> factory,
         ITestOutputHelper output)
@@ -42,15 +45,15 @@ public class ControllerIntegrationTests  : IClassFixture<TestWebApplicationFacto
         await dbContext.Database.EnsureDeletedAsync();
         await dbContext.Database.MigrateAsync();
 
-        if (Directory.Exists(Globals.DataFolder))
+        if (Directory.Exists(StorageOptions.DataFolder))
         {
-            foreach (var directory in Directory.GetDirectories(Globals.DataFolder))
+            foreach (var directory in Directory.GetDirectories(StorageOptions.DataFolder))
             {
                 Directory.Delete(directory, true);
             }
         }
 
-        File.Delete(Path.Combine(Globals.DataFolder, "integrations.json"));
+        File.Delete(Path.Combine(StorageOptions.DataFolder, "integrations.json"));
     }
     
         private async Task<Result<T, ApiErrorResponse>> SendRequestAsync<T>(HttpClient client,

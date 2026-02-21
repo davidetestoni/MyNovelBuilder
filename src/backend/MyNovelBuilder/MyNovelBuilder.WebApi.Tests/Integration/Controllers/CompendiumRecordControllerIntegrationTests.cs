@@ -247,7 +247,7 @@ public class CompendiumRecordControllerIntegrationTests(
         // Create a dummy image file so SetCurrentImage doesn't fail
         var mediaId = Guid.NewGuid();
         var galleryPath = Path.Combine(
-            Globals.StaticFilesRoot,
+            StorageOptions.StaticFilesRoot,
             "compendium",
             compendium.Id.ToString(),
             "records",
@@ -292,7 +292,7 @@ public class CompendiumRecordControllerIntegrationTests(
         // Create a dummy media file
         var mediaId = Guid.NewGuid();
         var galleryPath = Path.Combine(
-            Globals.StaticFilesRoot,
+            StorageOptions.StaticFilesRoot,
             "compendium",
             compendium.Id.ToString(),
             "records",

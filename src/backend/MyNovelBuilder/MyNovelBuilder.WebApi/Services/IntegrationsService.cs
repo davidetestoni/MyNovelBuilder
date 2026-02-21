@@ -1,6 +1,8 @@
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Integrations;
+using MyNovelBuilder.WebApi.Options;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -10,12 +12,14 @@ namespace MyNovelBuilder.WebApi.Services;
 public class IntegrationsService : IIntegrationsService
 {
     private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly string _dataFolder;
     private IntegrationsConfig? _cachedConfig;
 
     /// <summary></summary>
-    public IntegrationsService()
+    public IntegrationsService(IOptions<AppStorageOptions> storageOptions)
     {
         _jsonSerializerOptions = JsonDefaults.Options;
+        _dataFolder = storageOptions.Value.DataFolder;
     }
     
     /// <inheritdoc />
@@ -26,7 +30,7 @@ public class IntegrationsService : IIntegrationsService
             return _cachedConfig;
         }
         
-        var path = Path.Combine(Globals.DataFolder, "integrations.json");
+        var path = Path.Combine(_dataFolder, "integrations.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
         string configJson;
@@ -49,7 +53,7 @@ public class IntegrationsService : IIntegrationsService
     /// <inheritdoc />
     public async Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default)
     {
-        var path = Path.Combine(Globals.DataFolder, "integrations.json");
+        var path = Path.Combine(_dataFolder, "integrations.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         
         var configJson = JsonSerializer.Serialize(config, _jsonSerializerOptions);

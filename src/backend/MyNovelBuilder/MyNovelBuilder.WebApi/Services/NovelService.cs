@@ -1,10 +1,12 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Novels;
+using MyNovelBuilder.WebApi.Options;
 using SixLabors.ImageSharp;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -16,12 +18,18 @@ public class NovelService : INovelService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly string _dataFolder;
+    private readonly string _staticFilesRoot;
 
     /// <summary></summary>
-    public NovelService(IUnitOfWork unitOfWork)
+    public NovelService(
+        IUnitOfWork unitOfWork,
+        IOptions<AppStorageOptions> storageOptions)
     {
         _unitOfWork = unitOfWork;
         _jsonSerializerOptions = JsonDefaults.Options;
+        _dataFolder = storageOptions.Value.DataFolder;
+        _staticFilesRoot = storageOptions.Value.StaticFilesRoot;
     }
     
     /// <inheritdoc />
@@ -74,7 +82,7 @@ public class NovelService : INovelService
         // Prose is stored as a JSON file instead of a database JSON column
         // to be kinder to the database and to allow for easier editing
         // through a fully fledged text editor if needed (e.g., batch replace).
-        var path = Path.Combine(Globals.DataFolder, "novels", id.ToString(), "prose.json");
+        var path = Path.Combine(_dataFolder, "novels", id.ToString(), "prose.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         
         string proseJson;
@@ -94,17 +102,17 @@ public class NovelService : INovelService
     /// <inheritdoc />
     public async Task UpdateProseAsync(Guid id, Prose prose, CancellationToken cancellationToken = default)
     {
-        var path = Path.Combine(Globals.DataFolder, "novels", id.ToString(), "prose.json");
+        var path = Path.Combine(_dataFolder, "novels", id.ToString(), "prose.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         
         var proseJson = JsonSerializer.Serialize(prose, _jsonSerializerOptions);
         await File.WriteAllTextAsync(path, proseJson, cancellationToken);
     }
 
-    private static string? GetLocalCoverImageFilePath(Guid id)
+    private string? GetLocalCoverImageFilePath(Guid id)
     {
         // This is the folder where the cover is stored
-        var folder = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString());
+        var folder = Path.Combine(_staticFilesRoot, "novels", id.ToString());
         
         if (!Directory.Exists(folder))
         {
@@ -156,7 +164,7 @@ public class NovelService : INovelService
         // Delete the existing cover
         var existingCoverPath = GetLocalCoverImageFilePath(id);
         
-        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), $"cover_{Guid.NewGuid()}.png");
+        var path = Path.Combine(_staticFilesRoot, "novels", id.ToString(), $"cover_{Guid.NewGuid()}.png");
         
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         await File.WriteAllBytesAsync(path, imageBytes, cancellationToken);
@@ -170,7 +178,7 @@ public class NovelService : INovelService
     /// <inheritdoc />
     public void DeleteCoverImage(Guid id)
     {
-        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "cover.png");
+        var path = Path.Combine(_staticFilesRoot, "novels", id.ToString(), "cover.png");
         
         if (File.Exists(path))
         {
@@ -181,7 +189,7 @@ public class NovelService : INovelService
     /// <inheritdoc />
     public async Task<string> UploadProseImageAsync(Guid id, IFormFile file, CancellationToken cancellationToken = default)
     {
-        var path = Path.Combine(Globals.StaticFilesRoot, "novels", id.ToString(), "prose-images");
+        var path = Path.Combine(_staticFilesRoot, "novels", id.ToString(), "prose-images");
         Directory.CreateDirectory(path);
         
         var filePath = Path.Combine(path, $"{Guid.NewGuid()}.png");

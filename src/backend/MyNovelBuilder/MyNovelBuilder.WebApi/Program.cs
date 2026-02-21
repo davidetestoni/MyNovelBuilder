@@ -17,6 +17,7 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Middleware;
 using MyNovelBuilder.WebApi.Extensions;
 using MyNovelBuilder.WebApi.Models.Errors;
+using MyNovelBuilder.WebApi.Options;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.ImageGeneration;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -26,8 +27,14 @@ using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Globals.DataFolder = Path.GetFullPath(builder.Configuration["DataFolder"]!);
-Directory.CreateDirectory(Globals.DataFolder);
+var dataFolder = Path.GetFullPath(
+    builder.Configuration[AppStorageOptions.DataFolderKey]
+    ?? Path.Combine(AppContext.BaseDirectory, "AppData"));
+var staticFilesRoot = Path.Combine(dataFolder, "static");
+Directory.CreateDirectory(dataFolder);
+
+builder.Services.AddOptions<AppStorageOptions>()
+    .Configure(options => options.DataFolder = dataFolder);
 
 builder.Services.AddHttpContextAccessor();
 
@@ -90,7 +97,7 @@ builder.Services.Configure<ApiBehaviorOptions>(x =>
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlite($"Data Source={Globals.DataFolder}/app.db");
+    options.UseSqlite($"Data Source={dataFolder}/app.db");
 });
 
 builder.Services.AddScoped<INovelRepository, NovelRepository>();
@@ -153,11 +160,11 @@ app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseRouting();
 
-Directory.CreateDirectory(Globals.StaticFilesRoot);
+Directory.CreateDirectory(staticFilesRoot);
 
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(Globals.StaticFilesRoot),
+    FileProvider = new PhysicalFileProvider(staticFilesRoot),
     RequestPath = "/static",
     OnPrepareResponse = ctx =>
     {

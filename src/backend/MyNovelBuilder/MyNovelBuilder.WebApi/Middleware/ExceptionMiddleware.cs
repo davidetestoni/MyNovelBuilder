@@ -12,6 +12,7 @@ public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
+    private readonly bool _isTesting;
     private readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -21,10 +22,12 @@ public class ExceptionMiddleware
     /// This middleware catches exceptions, logs them and returns a 500 Internal Server Error response.
     /// </summary>
     public ExceptionMiddleware(RequestDelegate next,
-        ILogger<ExceptionMiddleware> logger)
+        ILogger<ExceptionMiddleware> logger,
+        IWebHostEnvironment webHostEnvironment)
     {
         _next = next;
         _logger = logger;
+        _isTesting = webHostEnvironment.IsEnvironment("test");
     }
 
     /// <summary>
@@ -46,7 +49,7 @@ public class ExceptionMiddleware
         {
             _logger.LogError(ex, "{Message}", ex.Message);
             var error = new ApiError(ErrorCodes.InternalServerError,
-                Globals.Testing ? ex.ToString() : "An error occurred");
+                _isTesting ? ex.ToString() : "An error occurred");
             
             await HandleException(error, context, HttpStatusCode.InternalServerError);
         }
