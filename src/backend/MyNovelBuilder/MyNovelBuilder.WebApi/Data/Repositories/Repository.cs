@@ -63,7 +63,7 @@ public class Repository<TEntity> :
     /// <inheritdoc />
     public void AddRange(IEnumerable<TEntity> entities)
     {
-        Context.Set<TEntity>().AddRangeAsync(entities);
+        Context.Set<TEntity>().AddRange(entities);
     }
 
     /// <inheritdoc />
