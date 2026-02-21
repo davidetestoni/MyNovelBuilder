@@ -58,7 +58,8 @@ import { EditorLanguage, getLanguageExtensions } from './editor-languages';
 export class CodeEditorComponent
   implements OnInit, OnChanges, OnDestroy, ControlValueAccessor
 {
-  @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
+  @ViewChild('editorContainer', { static: true })
+  editorContainer?: ElementRef<HTMLElement>;
   @Input() placeholderText: string = '';
   @Input() hasBorder: boolean = true;
   @Input() language: EditorLanguage = 'plain';
@@ -71,8 +72,8 @@ export class CodeEditorComponent
   private placeholderCompartment = new Compartment();
   private languageCompartment = new Compartment();
 
-  onChange: any = () => {};
-  onTouched: any = () => {};
+  private onChange: (value: string) => void = () => {};
+  private onTouched: () => void = () => {};
 
   private getExtensions(): Extension[] {
     return [
@@ -134,6 +135,10 @@ export class CodeEditorComponent
   }
 
   ngOnInit(): void {
+    if (!this.editorContainer) {
+      return;
+    }
+
     const state = EditorState.create({
       doc: this.value,
       extensions: this.getExtensions(),
@@ -170,8 +175,8 @@ export class CodeEditorComponent
     }
   }
 
-  writeValue(value: any): void {
-    this.value = value || '';
+  writeValue(value: string | null | undefined): void {
+    this.value = value ?? '';
     if (this.view) {
       const currentDoc = this.view.state.doc.toString();
       if (currentDoc !== this.value) {
@@ -182,11 +187,11 @@ export class CodeEditorComponent
     }
   }
 
-  registerOnChange(fn: any): void {
+  registerOnChange(fn: (value: string) => void): void {
     this.onChange = fn;
   }
 
-  registerOnTouched(fn: any): void {
+  registerOnTouched(fn: () => void): void {
     this.onTouched = fn;
   }
 

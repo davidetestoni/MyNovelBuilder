@@ -73,14 +73,20 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
   readonly promptService: PromptService = inject(PromptService);
   readonly dialogService: DialogService = inject(DialogService);
 
-  data!: GenerateImageComponentData;
+  data: GenerateImageComponentData = {};
   promptGenerationPrompts: PromptDto[] = [];
   promptGenerationDialogRef: DynamicDialogRef | null = null;
   isLoadingPromptGenerationPrompts = false;
 
   formGroup = new FormGroup({
-    prompt: new FormControl('', [Validators.required]),
-    model: new FormControl('', [Validators.required]),
+    prompt: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
+    model: new FormControl<string>('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
   });
 
   imageBlob: Blob | null = null;
@@ -140,22 +146,29 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const { prompt, model } = this.formGroup.getRawValue();
+
+    if (!prompt.trim() || !model.trim()) {
+      this.toastrService.error('Please fill out all fields');
+      return;
+    }
+
     // Save the prompt and model
     this.localStorageService.setStringForKey(
       LocalStorageKey.LastImagePrompt,
-      this.formGroup.get('prompt')!.value!,
+      prompt,
     );
     this.localStorageService.setStringForKey(
       LocalStorageKey.LastImageModel,
-      this.formGroup.get('model')!.value!,
+      model,
     );
 
     this.isGenerating = true;
 
     this.generateImageService
       .generateImage({
-        modelId: this.formGroup.get('model')!.value!,
-        prompt: this.formGroup.get('prompt')!.value!,
+        modelId: model,
+        prompt: prompt,
         width: 832,
         height: 1248,
       })
@@ -196,6 +209,12 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const { compendiumId, compendiumRecordId } = this.data;
+    if (!compendiumId || !compendiumRecordId) {
+      this.toastrService.error('Missing compendium context for prompt generation');
+      return;
+    }
+
     this.promptGenerationDialogRef = this.dialogService.open(
       GenerateTextComponent,
       {
@@ -212,8 +231,8 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
           contextInfo: <CreateCompendiumRecordImageGenerationPromptContextInfoDto>{
             $type:
               CompendiumTextGenerationType.CreateCompendiumRecordImageGenerationPrompt,
-            compendiumId: this.data.compendiumId!,
-            compendiumRecordId: this.data.compendiumRecordId!,
+            compendiumId: compendiumId,
+            compendiumRecordId: compendiumRecordId,
             instructions: null,
           },
           instructionsRequired: false,

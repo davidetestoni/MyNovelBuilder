@@ -218,18 +218,38 @@ export class ProseEditorComponent implements OnDestroy {
     this.proseChange.emit(this.prose);
   }
 
+  private requireLastSelection(): LastSelection | null {
+    if (this.lastSelection) {
+      return this.lastSelection;
+    }
+
+    this.toastr.error('Please select text before using this action.');
+    return null;
+  }
+
+  private parseResponseChunks(response: string | null | undefined) {
+    if (!response) {
+      return [] as GenerateTextResponseChunkDto[];
+    }
+
+    return response
+      .split('\n')
+      .filter((item) => item.length > 0)
+      .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+  }
+
   preventReturnKey(event: KeyboardEvent) {
     if (event.key === 'Enter') {
       event.preventDefault();
     }
   }
 
-  editorInit(quill: any) {
+  editorInit(quill: Quill) {
     // This clears the background and text color when pasting text
     quill.clipboard.addMatcher(
       Node.ELEMENT_NODE,
-      function (node: any, delta: any) {
-        delta.forEach((e: any) => {
+      (_node, delta) => {
+        delta.forEach((e: { attributes?: { color?: string; background?: string } }) => {
           if (e.attributes) {
             e.attributes.color = '';
             e.attributes.background = '';
@@ -249,9 +269,13 @@ export class ProseEditorComponent implements OnDestroy {
       return;
     }
 
-    const proseEditorBoundingBox = document
-      .querySelector('#prose-editor')!
-      .getBoundingClientRect();
+    const proseEditor = document.querySelector('#prose-editor');
+    if (!(proseEditor instanceof HTMLElement)) {
+      this.showEditorControls = false;
+      return;
+    }
+
+    const proseEditorBoundingBox = proseEditor.getBoundingClientRect();
 
     const quillEditorBoundingBox =
       event.editor.container.getBoundingClientRect();
@@ -268,7 +292,11 @@ export class ProseEditorComponent implements OnDestroy {
       length: 1,
     };
 
-    const rangeBounds = event.editor.getBounds(lastCharRange)!;
+    const rangeBounds = event.editor.getBounds(lastCharRange);
+    if (!rangeBounds) {
+      this.showEditorControls = false;
+      return;
+    }
 
     this.editorControlsPosition = {
       x:
@@ -314,7 +342,11 @@ export class ProseEditorComponent implements OnDestroy {
       },
     );
 
-    const stream = response.body!;
+    const stream = response.body;
+    if (!stream) {
+      this.toastr.error('No audio stream was returned.');
+      return;
+    }
     const player = new StreamingWavPlayer();
     const reader = stream.getReader();
 
@@ -393,10 +425,7 @@ export class ProseEditorComponent implements OnDestroy {
           }
         } else if (event.type === HttpEventType.Response) {
           const response = event as HttpResponse<string>;
-          const responseChunks = response
-            .body!.split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+          const responseChunks = this.parseResponseChunks(response.body);
 
           if (responseChunks.length > 0) {
             const message = responseChunks.map((item) => item.content).join('');
@@ -412,6 +441,11 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   openGenerateTextDialog() {
+    const selection = this.requireLastSelection();
+    if (!selection) {
+      return;
+    }
+
     const prompts = this.prompts.filter(
       (p) => p.type === PromptType.GenerateText,
     );
@@ -439,9 +473,9 @@ export class ProseEditorComponent implements OnDestroy {
         contextInfo: <GenerateTextContextInfoDto>{
           $type: NovelTextGenerationType.GenerateText,
           novelId: this.novelId,
-          chapterIndex: this.lastSelection!.chapterIndex,
-          sectionIndex: this.lastSelection!.sectionIndex,
-          textOffset: this.lastSelection!.range.index,
+          chapterIndex: selection.chapterIndex,
+          sectionIndex: selection.sectionIndex,
+          textOffset: selection.range.index,
           instructions: null,
         },
         instructionsRequired: true, // This should be defined by the prompt
@@ -475,23 +509,34 @@ export class ProseEditorComponent implements OnDestroy {
       if (result === 'back') {
         this.openGenerateTextDialog();
       } else if (result) {
+        const selection = this.lastSelection;
+        if (!selection) {
+          this.toastr.error('Selection is no longer available.');
+          return;
+        }
+
         const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
 
         // Append the generated text at the end of the range in the Quill editor.
-        this.lastSelection!.editor.insertText(contextInfo.textOffset, result);
+        selection.editor.insertText(contextInfo.textOffset, result);
 
         const section =
           this.prose.chapters[contextInfo.chapterIndex].sections[
             contextInfo.sectionIndex
           ];
 
-        section.text = this.lastSelection!.editor.getSemanticHTML();
+        section.text = selection.editor.getSemanticHTML();
         this.saveProse();
       }
     });
   }
 
   openReplaceTextDialog() {
+    const selection = this.requireLastSelection();
+    if (!selection) {
+      return;
+    }
+
     const prompts = this.prompts.filter(
       (p) => p.type === PromptType.ReplaceText,
     );
@@ -519,10 +564,10 @@ export class ProseEditorComponent implements OnDestroy {
         contextInfo: <ReplaceTextContextInfoDto>{
           $type: NovelTextGenerationType.ReplaceText,
           novelId: this.novelId,
-          chapterIndex: this.lastSelection!.chapterIndex,
-          sectionIndex: this.lastSelection!.sectionIndex,
-          textOffset: this.lastSelection!.range.index,
-          textLength: this.lastSelection!.range.length,
+          chapterIndex: selection.chapterIndex,
+          sectionIndex: selection.sectionIndex,
+          textOffset: selection.range.index,
+          textLength: selection.range.length,
           instructions: null,
         },
         instructionsRequired: true, // This should be defined by the prompt
@@ -556,21 +601,32 @@ export class ProseEditorComponent implements OnDestroy {
       if (result === 'back') {
         this.openReplaceTextDialog();
       } else if (result) {
+        const selection = this.lastSelection;
+        if (!selection) {
+          this.toastr.error('Selection is no longer available.');
+          return;
+        }
+
         const contextInfo = request.contextInfo as ReplaceTextContextInfoDto;
 
         // Replace the selected text with the generated text.
         // Do not use the current selection's range, as it may have changed
         // since the dialog was opened.
-        this.lastSelection!.editor.deleteText(
+        selection.editor.deleteText(
           contextInfo.textOffset,
           contextInfo.textLength,
         );
-        this.lastSelection!.editor.insertText(contextInfo.textOffset, result);
+        selection.editor.insertText(contextInfo.textOffset, result);
       }
     });
   }
 
   openCreateCompendiumRecordDialog() {
+    const selection = this.requireLastSelection();
+    if (!selection) {
+      return;
+    }
+
     const prompts = this.prompts.filter(
       (p) => p.type === PromptType.CreateCompendiumRecord,
     );
@@ -594,10 +650,10 @@ export class ProseEditorComponent implements OnDestroy {
         contextInfo: <CreateCompendiumRecordContextInfoDto>{
           $type: NovelTextGenerationType.CreateCompendiumRecord,
           novelId: this.novelId,
-          chapterIndex: this.lastSelection!.chapterIndex,
-          sectionIndex: this.lastSelection!.sectionIndex,
-          textOffset: this.lastSelection!.range.index,
-          textLength: this.lastSelection!.range.length,
+          chapterIndex: selection.chapterIndex,
+          sectionIndex: selection.sectionIndex,
+          textOffset: selection.range.index,
+          textLength: selection.range.length,
           instructions: null,
         },
         instructionsRequired: true,
