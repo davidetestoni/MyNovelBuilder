@@ -34,7 +34,7 @@ export class GenerateTextService {
       : this.http.post(`${this.baseUrl}/generate/text/streamed`, request, {
           observe: 'events',
           reportProgress: true,
-          responseType: 'text',
+          responseType: 'text' as const,
         });
   }
 
@@ -44,7 +44,7 @@ export class GenerateTextService {
     this.saveRecentlyUsedModel(request.model);
 
     if (this.mocked) {
-      return new Observable((observer) => {
+      return new Observable<GenerateTextCompletion>((observer) => {
         const mockedContent = JSON.stringify([
           {
             title: 'Mocked Story Event',
@@ -65,7 +65,7 @@ export class GenerateTextService {
       .post(`${this.baseUrl}/generate/text/streamed`, request, {
         observe: 'events',
         reportProgress: true,
-        responseType: 'text',
+        responseType: 'text' as const,
       })
       .pipe(
         filter((event) => event.type === HttpEventType.Response),
@@ -95,7 +95,7 @@ export class GenerateTextService {
     this.saveRecentlyUsedModel(request.model);
 
     if (this.mocked) {
-      return new Observable((observer) => {
+      return new Observable<string>((observer) => {
         observer.next(
           'A generated image description. This is mocked data from the frontend service.',
         );
@@ -113,9 +113,13 @@ export class GenerateTextService {
       formData.append('instructions', request.instructions);
     }
 
-    return this.http.post(`${this.baseUrl}/generate/text/describe-image`, formData, {
-      responseType: 'text',
-    });
+    return this.http.post(
+      `${this.baseUrl}/generate/text/describe-image`,
+      formData,
+      {
+        responseType: 'text' as const,
+      },
+    );
   }
 
   getAvailableModels(): Observable<string[]> {
@@ -206,7 +210,7 @@ export class GenerateTextService {
 
   private getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
     return this.mocked
-      ? new Observable((observer) => {
+      ? new Observable<TextGenerationModelInfoDto[]>((observer) => {
           observer.next([
             {
               id: 'mocked-model',

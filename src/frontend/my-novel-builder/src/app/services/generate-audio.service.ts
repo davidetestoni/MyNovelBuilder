@@ -20,7 +20,7 @@ export class GenerateAudioService {
     return this.http.post(`${this.baseUrl}/generate/audio/tts`, request, {
       observe: 'events',
       reportProgress: true,
-      responseType: 'blob',
+      responseType: 'blob' as const,
     });
   }
 

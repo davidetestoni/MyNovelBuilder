@@ -31,7 +31,7 @@ export function mockObservable<T>(value: T): Observable<T> {
   return of(value);
 }
 
-export function mockErrorObservable<T>(error: any): Observable<T> {
+export function mockErrorObservable<T>(error: unknown): Observable<T> {
   return new Observable<T>((subscriber) => {
     setTimeout(() => {
       subscriber.error(error);

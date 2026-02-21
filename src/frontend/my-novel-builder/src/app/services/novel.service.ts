@@ -91,8 +91,8 @@ export class NovelService {
 
   exportNovelToMarkdown(novelId: string): Observable<HttpResponse<Blob>> {
     return this.http.get(`${this.baseUrl}/novel/${novelId}/export/markdown`, {
-      responseType: 'blob',
-      observe: 'response',
+      responseType: 'blob' as const,
+      observe: 'response' as const,
     });
   }
 

@@ -1,7 +1,7 @@
 import { HttpClient, HttpEvent } from '@angular/common/http';
 import { environment } from '../../environment';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ImageGenRequestDto } from '../types/dtos/generate/image-gen-request.dto';
 import { mockedImageGenerationResponse, mockObservable } from './mock';
 import { ImageGenerationModelInfoDto } from '../types/dtos/generate/image-generation-model-info.dto';
@@ -21,7 +21,7 @@ export class GenerateImageService {
       : this.http.post(`${this.baseUrl}/generate/image`, request, {
           observe: 'events',
           reportProgress: true,
-          responseType: 'blob',
+          responseType: 'blob' as const,
         });
   }
 
@@ -43,7 +43,7 @@ export class GenerateImageService {
     return this.http.post(`${this.baseUrl}/generate/image/edit`, formData, {
       observe: 'events',
       reportProgress: true,
-      responseType: 'blob',
+      responseType: 'blob' as const,
     });
   }
 
