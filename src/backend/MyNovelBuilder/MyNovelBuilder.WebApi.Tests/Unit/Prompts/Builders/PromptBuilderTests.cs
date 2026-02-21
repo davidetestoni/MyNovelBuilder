@@ -17,7 +17,7 @@ public class PromptBuilderTests
                 .FilterRecordsInContext(records, context);
         }
 
-        public new static string CreateCompendiumRecordsString(
+        public static string CreateCompendiumRecordsString(
             IList<CompendiumRecord> records, Prose prose, int? chapterIndex, int? sectionIndex)
         {
             return PromptBuilder<TextGenerationContextInfoDto>
