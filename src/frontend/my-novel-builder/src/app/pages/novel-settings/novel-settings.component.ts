@@ -85,8 +85,6 @@ export class NovelSettingsComponent {
       return;
     }
 
-    console.log('Updating novel', this.novel);
-
     this.novelService
       .updateNovel({
         id: this.novel.id,
