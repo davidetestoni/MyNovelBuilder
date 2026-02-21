@@ -34,7 +34,7 @@ export class PromptsComponent implements OnInit, OnDestroy {
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
   ];
-  selectedPromptType: PromptType = this.promptTypes[0];
+  selectedPromptType: PromptType | null = null;
   promptTypeOptions = this.promptTypes.map((type) => ({
     label: this.formatPromptType(type),
     value: type,
@@ -92,6 +92,10 @@ export class PromptsComponent implements OnInit, OnDestroy {
   getFilteredPrompts(): PromptDto[] {
     if (!this.prompts) {
       return [];
+    }
+
+    if (this.selectedPromptType === null) {
+      return this.prompts;
     }
 
     return this.prompts.filter((prompt) => prompt.type === this.selectedPromptType);
