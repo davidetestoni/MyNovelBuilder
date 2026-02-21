@@ -9,11 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using MyNovelBuilder.WebApi;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Data.Repositories;
-using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Middleware;
 using MyNovelBuilder.WebApi.Extensions;
 using MyNovelBuilder.WebApi.Models.Errors;
@@ -72,7 +70,7 @@ builder.Services.AddResponseCompression(options =>
 });
 
 // Add logging through serilog
-builder.Host.UseSerilog((ctx, options) =>
+builder.Host.UseSerilog((_, options) =>
 {
     // This will destructure JsonDocument and JsonElement when passed
     // as structured logs argument
