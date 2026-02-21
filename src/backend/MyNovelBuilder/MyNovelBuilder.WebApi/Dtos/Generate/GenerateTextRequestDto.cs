@@ -1,5 +1,6 @@
 ﻿namespace MyNovelBuilder.WebApi.Dtos.Generate;
 
+using FluentValidation;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -22,4 +23,14 @@ public class GenerateTextRequestDto
     /// The context information.
     /// </summary>
     public required TextGenerationContextInfoDto ContextInfo { get; set; }
+}
+
+internal class GenerateTextRequestDtoValidator : AbstractValidator<GenerateTextRequestDto>
+{
+    public GenerateTextRequestDtoValidator()
+    {
+        RuleFor(x => x.Model).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.PromptId).NotEmpty();
+        RuleFor(x => x.ContextInfo).NotNull().SetValidator(new TextGenerationContextInfoDtoValidator());
+    }
 }

@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Mvc;
@@ -83,6 +84,7 @@ builder.Host.UseSerilog((ctx, options) =>
 // consistent.
 builder.Services.Configure<ApiBehaviorOptions>(x =>
 {
+    x.SuppressModelStateInvalidFilter = false;
     x.InvalidModelStateResponseFactory = ctx => new ApiErrorResult();
 });
 
@@ -123,6 +125,7 @@ builder.Services.AddSingleton(config);
 builder.Services.AddScoped<IMapper, ServiceMapper>();
 
 // FluentValidation configuration
+builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 
 builder.Services.AddHybridCache();
@@ -162,6 +165,8 @@ app.UseStaticFiles(new StaticFileOptions
             "Access-Control-Allow-Origin", "*");
     }
 });
+
+app.Services.EnsurePostPutInputValidatorsAreRegistered();
 
 app.MapControllers();
 

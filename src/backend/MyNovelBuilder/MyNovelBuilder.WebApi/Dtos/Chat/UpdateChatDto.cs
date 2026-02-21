@@ -1,3 +1,4 @@
+using FluentValidation;
 using MyNovelBuilder.WebApi.Models.Chats;
 
 namespace MyNovelBuilder.WebApi.Dtos.Chat;
@@ -35,4 +36,27 @@ public class UpdateChatDto
     /// The messages in the chat conversation.
     /// </summary>
     public IEnumerable<ChatMessage> Messages { get; init; } = [];
+}
+
+internal class UpdateChatDtoValidator : AbstractValidator<UpdateChatDto>
+{
+    public UpdateChatDtoValidator()
+    {
+        RuleFor(x => x.Name).MaximumLength(200);
+        RuleFor(x => x.ChapterIndex).GreaterThanOrEqualTo(0).When(x => x.ChapterIndex.HasValue);
+        RuleForEach(x => x.CompendiumIds).NotEmpty();
+        RuleForEach(x => x.CompendiumRecordIds).NotEmpty();
+        RuleForEach(x => x.Messages).SetValidator(new ChatMessageValidator());
+    }
+}
+
+internal class ChatMessageValidator : AbstractValidator<ChatMessage>
+{
+    public ChatMessageValidator()
+    {
+        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.SentAt).NotEmpty();
+        RuleFor(x => x.Role).IsInEnum();
+        RuleFor(x => x.TextContent).NotEmpty().MaximumLength(50_000);
+    }
 }

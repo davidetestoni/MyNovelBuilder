@@ -1,3 +1,4 @@
+using FluentValidation;
 using MyNovelBuilder.WebApi.Enums;
 
 namespace MyNovelBuilder.WebApi.Dtos.Integrations;
@@ -51,4 +52,27 @@ public class UpdateIntegrationsConfigDto
     /// The TTS voice ID to use for text-to-speech generation.
     /// </summary>
     public string? TtsVoiceId { get; init; }
+}
+
+internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIntegrationsConfigDto>
+{
+    public UpdateIntegrationsConfigDtoValidator()
+    {
+        RuleFor(x => x.OpenRouterApiKey).MaximumLength(500);
+        RuleFor(x => x.GoogleGenAiApiKey).MaximumLength(500);
+        RuleFor(x => x.ElevenLabsApiKey).MaximumLength(500);
+        RuleFor(x => x.UnrealSpeechApiKey).MaximumLength(500);
+        RuleFor(x => x.DeApiApiKey).MaximumLength(500);
+        RuleFor(x => x.TtsVoiceId).MaximumLength(200);
+
+        RuleFor(x => x.TextGenerationProvider)
+            .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
+            .WithMessage("Text generation provider is invalid.");
+        RuleFor(x => x.TtsProvider)
+            .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
+            .WithMessage("TTS provider is invalid.");
+        RuleFor(x => x.ImageGenerationProvider)
+            .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
+            .WithMessage("Image generation provider is invalid.");
+    }
 }

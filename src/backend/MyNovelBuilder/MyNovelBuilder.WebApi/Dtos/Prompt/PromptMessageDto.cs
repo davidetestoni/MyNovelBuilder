@@ -24,6 +24,6 @@ internal class PromptMessageDtoValidator : AbstractValidator<PromptMessageDto>
     public PromptMessageDtoValidator()
     {
         RuleFor(x => x.Role).IsInEnum();
-        RuleFor(x => x.Message).MaximumLength(50000);
+        RuleFor(x => x.Message).MaximumLength(50_000);
     }
 }

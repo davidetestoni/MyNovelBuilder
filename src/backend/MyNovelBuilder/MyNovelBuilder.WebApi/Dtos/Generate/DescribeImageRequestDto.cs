@@ -1,5 +1,6 @@
 namespace MyNovelBuilder.WebApi.Dtos.Generate;
 
+using FluentValidation;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -28,4 +29,15 @@ public class DescribeImageRequestDto
     /// Additional instructions for the image description.
     /// </summary>
     public string? Instructions { get; set; }
+}
+
+internal class DescribeImageRequestDtoValidator : AbstractValidator<DescribeImageRequestDto>
+{
+    public DescribeImageRequestDtoValidator()
+    {
+        RuleFor(x => x.Model).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.PromptId).NotEmpty();
+        RuleFor(x => x.CompendiumId).NotEmpty();
+        RuleFor(x => x.Instructions).MaximumLength(5_000);
+    }
 }

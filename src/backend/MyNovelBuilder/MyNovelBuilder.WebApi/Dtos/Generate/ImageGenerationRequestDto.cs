@@ -2,6 +2,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using FluentValidation;
 
 /// <summary>
 /// DTO for an image generation request.
@@ -31,4 +32,15 @@ public class ImageGenerationRequestDto
     [JsonRequired]
     [Range(1, 10_000)]
     public int Height { get; set; }
+}
+
+internal class ImageGenerationRequestDtoValidator : AbstractValidator<ImageGenerationRequestDto>
+{
+    public ImageGenerationRequestDtoValidator()
+    {
+        RuleFor(x => x.ModelId).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Prompt).NotEmpty().MaximumLength(20_000);
+        RuleFor(x => x.Width).InclusiveBetween(1, 10_000);
+        RuleFor(x => x.Height).InclusiveBetween(1, 10_000);
+    }
 }

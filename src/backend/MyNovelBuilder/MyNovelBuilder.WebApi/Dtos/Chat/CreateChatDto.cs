@@ -1,3 +1,5 @@
+using FluentValidation;
+
 namespace MyNovelBuilder.WebApi.Dtos.Chat;
 
 /// <summary>
@@ -9,4 +11,12 @@ public class CreateChatDto
     /// The ID of the novel associated with the chat.
     /// </summary>
     public required Guid NovelId { get; set; }
+}
+
+internal class CreateChatDtoValidator : AbstractValidator<CreateChatDto>
+{
+    public CreateChatDtoValidator()
+    {
+        RuleFor(x => x.NovelId).NotEmpty();
+    }
 }
