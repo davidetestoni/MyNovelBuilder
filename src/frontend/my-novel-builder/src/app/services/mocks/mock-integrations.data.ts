@@ -1,0 +1,16 @@
+import { IntegrationsConfigDto } from '../../types/dtos/integrations/integrations-config.dto';
+import { ImageGenerationProvider } from '../../types/enums/image-generation-provider';
+import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
+import { TtsProvider } from '../../types/enums/tts-provider';
+
+export const mockedIntegrationsConfig: IntegrationsConfigDto = {
+  hasOpenRouterApiKey: true,
+  hasGoogleGenAiApiKey: false,
+  hasElevenLabsApiKey: false,
+  hasUnrealSpeechApiKey: false,
+  hasDeApiApiKey: false,
+  textGenerationProvider: TextGenerationProvider.OpenRouter,
+  ttsProvider: TtsProvider.Custom,
+  imageGenerationProvider: ImageGenerationProvider.DeApi,
+  ttsVoiceId: 'voice-1',
+};
