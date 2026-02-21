@@ -121,7 +121,7 @@ public class NovelService : INovelService
         
         // Find the cover image in the folder (called cover_{guid}.png) to prevent
         // caching issues when the cover is updated.
-        var coverFiles = Directory.GetFiles(folder, "cover*.png");
+        var coverFiles = Directory.GetFiles(folder, "cover_*.png");
         
         return coverFiles.Length == 0 ? null : coverFiles[0];
     }
@@ -178,11 +178,18 @@ public class NovelService : INovelService
     /// <inheritdoc />
     public void DeleteCoverImage(Guid id)
     {
-        var path = Path.Combine(_staticFilesRoot, "novels", id.ToString(), "cover.png");
-        
-        if (File.Exists(path))
+        var folder = Path.Combine(_staticFilesRoot, "novels", id.ToString());
+
+        if (!Directory.Exists(folder))
         {
-            File.Delete(path);
+            return;
+        }
+
+        var coverFiles = Directory.GetFiles(folder, "cover_*.png");
+
+        foreach (var coverFile in coverFiles)
+        {
+            File.Delete(coverFile);
         }
     }
 

@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Mapster;
+﻿using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Novel;
@@ -174,7 +173,7 @@ public class NovelController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var location = await _novelService.UploadProseImageAsync(id, file, cancellationToken);
-        return Ok(JsonSerializer.Serialize(location));
+        return Ok(location);
     }
 
     private void AddCoverImageUrl(NovelDto dto)
