@@ -187,7 +187,18 @@ export class CompendiumComponent implements OnInit {
         context: record.context,
         alwaysIncluded: record.alwaysIncluded,
       })
-      .subscribe();
+      .subscribe((updatedRecord) => {
+        if (this.currentRecord?.id === updatedRecord.id) {
+          this.currentRecord = updatedRecord;
+        }
+
+        if (this.records) {
+          const idx = this.records.findIndex((r) => r.id === updatedRecord.id);
+          if (idx >= 0) {
+            this.records[idx] = updatedRecord;
+          }
+        }
+      });
   }
 
   deleteRecord(record: CompendiumRecordDto): void {

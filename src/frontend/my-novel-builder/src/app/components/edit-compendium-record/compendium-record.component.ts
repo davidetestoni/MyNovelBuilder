@@ -20,6 +20,7 @@ import { CodeEditorComponent } from '../code-editor/code-editor.component';
 import { EditImageComponent } from '../edit-image/edit-image.component';
 import { HttpClient } from '@angular/common/http';
 import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-compendium-record',
@@ -32,6 +33,7 @@ import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/com
     ButtonModule,
     CheckboxModule,
     ConfirmDialogModule,
+    TooltipModule,
     AliasSuggestionsComponent,
     CodeEditorComponent,
   ],

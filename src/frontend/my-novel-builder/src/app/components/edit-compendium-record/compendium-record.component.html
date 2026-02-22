@@ -49,6 +49,14 @@
         <label class="label">
           <span>Context</span>
         </label>
+        <div class="context-token-count">
+          <span>{{ record.contextTokenCount }} tokens</span>
+          <i
+            class="pi pi-info-circle"
+            pTooltip="Token count is computed with tiktoken using the gpt-4o encoding."
+            tooltipPosition="top"
+          ></i>
+        </div>
         <app-code-editor
           [(ngModel)]="record.context"
           (blur)="onBlur()"

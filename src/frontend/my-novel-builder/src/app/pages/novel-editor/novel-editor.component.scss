@@ -204,6 +204,14 @@
           white-space: pre-wrap;
           font-size: 0.8rem;
           font-weight: 400;
+          margin-bottom: 0.5rem;
+        }
+
+        .record-context-token-count {
+          display: flex;
+          justify-content: flex-end;
+          color: $grey11;
+          font-size: 0.75rem;
         }
       }
 

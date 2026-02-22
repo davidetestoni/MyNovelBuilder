@@ -34,6 +34,11 @@ public class CompendiumRecord : TimestampedEntity
     [Required]
     [MaxLength(10000)]
     public string Context { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Cached token count for <see cref="Context"/>.
+    /// </summary>
+    public int ContextTokenCount { get; set; }
     
     /// <summary>
     /// The current image ID.

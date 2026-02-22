@@ -65,6 +65,19 @@
         margin-bottom: 5px;
       }
 
+      .context-token-count {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: $grey13;
+        font-size: 0.85rem;
+        margin: 8px 0px;
+
+        .pi-info-circle {
+          font-size: 0.8rem;
+        }
+      }
+
       app-code-editor {
         height: 300px;
         width: 100%;

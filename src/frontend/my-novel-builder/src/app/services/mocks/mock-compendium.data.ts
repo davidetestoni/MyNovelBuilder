@@ -49,6 +49,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'Johnny',
     type: CompendiumRecordType.Character,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    contextTokenCount: 42,
     alwaysIncluded: false,
     media: [
       {
@@ -74,6 +75,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'Janie',
     type: CompendiumRecordType.Character,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    contextTokenCount: 38,
     alwaysIncluded: false,
     media: [],
     compendiumId: mockedCompendia[0].id,
@@ -86,6 +88,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'The City',
     type: CompendiumRecordType.Place,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    contextTokenCount: 45,
     alwaysIncluded: false,
     media: [
       {
@@ -111,6 +114,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     aliases: 'The Concept',
     type: CompendiumRecordType.Concept,
     context: loremIpsum({ count: 3, units: 'sentences' }),
+    contextTokenCount: 40,
     alwaysIncluded: false,
     media: [
       {

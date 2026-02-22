@@ -43,6 +43,11 @@ public class CompendiumRecordDto
     public string Context { get; set; } = string.Empty;
 
     /// <summary>
+    /// Cached token count for <see cref="Context"/>.
+    /// </summary>
+    public int ContextTokenCount { get; set; }
+
+    /// <summary>
     /// The current image ID, if any.
     /// </summary>
     public Guid? CurrentImageId { get; set; }

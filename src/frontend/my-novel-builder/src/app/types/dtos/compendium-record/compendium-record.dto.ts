@@ -9,6 +9,7 @@ export interface CompendiumRecordDto {
   aliases: string;
   type: CompendiumRecordType;
   context: string;
+  contextTokenCount: number;
   media: CompendiumRecordMediaDto[];
   compendiumId: string;
   alwaysIncluded: boolean;

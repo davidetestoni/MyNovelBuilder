@@ -15,15 +15,18 @@ public class CompendiumRecordController
 {
     private readonly ICompendiumRecordService _compendiumRecordService;
     private readonly ICompendiumService _compendiumService;
+    private readonly ITokenizerService _tokenizerService;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     /// <summary></summary>
     public CompendiumRecordController(ICompendiumRecordService compendiumRecordService,
         ICompendiumService compendiumService,
+        ITokenizerService tokenizerService,
         IHttpContextAccessor httpContextAccessor)
     {
         _compendiumRecordService = compendiumRecordService;
         _compendiumService = compendiumService;
+        _tokenizerService = tokenizerService;
         _httpContextAccessor = httpContextAccessor;
     }
     
@@ -69,6 +72,7 @@ public class CompendiumRecordController
         CancellationToken cancellationToken = default)
     {
         var record = createCompendiumRecordDto.Adapt<CompendiumRecord>();
+        record.ContextTokenCount = _tokenizerService.CountTokens(record.Context);
         record.Compendium = await _compendiumService.GetByIdAsync(
             createCompendiumRecordDto.CompendiumId,
             cancellationToken);
@@ -91,6 +95,7 @@ public class CompendiumRecordController
         var record = await _compendiumRecordService.GetByIdAsync(compendiumRecordDto.Id, cancellationToken);
         
         compendiumRecordDto.Adapt(record);
+        record.ContextTokenCount = _tokenizerService.CountTokens(record.Context);
         await _compendiumRecordService.UpdateAsync(record, cancellationToken);
         
         var dto = record.Adapt<CompendiumRecordDto>();
