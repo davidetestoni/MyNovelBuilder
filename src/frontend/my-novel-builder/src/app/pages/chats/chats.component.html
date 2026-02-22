@@ -17,9 +17,17 @@
             (click)="selectChat(chat.id)"
           >
             <div class="chat-item-image">
-              <div class="no-image">
-                <i class="icon icon-ai"></i>
-              </div>
+              @if (getChatNovelCover(chat); as novelCover) {
+                <img
+                  class="chat-image"
+                  [src]="novelCover"
+                  [alt]="(chat.name ?? 'Chat') + ' novel cover'"
+                />
+              } @else {
+                <div class="no-image">
+                  <i class="icon icon-ai"></i>
+                </div>
+              }
             </div>
             <div class="chat-item-content">
               <div class="chat-item-name">

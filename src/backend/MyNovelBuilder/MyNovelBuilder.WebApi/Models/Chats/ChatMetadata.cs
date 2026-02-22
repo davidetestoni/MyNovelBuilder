@@ -9,6 +9,11 @@ public class ChatMetadata
     /// The chat's ID.
     /// </summary>
     public required Guid Id { get; set; }
+
+    /// <summary>
+    /// The associated novel's ID.
+    /// </summary>
+    public required Guid NovelId { get; set; }
     
     /// <summary>
     /// The time the chat was created.

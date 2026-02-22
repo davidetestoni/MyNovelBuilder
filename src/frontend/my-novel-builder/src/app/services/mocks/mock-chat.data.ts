@@ -7,18 +7,21 @@ import { indexToGuid } from './mock-utils';
 export const mockedChats: ChatMetadata[] = [
   {
     id: indexToGuid(3),
+    novelId: indexToGuid(3),
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2026-01-02T00:00:00Z',
     name: 'Chat about Chapter 1',
   },
   {
     id: indexToGuid(2),
+    novelId: indexToGuid(2),
     createdAt: '2024-06-03T00:00:00Z',
     updatedAt: '2024-01-04T00:00:00Z',
     name: 'Brainstorming Session',
   },
   {
     id: indexToGuid(1),
+    novelId: indexToGuid(1),
     createdAt: '2023-01-05T00:00:00Z',
     updatedAt: '2023-01-06T00:00:00Z',
     name: null,

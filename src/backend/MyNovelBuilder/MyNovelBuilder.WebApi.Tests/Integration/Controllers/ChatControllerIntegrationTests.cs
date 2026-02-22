@@ -45,6 +45,7 @@ public class ChatControllerIntegrationTests(
         var metadata = result.Value.ToList();
         Assert.Single(metadata);
         Assert.Equal(chat.Id, metadata[0].Id);
+        Assert.Equal(chat.Context.NovelId, metadata[0].NovelId);
         Assert.Equal(chat.Name, metadata[0].Name);
     }
 

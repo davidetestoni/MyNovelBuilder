@@ -65,6 +65,7 @@ public class ChatService : IChatService
                 Id = Path.GetFileNameWithoutExtension(file) is { } fileName
                     ? Guid.Parse(fileName)
                     : Guid.Empty,
+                NovelId = chat.Context.NovelId,
                 CreatedAt = chat.CreatedAt,
                 UpdatedAt = chat.UpdatedAt,
                 Name = chat.Name

@@ -11,6 +11,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ChatComponent } from '../../components/chat/chat.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { CreateChatComponent } from '../../components/create-chat/create-chat.component';
+import { NovelService } from '../../services/novel.service';
 
 @Component({
   selector: 'app-chats',
@@ -30,16 +31,19 @@ export class ChatsComponent implements OnInit, OnDestroy {
   chats: ChatMetadata[] | null = null;
   currentChatId: string | null = null;
   currentChat: Chat | null = null;
+  private novelImageUrlsById: Record<string, string | null> = {};
   private dialogService = inject(DialogService);
   private dialogRef: DynamicDialogRef | null = null;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
   readonly chatService = inject(ChatService);
+  readonly novelService = inject(NovelService);
   readonly confirmationService = inject(ConfirmationService);
 
   ngOnInit(): void {
     this.getChats();
+    this.getNovelCovers();
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (id) {
@@ -62,6 +66,14 @@ export class ChatsComponent implements OnInit, OnDestroy {
     this.chatService.getChats().subscribe((chats) => {
       this.chats = chats;
       this.maybeOpenFirstChat();
+    });
+  }
+
+  getNovelCovers(): void {
+    this.novelService.getNovels().subscribe((novels) => {
+      this.novelImageUrlsById = Object.fromEntries(
+        novels.map((novel) => [novel.id, novel.coverImageUrl]),
+      );
     });
   }
 
@@ -133,6 +145,7 @@ export class ChatsComponent implements OnInit, OnDestroy {
       if (result) {
         const metadata: ChatMetadata = {
           id: result.id,
+          novelId: result.context.novelId,
           name: result.name,
           createdAt: result.createdAt,
           updatedAt: result.updatedAt,
@@ -145,5 +158,9 @@ export class ChatsComponent implements OnInit, OnDestroy {
 
   getLastUpdated(chat: ChatMetadata): string {
     return moment(chat.updatedAt).fromNow();
+  }
+
+  getChatNovelCover(chat: ChatMetadata): string | null {
+    return this.novelImageUrlsById[chat.novelId] ?? null;
   }
 }
