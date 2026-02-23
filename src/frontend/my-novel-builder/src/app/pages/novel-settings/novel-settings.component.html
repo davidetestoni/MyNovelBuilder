@@ -23,6 +23,12 @@
           (onClick)="exportAsMarkdown()"
         />
         <p-button
+          label="Plan"
+          [routerLink]="['/novel', novel.id, 'planner']"
+          variant="text"
+          icon="pi pi-sitemap"
+        />
+        <p-button
           label="Prose"
           [routerLink]="['/novel', novel.id]"
           variant="text"

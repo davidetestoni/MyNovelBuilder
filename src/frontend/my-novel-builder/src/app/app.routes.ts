@@ -56,6 +56,14 @@ export const routes: Routes = [
     data: mainLayoutData,
   },
   {
+    path: 'novel/:id/planner',
+    loadComponent: () =>
+      import('./pages/story-planner/story-planner.component').then(
+        (m) => m.StoryPlannerComponent,
+      ),
+    data: mainLayoutData,
+  },
+  {
     path: 'compendium/:id',
     loadComponent: () =>
       import('./pages/compendium/compendium.component').then(

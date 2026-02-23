@@ -30,6 +30,12 @@
           />
         }
         <p-button
+          label="Plan"
+          [routerLink]="['/novel', novel.id, 'planner']"
+          variant="text"
+          icon="pi pi-sitemap"
+        />
+        <p-button
           label="Settings"
           [routerLink]="['/novel', novel.id, 'settings']"
           variant="text"
