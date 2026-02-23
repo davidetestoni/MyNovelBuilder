@@ -25,11 +25,37 @@
         /* Align it with the section without summary */
         margin-right: calc(250px - 1rem - 20px);
 
-        h2 {
-          font-size: 2rem;
-          font-weight: 500;
-          text-align: center;
-          outline: none;
+        .chapter-heading-main {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.35rem;
+
+          .chapter-meta {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: $grey11;
+            letter-spacing: 0.08rem;
+          }
+
+          .chapter-sections {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+
+            .chapter-meta-separator {
+              color: $grey9;
+              margin: 0 0.15rem;
+            }
+          }
+
+          h2 {
+            font-size: 2rem;
+            font-weight: 500;
+            text-align: center;
+            outline: none;
+            margin: 0;
+          }
         }
 
         i {

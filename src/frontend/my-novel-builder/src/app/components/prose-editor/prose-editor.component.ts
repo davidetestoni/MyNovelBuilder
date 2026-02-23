@@ -109,6 +109,7 @@ export class ProseEditorComponent implements OnDestroy {
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
+  private readonly averageReadingWpm = 238;
 
   private dialogRef: DynamicDialogRef | null = null;
 
@@ -216,6 +217,33 @@ export class ProseEditorComponent implements OnDestroy {
     // TODO: This should be debounced to avoid sending too many requests
     // TODO: Don't send the entire prose, only the changed parts
     this.proseChange.emit(this.prose);
+  }
+
+  getChapterWordCount(chapter: Prose['chapters'][number]): number {
+    const text = chapter.sections
+      .map((section) => this.stripHtml(section.text))
+      .join(' ')
+      .trim();
+
+    if (!text) {
+      return 0;
+    }
+
+    return text.split(/\s+/).length;
+  }
+
+  getReadingTimeMinutes(wordCount: number): number {
+    if (wordCount === 0) {
+      return 0;
+    }
+
+    return Math.ceil(wordCount / this.averageReadingWpm);
+  }
+
+  private stripHtml(value: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(value, 'text/html');
+    return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
   }
 
   private requireLastSelection(): LastSelection | null {

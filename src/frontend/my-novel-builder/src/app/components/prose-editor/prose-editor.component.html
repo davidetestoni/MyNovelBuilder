@@ -6,14 +6,30 @@
       ) {
         <div class="chapter">
           <div class="chapter-heading">
-            <h2
-              contenteditable="true"
-              (keydown)="preventReturnKey($event)"
-              (blur)="updateChapterTitle(chapterIndex, $event)"
-              spellcheck="false"
-            >
-              {{ chapter.title }}
-            </h2>
+            @let chapterWordCount = getChapterWordCount(chapter);
+            @let chapterReadingTimeMinutes = getReadingTimeMinutes(chapterWordCount);
+            <div class="chapter-heading-main">
+              <div class="chapter-meta chapter-index">CHAPTER {{ chapterIndex + 1 }}</div>
+              <h2
+                contenteditable="true"
+                (keydown)="preventReturnKey($event)"
+                (blur)="updateChapterTitle(chapterIndex, $event)"
+                spellcheck="false"
+              >
+                {{ chapter.title }}
+              </h2>
+              <div class="chapter-meta chapter-sections">
+                {{ chapter.sections.length }}
+                {{ chapter.sections.length === 1 ? 'SECTION' : 'SECTIONS' }}
+                <span class="chapter-meta-separator">•</span>
+                {{ chapterWordCount | number }}
+                {{ chapterWordCount === 1 ? 'WORD' : 'WORDS' }}
+                <span class="chapter-meta-separator">•</span>
+                {{ chapterReadingTimeMinutes }}
+                {{ chapterReadingTimeMinutes === 1 ? 'MIN' : 'MINS' }}
+                READ
+              </div>
+            </div>
             <div class="remove-chapter-button-placeholder"></div>
             <i
               class="icon icon-close"
