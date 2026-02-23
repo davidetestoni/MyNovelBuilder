@@ -1,7 +1,10 @@
 using KokoroSharp;
+using KokoroSharp.Core;
+using KokoroSharp.Processing;
 using KokoroSharp.Utilities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Helpers;
 using NAudio.Wave;
 
 using MyNovelBuilder.WebApi.Attributes;
@@ -101,6 +104,7 @@ public class KokoroTtsService : ITtsService
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         _logger.LogInformation("Generating audio using Kokoro TTS");
+        var normalizedMessage = NormalizeForKokoro(request.Message);
         
         // Download the model if not present
         cancellationToken.ThrowIfCancellationRequested();
@@ -110,7 +114,7 @@ public class KokoroTtsService : ITtsService
         var voice = KokoroVoiceManager.GetVoice(config.TtsVoiceId);
 
         cancellationToken.ThrowIfCancellationRequested();
-        var audioBytes = await synth.SynthesizeAsync(request.Message, voice);
+        var audioBytes = await synth.SynthesizeAsync(normalizedMessage, voice);
         
         // The bytes aren't in wav format, so we need to encode them
         using var ms = new MemoryStream();
@@ -125,9 +129,126 @@ public class KokoroTtsService : ITtsService
     /// <inheritdoc />
     public Task<Stream> GenerateAudioStreamAsync(
         TtsRequestDto request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => GenerateAudioStreamInternalAsync(request, cancellationToken);
+    
+    private async Task<Stream> GenerateAudioStreamInternalAsync(
+        TtsRequestDto request,
+        CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        _logger.LogInformation("Generating streaming audio using Kokoro TTS");
+        var normalizedMessage = NormalizeForKokoro(request.Message);
+
+        // Download model if missing.
+        cancellationToken.ThrowIfCancellationRequested();
+        await KokoroTTS.LoadModelAsync(model: KModel.float32);
+
+        var voice = KokoroVoiceManager.GetVoice(config.TtsVoiceId);
+
+        return new PcmWavStreamingStream(
+            sampleRate: KokoroPlayback.waveFormat.SampleRate,
+            channels: (short)KokoroPlayback.waveFormat.Channels,
+            bitsPerSample: (short)KokoroPlayback.waveFormat.BitsPerSample,
+            producer: async (writeAsync, ct) =>
+            {
+                using var tts = KokoroTTS.LoadModel("kokoro.onnx");
+
+                var tokens = Tokenizer.Tokenize(normalizedMessage);
+                var segments = SegmentationSystem.SplitToSegments(tokens, new DefaultSegmentationConfig());
+
+                Exception? callbackException = null;
+                var job = KokoroJob.Create(segments, voice, 1f, samples =>
+                {
+                    if (samples.Length == 0 || callbackException is not null || ct.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        var pcmBytes = ToPcm16Bytes(samples);
+                        writeAsync(pcmBytes).GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex)
+                    {
+                        callbackException = ex;
+                    }
+                });
+
+                tts.EnqueueJob(job);
+
+                try
+                {
+                    while (!job.isDone && !ct.IsCancellationRequested)
+                    {
+                        if (callbackException is not null)
+                        {
+                            throw callbackException;
+                        }
+
+                        await Task.Delay(10, ct);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    job.Cancel();
+                    throw;
+                }
+
+                if (callbackException is not null)
+                {
+                    throw callbackException;
+                }
+            },
+            ct: cancellationToken);
+    }
+
+    private static string NormalizeForKokoro(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return input;
+        }
+
+        return input
+            // Quotes/apostrophes
+            .Replace('\u2018', '\'')
+            .Replace('\u2019', '\'')
+            .Replace('\u201B', '\'')
+            .Replace('\u2032', '\'')
+            .Replace('\u2035', '\'')
+            .Replace('\u201C', '"')
+            .Replace('\u201D', '"')
+            .Replace('\u201F', '"')
+            .Replace('\u2033', '"')
+            .Replace('\u2036', '"')
+            // Dashes and ellipsis
+            .Replace('\u2013', ',')
+            .Replace('\u2014', ',')
+            .Replace('\u2015', ',')
+            .Replace("\u2026", "...")
+            // Spacing / separators
+            .Replace('\u00A0', ' ')
+            .Replace('\u202F', ' ')
+            .Replace('\u2007', ' ')
+            .Replace('\u2028', '\n')
+            .Replace('\u2029', '\n');
+    }
+
+    private static byte[] ToPcm16Bytes(float[] samples)
+    {
+        var output = new byte[samples.Length * sizeof(short)];
+
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var clamped = Math.Clamp(samples[i], -1f, 1f);
+            var sample = (short)Math.Round(clamped * short.MaxValue);
+            var offset = i * sizeof(short);
+            output[offset] = (byte)(sample & 0xFF);
+            output[offset + 1] = (byte)((sample >> 8) & 0xFF);
+        }
+
+        return output;
     }
 
     /// <inheritdoc />
