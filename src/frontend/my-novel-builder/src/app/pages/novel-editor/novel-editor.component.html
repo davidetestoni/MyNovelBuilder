@@ -19,6 +19,7 @@
         @if (prose() !== null) {
           <p-select
             [(ngModel)]="selectedChapterIndex"
+            (ngModelChange)="onChapterSelectionChange($event)"
             [options]="chapters()"
             optionLabel="label"
             optionValue="value"

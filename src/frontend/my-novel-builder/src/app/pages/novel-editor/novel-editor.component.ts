@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { NovelService } from '../../services/novel.service';
 import { Prose, StoryEvent } from '../../types/dtos/novel/prose';
@@ -38,6 +38,9 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class NovelEditorComponent {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private readonly chapterQueryParamName = 'chapter';
+  private chapterSelectionFromQuery: number | null | undefined = undefined;
 
   compendia: CompendiumDto[] | null = null;
   prompts: PromptDto[] | null = null; // TODO: Send a lighter version of this DTO
@@ -83,6 +86,7 @@ export class NovelEditorComponent {
 
   ngOnInit(): void {
     this.novelId = this.route.snapshot.paramMap.get('id')!;
+    this.chapterSelectionFromQuery = this.readChapterSelectionFromQuery();
     this.getNovel();
     this.getProse();
     this.getPrompts();
@@ -100,11 +104,26 @@ export class NovelEditorComponent {
     this.novelService.getNovelProse(this.novelId).subscribe((prose) => {
       this.prose.set(prose);
 
-      if (prose.chapters.length > 0) {
-        this.selectedChapterIndex = 0;
-      } else {
+      if (prose.chapters.length === 0) {
         this.selectedChapterIndex = null;
+        return;
       }
+
+      if (this.chapterSelectionFromQuery === null) {
+        this.selectedChapterIndex = null;
+        return;
+      }
+
+      if (
+        this.chapterSelectionFromQuery !== undefined &&
+        this.chapterSelectionFromQuery < prose.chapters.length
+      ) {
+        this.selectedChapterIndex = this.chapterSelectionFromQuery;
+        return;
+      }
+
+      // No chapter query param -> default to first chapter.
+      this.selectedChapterIndex = 0;
     });
   }
 
@@ -227,6 +246,39 @@ export class NovelEditorComponent {
     });
 
     this.saveToastId = toast.toastId;
+  }
+
+  onChapterSelectionChange(chapterIndex: number | null): void {
+    const chapterQueryValue = chapterIndex === null ? 'all' : chapterIndex;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        [this.chapterQueryParamName]: chapterQueryValue,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  private readChapterSelectionFromQuery(): number | null | undefined {
+    const chapterQueryValue = this.route.snapshot.queryParamMap.get(
+      this.chapterQueryParamName,
+    );
+
+    if (chapterQueryValue === null) {
+      return undefined;
+    }
+
+    if (chapterQueryValue === 'all') {
+      return null;
+    }
+
+    const parsedChapterIndex = Number.parseInt(chapterQueryValue, 10);
+    if (!Number.isNaN(parsedChapterIndex) && parsedChapterIndex >= 0) {
+      return parsedChapterIndex;
+    }
+
+    return undefined;
   }
 
   onProseImageClicked(imageUrl: string): void {
