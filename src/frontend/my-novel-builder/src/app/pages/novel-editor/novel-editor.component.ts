@@ -18,6 +18,7 @@ import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { StorylineComponent } from '../../components/storyline/storyline.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-novel-editor',
@@ -56,6 +57,7 @@ export class NovelEditorComponent {
   readonly novelService: NovelService = inject(NovelService);
   readonly promptService: PromptService = inject(PromptService);
   readonly compendiumService: CompendiumService = inject(CompendiumService);
+  readonly toastrService: ToastrService = inject(ToastrService);
   novelId!: string;
   recordsFilter = '';
   selectedCompendium: CompendiumDto | null = null;
@@ -66,6 +68,7 @@ export class NovelEditorComponent {
   zoomedMedia: CompendiumRecordMediaDto | null = null;
   selectedChapterIndex: number | null = null;
   isStoryTimelineOpen = signal(false);
+  private saveToastId: number | undefined;
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -203,7 +206,27 @@ export class NovelEditorComponent {
   updateProse(prose: Prose) {
     // This will trigger the computed chapters to update
     this.prose.set({ ...prose });
-    this.novelService.updateNovelProse(this.novelId, prose).subscribe();
+    this.novelService.updateNovelProse(this.novelId, prose).subscribe({
+      next: () => this.showSaveToast(),
+    });
+  }
+
+  private showSaveToast(): void {
+    if (this.saveToastId !== undefined) {
+      this.toastrService.clear(this.saveToastId);
+    }
+
+    const toast = this.toastrService.success('', '', {
+      toastClass: 'ngx-toastr subtle-save-toast',
+      positionClass: 'toast-bottom-right',
+      closeButton: false,
+      tapToDismiss: true,
+      progressBar: false,
+      timeOut: 1000,
+      extendedTimeOut: 0,
+    });
+
+    this.saveToastId = toast.toastId;
   }
 
   onProseImageClicked(imageUrl: string): void {

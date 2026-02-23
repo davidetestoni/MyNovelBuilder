@@ -126,3 +126,31 @@ quill-editor {
     }
   }
 }
+
+/* Novel saved feedback */
+.subtle-save-toast {
+  width: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: $grey6 !important;
+  background-image: none !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  &::before {
+    content: "\e909";
+    font-family: "primeicons";
+    color: $grey16;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .toast-title,
+  .toast-message {
+    display: none !important;
+  }
+}
