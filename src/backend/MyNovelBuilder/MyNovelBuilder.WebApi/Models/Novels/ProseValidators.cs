@@ -28,7 +28,6 @@ internal class SectionValidator : AbstractValidator<Section>
     public SectionValidator()
     {
         RuleFor(x => x.Summary).MaximumLength(10_000);
-        RuleFor(x => x.Text).MaximumLength(200_000);
         RuleFor(x => x.Images).NotNull();
         RuleForEach(x => x.Images).NotEmpty().MaximumLength(2_000);
         RuleFor(x => x.RecordOverrides).NotNull();
