@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Prompts;
 using MyNovelBuilder.WebApi.Services;
@@ -22,16 +24,19 @@ public class GenerateAudioController : ControllerBase
     private readonly ILogger<GenerateAudioController> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
+    private readonly IAudioRepository _audioRepository;
 
     /// <summary></summary>
     public GenerateAudioController(
         ILogger<GenerateAudioController> logger,
         IServiceProvider serviceProvider,
-        IIntegrationsService integrationsService)
+        IIntegrationsService integrationsService,
+        IAudioRepository audioRepository)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
+        _audioRepository = audioRepository;
     }
     
     private async ValueTask<ITtsService> GetTtsServiceAsync(
@@ -154,9 +159,24 @@ public class GenerateAudioController : ControllerBase
         TtsRequestDto dto,
         CancellationToken cancellationToken = default)
     {
-        var ttsService = await GetTtsServiceAsync(cancellationToken: cancellationToken);
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var ttsService = await GetTtsServiceAsync(config.TtsProvider, cancellationToken);
+        var audioParameters = new AudioGenerationParameters
+        {
+            Text = dto.Message,
+            Provider = config.TtsProvider,
+            VoiceId = config.TtsVoiceId
+        };
         
         _logger.LogInformation("Generating audio for text: {Text}", dto.Message);
+
+        var cachedAudioTask = _audioRepository.GetAudioFileAsync(audioParameters, cancellationToken);
+        if (cachedAudioTask is not null)
+        {
+            _logger.LogInformation("Using cached audio for text: {Text}", dto.Message);
+            var cachedAudioBytes = await cachedAudioTask;
+            return File(cachedAudioBytes, "audio/wav", "audio.wav");
+        }
         
         // Emphasis
         if (ttsService.SupportsEmphasisTags)
@@ -168,20 +188,19 @@ public class GenerateAudioController : ControllerBase
         }
         
         var ttsResponse = await ttsService.GenerateAudioAsync(dto, cancellationToken);
-        var mimeType = ttsService.OutputAudioFormat switch 
+        if (ttsService.OutputAudioFormat == AudioFormat.Mp3)
         {
-            AudioFormat.Mp3 => "audio/mp3",
-            AudioFormat.Wav => "audio/wav",
-            _ => "application/octet-stream"
-        };
-        var fileName = ttsService.OutputAudioFormat switch 
-        {
-            AudioFormat.Mp3 => "audio.mp3",
-            AudioFormat.Wav => "audio.wav",
-            _ => "audio.bin"
-        };
-        
-        return File(ttsResponse, mimeType, fileName);
+            await using var mp3Stream = new MemoryStream(ttsResponse);
+            await using var wavStream = await ConvertMp3ToWavStreamAsync(mp3Stream, cancellationToken);
+            await using var wavBuffer = new MemoryStream();
+            await wavStream.CopyToAsync(wavBuffer, cancellationToken);
+            var wavBytes = wavBuffer.ToArray();
+            await _audioRepository.SaveAudioFileAsync(audioParameters, wavBytes, cancellationToken);
+            return File(wavBytes, "audio/wav", "audio.wav");
+        }
+
+        await _audioRepository.SaveAudioFileAsync(audioParameters, ttsResponse, cancellationToken);
+        return File(ttsResponse, "audio/wav", "audio.wav");
     }
 
     /// <summary>
@@ -192,9 +211,24 @@ public class GenerateAudioController : ControllerBase
         TtsRequestDto dto,
         CancellationToken cancellationToken = default)
     {
-        var ttsService = await GetTtsServiceAsync(cancellationToken: cancellationToken);
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var ttsService = await GetTtsServiceAsync(config.TtsProvider, cancellationToken);
+        var audioParameters = new AudioGenerationParameters
+        {
+            Text = dto.Message,
+            Provider = config.TtsProvider,
+            VoiceId = config.TtsVoiceId
+        };
         
         _logger.LogInformation("Generating audio stream for text: {Text}", dto.Message);
+
+        var cachedAudioTask = _audioRepository.GetAudioFileAsync(audioParameters, cancellationToken);
+        if (cachedAudioTask is not null)
+        {
+            _logger.LogInformation("Using cached audio stream for text: {Text}", dto.Message);
+            var cachedAudioBytes = await cachedAudioTask;
+            return File(new MemoryStream(cachedAudioBytes), "audio/wav", "audio.wav");
+        }
         
         // Emphasis
         if (ttsService.SupportsEmphasisTags)
@@ -227,9 +261,20 @@ public class GenerateAudioController : ControllerBase
                     originalStream,
                     cancellationToken);
             }
+
+            await using var wavBuffer = new MemoryStream();
+            await audioStream.CopyToAsync(wavBuffer, cancellationToken);
+            var wavBytes = wavBuffer.ToArray();
+            await _audioRepository.SaveAudioFileAsync(audioParameters, wavBytes, cancellationToken);
+            return File(new MemoryStream(wavBytes), "audio/wav", "audio.wav");
         }
-        
-        return File(audioStream, "audio/wav", "audio.wav");
+
+        var cachingStream = new CachingReadStream(
+            audioStream,
+            (audioData, ct) => _audioRepository.SaveAudioFileAsync(audioParameters, audioData, ct),
+            cancellationToken);
+
+        return File(cachingStream, "audio/wav", "audio.wav");
     }
 
     /// <summary>
