@@ -4,9 +4,11 @@ export class StreamingWavPlayer {
   private audioContext: AudioContext;
   private sampleRate: number = 0;
   private numChannels: number = 0;
+  private audioFormat: number = 0;
+  private bitsPerSample: number = 0;
+  private bytesPerFrame: number = 0;
   private headerParsed: boolean = false;
-  private headerBuffer: Uint8Array = new Uint8Array(44);
-  private headerBytesReceived: number = 0;
+  private pendingData: Uint8Array = new Uint8Array(0);
   private nextStartTime: number = 0;
   private isPlaying: boolean = false;
   private minBufferSize: number = 16384;
@@ -21,24 +23,108 @@ export class StreamingWavPlayer {
     this.firstAudioCallback = firstAudioCallback;
   }
 
-  private parseWavHeader(header: Uint8Array): void {
-    const view = new DataView(header.buffer);
+  private concatUint8Arrays(a: Uint8Array, b: Uint8Array): Uint8Array {
+    const merged = new Uint8Array(a.length + b.length);
+    merged.set(a, 0);
+    merged.set(b, a.length);
+    return merged;
+  }
 
-    const riff = String.fromCharCode(...Array.from(header.slice(0, 4)));
-    const wave = String.fromCharCode(...Array.from(header.slice(8, 12)));
+  private readFourCc(data: Uint8Array, offset: number): string {
+    return String.fromCharCode(
+      data[offset],
+      data[offset + 1],
+      data[offset + 2],
+      data[offset + 3],
+    );
+  }
 
+  private tryParseWavHeader(): void {
+    if (this.pendingData.length < 12) {
+      return;
+    }
+
+    const view = new DataView(
+      this.pendingData.buffer,
+      this.pendingData.byteOffset,
+      this.pendingData.byteLength,
+    );
+
+    const riff = this.readFourCc(this.pendingData, 0);
+    const wave = this.readFourCc(this.pendingData, 8);
     if (riff !== 'RIFF' || wave !== 'WAVE') {
       throw new Error('Invalid WAV file');
     }
 
-    this.numChannels = view.getUint16(22, true);
-    this.sampleRate = view.getUint32(24, true);
-    const bitsPerSample = view.getUint16(34, true);
+    let offset = 12;
+    let foundFmt = false;
+    let dataOffset = -1;
+
+    while (offset + 8 <= this.pendingData.length) {
+      const chunkId = this.readFourCc(this.pendingData, offset);
+      const chunkSize = view.getUint32(offset + 4, true);
+      const chunkDataOffset = offset + 8;
+      const chunkEnd = chunkDataOffset + chunkSize;
+
+      // The data chunk can be very large and arrives incrementally while
+      // streaming; we only need its header to begin playback.
+      if (chunkId === 'data') {
+        dataOffset = chunkDataOffset;
+        if (foundFmt) {
+          break;
+        }
+
+        // Cannot safely skip the data payload to look for later chunks.
+        return;
+      }
+
+      if (chunkId === 'fmt ') {
+        if (chunkEnd > this.pendingData.length) {
+          return;
+        }
+
+        if (chunkSize < 16) {
+          throw new Error('Invalid WAV fmt chunk');
+        }
+
+        this.audioFormat = view.getUint16(chunkDataOffset, true);
+        this.numChannels = view.getUint16(chunkDataOffset + 2, true);
+        this.sampleRate = view.getUint32(chunkDataOffset + 4, true);
+        this.bytesPerFrame = view.getUint16(chunkDataOffset + 12, true);
+        this.bitsPerSample = view.getUint16(chunkDataOffset + 14, true);
+        foundFmt = true;
+      } else {
+        if (chunkEnd > this.pendingData.length) {
+          return;
+        }
+      }
+
+      // WAV chunks are word-aligned.
+      offset = chunkEnd + (chunkSize % 2);
+    }
+
+    if (!foundFmt || dataOffset < 0) {
+      return;
+    }
 
     console.log(
-      `WAV Format: ${this.sampleRate}Hz, ${this.numChannels} channels, ${bitsPerSample} bits`,
+      `WAV Format: format=${this.audioFormat}, ${this.sampleRate}Hz, ${this.numChannels} channels, ${this.bitsPerSample} bits`,
     );
 
+    const isPcm16 = this.audioFormat === 1 && this.bitsPerSample === 16;
+    const isFloat32 = this.audioFormat === 3 && this.bitsPerSample === 32;
+    if (!isPcm16 && !isFloat32) {
+      throw new Error(
+        `Unsupported WAV format: format=${this.audioFormat}, bitsPerSample=${this.bitsPerSample}`,
+      );
+    }
+
+    if (this.bytesPerFrame <= 0) {
+      throw new Error('Invalid WAV block alignment');
+    }
+
+    this.appendPcmData(this.pendingData.slice(dataOffset));
+    this.pendingData = new Uint8Array(0);
     this.headerParsed = true;
   }
 
@@ -54,9 +140,8 @@ export class StreamingWavPlayer {
       return;
     }
 
-    const bytesPerSample = this.numChannels * 2;
-    const samplesToPlay = Math.floor(this.pcmData.length / bytesPerSample);
-    const bytesToPlay = samplesToPlay * bytesPerSample;
+    const samplesToPlay = Math.floor(this.pcmData.length / this.bytesPerFrame);
+    const bytesToPlay = samplesToPlay * this.bytesPerFrame;
 
     if (bytesToPlay === 0) return;
 
@@ -69,16 +154,30 @@ export class StreamingWavPlayer {
       this.sampleRate,
     );
 
-    const int16Data = new Int16Array(
-      dataToPlay.buffer,
-      dataToPlay.byteOffset,
-      samplesToPlay * this.numChannels,
-    );
-
     for (let channel = 0; channel < this.numChannels; channel++) {
       const channelData = audioBuffer.getChannelData(channel);
-      for (let i = 0; i < samplesToPlay; i++) {
-        channelData[i] = int16Data[i * this.numChannels + channel] / 32768;
+
+      if (this.audioFormat === 1 && this.bitsPerSample === 16) {
+        const int16Data = new Int16Array(
+          dataToPlay.buffer,
+          dataToPlay.byteOffset,
+          samplesToPlay * this.numChannels,
+        );
+
+        for (let i = 0; i < samplesToPlay; i++) {
+          channelData[i] = int16Data[i * this.numChannels + channel] / 32768;
+        }
+      } else if (this.audioFormat === 3 && this.bitsPerSample === 32) {
+        const floatData = new Float32Array(
+          dataToPlay.buffer,
+          dataToPlay.byteOffset,
+          samplesToPlay * this.numChannels,
+        );
+
+        for (let i = 0; i < samplesToPlay; i++) {
+          const sample = floatData[i * this.numChannels + channel];
+          channelData[i] = Math.max(-1, Math.min(1, sample));
+        }
       }
     }
 
@@ -107,23 +206,8 @@ export class StreamingWavPlayer {
 
   public addChunk(chunk: Uint8Array): void {
     if (!this.headerParsed) {
-      const headerBytesNeeded = 44 - this.headerBytesReceived;
-      const bytesToCopy = Math.min(headerBytesNeeded, chunk.length);
-
-      this.headerBuffer.set(
-        chunk.slice(0, bytesToCopy),
-        this.headerBytesReceived,
-      );
-
-      this.headerBytesReceived += bytesToCopy;
-
-      if (this.headerBytesReceived >= 44) {
-        this.parseWavHeader(this.headerBuffer);
-
-        if (chunk.length > bytesToCopy) {
-          this.appendPcmData(chunk.slice(bytesToCopy));
-        }
-      }
+      this.pendingData = this.concatUint8Arrays(this.pendingData, chunk);
+      this.tryParseWavHeader();
     } else {
       this.appendPcmData(chunk);
     }

@@ -34,4 +34,9 @@ public enum TtsProvider
     /// VibeVoice TTS provider.
     /// </summary>
     VibeVoice,
+    
+    /// <summary>
+    /// DeAPI TTS provider.
+    /// </summary>
+    DeApi,
 }

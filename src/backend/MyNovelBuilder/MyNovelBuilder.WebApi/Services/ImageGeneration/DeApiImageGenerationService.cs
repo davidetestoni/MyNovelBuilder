@@ -154,11 +154,11 @@ public class DeApiImageGenerationService : IImageGenerationService
 
             if (!statusResponse.IsSuccessStatusCode)
             {
-                _logger.LogError("DeAPI image generation status check failed. Status code: {StatusCode}, Response: {Response}",
+                _logger.LogError("DeAPI generation status check failed. Status code: {StatusCode}, Response: {Response}",
                     statusResponse.StatusCode, statusJson);
 
                 throw new ApiException(ErrorCodes.ExternalServiceError,
-                    "Failed to check image generation status with DeAPI.");
+                    "Failed to check generation status with DeAPI.");
             }
 
             var statusObject = JsonNode.Parse(statusJson)!;
@@ -174,17 +174,17 @@ public class DeApiImageGenerationService : IImageGenerationService
 
             if (status == "error")
             {
-                _logger.LogError("DeAPI image generation failed. Request ID: {RequestId}, Status response: {StatusResponse}",
+                _logger.LogError("DeAPI generation failed. Request ID: {RequestId}, Status response: {StatusResponse}",
                     requestId, statusJson);
 
                 throw new ApiException(ErrorCodes.ExternalServiceError,
-                    "Image generation failed with DeAPI.");
+                    "Generation failed with DeAPI.");
             }
         }
 
-        _logger.LogError("DeAPI image generation timed out. Request ID: {RequestId}", requestId);
+        _logger.LogError("DeAPI generation timed out. Request ID: {RequestId}", requestId);
         throw new ApiException(ErrorCodes.ExternalServiceError,
-            "Image generation with DeAPI timed out.");
+            "Generation with DeAPI timed out.");
     }
 
     /// <inheritdoc />
