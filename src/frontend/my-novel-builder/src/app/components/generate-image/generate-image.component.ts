@@ -123,7 +123,7 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
   getModels() {
     this.generateImageService.getAvailableModels().subscribe((models) => {
       this.models = models.filter((m) => !m.isImageEditor);
-      this.modelOptions = models.map((m) => ({
+      this.modelOptions = this.models.map((m) => ({
         label: m.name,
         value: m.modelId,
       }));
