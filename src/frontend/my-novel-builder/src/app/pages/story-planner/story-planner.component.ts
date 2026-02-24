@@ -34,6 +34,7 @@ export class StoryPlannerComponent {
   private readonly missingSummaryPlaceholder = '[Missing summary]';
   private readonly chapterTitlePlaceholder = '[Untitled chapter]';
   private readonly emptySectionPreviewPlaceholder = 'No summary or text yet.';
+  private selectedSections = new Set<Section>();
   private saveToastId: number | undefined;
 
   ngOnInit(): void {
@@ -51,6 +52,7 @@ export class StoryPlannerComponent {
   getProse(): void {
     this.novelService.getNovelProse(this.novelId).subscribe((prose) => {
       this.prose = prose;
+      this.selectedSections.clear();
     });
   }
 
@@ -85,15 +87,41 @@ export class StoryPlannerComponent {
       return;
     }
 
+    const sourceSections = event.previousContainer.data;
+    const targetSections = event.container.data;
+    const draggedSection = sourceSections[event.previousIndex];
+    const selectedInSource = this.getSelectedSectionsFromChapter(sourceSections);
+    const shouldMoveSelectedGroup =
+      event.previousContainer !== event.container &&
+      draggedSection !== undefined &&
+      this.selectedSections.has(draggedSection) &&
+      selectedInSource.length > 1;
+
+    if (shouldMoveSelectedGroup) {
+      this.transferSelectedSections(
+        sourceSections,
+        targetSections,
+        selectedInSource,
+        event.currentIndex,
+      );
+      selectedInSource.forEach((section) => this.selectedSections.delete(section));
+      this.saveProse();
+      return;
+    }
+
     if (event.previousContainer === event.container) {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
       transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
+        sourceSections,
+        targetSections,
         event.previousIndex,
         event.currentIndex,
       );
+
+      if (draggedSection !== undefined) {
+        this.selectedSections.delete(draggedSection);
+      }
     }
 
     this.saveProse();
@@ -140,6 +168,11 @@ export class StoryPlannerComponent {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
+        const section = this.prose!.chapters[chapterIndex].sections[sectionIndex];
+        if (section !== undefined) {
+          this.selectedSections.delete(section);
+        }
+
         this.prose!.chapters[chapterIndex].sections = this.prose!.chapters[
           chapterIndex
         ].sections.filter((_, index) => index !== sectionIndex);
@@ -166,12 +199,31 @@ export class StoryPlannerComponent {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
+        this.prose!.chapters[chapterIndex].sections.forEach((section) =>
+          this.selectedSections.delete(section),
+        );
+
         this.prose!.chapters = this.prose!.chapters.filter(
           (_, index) => index !== chapterIndex,
         );
         this.saveProse();
       },
     });
+  }
+
+  isSectionSelected(section: Section): boolean {
+    return this.selectedSections.has(section);
+  }
+
+  toggleSectionSelection(section: Section, event: Event): void {
+    const input = event.target as HTMLInputElement;
+
+    if (input.checked) {
+      this.selectedSections.add(section);
+      return;
+    }
+
+    this.selectedSections.delete(section);
   }
 
   getSectionPreview(section: Section): string {
@@ -219,6 +271,30 @@ export class StoryPlannerComponent {
     if (event.key === 'Enter') {
       event.preventDefault();
     }
+  }
+
+  private getSelectedSectionsFromChapter(chapterSections: Section[]): Section[] {
+    return chapterSections.filter((section) => this.selectedSections.has(section));
+  }
+
+  private transferSelectedSections(
+    sourceSections: Section[],
+    targetSections: Section[],
+    selectedSections: Section[],
+    insertionIndex: number,
+  ): void {
+    const selectedSectionSet = new Set(selectedSections);
+    for (let index = sourceSections.length - 1; index >= 0; index -= 1) {
+      if (selectedSectionSet.has(sourceSections[index])) {
+        sourceSections.splice(index, 1);
+      }
+    }
+
+    const normalizedInsertionIndex = Math.max(
+      0,
+      Math.min(insertionIndex, targetSections.length),
+    );
+    targetSections.splice(normalizedInsertionIndex, 0, ...selectedSections);
   }
 
   private stripHtml(value: string): string {

@@ -134,6 +134,11 @@
       padding: 0.65rem 0.75rem;
     }
 
+    .planner-card-selected {
+      border-color: $grey10;
+      box-shadow: inset 0 0 0 1px $grey10;
+    }
+
     .planner-card-header {
       display: flex;
       align-items: center;
@@ -147,6 +152,19 @@
       align-items: center;
       gap: 0.45rem;
       min-width: 0;
+    }
+
+    .planner-card-checkbox {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      input {
+        margin: 0;
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+      }
     }
 
     .planner-card-title {

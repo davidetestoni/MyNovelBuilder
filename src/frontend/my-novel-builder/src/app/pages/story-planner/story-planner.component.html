@@ -77,9 +77,24 @@
               (cdkDropListDropped)="onSectionDrop($event)"
             >
               @for (section of chapter.sections; track section; let sectionIndex = $index) {
-                <article class="planner-card" cdkDrag>
+                <article
+                  class="planner-card"
+                  [class.planner-card-selected]="isSectionSelected(section)"
+                  cdkDrag
+                >
                   <div class="planner-card-header">
                     <div class="planner-card-meta">
+                      <label
+                        class="planner-card-checkbox"
+                        title="Select section for multi-move"
+                        aria-label="Select section for multi-move"
+                      >
+                        <input
+                          type="checkbox"
+                          [checked]="isSectionSelected(section)"
+                          (change)="toggleSectionSelection(section, $event)"
+                        />
+                      </label>
                       <span class="planner-card-title"
                         >Section {{ sectionIndex + 1 }}</span
                       >
