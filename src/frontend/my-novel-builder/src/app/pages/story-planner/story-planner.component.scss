@@ -3,6 +3,9 @@
 
 .story-planner {
   height: calc(100dvh - $mainLayoutHeaderHeight);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 
   .story-planner-header {
     display: flex;
@@ -39,9 +42,10 @@
   }
 
   .story-planner-body {
-    height: calc(100dvh - 60px - $mainLayoutHeaderHeight);
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-x: auto;
-    overflow-y: hidden;
+    overflow-y: auto;
     padding: 1rem;
     background-color: $grey2;
 
