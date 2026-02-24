@@ -23,11 +23,12 @@
             cdkDropList
             cdkDropListOrientation="horizontal"
             [id]="getDropListId(chapter.chapterIndex)"
+            [cdkDropListConnectedTo]="getDropListIds()"
             [cdkDropListData]="chapter.events"
             (cdkDropListDropped)="onStoryEventDrop($event, chapter.chapterIndex)"
           >
             @for (event of chapter.events; track event.storyEventIndex) {
-              <div class="storyline-item" role="listitem" cdkDrag>
+              <div class="storyline-item" role="listitem" cdkDrag [cdkDragData]="event">
                 <div class="storyline-connector"></div>
                 <div
                   class="storyline-card"
@@ -84,6 +85,15 @@
                       </div>
                     }
                   </div>
+                </div>
+              </div>
+            }
+
+            @if (chapter.events.length === 0) {
+              <div class="storyline-item" role="listitem">
+                <div class="storyline-connector"></div>
+                <div class="storyline-empty-drop-zone">
+                  <span>Drop story events here</span>
                 </div>
               </div>
             }

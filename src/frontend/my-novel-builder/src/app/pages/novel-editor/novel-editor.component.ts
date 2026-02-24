@@ -372,7 +372,8 @@ export class NovelEditorComponent {
   }
 
   reorderStoryEvents(event: {
-    chapterIndex: number;
+    previousChapterIndex: number;
+    currentChapterIndex: number;
     previousIndex: number;
     currentIndex: number;
   }): void {
@@ -381,29 +382,52 @@ export class NovelEditorComponent {
       return;
     }
 
-    const chapter = prose.chapters[event.chapterIndex];
-    const storyEvents = [...(chapter?.storyEvents || [])];
+    const previousChapter = prose.chapters[event.previousChapterIndex];
+    const currentChapter = prose.chapters[event.currentChapterIndex];
+    const previousStoryEvents = [...(previousChapter?.storyEvents || [])];
+    const currentStoryEvents =
+      event.previousChapterIndex === event.currentChapterIndex
+        ? previousStoryEvents
+        : [...(currentChapter?.storyEvents || [])];
+
     if (
-      !chapter ||
+      !previousChapter ||
+      !currentChapter ||
       event.previousIndex < 0 ||
       event.currentIndex < 0 ||
-      event.previousIndex >= storyEvents.length ||
-      event.currentIndex >= storyEvents.length ||
-      event.previousIndex === event.currentIndex
+      event.previousIndex >= previousStoryEvents.length ||
+      event.currentIndex > currentStoryEvents.length ||
+      (event.previousChapterIndex === event.currentChapterIndex &&
+        event.previousIndex === event.currentIndex)
     ) {
       return;
     }
 
-    const [movedStoryEvent] = storyEvents.splice(event.previousIndex, 1);
-    storyEvents.splice(event.currentIndex, 0, movedStoryEvent);
+    const [movedStoryEvent] = previousStoryEvents.splice(event.previousIndex, 1);
+    if (!movedStoryEvent) {
+      return;
+    }
+
+    currentStoryEvents.splice(event.currentIndex, 0, movedStoryEvent);
 
     const updatedChapters = prose.chapters.map((currentChapter, chapterIndex) =>
-      chapterIndex === event.chapterIndex
+      chapterIndex === event.previousChapterIndex &&
+      event.previousChapterIndex === event.currentChapterIndex
         ? {
             ...currentChapter,
-            storyEvents,
+            storyEvents: currentStoryEvents,
           }
-        : currentChapter,
+        : chapterIndex === event.previousChapterIndex
+          ? {
+              ...currentChapter,
+              storyEvents: previousStoryEvents,
+            }
+          : chapterIndex === event.currentChapterIndex
+            ? {
+                ...currentChapter,
+                storyEvents: currentStoryEvents,
+              }
+            : currentChapter,
     );
 
     this.updateProse({ ...prose, chapters: updatedChapters });

@@ -53,7 +53,8 @@ interface StorylineEventUpdateRequest {
 }
 
 interface StorylineEventReorderRequest {
-  chapterIndex: number;
+  previousChapterIndex: number;
+  currentChapterIndex: number;
   previousIndex: number;
   currentIndex: number;
 }
@@ -130,14 +131,24 @@ export class StorylineComponent implements OnDestroy {
 
   onStoryEventDrop(
     event: CdkDragDrop<StorylineTimelineEvent[]>,
-    chapterIndex: number,
+    currentChapterIndex: number,
   ): void {
-    if (event.previousIndex === event.currentIndex) {
+    const previousChapterIndex = event.previousContainer.data?.[0]
+      ?.chapterIndex;
+    const sourceChapterIndex =
+      previousChapterIndex ?? event.item.data?.chapterIndex;
+
+    if (
+      sourceChapterIndex === undefined ||
+      (sourceChapterIndex === currentChapterIndex &&
+        event.previousIndex === event.currentIndex)
+    ) {
       return;
     }
 
     this.storyEventsReordered.emit({
-      chapterIndex,
+      previousChapterIndex: sourceChapterIndex,
+      currentChapterIndex,
       previousIndex: event.previousIndex,
       currentIndex: event.currentIndex,
     });
@@ -322,5 +333,15 @@ export class StorylineComponent implements OnDestroy {
 
   getDropListId(chapterIndex: number): string {
     return `storyline-drop-list-${chapterIndex}`;
+  }
+
+  getDropListIds(): string[] {
+    if (!this.prose) {
+      return [];
+    }
+
+    return this.prose.chapters.map((_, chapterIndex) =>
+      this.getDropListId(chapterIndex),
+    );
   }
 }
