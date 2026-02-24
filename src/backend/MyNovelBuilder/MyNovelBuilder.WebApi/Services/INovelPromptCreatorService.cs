@@ -1,5 +1,5 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
-using MyNovelBuilder.WebApi.Dtos.Prompt;
+using MyNovelBuilder.WebApi.Models.Prompts;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -11,5 +11,6 @@ public interface INovelPromptCreatorService
     /// <summary>
     /// Create a prompt based on the request.
     /// </summary>
-    Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(GenerateTextRequestDto request, CancellationToken cancellationToken = default);
+    Task<ProcessedPrompt> CreatePromptAsync(
+        GenerateTextRequestDto request, CancellationToken cancellationToken = default);
 }

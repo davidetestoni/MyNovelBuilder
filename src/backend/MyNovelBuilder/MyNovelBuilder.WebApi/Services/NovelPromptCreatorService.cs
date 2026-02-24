@@ -1,10 +1,10 @@
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
-using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.Novels;
+using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Prompts.Builders;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -27,7 +27,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(
+    public async Task<ProcessedPrompt> CreatePromptAsync(
         GenerateTextRequestDto request,
         CancellationToken cancellationToken = default)
     {
@@ -80,28 +80,29 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
         var recordsLists = await Task.WhenAll(recordsTasks);
         var records = recordsLists.SelectMany(r => r).ToList();
 
-        var messages = request.ContextInfo switch
+        var processedPrompt = request.ContextInfo switch
         {
-            GenerateTextContextInfoDto g => GetPromptMessages(g, prompt, novel, prose, records),
-            SummarizeTextContextInfoDto s => GetPromptMessages(s, prompt, novel, prose, records),
-            ReplaceTextContextInfoDto r => GetPromptMessages(r, prompt, novel, prose, records),
-            CreateCompendiumRecordContextInfoDto c => GetPromptMessages(c, prompt, novel, prose, records),
-            EditCompendiumRecordContextInfoDto e => GetPromptMessages(e, prompt, novel, prose, records),
-            SendChatMessageContextInfoDto m => GetPromptMessages(m, prompt, novel, prose, records),
-            CreateStoryEventsContextInfoDto s => GetPromptMessages(s, prompt, novel, prose, records),
+            GenerateTextContextInfoDto g => ProcessPrompt(g, prompt, novel, prose, records),
+            SummarizeTextContextInfoDto s => ProcessPrompt(s, prompt, novel, prose, records),
+            ReplaceTextContextInfoDto r => ProcessPrompt(r, prompt, novel, prose, records),
+            CreateCompendiumRecordContextInfoDto c => ProcessPrompt(c, prompt, novel, prose, records),
+            EditCompendiumRecordContextInfoDto e => ProcessPrompt(e, prompt, novel, prose, records),
+            SendChatMessageContextInfoDto m => ProcessPrompt(m, prompt, novel, prose, records),
+            CreateStoryEventsContextInfoDto s => ProcessPrompt(s, prompt, novel, prose, records),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "The prompt context is invalid.")
         };
 
-        _logger.LogInformation("Sending novel prompt with messages: {@Messages}", messages);
-        return messages;
+        _logger.LogInformation("Sending novel prompt with messages: {@Messages}", processedPrompt.Messages);
+        return processedPrompt;
     }
 
-    private static IEnumerable<PromptMessageDto> GetPromptMessages<T>(T clientContext,
+    private static ProcessedPrompt ProcessPrompt<T>(T clientContext,
         Prompt prompt, Novel novel, Prose prose, List<CompendiumRecord> records)
         where T : TextGenerationContextInfoDto
     {
-        return prompt.Messages.Select(message => new PromptMessageDto
+        var includedCompendiumRecordIds = new HashSet<Guid>();
+        var messages = prompt.Messages.Select(message => new PromptMessage
         {
             Role = message.Role,
             Message = clientContext switch
@@ -112,7 +113,8 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         Client = g,
                         Novel = novel,
                         Prose = prose,
-                        CompendiumRecords = records
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 SummarizeTextContextInfoDto s => new SummarizeTextPromptBuilder(message.Message)
                     .ReplacePlaceholders(new PromptBuilderContext<SummarizeTextContextInfoDto>
@@ -120,7 +122,8 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         Client = s,
                         Novel = novel,
                         Prose = prose,
-                        CompendiumRecords = records
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 ReplaceTextContextInfoDto r => new ReplaceTextPromptBuilder(message.Message)
                     .ReplacePlaceholders(new PromptBuilderContext<ReplaceTextContextInfoDto>
@@ -128,7 +131,8 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         Client = r,
                         Novel = novel,
                         Prose = prose,
-                        CompendiumRecords = records
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 CreateCompendiumRecordContextInfoDto c => new CreateCompendiumRecordPromptBuilder(message.Message)
                     .ReplacePlaceholders(new PromptBuilderContext<CreateCompendiumRecordContextInfoDto>
@@ -136,7 +140,8 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         Client = c,
                         Novel = novel,
                         Prose = prose,
-                        CompendiumRecords = records
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 SendChatMessageContextInfoDto s => new SendChatMessagePromptBuilder(message.Message)
                     .ReplacePlaceholders(new PromptBuilderContext<SendChatMessageContextInfoDto>
@@ -144,7 +149,8 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         Client = s,
                         Novel = novel,
                         Prose = prose,
-                        CompendiumRecords = records
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 CreateStoryEventsContextInfoDto s => new CreateStoryEventsPromptBuilder(message.Message)
                     .ReplacePlaceholders(new PromptBuilderContext<CreateStoryEventsContextInfoDto>
@@ -152,11 +158,18 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         Client = s,
                         Novel = novel,
                         Prose = prose,
-                        CompendiumRecords = records
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                     "The prompt context is invalid.")
             }
-        });
+        }).ToList();
+
+        return new ProcessedPrompt
+        {
+            Messages = messages,
+            IncludedCompendiumRecordIds = includedCompendiumRecordIds.OrderBy(id => id).ToList()
+        };
     }
 }

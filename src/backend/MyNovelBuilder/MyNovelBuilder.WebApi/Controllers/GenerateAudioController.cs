@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Dtos.Generate;
-using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Prompts;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -91,12 +91,12 @@ public class GenerateAudioController : ControllerBase
             .GenerateAsync(
                 "anthropic/claude-sonnet-4", // TODO: Make configurable
                 [
-                    new PromptMessageDto
+                    new PromptMessage
                     {
                         Role = PromptMessageRole.System,
                         Message = SystemPrompts.EmphasizeText
                     },
-                    new PromptMessageDto
+                    new PromptMessage
                     {
                         Role = PromptMessageRole.User,
                         Message = $"Here's the text that needs to be enriched:\n{inputText}"

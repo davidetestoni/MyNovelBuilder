@@ -42,6 +42,9 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
             recordsInContext.UnionWith(
                 FilterRecordsInContext(context.CompendiumRecords, context.Client.Instructions));
         }
+
+        var recordsInContextList = recordsInContext.ToList();
+        TrackIncludedRecords(context, recordsInContextList);
         
         Builder
             .Replace("{{textBefore}}", textBefore)
@@ -49,7 +52,7 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{textToReplace}}", textToReplace)
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(), (
+                recordsInContextList, (
                     context.Prose,
                     context.Client.ChapterIndex,
                     context.Client.SectionIndex)));

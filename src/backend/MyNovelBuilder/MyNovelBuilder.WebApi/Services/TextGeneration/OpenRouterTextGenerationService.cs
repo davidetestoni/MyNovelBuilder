@@ -2,13 +2,13 @@
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
-using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
 using OpenAI;
 using OpenAI.Chat;
 using MyNovelBuilder.WebApi.Attributes;
+using MyNovelBuilder.WebApi.Models.Prompts;
 
 namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 
@@ -53,7 +53,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async Task<string> GenerateAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
@@ -83,7 +83,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async IAsyncEnumerable<string> GenerateStreamedAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         StructuredOutputOptions? structuredOutputOptions = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -133,7 +133,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async Task<string> DescribeImageAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         byte[] imageBytes,
         string imageMimeType,
         CancellationToken cancellationToken = default)
@@ -197,10 +197,9 @@ public class OpenRouterTextGenerationService : ITextGenerationService
                 "OpenRouter API key is missing in integrations configuration.");
         }
 
-        using var httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("https://openrouter.ai/api/v1/")
-        };
+        using var httpClient = new HttpClient();
+        httpClient.BaseAddress = new Uri("https://openrouter.ai/api/v1/");
+        
         using var request = new HttpRequestMessage(HttpMethod.Get, "models");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.OpenRouterApiKey);
         
@@ -222,11 +221,12 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         {
             Id = m?["id"]?.GetValue<string>() ?? string.Empty,
             IsVisionCapable = HasImageInputModality(m),
-            SupportsStructuredOutputs = SupportsStructuredOutputs(m)
+            SupportsStructuredOutputs = SupportsStructuredOutputs(m),
+            InputTokenPrice = decimal.Parse(m?["pricing"]?["prompt"]?.GetValue<string>() ?? "0")
         });
     }
 
-    private static ChatMessage ToChatMessage(PromptMessageDto message) =>
+    private static ChatMessage ToChatMessage(PromptMessage message) =>
         message.Role switch
         {
             PromptMessageRole.User => new UserChatMessage(message.Message),

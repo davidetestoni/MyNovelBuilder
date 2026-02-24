@@ -19,6 +19,8 @@ public class DescribeImagePromptBuilder : PromptBuilder<DescribeImageContextInfo
     public override PromptBuilder<DescribeImageContextInfoDto> ReplacePlaceholders(
         PromptBuilderContext<DescribeImageContextInfoDto> context)
     {
+        TrackIncludedRecords(context, context.CompendiumRecords);
+
         Builder
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{records}}", CreateCompendiumRecordsString(context.CompendiumRecords));

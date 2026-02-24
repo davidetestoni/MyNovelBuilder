@@ -33,6 +33,8 @@ public class CreateCompendiumRecordImageGenerationPromptBuilder
                 $"Compendium record with ID {context.Client.CompendiumRecordId} not found.");
         }
 
+        TrackIncludedRecords(context, context.CompendiumRecords);
+
         Builder
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{record}}", CreateCompendiumRecordsString([record]))

@@ -64,5 +64,7 @@ export const mockedTextGenerationModelInfos: TextGenerationModelInfoDto[] = [
     id: 'mocked-model',
     isVisionCapable: true,
     supportsStructuredOutputs: true,
+    inputTokenPrice: 0.0000002,
+    outputTokenPrice: 0.000015,
   },
 ];

@@ -1,10 +1,10 @@
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Dtos.Generate;
-using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Models.Novels;
+using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Prompts.Builders;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -27,7 +27,7 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<PromptMessageDto>> CreatePromptAsync(
+    public async Task<ProcessedPrompt> CreatePromptAsync(
         GenerateTextRequestDto request,
         CancellationToken cancellationToken = default)
     {
@@ -69,29 +69,30 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                 $"Compendium with ID {compendiumContextInfo.CompendiumId} not found.");
         }
 
-        var messages = request.ContextInfo switch
+        var processedPrompt = request.ContextInfo switch
         {
-            DescribeImageContextInfoDto d => GetPromptMessages(d, prompt, compendium.Records.ToList()),
+            DescribeImageContextInfoDto d => ProcessPrompt(d, prompt, compendium.Records.ToList()),
             CreateCompendiumRecordImageGenerationPromptContextInfoDto c =>
-                GetPromptMessages(c, prompt, compendium.Records.ToList()),
+                ProcessPrompt(c, prompt, compendium.Records.ToList()),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "The prompt context is invalid.")
         };
 
         _logger.LogInformation(
             "Sending compendium prompt with messages for compendium {CompendiumId}: {@Messages}",
-            compendiumContextInfo.CompendiumId, messages);
+            compendiumContextInfo.CompendiumId, processedPrompt.Messages);
 
-        return messages;
+        return processedPrompt;
     }
 
-    private static IEnumerable<PromptMessageDto> GetPromptMessages<T>(
+    private static ProcessedPrompt ProcessPrompt<T>(
         T clientContext,
         Prompt prompt,
         List<CompendiumRecord> records)
         where T : CompendiumTextGenerationContextInfoDto
     {
-        return prompt.Messages.Select(message => new PromptMessageDto
+        var includedCompendiumRecordIds = new HashSet<Guid>();
+        var messages = prompt.Messages.Select(message => new PromptMessage
         {
             Role = message.Role,
             Message = clientContext switch
@@ -108,7 +109,8 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                             Title = string.Empty
                         },
                         Prose = new Prose(),
-                        CompendiumRecords = records
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 CreateCompendiumRecordImageGenerationPromptContextInfoDto c =>
                     new CreateCompendiumRecordImageGenerationPromptBuilder(message.Message)
@@ -121,11 +123,18 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                                     Title = string.Empty
                                 },
                                 Prose = new Prose(),
-                                CompendiumRecords = records
+                                CompendiumRecords = records,
+                                IncludedCompendiumRecordIds = includedCompendiumRecordIds
                             }).ToString(),
                 _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                     "The prompt context is invalid.")
             }
-        });
+        }).ToList();
+
+        return new ProcessedPrompt
+        {
+            Messages = messages,
+            IncludedCompendiumRecordIds = includedCompendiumRecordIds.OrderBy(id => id).ToList()
+        };
     }
 }

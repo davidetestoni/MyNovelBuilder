@@ -28,11 +28,13 @@ public class SummarizeTextPromptBuilder : PromptBuilder<SummarizeTextContextInfo
         
         var recordsInContext = FilterRecordsInContext(
             context.CompendiumRecords, sectionText.StripHtml());
+        var recordsInContextList = recordsInContext.ToList();
+        TrackIncludedRecords(context, recordsInContextList);
         
         Builder
             .Replace("{{context}}", sectionText.StripHtml())
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(), (
+                recordsInContextList, (
                     context.Prose,
                     context.Client.ChapterIndex,
                     context.Client.SectionIndex)));

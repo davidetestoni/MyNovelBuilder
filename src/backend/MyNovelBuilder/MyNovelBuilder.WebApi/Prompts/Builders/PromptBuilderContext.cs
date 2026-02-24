@@ -28,4 +28,10 @@ public class PromptBuilderContext<T> where T : TextGenerationContextInfoDto
     /// The list of compendium records available in the novel.
     /// </summary>
     public required IList<CompendiumRecord> CompendiumRecords { get; set; }
+
+    /// <summary>
+    /// The IDs of compendium records included in the final prompt.
+    /// Gets populated by the prompt builder as it determines which records to include in the prompt context.
+    /// </summary>
+    public required ISet<Guid> IncludedCompendiumRecordIds { get; set; }
 }

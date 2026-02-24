@@ -108,6 +108,19 @@ public class PromptBuilder<T> where T : TextGenerationContextInfoDto
     }
 
     /// <summary>
+    /// Tracks the IDs for the records included in the prompt.
+    /// </summary>
+    protected static void TrackIncludedRecords(
+        PromptBuilderContext<T> context,
+        IEnumerable<CompendiumRecord> records)
+    {
+        foreach (var record in records)
+        {
+            context.IncludedCompendiumRecordIds.Add(record.Id);
+        }
+    }
+
+    /// <summary>
     /// Applies any context overrides to the compendium record,
     /// up to the specified chapter and section (all if null),
     /// returning the modified description.

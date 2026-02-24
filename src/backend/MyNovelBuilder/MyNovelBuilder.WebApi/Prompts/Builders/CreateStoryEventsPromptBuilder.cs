@@ -31,13 +31,15 @@ public class CreateStoryEventsPromptBuilder : PromptBuilder<CreateStoryEventsCon
             : null;
 
         var recordsInContext = FilterRecordsInContext(context.CompendiumRecords, contextString);
+        var recordsInContextList = recordsInContext.ToList();
+        TrackIncludedRecords(context, recordsInContextList);
 
         Builder
             .Replace("{{context}}", contextString)
             .Replace("{{previousChapterEvents}}", SerializeStoryEvents(previousChapter))
             .Replace("{{nextChapterEvents}}", SerializeStoryEvents(nextChapter))
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(),
+                recordsInContextList,
                 (
                     context.Prose,
                     context.Client.ChapterIndex,

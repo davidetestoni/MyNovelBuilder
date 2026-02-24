@@ -1,4 +1,5 @@
 ﻿using MyNovelBuilder.WebApi.Dtos.Prompt;
+using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
 
 namespace MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -13,7 +14,7 @@ public interface ITextGenerationService
     /// </summary>
     Task<string> GenerateAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default);
     
@@ -22,7 +23,7 @@ public interface ITextGenerationService
     /// </summary>
     IAsyncEnumerable<string> GenerateStreamedAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default);
 
@@ -31,7 +32,7 @@ public interface ITextGenerationService
     /// </summary>
     Task<string> DescribeImageAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         byte[] imageBytes,
         string imageMimeType,
         CancellationToken cancellationToken = default);

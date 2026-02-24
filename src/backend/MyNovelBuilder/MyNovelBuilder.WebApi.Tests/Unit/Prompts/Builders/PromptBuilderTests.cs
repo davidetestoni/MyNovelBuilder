@@ -174,7 +174,8 @@ public class PromptBuilderTests
             },
             Novel = novel,
             Prose = new Prose(),
-            CompendiumRecords = new List<CompendiumRecord>()
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
         };
         
         var builder = new TestPromptBuilder("{{novel.pov}}");
@@ -207,7 +208,8 @@ public class PromptBuilderTests
             },
             Novel = novel,
             Prose = new Prose(),
-            CompendiumRecords = new List<CompendiumRecord>()
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
         };
         
         var builder = new TestPromptBuilder("{{novel.pov}}");
@@ -234,7 +236,8 @@ public class PromptBuilderTests
             },
             Novel = novel,
             Prose = new Prose(),
-            CompendiumRecords = new List<CompendiumRecord>()
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
         };
         
         var builder = new TestPromptBuilder("{{novel.tense}}");

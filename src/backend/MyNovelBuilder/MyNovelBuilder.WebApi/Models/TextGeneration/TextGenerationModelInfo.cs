@@ -19,4 +19,14 @@ public class TextGenerationModelInfo
     /// Whether the model supports structured outputs (JSON schema response format).
     /// </summary>
     public bool SupportsStructuredOutputs { get; set; }
+    
+    /// <summary>
+    /// The price per input token, in USD.
+    /// </summary>
+    public decimal InputTokenPrice { get; set; }
+    
+    /// <summary>
+    /// The price per output token, in USD.
+    /// </summary>
+    public decimal OutputTokenPrice { get; set; }
 }

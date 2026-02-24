@@ -1,10 +1,9 @@
 using System.Runtime.CompilerServices;
-using Google.GenAI.Types;
-using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
 using MyNovelBuilder.WebApi.Attributes;
+using MyNovelBuilder.WebApi.Models.Prompts;
 
 namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 
@@ -46,7 +45,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async Task<string> GenerateAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
@@ -69,7 +68,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
 
     /// <inheritdoc />
     public async IAsyncEnumerable<string> GenerateStreamedAsync(string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         StructuredOutputOptions? structuredOutputOptions = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
@@ -103,7 +102,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
     /// <inheritdoc />
     public async Task<string> DescribeImageAsync(
         string model,
-        IEnumerable<PromptMessageDto> messages,
+        IEnumerable<PromptMessage> messages,
         byte[] imageBytes,
         string imageMimeType,
         CancellationToken cancellationToken = default)
@@ -134,7 +133,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                         ToPart(message.Message),
                         new Google.GenAI.Types.Part
                         {
-                            InlineData = new Blob
+                            InlineData = new Google.GenAI.Types.Blob
                             {
                                 Data = imageBytes,
                                 MimeType = imageMimeType
@@ -159,7 +158,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                     ToPart("Please describe this image."),
                     new Google.GenAI.Types.Part
                     {
-                        InlineData = new Blob
+                        InlineData = new Google.GenAI.Types.Blob
                         {
                             Data = imageBytes,
                             MimeType = imageMimeType
@@ -200,7 +199,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         var client = await GetGoogleGenAiClientAsync(cancellationToken);
         var models = new List<TextGenerationModelInfo>();
         
-        var pager = await client.Models.ListAsync(new ListModelsConfig
+        var pager = await client.Models.ListAsync(new Google.GenAI.Types.ListModelsConfig
         {
             PageSize = 1000
         }).WaitAsync(cancellationToken);
@@ -222,14 +221,14 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
             {
                 Id = m.Name!,
                 IsVisionCapable = IsVisionCapable(m.Name),
-                SupportsStructuredOutputs = SupportsStructuredOutputs(m.Name)
+                SupportsStructuredOutputs = SupportsStructuredOutputs(m.Name),
             }));
         }
         
         return models;
     }
 
-    private static Google.GenAI.Types.Content ToContent(PromptMessageDto message) =>
+    private static Google.GenAI.Types.Content ToContent(PromptMessage message) =>
         new()
         {
             Parts = [ToPart(message.Message)],
@@ -275,15 +274,15 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                && !value.Contains("live");
     }
 
-    private static GenerateContentConfig CreateGenerateContentConfig(
-        PromptMessageDto? systemPrompt,
+    private static Google.GenAI.Types.GenerateContentConfig CreateGenerateContentConfig(
+        PromptMessage? systemPrompt,
         StructuredOutputOptions? structuredOutputOptions = null)
     {
-        var config = new GenerateContentConfig
+        var config = new Google.GenAI.Types.GenerateContentConfig
         {
             SystemInstruction = systemPrompt is null
                 ? null
-                : new Content
+                : new Google.GenAI.Types.Content
                 {
                     Parts = [ToPart(systemPrompt.Message)],
                     Role = "model"

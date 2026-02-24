@@ -22,6 +22,7 @@ public class GenerateTextController : ControllerBase
     private readonly ICompendiumPromptCreatorService _compendiumPromptCreatorService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
+    private readonly ITokenizerService _tokenizerService;
     private readonly HybridCache _hybridCache;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
@@ -32,6 +33,7 @@ public class GenerateTextController : ControllerBase
         ICompendiumPromptCreatorService compendiumPromptCreatorService,
         IServiceProvider serviceProvider,
         IIntegrationsService integrationsService,
+        ITokenizerService tokenizerService,
         HybridCache hybridCache)
     {
         _logger = logger;
@@ -39,6 +41,7 @@ public class GenerateTextController : ControllerBase
         _compendiumPromptCreatorService = compendiumPromptCreatorService;
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
+        _tokenizerService = tokenizerService;
         _hybridCache = hybridCache;
 
         _jsonSerializerOptions = new JsonSerializerOptions
@@ -77,7 +80,7 @@ public class GenerateTextController : ControllerBase
         
         HttpContext.Response.Headers.Append("Content-Type", "text/event-stream");
 
-        var prompt = dto.ContextInfo switch
+        var processedPrompt = dto.ContextInfo switch
         {
             NovelTextGenerationContextInfoDto => await _novelPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
             CompendiumTextGenerationContextInfoDto => await _compendiumPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
@@ -86,7 +89,7 @@ public class GenerateTextController : ControllerBase
 
         await foreach (var chunk in textGenerationService.GenerateStreamedAsync( 
                            dto.Model,
-                           prompt,
+                           processedPrompt.Messages,
                            dto.ContextInfo.GetStructuredOutputOptions(),
                            cancellationToken))
         {
@@ -100,6 +103,34 @@ public class GenerateTextController : ControllerBase
             await HttpContext.Response.WriteAsync(json + "\n", cancellationToken);
             await HttpContext.Response.Body.FlushAsync(cancellationToken);
         }
+    }
+    
+    /// <summary>
+    /// Get a preview of the text generation, including the final prompt messages and token count.
+    /// </summary>
+    [HttpPost("preview")]
+    public async Task<TextGenerationPreviewDto> GetGenerationPreviewAsync(GenerateTextRequestDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var prompt = dto.ContextInfo switch
+        {
+            NovelTextGenerationContextInfoDto => await _novelPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
+            CompendiumTextGenerationContextInfoDto => await _compendiumPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
+            _ => throw new ApiException(ErrorCodes.InvalidPromptContext, "The prompt context is invalid.")
+        };
+
+        var messages = prompt.Messages.ToList();
+        
+        return new TextGenerationPreviewDto
+        {
+            InputTokens = messages.Sum(m => _tokenizerService.CountTokens(m.Message)),
+            IncludedCompendiumRecordIds = prompt.IncludedCompendiumRecordIds,
+            FinalMessages = messages.Select(m => new PromptMessageDto
+            {
+                Message = m.Message,
+                Role = m.Role
+            })
+        };
     }
 
     /// <summary>
@@ -121,7 +152,7 @@ public class GenerateTextController : ControllerBase
         await imageStream.CopyToAsync(ms, cancellationToken);
         var imageBytes = ms.ToArray();
 
-        var prompt = await _compendiumPromptCreatorService.CreatePromptAsync(
+        var processedPrompt = await _compendiumPromptCreatorService.CreatePromptAsync(
             new GenerateTextRequestDto
             {
                 Model = dto.Model,
@@ -137,7 +168,7 @@ public class GenerateTextController : ControllerBase
         var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
         var description = await textGenerationService.DescribeImageAsync(
             dto.Model,
-            prompt,
+            processedPrompt.Messages,
             imageBytes,
             string.IsNullOrWhiteSpace(image.ContentType) ? "image/png" : image.ContentType,
             cancellationToken);

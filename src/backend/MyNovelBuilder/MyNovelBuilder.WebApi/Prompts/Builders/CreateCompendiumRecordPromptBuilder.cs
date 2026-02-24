@@ -46,13 +46,15 @@ public class CreateCompendiumRecordPromptBuilder : PromptBuilder<CreateCompendiu
         
         recordsInContext.UnionWith(
             FilterRecordsInContext(context.CompendiumRecords, recordDetails));
+        var recordsInContextList = recordsInContext.ToList();
+        TrackIncludedRecords(context, recordsInContextList);
         
         Builder
             .Replace("{{context}}", contextString)
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{recordDetails}}", recordDetails)
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(), (
+                recordsInContextList, (
                     context.Prose,
                     context.Client.ChapterIndex,
                     context.Client.SectionIndex)));

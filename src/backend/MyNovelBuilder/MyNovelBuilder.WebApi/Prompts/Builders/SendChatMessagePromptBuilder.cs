@@ -29,13 +29,15 @@ public class SendChatMessagePromptBuilder : PromptBuilder<SendChatMessageContext
         var recordsInContext = context.CompendiumRecords
             .Where(r => context.Client.CompendiumIds.Contains(r.Compendium.Id)
                         || context.Client.CompendiumRecordIds.Contains(r.Id));
+        var recordsInContextList = recordsInContext.ToList();
+        TrackIncludedRecords(context, recordsInContextList);
         
         Builder
             .Replace("{{context}}", contextString)
             .Replace("{{chatHistory}}", BuildChatHistory(context.Client.PreviousMessages))
             .Replace("{{instructions}}", context.Client.UserMessage)
             .Replace("{{records}}", CreateCompendiumRecordsString(
-                recordsInContext.ToList(), (
+                recordsInContextList, (
                     context.Prose,
                     context.Client.ChapterIndex,
                     null)));
