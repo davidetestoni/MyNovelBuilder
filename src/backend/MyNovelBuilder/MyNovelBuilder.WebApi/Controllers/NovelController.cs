@@ -173,7 +173,7 @@ public class NovelController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var location = await _novelService.UploadProseImageAsync(id, file, cancellationToken);
-        return Ok(location);
+        return new JsonResult(location);
     }
 
     private void AddCoverImageUrl(NovelDto dto)

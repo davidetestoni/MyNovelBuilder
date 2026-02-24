@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
@@ -273,8 +274,11 @@ public class NovelControllerIntegrationTests(
 
         // Assert
         Assert.True(response.IsSuccessStatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
         var json = await response.Content.ReadAsStringAsync();
         Assert.NotEmpty(json);
+        var location = JsonSerializer.Deserialize<string>(json);
+        Assert.False(string.IsNullOrWhiteSpace(location));
     }
 
     public Task DisposeAsync()
