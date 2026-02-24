@@ -32,6 +32,13 @@ export class ApiCompendiumService extends CompendiumService {
     });
   }
 
+  getRecordsByIds(recordIds: string[]): Observable<CompendiumRecordDto[]> {
+    return this.http.post<CompendiumRecordDto[]>(
+      `${this.baseUrl}/compendium-records/by-ids`,
+      recordIds,
+    );
+  }
+
   getRecord(recordId: string): Observable<CompendiumRecordDto> {
     return this.http.get<CompendiumRecordDto>(`${this.baseUrl}/compendium-record/${recordId}`);
   }

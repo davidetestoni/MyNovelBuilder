@@ -27,6 +27,11 @@ export class MockCompendiumService extends CompendiumService {
     return mockObservable(mockedCompendiumRecords);
   }
 
+  getRecordsByIds(recordIds: string[]): Observable<CompendiumRecordDto[]> {
+    const idSet = new Set(recordIds);
+    return mockObservable(mockedCompendiumRecords.filter((r) => idSet.has(r.id)));
+  }
+
   getRecord(_recordId: string): Observable<CompendiumRecordDto> {
     return mockObservable(mockedCompendiumRecords[0]);
   }

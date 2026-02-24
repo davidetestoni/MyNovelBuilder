@@ -195,7 +195,9 @@ public class GenerateTextController : ControllerBase
                 {
                     Id = m.Id,
                     IsVisionCapable = m.IsVisionCapable,
-                    SupportsStructuredOutputs = m.SupportsStructuredOutputs
+                    SupportsStructuredOutputs = m.SupportsStructuredOutputs,
+                    InputTokenPrice = m.InputTokenPrice,
+                    OutputTokenPrice = m.OutputTokenPrice
                 });
             },
             new HybridCacheEntryOptions

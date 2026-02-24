@@ -12,6 +12,7 @@ export abstract class CompendiumService {
   abstract getCompendia(): Observable<CompendiumDto[]>;
   abstract getCompendium(compendiumId: string): Observable<CompendiumDto>;
   abstract getRecords(compendiumId: string): Observable<CompendiumRecordDto[]>;
+  abstract getRecordsByIds(recordIds: string[]): Observable<CompendiumRecordDto[]>;
   abstract getRecord(recordId: string): Observable<CompendiumRecordDto>;
   abstract createCompendium(compendium: CreateCompendiumDto): Observable<CompendiumDto>;
   abstract createRecord(record: CreateCompendiumRecordDto): Observable<CompendiumRecordDto>;

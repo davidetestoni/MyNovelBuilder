@@ -11,6 +11,7 @@ import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-r
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
+import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { GenerateTextCompletion, GenerateTextService } from './generate-text.service';
 
 @Injectable()
@@ -61,6 +62,14 @@ export class ApiGenerateTextService extends GenerateTextService {
       );
   }
 
+  getGenerationPreview(request: GenerateTextRequestDto): Observable<TextGenerationPreviewDto> {
+    this.saveRecentlyUsedModel(request.model);
+    return this.http.post<TextGenerationPreviewDto>(
+      `${this.baseUrl}/generate/text/preview`,
+      request,
+    );
+  }
+
   describeImage(image: Blob, request: DescribeImageRequestDto): Observable<string> {
     this.saveRecentlyUsedModel(request.model);
 
@@ -79,7 +88,7 @@ export class ApiGenerateTextService extends GenerateTextService {
     });
   }
 
-  protected getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
+  protected fetchAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
     return this.http.get<TextGenerationModelInfoDto[]>(`${this.baseUrl}/generate/text/models`);
   }
 }

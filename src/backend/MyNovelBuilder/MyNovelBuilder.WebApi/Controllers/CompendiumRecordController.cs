@@ -62,6 +62,23 @@ public class CompendiumRecordController
         
         return dtos;
     }
+
+    /// <summary>
+    /// Get all records for a list of IDs.
+    /// </summary>
+    [HttpPost("/api/compendium-records/by-ids")]
+    public async Task<IEnumerable<CompendiumRecordDto>> GetCompendiumRecordsByIds(
+        [FromBody] IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var records = await _compendiumRecordService.GetByIdsAsync(ids, cancellationToken);
+        var dtos = records.Adapt<IEnumerable<CompendiumRecordDto>>().ToList();
+        var tasks = dtos.Select(dto => AddMediaAsync(dto, cancellationToken));
+        await Task.WhenAll(tasks);
+
+        dtos.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        return dtos;
+    }
     
     /// <summary>
     /// Create a compendium record.

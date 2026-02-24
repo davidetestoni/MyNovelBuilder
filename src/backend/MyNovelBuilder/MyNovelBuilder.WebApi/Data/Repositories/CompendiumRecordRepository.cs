@@ -28,4 +28,16 @@ public class CompendiumRecordRepository : Repository<CompendiumRecord>, ICompend
             .Where(cr => cr.Compendium.Id == compendiumId)
             .ToListAsync(cancellationToken);
     }
+
+    /// <inheritdoc />
+    public async Task<IEnumerable<CompendiumRecord>> GetByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var idSet = ids.ToHashSet();
+        return await Context.Set<CompendiumRecord>()
+            .Include(cr => cr.Compendium)
+            .Where(cr => idSet.Contains(cr.Id))
+            .ToListAsync(cancellationToken);
+    }
 }

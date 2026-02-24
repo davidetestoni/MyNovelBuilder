@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
+import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import {
   mockedTextCompletionContent,
   mockedTextGenerationModelInfos,
@@ -30,12 +31,21 @@ export class MockGenerateTextService extends GenerateTextService {
     });
   }
 
+  getGenerationPreview(request: GenerateTextRequestDto): Observable<TextGenerationPreviewDto> {
+    this.saveRecentlyUsedModel(request.model);
+    return mockObservable({
+      inputTokens: 0,
+      includedCompendiumRecordIds: [],
+      finalMessages: [],
+    });
+  }
+
   describeImage(_image: Blob, request: DescribeImageRequestDto): Observable<string> {
     this.saveRecentlyUsedModel(request.model);
     return mockObservable('A generated image description. This is mocked data from the frontend service.');
   }
 
-  protected getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
+  protected fetchAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
     return mockObservable(mockedTextGenerationModelInfos);
   }
 }

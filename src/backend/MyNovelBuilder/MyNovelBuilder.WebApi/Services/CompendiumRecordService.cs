@@ -49,6 +49,14 @@ public class CompendiumRecordService : ICompendiumRecordService
     }
 
     /// <inheritdoc />
+    public async Task<IEnumerable<CompendiumRecord>> GetByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default)
+    {
+        return await _unitOfWork.CompendiumRecords.GetByIdsAsync(ids, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<IEnumerable<CompendiumRecord>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _unitOfWork.CompendiumRecords.GetAllAsync(cancellationToken);

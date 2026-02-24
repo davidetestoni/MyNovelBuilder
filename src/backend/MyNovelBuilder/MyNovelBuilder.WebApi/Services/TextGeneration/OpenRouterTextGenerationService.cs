@@ -222,7 +222,8 @@ public class OpenRouterTextGenerationService : ITextGenerationService
             Id = m?["id"]?.GetValue<string>() ?? string.Empty,
             IsVisionCapable = HasImageInputModality(m),
             SupportsStructuredOutputs = SupportsStructuredOutputs(m),
-            InputTokenPrice = decimal.Parse(m?["pricing"]?["prompt"]?.GetValue<string>() ?? "0")
+            InputTokenPrice = decimal.Parse(m?["pricing"]?["prompt"]?.GetValue<string>() ?? "0"),
+            OutputTokenPrice = decimal.Parse(m?["pricing"]?["completion"]?.GetValue<string>() ?? "0")
         });
     }
 

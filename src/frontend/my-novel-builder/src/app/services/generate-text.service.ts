@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
+import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 
 export interface GenerateTextCompletion {
@@ -15,16 +16,21 @@ export interface GenerateTextCompletion {
 export abstract class GenerateTextService {
   abstract generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>>;
   abstract generateTextCompletion(request: GenerateTextRequestDto): Observable<GenerateTextCompletion>;
+  abstract getGenerationPreview(request: GenerateTextRequestDto): Observable<TextGenerationPreviewDto>;
   abstract describeImage(image: Blob, request: DescribeImageRequestDto): Observable<string>;
 
+  getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
+    return this.fetchAvailableModelInfos();
+  }
+
   getAvailableModels(): Observable<string[]> {
-    return this.getAvailableModelInfos().pipe(
+    return this.fetchAvailableModelInfos().pipe(
       map((models) => this.sortModels(models.map((model) => model.id))),
     );
   }
 
   getAvailableVisionModels(): Observable<string[]> {
-    return this.getAvailableModelInfos().pipe(
+    return this.fetchAvailableModelInfos().pipe(
       map((models) =>
         this.sortModels(
           models
@@ -36,7 +42,7 @@ export abstract class GenerateTextService {
   }
 
   getAvailableStructuredOutputModels(): Observable<string[]> {
-    return this.getAvailableModelInfos().pipe(
+    return this.fetchAvailableModelInfos().pipe(
       map((models) =>
         this.sortModels(
           models
@@ -84,5 +90,5 @@ export abstract class GenerateTextService {
     return models;
   }
 
-  protected abstract getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]>;
+  protected abstract fetchAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]>;
 }

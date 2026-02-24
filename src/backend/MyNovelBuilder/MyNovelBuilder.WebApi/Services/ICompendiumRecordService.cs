@@ -19,6 +19,13 @@ public interface ICompendiumRecordService
     Task<IEnumerable<CompendiumRecord>> GetByCompendiumIdAsync(
         Guid compendiumId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all compendium records with the provided IDs.
+    /// </summary>
+    Task<IEnumerable<CompendiumRecord>> GetByIdsAsync(
+        IEnumerable<Guid> ids,
+        CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get all compendium records.

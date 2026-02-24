@@ -1,0 +1,77 @@
+<div class="preview-container">
+  @if (isLoading) {
+    <p>Loading preview...</p>
+  } @else if (hasError || preview === null) {
+    <p>Failed to load preview info.</p>
+  } @else {
+    <div class="preview-section">
+      <h3>Input Stats</h3>
+      <div class="stat-line">
+        <span class="stat-key">Input tokens:</span>
+        <span class="stat-value">{{ preview.inputTokens }}</span>
+      </div>
+      <div class="stat-line">
+        <span class="stat-key">Estimated prompt price:</span>
+        <span class="stat-value">
+          @if (estimatedInputPrice !== null) {
+            ${{ estimatedInputPrice | number: "1.6-6" }}
+          } @else {
+            Unavailable
+          }
+          ({{ data.request.model }})
+        </span>
+      </div>
+    </div>
+
+    <div class="preview-section">
+      <h3>Included Compendium Records</h3>
+      @if (includedRecords.length === 0) {
+        <p>No records included.</p>
+      } @else {
+        <div class="compendium-records-grid">
+          @for (record of includedRecords; track record.id) {
+            <div class="compendium-record">
+              <div class="compendium-record-image">
+                @if (getRecordImage(record) !== null) {
+                  <img
+                    src="{{ getRecordImage(record) }}"
+                    alt="{{ record.name }}"
+                  />
+                } @else {
+                  <div class="no-image">
+                    <i class="icon icon-compendium"></i>
+                  </div>
+                }
+              </div>
+              <div class="compendium-record-name">
+                <span>{{ record.name }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="preview-section">
+      <h3>Prompt Messages</h3>
+      @if (preview.finalMessages.length === 0) {
+        <p>No messages in prompt.</p>
+      } @else {
+        <div class="messages-list">
+          @for (message of preview.finalMessages; track $index) {
+            <div class="message-item">
+              <label class="message-role">{{ message.role | titlecase }}</label>
+              <textarea
+                pTextarea
+                [value]="message.message"
+                [readonly]="true"
+                [autoResize]="true"
+                rows="5"
+              ></textarea>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

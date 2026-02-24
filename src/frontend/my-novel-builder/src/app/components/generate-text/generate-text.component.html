@@ -16,7 +16,10 @@
       @if (showInstructions) {
         <div class="form-field">
           <label for="instructions" class="form-field-label">
-            Instructions@if (instructionsRequired) { * }
+            Instructions
+            @if (instructionsRequired) {
+              *
+            }
           </label>
           <textarea
             pTextarea
@@ -42,6 +45,12 @@
       </div>
       <div class="form-field">
         <div class="form-buttons-container">
+          <p-button
+            label="Preview"
+            (click)="openPreviewDialog()"
+            [disabled]="formGroup.invalid"
+            variant="text"
+          />
           <p-button
             label="Generate"
             (click)="accept()"

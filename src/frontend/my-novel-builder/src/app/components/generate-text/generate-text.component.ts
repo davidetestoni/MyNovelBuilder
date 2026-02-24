@@ -6,7 +6,11 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogConfig,
+  DynamicDialogRef,
+} from 'primeng/dynamicdialog';
 import {
   GenerateTextRequestDto,
   TextGenerationContextInfoDto,
@@ -19,6 +23,7 @@ import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
+import { GenerateTextPreviewComponent } from '../generate-text-preview/generate-text-preview.component';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
@@ -37,12 +42,14 @@ export interface GenerateTextComponentData {
     TextareaModule,
     ButtonModule,
   ],
+  providers: [DialogService],
   templateUrl: './generate-text.component.html',
   styleUrl: './generate-text.component.scss',
 })
 export class GenerateTextComponent implements OnInit {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
+  private dialogService = inject(DialogService);
 
   data!: GenerateTextComponentData;
   instructionsRequired = false;
@@ -119,6 +126,11 @@ export class GenerateTextComponent implements OnInit {
   }
 
   accept(): void {
+    const request = this.buildRequest();
+    if (request === null) {
+      return;
+    }
+
     // Save the instructions for the prompt type
     const promptType = this.data.prompts[0].type;
     const instructions = this.formGroup.get('instructions')!.value;
@@ -141,6 +153,39 @@ export class GenerateTextComponent implements OnInit {
       );
     }
 
+    this.dialogRef.close(request);
+  }
+
+  openPreviewDialog(): void {
+    const request = this.buildRequest();
+    if (request === null) {
+      return;
+    }
+
+    this.dialogService.open(GenerateTextPreviewComponent, {
+      header: 'Prompt Preview',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
+      focusOnShow: false,
+      data: {
+        request,
+      },
+    });
+  }
+
+  private buildRequest(): GenerateTextRequestDto | null {
+    const promptId = this.formGroup.get('promptId')!.value;
+    const model = this.formGroup.get('model')!.value;
+
+    if (promptId === null || model === null) {
+      return null;
+    }
+
     let contextInfo: TextGenerationContextInfoDto = this.data.contextInfo;
     if ('instructions' in contextInfo) {
       contextInfo = <TextGenerationContextInfoDto>(<unknown>{
@@ -149,11 +194,11 @@ export class GenerateTextComponent implements OnInit {
       });
     }
 
-    this.dialogRef.close(<GenerateTextRequestDto>{
-      promptId: this.formGroup.get('promptId')!.value,
-      model: this.formGroup.get('model')!.value,
+    return {
+      promptId,
+      model,
       contextInfo,
-    });
+    };
   }
 
   // TODO: There is a better way to do this
