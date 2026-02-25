@@ -1,11 +1,13 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Novel;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.Novels;
+using MyNovelBuilder.WebApi.Options;
 using MyNovelBuilder.WebApi.Tests.Factories;
 using Xunit.Abstractions;
 
@@ -279,6 +281,45 @@ public class NovelControllerIntegrationTests(
         Assert.NotEmpty(json);
         var location = JsonSerializer.Deserialize<string>(json);
         Assert.False(string.IsNullOrWhiteSpace(location));
+    }
+
+    [Fact]
+    public async Task DeleteProseImage_ReturnsOk_AndDeletesFile()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var novel = new Novel
+        {
+            Title = "Novel for Prose Image Deletion",
+            Author = "Author",
+            Brief = "Brief"
+        };
+        UnitOfWork.Novels.Add(novel);
+        await UnitOfWork.SaveChangesAsync();
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
+        content.Add(fileContent, "file", "prose.png");
+
+        var uploadResponse = await client.PostAsync($"api/novel/{novel.Id}/prose-image", content);
+        Assert.True(uploadResponse.IsSuccessStatusCode);
+
+        var uploadJson = await uploadResponse.Content.ReadAsStringAsync();
+        var location = JsonSerializer.Deserialize<string>(uploadJson);
+        Assert.False(string.IsNullOrWhiteSpace(location));
+
+        using var scope = Factory.Services.CreateScope();
+        var storageOptions = scope.ServiceProvider.GetRequiredService<IOptions<AppStorageOptions>>().Value;
+        var filePath = Path.Combine(storageOptions.StaticFilesRoot, "novels", novel.Id.ToString(), "prose-images", location!);
+        Assert.True(File.Exists(filePath));
+
+        // Act
+        var deleteResponse = await client.DeleteAsync($"api/novel/{novel.Id}/prose-image/{Uri.EscapeDataString(location!)}");
+
+        // Assert
+        Assert.True(deleteResponse.IsSuccessStatusCode);
+        Assert.False(File.Exists(filePath));
     }
 
     public Task DisposeAsync()

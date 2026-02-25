@@ -31,6 +31,10 @@ export class MockNovelService extends NovelService {
     return mockObservable('https://picsum.photos/200/300');
   }
 
+  deleteProseImage(_novelId: string, _imageId: string): Observable<void> {
+    return mockObservable<void>(undefined);
+  }
+
   createNovel(_novel: CreateNovelDto): Observable<NovelDto> {
     return mockObservable(mockedNovels[0]);
   }

@@ -176,6 +176,18 @@ public class NovelController : ControllerBase
         return new JsonResult(location);
     }
 
+    /// <summary>
+    /// Delete a prose image for a novel.
+    /// </summary>
+    [HttpDelete("{id:guid}/prose-image/{fileName}")]
+    public async Task DeleteProseImage(
+        Guid id,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        await _novelService.DeleteProseImageAsync(id, fileName, cancellationToken);
+    }
+
     private void AddCoverImageUrl(NovelDto dto)
     {
         var urlPath = _novelService.GetCoverImageLocation(dto.Id);

@@ -818,11 +818,18 @@ export class ProseEditorComponent implements OnDestroy {
       header: 'Confirm Image Removal',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.prose.chapters[chapterIndex].sections[sectionIndex].images =
-          this.prose.chapters[chapterIndex].sections[
-            sectionIndex
-          ].images.filter((img) => img !== imageId);
-        this.saveProse();
+        this.novelService.deleteProseImage(this.novelId, imageId).subscribe({
+          next: () => {
+            this.prose.chapters[chapterIndex].sections[sectionIndex].images =
+              this.prose.chapters[chapterIndex].sections[
+                sectionIndex
+              ].images.filter((img) => img !== imageId);
+            this.saveProse();
+          },
+          error: () => {
+            this.toastr.error('Could not remove image from the server.');
+          },
+        });
       },
     });
   }

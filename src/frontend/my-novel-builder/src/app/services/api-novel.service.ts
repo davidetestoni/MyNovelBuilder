@@ -40,6 +40,11 @@ export class ApiNovelService extends NovelService {
     return this.http.post<string>(`${this.baseUrl}/novel/${novelId}/prose-image`, formData);
   }
 
+  deleteProseImage(novelId: string, imageId: string): Observable<void> {
+    const encodedImageId = encodeURIComponent(imageId);
+    return this.http.delete<void>(`${this.baseUrl}/novel/${novelId}/prose-image/${encodedImageId}`);
+  }
+
   createNovel(novel: CreateNovelDto): Observable<NovelDto> {
     return this.http.post<NovelDto>(`${this.baseUrl}/novel`, novel);
   }

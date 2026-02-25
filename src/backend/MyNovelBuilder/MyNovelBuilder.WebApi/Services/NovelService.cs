@@ -216,4 +216,26 @@ public class NovelService : INovelService
         await File.WriteAllBytesAsync(filePath, imageBytes, cancellationToken);
         return Path.GetFileName(filePath);
     }
+
+    /// <inheritdoc />
+    public async Task DeleteProseImageAsync(Guid id, string fileName, CancellationToken cancellationToken = default)
+    {
+        if (!await _unitOfWork.Novels.ExistsAsync(id, cancellationToken))
+        {
+            throw new ApiException(ErrorCodes.NovelNotFound, $"Novel with ID {id} was not found.");
+        }
+
+        var normalizedFileName = Path.GetFileName(fileName);
+        if (string.IsNullOrWhiteSpace(normalizedFileName) ||
+            !string.Equals(normalizedFileName, fileName, StringComparison.Ordinal))
+        {
+            throw new ApiException(ErrorCodes.BadRequest, "Invalid prose image file name.");
+        }
+
+        var filePath = Path.Combine(_staticFilesRoot, "novels", id.ToString(), "prose-images", normalizedFileName);
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+        }
+    }
 }

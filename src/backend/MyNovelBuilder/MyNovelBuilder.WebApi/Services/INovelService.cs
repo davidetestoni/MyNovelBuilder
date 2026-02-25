@@ -63,4 +63,9 @@ public interface INovelService
     /// Returns the filename of the uploaded image.
     /// </summary>
     Task<string> UploadProseImageAsync(Guid id, IFormFile file, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Delete a prose image for a novel by file name.
+    /// </summary>
+    Task DeleteProseImageAsync(Guid id, string fileName, CancellationToken cancellationToken = default);
 }

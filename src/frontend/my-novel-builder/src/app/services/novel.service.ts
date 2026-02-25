@@ -20,6 +20,7 @@ export abstract class NovelService {
   abstract getNovelProse(novelId: string): Observable<Prose>;
   abstract uploadNovelCoverImage(novelId: string, file: File): Observable<void>;
   abstract uploadProseImage(novelId: string, file: File): Observable<string>;
+  abstract deleteProseImage(novelId: string, imageId: string): Observable<void>;
   abstract createNovel(novel: CreateNovelDto): Observable<NovelDto>;
   abstract updateNovel(novel: UpdateNovelDto): Observable<NovelDto>;
   abstract updateNovelProse(novelId: string, prose: Prose): Observable<void>;
