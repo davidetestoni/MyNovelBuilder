@@ -1,7 +1,7 @@
 export interface TextGenerationModelInfoDto {
   id: string;
-  isVisionCapable?: boolean;
-  supportsStructuredOutputs?: boolean;
+  isVisionCapable: boolean;
+  supportsStructuredOutputs: boolean;
   inputTokenPrice: number;
   outputTokenPrice: number;
 }

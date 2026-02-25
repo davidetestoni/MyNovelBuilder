@@ -34,7 +34,6 @@ import { ToastrService } from 'ngx-toastr';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message.component';
 import { GenerateTextService } from '../../services/generate-text.service';
-import { PromptService } from '../../services/prompt.service';
 import { TextareaModule } from 'primeng/textarea';
 import { MarkdownComponent } from 'ngx-markdown';
 import {
@@ -49,11 +48,12 @@ import {
   ChatMessageDto,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptType } from '../../types/enums/prompt-type';
-import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
+import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
+import { ModelSelectComponent } from '../model-select/model-select.component';
 
 @Component({
   selector: 'app-chat',
@@ -70,6 +70,8 @@ import { LocalStorageKey } from '../../types/enums/local-storage-key';
     ConfirmDialogModule,
     TextareaModule,
     MarkdownComponent,
+    PromptSelectComponent,
+    ModelSelectComponent,
   ],
   providers: [ConfirmationService, DialogService],
 })
@@ -88,22 +90,21 @@ export class ChatComponent
   readonly toastr = inject(ToastrService);
   private dialogService = inject(DialogService);
   private generateTextService = inject(GenerateTextService);
-  private promptService = inject(PromptService);
   private localStorageService = inject(LocalStorageService);
 
   private dialogRef: DynamicDialogRef | null = null;
   private shouldScrollToBottom = false;
 
   ChatMessageRole = ChatMessageRole;
+  PromptType = PromptType;
 
   novel = signal<NovelDto | null>(null);
   novelNotFound = signal(false);
   prose = signal<Prose | null>(null);
   compendia = signal<CompendiumDto[] | null>(null);
 
-  models: string[] | null = null;
   selectedModel: string | null = null;
-  prompts: PromptDto[] | null = null;
+  promptCount = -1;
   selectedPromptId: string | null = null;
 
   userInput = '';
@@ -125,29 +126,6 @@ export class ChatComponent
   });
 
   ngOnInit(): void {
-    this.generateTextService.getAvailableModels().subscribe((models) => {
-      this.models = models;
-      if (models.length > 0) {
-        this.selectedModel = models[0];
-      }
-    });
-
-    this.promptService.getPrompts().subscribe((prompts) => {
-      this.prompts = prompts.filter(
-        (p) => p.type === PromptType.SendChatMessage,
-      );
-
-      const savedPromptId = this.localStorageService.getNestedStringForKey(
-        LocalStorageKey.RecentPrompts,
-        PromptType.SendChatMessage,
-      );
-
-      if (savedPromptId && this.prompts.some((p) => p.id === savedPromptId)) {
-        this.selectedPromptId = savedPromptId;
-      } else if (this.prompts.length > 0) {
-        this.selectedPromptId = this.prompts[0].id;
-      }
-    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -363,6 +341,10 @@ export class ChatComponent
       isLastMessage ||
       (nextMessage && nextMessage.role !== ChatMessageRole.Assistant)
     );
+  }
+
+  onPromptOptionsChanged(count: number): void {
+    this.promptCount = count;
   }
 
   resendMessage(message: ChatMessage): void {

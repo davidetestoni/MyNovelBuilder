@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormControl,
@@ -24,6 +24,8 @@ import {
   NovelTextGenerationType,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { firstValueFrom } from 'rxjs';
+import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
+import { ModelSelectComponent } from '../model-select/model-select.component';
 
 interface GenerateStoryEventsDialogChapter {
   label: string;
@@ -52,11 +54,18 @@ interface GeneratedStoryEventsPreview {
 @Component({
   selector: 'app-generate-story-events-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SelectModule, ButtonModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    SelectModule,
+    ButtonModule,
+    PromptSelectComponent,
+    ModelSelectComponent,
+  ],
   templateUrl: './generate-story-events-dialog.component.html',
   styleUrl: './generate-story-events-dialog.component.scss',
 })
-export class GenerateStoryEventsDialogComponent implements OnInit {
+export class GenerateStoryEventsDialogComponent {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
 
@@ -64,10 +73,10 @@ export class GenerateStoryEventsDialogComponent implements OnInit {
     inject(GenerateTextService);
   readonly localStorageService: LocalStorageService =
     inject(LocalStorageService);
+  PromptType = PromptType;
 
   data: GenerateStoryEventsDialogData;
-  prompts: PromptDto[] = [];
-  models: string[] = [];
+  promptCount = 0;
   generatedPreviews: GeneratedStoryEventsPreview[] = [];
   isGenerating = false;
   generationError: string | null = null;
@@ -84,45 +93,6 @@ export class GenerateStoryEventsDialogComponent implements OnInit {
     this.formGroup.patchValue({
       chapterIndex: this.data.selectedChapterIndex,
     });
-
-    this.prompts = (this.data.prompts || []).filter(
-      (prompt) => prompt.type === PromptType.CreateStoryEvents,
-    );
-
-    const storedPromptId = this.localStorageService.getNestedStringForKey(
-      LocalStorageKey.RecentPrompts,
-      PromptType.CreateStoryEvents,
-    );
-
-    if (storedPromptId !== null) {
-      this.formGroup.patchValue({ promptId: storedPromptId });
-    }
-
-    if (this.prompts.length > 0) {
-      const selectedPromptId = this.formGroup.get('promptId')!.value;
-      const hasPrompt = this.prompts.some(
-        (prompt) => prompt.id === selectedPromptId,
-      );
-
-      if (!hasPrompt) {
-        this.formGroup.patchValue({ promptId: this.prompts[0].id });
-      }
-    }
-  }
-
-  ngOnInit(): void {
-    this.getModels();
-  }
-
-  getModels(): void {
-    this.generateTextService
-      .getAvailableStructuredOutputModels()
-      .subscribe((models) => {
-        this.models = models;
-        if (this.models.length > 0) {
-          this.formGroup.patchValue({ model: this.models[0] });
-        }
-      });
   }
 
   async generate(): Promise<void> {
@@ -285,5 +255,9 @@ export class GenerateStoryEventsDialogComponent implements OnInit {
     } catch {
       return null;
     }
+  }
+
+  onPromptOptionsChanged(count: number): void {
+    this.promptCount = count;
   }
 }

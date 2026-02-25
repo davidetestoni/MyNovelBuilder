@@ -5,14 +5,12 @@
         <div class="form-column left-column">
           <div class="form-field">
             <label for="model" class="form-field-label">Model *</label>
-            <p-select
+            <app-model-select
               id="model"
               formControlName="model"
-              [options]="modelOptions"
-              [filter]="true"
+              capability="imageEdit"
               placeholder="Select an editor model"
-              [style]="{ width: '100%' }"
-              appendTo="body"
+              width="100%"
             />
           </div>
           <div class="form-field">

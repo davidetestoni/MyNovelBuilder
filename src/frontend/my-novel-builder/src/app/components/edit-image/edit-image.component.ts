@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -15,8 +15,7 @@ import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
-import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-generation-model-info.dto';
+import { ModelSelectComponent } from '../model-select/model-select.component';
 
 @Component({
   selector: 'app-edit-image',
@@ -27,17 +26,15 @@ import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-gen
     ToastrModule,
     TextareaModule,
     ButtonModule,
-    SelectModule,
+    ModelSelectComponent,
   ],
   templateUrl: './edit-image.component.html',
   styleUrl: './edit-image.component.scss',
 })
-export class EditImageComponent implements OnInit {
+export class EditImageComponent {
   dialogRef = inject(DynamicDialogRef);
   config = inject(DynamicDialogConfig);
 
-  models: ImageGenerationModelInfoDto[] = [];
-  modelOptions: { label: string; value: string }[] = [];
   readonly generateImageService: GenerateImageService =
     inject(GenerateImageService);
   readonly localStorageService: LocalStorageService =
@@ -85,30 +82,6 @@ export class EditImageComponent implements OnInit {
       };
       img.src = objectURL;
     }
-  }
-
-  ngOnInit(): void {
-    this.getModels();
-  }
-
-  getModels() {
-    this.generateImageService.getAvailableModels().subscribe((models) => {
-      this.models = models.filter((m) => m.isImageEditor);
-      this.modelOptions = this.models.map((m) => ({
-        label: m.name,
-        value: m.modelId,
-      }));
-
-      const lastModel = this.localStorageService.getStringForKey(
-        LocalStorageKey.LastImageModel,
-      );
-
-      if (lastModel && this.modelOptions.some((o) => o.value === lastModel)) {
-        this.formGroup.patchValue({ model: lastModel });
-      } else if (this.modelOptions.length > 0) {
-        this.formGroup.patchValue({ model: this.modelOptions[0].value });
-      }
-    });
   }
 
   editImage(): void {

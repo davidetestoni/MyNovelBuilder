@@ -3,14 +3,14 @@
     <form [formGroup]="formGroup">
       <div class="form-field">
         <label for="promptId" class="form-field-label">Prompt *</label>
-        <p-select
+        <app-prompt-select
           id="promptId"
           formControlName="promptId"
-          [options]="data.prompts"
-          optionLabel="name"
-          optionValue="id"
+          [prompts]="data.prompts"
+          [promptType]="data.prompts[0].type"
+          [storagePromptType]="data.prompts[0].type"
           placeholder="Select a prompt"
-          [style]="{ width: '100%' }"
+          width="100%"
         />
       </div>
       @if (showInstructions) {
@@ -33,14 +33,12 @@
       }
       <div class="form-field">
         <label for="model" class="form-field-label">Model *</label>
-        <p-select
+        <app-model-select
           id="model"
           formControlName="model"
-          [options]="models"
-          [filter]="true"
+          capability="text"
           placeholder="Select a model"
-          [style]="{ width: '100%' }"
-          appendTo="body"
+          width="100%"
         />
       </div>
       <div class="form-field">

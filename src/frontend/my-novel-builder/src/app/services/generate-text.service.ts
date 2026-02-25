@@ -1,6 +1,6 @@
 import { HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
 import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
@@ -21,36 +21,6 @@ export abstract class GenerateTextService {
 
   getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
     return this.fetchAvailableModelInfos();
-  }
-
-  getAvailableModels(): Observable<string[]> {
-    return this.fetchAvailableModelInfos().pipe(
-      map((models) => this.sortModels(models.map((model) => model.id))),
-    );
-  }
-
-  getAvailableVisionModels(): Observable<string[]> {
-    return this.fetchAvailableModelInfos().pipe(
-      map((models) =>
-        this.sortModels(
-          models
-            .filter((model) => model.isVisionCapable ?? false)
-            .map((model) => model.id),
-        ),
-      ),
-    );
-  }
-
-  getAvailableStructuredOutputModels(): Observable<string[]> {
-    return this.fetchAvailableModelInfos().pipe(
-      map((models) =>
-        this.sortModels(
-          models
-            .filter((model) => model.supportsStructuredOutputs ?? false)
-            .map((model) => model.id),
-        ),
-      ),
-    );
   }
 
   protected saveRecentlyUsedModel(model: string): void {

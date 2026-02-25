@@ -16,27 +16,26 @@
 
       <div class="form-field">
         <label for="promptId" class="form-field-label">Prompt *</label>
-        <p-select
+        <app-prompt-select
           id="promptId"
           formControlName="promptId"
-          [options]="prompts"
-          optionLabel="name"
-          optionValue="id"
+          [prompts]="data.prompts"
+          [promptType]="PromptType.CreateStoryEvents"
+          [storagePromptType]="PromptType.CreateStoryEvents"
+          (optionsChanged)="onPromptOptionsChanged($event)"
           placeholder="Select a prompt"
-          [style]="{ width: '100%' }"
+          width="100%"
         />
       </div>
 
       <div class="form-field">
         <label for="model" class="form-field-label">Model *</label>
-        <p-select
+        <app-model-select
           id="model"
           formControlName="model"
-          [options]="models"
-          [filter]="true"
+          capability="structuredOutput"
           placeholder="Select a model"
-          [style]="{ width: '100%' }"
-          appendTo="body"
+          width="100%"
         />
         <small class="model-help-text">
           Only models that support structured outputs are shown.
@@ -49,7 +48,7 @@
             label="Generate"
             variant="text"
             (click)="generate()"
-            [disabled]="formGroup.invalid || isGenerating"
+            [disabled]="formGroup.invalid || isGenerating || promptCount === 0"
           />
           @if (generatedPreviews.length > 0) {
             <p-button

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -17,13 +17,13 @@ import {
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { GenerateTextService } from '../../services/generate-text.service';
-import { PromptService } from '../../services/prompt.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
-import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { GenerateTextPreviewComponent } from '../generate-text-preview/generate-text-preview.component';
+import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
+import { ModelSelectComponent } from '../model-select/model-select.component';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
@@ -38,15 +38,16 @@ export interface GenerateTextComponentData {
   imports: [
     FormsModule,
     ReactiveFormsModule,
-    SelectModule,
     TextareaModule,
     ButtonModule,
+    PromptSelectComponent,
+    ModelSelectComponent,
   ],
   providers: [DialogService],
   templateUrl: './generate-text.component.html',
   styleUrl: './generate-text.component.scss',
 })
-export class GenerateTextComponent implements OnInit {
+export class GenerateTextComponent {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
   private dialogService = inject(DialogService);
@@ -54,10 +55,8 @@ export class GenerateTextComponent implements OnInit {
   data!: GenerateTextComponentData;
   instructionsRequired = false;
   showInstructions = false;
-  models: string[] = [];
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
-  readonly promptService: PromptService = inject(PromptService);
   readonly localStorageService: LocalStorageService =
     inject(LocalStorageService);
 
@@ -112,17 +111,6 @@ export class GenerateTextComponent implements OnInit {
     }
 
     this.formGroup.get('instructions')!.updateValueAndValidity();
-  }
-
-  ngOnInit(): void {
-    this.getModels();
-  }
-
-  getModels() {
-    this.generateTextService.getAvailableModels().subscribe((models) => {
-      this.models = models;
-      this.formGroup.patchValue({ model: models[0] });
-    });
   }
 
   accept(): void {

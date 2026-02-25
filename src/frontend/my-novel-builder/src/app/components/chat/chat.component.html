@@ -120,23 +120,22 @@
             />
           }
 
-          <p-select
+          <app-model-select
             [(ngModel)]="selectedModel"
-            [options]="models"
-            [filter]="true"
+            capability="text"
             placeholder="Select Model"
-            [style]="{ width: '200px' }"
+            width="200px"
             size="small"
           />
 
-          @if (prompts !== null && prompts.length > 0) {
-            <p-select
+          @if (promptCount !== 0) {
+            <app-prompt-select
               [(ngModel)]="selectedPromptId"
-              [options]="prompts"
-              optionLabel="name"
-              optionValue="id"
+              [promptType]="PromptType.SendChatMessage"
+              [storagePromptType]="PromptType.SendChatMessage"
+              (optionsChanged)="onPromptOptionsChanged($event)"
               placeholder="Select Prompt"
-              [style]="{ width: '180px' }"
+              width="180px"
               size="small"
             />
           }
@@ -192,7 +191,7 @@
 
     <p-confirmDialog></p-confirmDialog>
 
-    @if (prompts !== null && prompts.length === 0) {
+    @if (promptCount === 0) {
       <div class="chat-input error">
         <div class="error-message">
           <i class="pi pi-exclamation-triangle"></i>

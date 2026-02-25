@@ -19,8 +19,6 @@ import { HttpEvent, HttpEventType } from '@angular/common/http';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
-import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-generation-model-info.dto';
 import { PromptService } from '../../services/prompt.service';
 import { PromptType } from '../../types/enums/prompt-type';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
@@ -37,6 +35,7 @@ import {
   GenerateTextResultComponent,
   GenerateTextResultComponentData,
 } from '../generate-text-result/generate-text-result.component';
+import { ModelSelectComponent } from '../model-select/model-select.component';
 
 export interface GenerateImageComponentData {
   enablePromptGeneration?: boolean;
@@ -53,7 +52,7 @@ export interface GenerateImageComponentData {
     ToastrModule,
     TextareaModule,
     ButtonModule,
-    SelectModule,
+    ModelSelectComponent,
   ],
   templateUrl: './generate-image.component.html',
   styleUrl: './generate-image.component.scss',
@@ -62,8 +61,6 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
   dialogRef = inject(DynamicDialogRef);
   config = inject(DynamicDialogConfig);
 
-  models: ImageGenerationModelInfoDto[] = [];
-  modelOptions: { label: string; value: string }[] = [];
   readonly generateImageService: GenerateImageService =
     inject(GenerateImageService);
   readonly localStorageService: LocalStorageService =
@@ -109,8 +106,6 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.getModels();
-
     if (this.isPromptGenerationEnabled()) {
       this.getPromptGenerationPrompts();
     }
@@ -118,26 +113,6 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.promptGenerationDialogRef?.close();
-  }
-
-  getModels() {
-    this.generateImageService.getAvailableModels().subscribe((models) => {
-      this.models = models.filter((m) => !m.isImageEditor);
-      this.modelOptions = this.models.map((m) => ({
-        label: m.name,
-        value: m.modelId,
-      }));
-
-      const lastModel = this.localStorageService.getStringForKey(
-        LocalStorageKey.LastImageModel,
-      );
-
-      if (lastModel && this.modelOptions.some((o) => o.value === lastModel)) {
-        this.formGroup.patchValue({ model: lastModel });
-      } else if (this.modelOptions.length > 0) {
-        this.formGroup.patchValue({ model: this.modelOptions[0].value });
-      }
-    });
   }
 
   generateImage(): void {

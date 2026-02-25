@@ -5,28 +5,24 @@
         <div class="form-column left-column">
           <div class="form-field">
             <label for="promptId" class="form-field-label">Prompt *</label>
-            <p-select
+            <app-prompt-select
               id="promptId"
               formControlName="promptId"
-              [options]="prompts"
-              optionLabel="name"
-              optionValue="id"
+              [promptType]="PromptType.DescribeImage"
+              [storagePromptType]="PromptType.DescribeImage"
+              (optionsChanged)="onPromptOptionsChanged($event)"
               placeholder="Select a prompt"
-              [style]="{ width: '100%' }"
-              [disabled]="isLoadingPrompts || prompts.length === 0"
+              width="100%"
             />
           </div>
           <div class="form-field">
             <label for="model" class="form-field-label">Model *</label>
-            <p-select
+            <app-model-select
               id="model"
               formControlName="model"
-              [options]="models"
-              [filter]="true"
+              capability="vision"
               placeholder="Select a model"
-              [style]="{ width: '100%' }"
-              appendTo="body"
-              [disabled]="isLoadingModels || models.length === 0"
+              width="100%"
             />
           </div>
           <div class="form-field">
@@ -70,10 +66,7 @@
           [disabled]="
             isGenerating ||
             formGroup.invalid ||
-            isLoadingPrompts ||
-            isLoadingModels ||
-            prompts.length === 0 ||
-            models.length === 0
+            promptCount === 0
           "
           [loading]="isGenerating"
           variant="text"

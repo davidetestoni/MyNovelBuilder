@@ -1,0 +1,11 @@
+<p-select
+  [ngModel]="value"
+  (ngModelChange)="onValueChange($event)"
+  [options]="options"
+  optionLabel="name"
+  optionValue="id"
+  [placeholder]="placeholder"
+  [style]="{ width: width }"
+  [disabled]="isDisabled"
+  [size]="size"
+/>
