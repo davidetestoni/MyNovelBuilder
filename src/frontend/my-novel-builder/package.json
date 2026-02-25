@@ -29,6 +29,7 @@
     "@codemirror/view": "^6.39.13",
     "@primeuix/themes": "^2.0.2",
     "codemirror": "^6.0.2",
+    "exifreader": "^4.36.2",
     "lorem-ipsum": "^2.0.8",
     "marked": "^17.0.1",
     "moment": "^2.30.1",

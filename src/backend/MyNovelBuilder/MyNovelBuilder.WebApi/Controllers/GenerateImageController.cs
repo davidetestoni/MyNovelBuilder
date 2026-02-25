@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Hybrid;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.ImageGeneration;
 
@@ -59,6 +60,7 @@ public class GenerateImageController : ControllerBase
     {
         var imageGen = await GetImageGenerationServiceAsync(cancellationToken);
         var image = await imageGen.GenerateImageAsync(dto, cancellationToken);
+        image = PngPromptMetadataHelper.AddPromptMetadataIfPng(image, dto.Prompt, _logger);
         
         return File(image, "image/png", "image.png");
     }
@@ -83,6 +85,7 @@ public class GenerateImageController : ControllerBase
         var imageBytes = ms.ToArray();
         var imageGen = await GetImageGenerationServiceAsync(cancellationToken);
         var editedImage = await imageGen.EditImageAsync(imageBytes, dto, cancellationToken);
+        editedImage = PngPromptMetadataHelper.AddPromptMetadataIfPng(editedImage, dto.Prompt, _logger);
         
         return File(editedImage, "image/png", "edited_image.png");
     }

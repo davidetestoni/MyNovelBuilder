@@ -19,6 +19,7 @@ import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { StorylineComponent } from '../../components/storyline/storyline.component';
 import { ToastrService } from 'ngx-toastr';
+import * as ExifReader from 'exifreader';
 
 @Component({
   selector: 'app-novel-editor',
@@ -69,9 +70,12 @@ export class NovelEditorComponent {
   floatedMedia: CompendiumRecordMediaDto[] = [];
   lastHoveredFloatingMediaId: string | null = null;
   zoomedMedia: CompendiumRecordMediaDto | null = null;
+  zoomedMediaPrompt: string | null = null;
+  isZoomedMediaPromptLoading = false;
   selectedChapterIndex: number | null = null;
   isStoryTimelineOpen = signal(false);
   private saveToastId: number | undefined;
+  private zoomedPromptRequestId = 0;
 
   compendiumRecordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -216,10 +220,13 @@ export class NovelEditorComponent {
 
   zoomMedia(media: CompendiumRecordMediaDto): void {
     this.zoomedMedia = media;
+    this.loadZoomedMediaPrompt(media);
   }
 
   unzoomMedia(): void {
     this.zoomedMedia = null;
+    this.zoomedMediaPrompt = null;
+    this.isZoomedMediaPromptLoading = false;
   }
 
   updateProse(prose: Prose) {
@@ -286,6 +293,17 @@ export class NovelEditorComponent {
     this.zoomMedia({ id: '', url: imageUrl, isCurrent: false, isVideo: false });
   }
 
+  copyZoomedMediaPrompt(): void {
+    if (!this.zoomedMediaPrompt) {
+      return;
+    }
+
+    navigator.clipboard.writeText(this.zoomedMediaPrompt).then(
+      () => this.toastrService.success('Prompt copied to clipboard'),
+      () => this.toastrService.error('Failed to copy prompt'),
+    );
+  }
+
   toggleStoryTimeline(): void {
     this.isStoryTimelineOpen.update((isOpen) => !isOpen);
   }
@@ -304,18 +322,73 @@ export class NovelEditorComponent {
       return;
     }
 
-    const updatedChapters = prose.chapters.map((currentChapter, chapterIndex) =>
-      chapterIndex === event.chapterIndex
-        ? {
-            ...currentChapter,
-            storyEvents: (currentChapter.storyEvents || []).filter(
-              (_, storyEventIndex) => storyEventIndex !== event.storyEventIndex,
-            ),
-          }
-        : currentChapter,
+    const updatedChapters = prose.chapters.map(
+      (currentChapter, chapterIndex) =>
+        chapterIndex === event.chapterIndex
+          ? {
+              ...currentChapter,
+              storyEvents: (currentChapter.storyEvents || []).filter(
+                (_, storyEventIndex) =>
+                  storyEventIndex !== event.storyEventIndex,
+              ),
+            }
+          : currentChapter,
     );
 
     this.updateProse({ ...prose, chapters: updatedChapters });
+  }
+
+  private async loadZoomedMediaPrompt(
+    media: CompendiumRecordMediaDto,
+  ): Promise<void> {
+    if (media.isVideo) {
+      this.zoomedMediaPrompt = null;
+      this.isZoomedMediaPromptLoading = false;
+      return;
+    }
+
+    const requestId = ++this.zoomedPromptRequestId;
+    this.isZoomedMediaPromptLoading = true;
+    this.zoomedMediaPrompt = null;
+
+    try {
+      const response = await fetch(media.url);
+      if (!response.ok) {
+        return;
+      }
+
+      const imageBuffer = await response.arrayBuffer();
+      const prompt = await this.extractPromptFromImageMetadata(imageBuffer);
+
+      if (requestId === this.zoomedPromptRequestId) {
+        this.zoomedMediaPrompt = prompt;
+      }
+    } catch {
+      if (requestId === this.zoomedPromptRequestId) {
+        this.zoomedMediaPrompt = null;
+      }
+    } finally {
+      if (requestId === this.zoomedPromptRequestId) {
+        this.isZoomedMediaPromptLoading = false;
+      }
+    }
+  }
+
+  private async extractPromptFromImageMetadata(
+    imageBuffer: ArrayBuffer,
+  ): Promise<string | null> {
+    try {
+      const tags = (await ExifReader.load(imageBuffer, {
+        expanded: true,
+        async: true,
+      })) as ExifReader.ExpandedTags;
+
+      console.log('Extracted tags from image metadata:', tags.pngText);
+
+      return tags.pngText?.['prompt (en)']?.description || null;
+    } catch {
+      return null;
+    }
   }
 
   createStoryEvent(event: {
@@ -354,18 +427,19 @@ export class NovelEditorComponent {
       return;
     }
 
-    const updatedChapters = prose.chapters.map((currentChapter, chapterIndex) =>
-      chapterIndex === event.chapterIndex
-        ? {
-            ...currentChapter,
-            storyEvents: (currentChapter.storyEvents || []).map(
-              (storyEvent, storyEventIndex) =>
-                storyEventIndex === event.storyEventIndex
-                  ? event.storyEvent
-                  : storyEvent,
-            ),
-          }
-        : currentChapter,
+    const updatedChapters = prose.chapters.map(
+      (currentChapter, chapterIndex) =>
+        chapterIndex === event.chapterIndex
+          ? {
+              ...currentChapter,
+              storyEvents: (currentChapter.storyEvents || []).map(
+                (storyEvent, storyEventIndex) =>
+                  storyEventIndex === event.storyEventIndex
+                    ? event.storyEvent
+                    : storyEvent,
+              ),
+            }
+          : currentChapter,
     );
 
     this.updateProse({ ...prose, chapters: updatedChapters });
@@ -403,31 +477,35 @@ export class NovelEditorComponent {
       return;
     }
 
-    const [movedStoryEvent] = previousStoryEvents.splice(event.previousIndex, 1);
+    const [movedStoryEvent] = previousStoryEvents.splice(
+      event.previousIndex,
+      1,
+    );
     if (!movedStoryEvent) {
       return;
     }
 
     currentStoryEvents.splice(event.currentIndex, 0, movedStoryEvent);
 
-    const updatedChapters = prose.chapters.map((currentChapter, chapterIndex) =>
-      chapterIndex === event.previousChapterIndex &&
-      event.previousChapterIndex === event.currentChapterIndex
-        ? {
-            ...currentChapter,
-            storyEvents: currentStoryEvents,
-          }
-        : chapterIndex === event.previousChapterIndex
+    const updatedChapters = prose.chapters.map(
+      (currentChapter, chapterIndex) =>
+        chapterIndex === event.previousChapterIndex &&
+        event.previousChapterIndex === event.currentChapterIndex
           ? {
               ...currentChapter,
-              storyEvents: previousStoryEvents,
+              storyEvents: currentStoryEvents,
             }
-          : chapterIndex === event.currentChapterIndex
+          : chapterIndex === event.previousChapterIndex
             ? {
                 ...currentChapter,
-                storyEvents: currentStoryEvents,
+                storyEvents: previousStoryEvents,
               }
-            : currentChapter,
+            : chapterIndex === event.currentChapterIndex
+              ? {
+                  ...currentChapter,
+                  storyEvents: currentStoryEvents,
+                }
+              : currentChapter,
     );
 
     this.updateProse({ ...prose, chapters: updatedChapters });

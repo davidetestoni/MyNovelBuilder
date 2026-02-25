@@ -241,13 +241,27 @@
     </div>
     @if (zoomedMedia !== null) {
       <div class="zoomed-media-overlay" (click)="unzoomMedia()">
-        <div class="zoomed-media">
+        <div class="zoomed-media" (click)="$event.stopPropagation()">
           @if (!zoomedMedia.isVideo) {
             <img src="{{ zoomedMedia.url }}" alt="{{ zoomedMedia.id }}" />
           } @else {
             <video autoplay muted loop src="{{ zoomedMedia.url }}"></video>
           }
         </div>
+        @if (!zoomedMedia.isVideo && zoomedMediaPrompt) {
+          <div class="zoomed-media-prompt" (click)="$event.stopPropagation()">
+            <div class="zoomed-media-prompt-header">
+              <span>Original prompt</span>
+              <button type="button" (click)="copyZoomedMediaPrompt()">
+                <i class="pi pi-copy"></i>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div class="zoomed-media-prompt-text">
+              <span>{{ zoomedMediaPrompt }}</span>
+            </div>
+          </div>
+        }
       </div>
     }
   }
