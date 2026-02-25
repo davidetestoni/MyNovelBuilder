@@ -5,6 +5,7 @@ using ElevenLabs.Voices;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 using MyNovelBuilder.WebApi.Attributes;
 using MyNovelBuilder.WebApi.Helpers;
@@ -34,11 +35,10 @@ public class ElevenLabsTtsService : ITtsService
     
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var apiKey = config.ElevenLabsApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -52,7 +52,7 @@ public class ElevenLabsTtsService : ITtsService
 
         var voiceClip = await client.TextToSpeechEndpoint.TextToSpeechAsync(
             new TextToSpeechRequest(
-                new Voice(effectiveVoiceId, string.Empty),
+                new Voice(request.VoiceId, string.Empty),
                 request.Message,
                 model: new Model("eleven_v3"),
                 outputFormat: OutputFormat.PCM_24000),
@@ -69,11 +69,10 @@ public class ElevenLabsTtsService : ITtsService
     
     /// <inheritdoc />
     public async Task<Stream> GenerateAudioStreamAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var apiKey = config.ElevenLabsApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -93,7 +92,7 @@ public class ElevenLabsTtsService : ITtsService
             {
                 await client.TextToSpeechEndpoint.TextToSpeechAsync(
                     new TextToSpeechRequest(
-                        new Voice(effectiveVoiceId, string.Empty),
+                        new Voice(request.VoiceId, string.Empty),
                         request.Message,
                         model: new Model("eleven_v3"),
                         outputFormat: OutputFormat.PCM_24000),

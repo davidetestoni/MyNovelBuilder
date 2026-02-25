@@ -1,5 +1,6 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
@@ -22,13 +23,13 @@ public interface ITtsService
     /// Generate audio bytes from the given text.
     /// Returns the entire audio as a byte array.
     /// </summary>
-    Task<byte[]> GenerateAudioAsync(TtsRequestDto request, CancellationToken cancellationToken = default);
+    Task<byte[]> GenerateAudioAsync(TtsRequest request, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Generate audio stream from the given text.
     /// Returns the audio as an encoded stream.
     /// </summary>
-    Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request, CancellationToken cancellationToken = default);
+    Task<Stream> GenerateAudioStreamAsync(TtsRequest request, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get a list of available voices.

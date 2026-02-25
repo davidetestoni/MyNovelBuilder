@@ -1,5 +1,6 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 using MyNovelBuilder.WebApi.Attributes;
 
@@ -12,7 +13,6 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class PocketTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
-    private readonly IIntegrationsService _integrationsService;
 
     private readonly TtsVoiceDto[] _voices = new List<string>(
             ["alba", "marius", "javert", "jean", "fantine", "cosette", "eponine", "azelma"])
@@ -30,11 +30,9 @@ public class PocketTtsService : ITtsService
     
     /// <summary></summary>
     public PocketTtsService(
-        HttpClient httpClient,
-        IIntegrationsService integrationsService)
+        HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _integrationsService = integrationsService;
     }
     
     private static MultipartFormDataContent CreateRequestContent(
@@ -51,15 +49,12 @@ public class PocketTtsService : ITtsService
     
     /// <inheritdoc/>
     public async Task<byte[]> GenerateAudioAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        
         using var response = await _httpClient.PostAsync(
             "http://localhost:8000/tts", CreateRequestContent(
-                request.Message, effectiveVoiceId),
+                request.Message, request.VoiceId),
             cancellationToken);
         
         // The response is a wav file, so just return it
@@ -68,17 +63,14 @@ public class PocketTtsService : ITtsService
     
     /// <inheritdoc />
     public async Task<Stream> GenerateAudioStreamAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        
         using var httpRequest = new HttpRequestMessage();
         httpRequest.RequestUri = new Uri("http://localhost:8000/tts");
         httpRequest.Method = HttpMethod.Post;
         httpRequest.Content = CreateRequestContent(
-            request.Message, effectiveVoiceId);
+            request.Message, request.VoiceId);
         
         var response = await _httpClient.SendAsync(
             httpRequest,

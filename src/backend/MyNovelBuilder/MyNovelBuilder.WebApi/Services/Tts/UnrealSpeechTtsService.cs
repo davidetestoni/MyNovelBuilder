@@ -5,6 +5,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 using MyNovelBuilder.WebApi.Attributes;
 
@@ -82,11 +83,10 @@ public class UnrealSpeechTtsService : ITtsService
     
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var apiKey = config.UnrealSpeechApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -104,7 +104,7 @@ public class UnrealSpeechTtsService : ITtsService
                 JsonSerializer.Serialize(new
                 {
                     Text = request.Message,
-                    VoiceId = effectiveVoiceId,
+                    VoiceId = request.VoiceId,
                     Bitrate = "320k",
                     AudioFormat = "mp3",
                     OutputFormat = "uri",
@@ -151,17 +151,14 @@ public class UnrealSpeechTtsService : ITtsService
 
     /// <inheritdoc />
     public async Task<Stream> GenerateAudioStreamAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        
         // This endpoint only supports text up to 1000 characters
         var textChunks = new TextChunker(1000).ChunkText(request.Message).ToList();
         
         return new UnrealSpeechStreamingStream(
-            _httpClient, effectiveVoiceId, textChunks);
+            _httpClient, request.VoiceId, textChunks);
     }
     
     /// <inheritdoc />

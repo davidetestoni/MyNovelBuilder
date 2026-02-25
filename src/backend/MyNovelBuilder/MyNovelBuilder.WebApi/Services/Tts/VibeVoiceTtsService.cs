@@ -2,6 +2,7 @@ using System.Net.WebSockets;
 using System.Text.Json;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 using MyNovelBuilder.WebApi.Attributes;
 using MyNovelBuilder.WebApi.Helpers;
@@ -15,7 +16,6 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class VibeVoiceTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
-    private readonly IIntegrationsService _integrationsService;
 
     // TODO: Read this from config
     private const string _host = "localhost:8000";
@@ -28,26 +28,21 @@ public class VibeVoiceTtsService : ITtsService
 
     /// <summary></summary>
     public VibeVoiceTtsService(
-        HttpClient httpClient,
-        IIntegrationsService integrationsService)
+        HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _integrationsService = integrationsService;
     }
     
     /// <inheritdoc/>
     public async Task<byte[]> GenerateAudioAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        
         // The websocket accepts query parameters for text and voice
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
-        query["voice"] = effectiveVoiceId;
+        query["voice"] = request.VoiceId;
         uriBuilder.Query = query.ToString();
         
         using var ws = new ClientWebSocket();
@@ -118,16 +113,13 @@ public class VibeVoiceTtsService : ITtsService
     
     /// <inheritdoc />
     public async Task<Stream> GenerateAudioStreamAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
-        query["voice"] = effectiveVoiceId;
+        query["voice"] = request.VoiceId;
         uriBuilder.Query = query.ToString();
         
         var ws = new ClientWebSocket();

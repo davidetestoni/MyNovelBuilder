@@ -16,7 +16,6 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class CustomTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
-    private readonly IIntegrationsService _integrationsService;
 
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
@@ -31,26 +30,21 @@ public class CustomTtsService : ITtsService
     
     /// <summary></summary>
     public CustomTtsService(
-        HttpClient httpClient,
-        IIntegrationsService integrationsService)
+        HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _integrationsService = integrationsService;
         _httpClient.BaseAddress = new Uri("http://localhost:5000");
     }
 
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        
         var jsonPayload = JsonSerializer.Serialize(new TtsRequest
         {
             Message = request.Message,
-            VoiceId = effectiveVoiceId
+            VoiceId = request.VoiceId
         }, _jsonSerializerOptions);
         using var response = await _httpClient.PostAsync(
             "generate/audio",
@@ -64,7 +58,7 @@ public class CustomTtsService : ITtsService
 
     /// <inheritdoc />
     public Task<Stream> GenerateAudioStreamAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();

@@ -4,6 +4,7 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Models.Prompts;
+using MyNovelBuilder.WebApi.Models.Tts;
 using MyNovelBuilder.WebApi.Prompts;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -162,6 +163,11 @@ public class GenerateAudioController : ControllerBase
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var effectiveProvider = dto.Provider ?? config.TtsProvider;
         var effectiveVoiceId = dto.VoiceId ?? config.TtsVoiceId;
+        var ttsRequest = new TtsRequest
+        {
+            Message = dto.Message,
+            VoiceId = effectiveVoiceId
+        };
         var ttsService = await GetTtsServiceAsync(effectiveProvider, cancellationToken);
         var audioParameters = new AudioGenerationParameters
         {
@@ -183,13 +189,13 @@ public class GenerateAudioController : ControllerBase
         // Emphasis
         if (ttsService.SupportsEmphasisTags)
         {
-            var emphasizedText = await GetEmphasizedTextAsync(dto.Message, cancellationToken);
-            dto.Message = emphasizedText.Trim();
+            var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
+            ttsRequest.Message = emphasizedText.Trim();
             
-            _logger.LogInformation("Emphasized text: {EmphasizedText}", dto.Message);
+            _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
         }
         
-        var ttsResponse = await ttsService.GenerateAudioAsync(dto, cancellationToken);
+        var ttsResponse = await ttsService.GenerateAudioAsync(ttsRequest, cancellationToken);
         if (ttsService.OutputAudioFormat == AudioFormat.Mp3)
         {
             await using var mp3Stream = new MemoryStream(ttsResponse);
@@ -216,6 +222,11 @@ public class GenerateAudioController : ControllerBase
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var effectiveProvider = dto.Provider ?? config.TtsProvider;
         var effectiveVoiceId = dto.VoiceId ?? config.TtsVoiceId;
+        var ttsRequest = new TtsRequest
+        {
+            Message = dto.Message,
+            VoiceId = effectiveVoiceId
+        };
         var ttsService = await GetTtsServiceAsync(effectiveProvider, cancellationToken);
         var audioParameters = new AudioGenerationParameters
         {
@@ -237,22 +248,22 @@ public class GenerateAudioController : ControllerBase
         // Emphasis
         if (ttsService.SupportsEmphasisTags)
         {
-            var emphasizedText = await GetEmphasizedTextAsync(dto.Message, cancellationToken);
-            dto.Message = emphasizedText.Trim();
+            var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
+            ttsRequest.Message = emphasizedText.Trim();
             
-            _logger.LogInformation("Emphasized text: {EmphasizedText}", dto.Message);
+            _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
         }
         
         Stream audioStream;
 
         try
         {
-            audioStream = await ttsService.GenerateAudioStreamAsync(dto, cancellationToken);
+            audioStream = await ttsService.GenerateAudioStreamAsync(ttsRequest, cancellationToken);
         }
         catch (NotImplementedException)
         {
             // Fallback to non-streaming
-            var audioBytes = await ttsService.GenerateAudioAsync(dto, cancellationToken);
+            var audioBytes = await ttsService.GenerateAudioAsync(ttsRequest, cancellationToken);
             audioStream = new MemoryStream(audioBytes);
         }
 

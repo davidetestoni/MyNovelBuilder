@@ -6,6 +6,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Tts;
 using NAudio.Wave;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
@@ -112,11 +113,9 @@ public class DeApiTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public async Task<byte[]> GenerateAudioAsync(TtsRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<byte[]> GenerateAudioAsync(TtsRequest request, CancellationToken cancellationToken = default)
     {
         var apiKey = await GetApiKeyAsync(cancellationToken);
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
         
         if (textChunks.Count == 0)
@@ -124,7 +123,7 @@ public class DeApiTtsService : ITtsService
             return [];
         }
         
-        var voiceParts = effectiveVoiceId.Split('/');
+        var voiceParts = request.VoiceId.Split('/');
         
         if (voiceParts.Length != 3)
         {
@@ -212,7 +211,7 @@ public class DeApiTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public Task<Stream> GenerateAudioStreamAsync(TtsRequestDto request, CancellationToken cancellationToken = default)
+    public Task<Stream> GenerateAudioStreamAsync(TtsRequest request, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

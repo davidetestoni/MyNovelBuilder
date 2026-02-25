@@ -7,6 +7,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Tts;
 using MyNovelBuilder.WebApi.Options;
 using NAudio.Wave;
 
@@ -19,7 +20,6 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class ChatterboxTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
-    private readonly IIntegrationsService _integrationsService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly string _voicesFolder;
     private const int _maxChunkLength = 500;
@@ -35,12 +35,10 @@ public class ChatterboxTtsService : ITtsService
     /// <summary></summary>
     public ChatterboxTtsService(
         HttpClient httpClient,
-        IIntegrationsService integrationsService,
         IOptions<AppStorageOptions> storageOptions,
         IServiceScopeFactory serviceScopeFactory)
     {
         _httpClient = httpClient;
-        _integrationsService = integrationsService;
         _serviceScopeFactory = serviceScopeFactory;
         _voicesFolder = Path.Combine(storageOptions.Value.DataFolder, "voices");
         _httpClient.BaseAddress = new Uri("http://localhost:8000");
@@ -81,13 +79,11 @@ public class ChatterboxTtsService : ITtsService
     
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
-        var referenceWavPath = GetReferenceWavPath(effectiveVoiceId);
+        var referenceWavPath = GetReferenceWavPath(request.VoiceId);
 
         if (textChunks.Count == 0)
         {
@@ -143,7 +139,7 @@ public class ChatterboxTtsService : ITtsService
 
     /// <inheritdoc />
     public Task<Stream> GenerateAudioStreamAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();

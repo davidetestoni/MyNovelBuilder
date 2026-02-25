@@ -5,6 +5,7 @@ using KokoroSharp.Utilities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Tts;
 using NAudio.Wave;
 
 using MyNovelBuilder.WebApi.Attributes;
@@ -18,7 +19,6 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class KokoroTtsService : ITtsService
 {
     private readonly ILogger<KokoroTtsService> _logger;
-    private readonly IIntegrationsService _integrationsService;
 
     private readonly string[] _voices =
     [
@@ -90,20 +90,16 @@ public class KokoroTtsService : ITtsService
     
     /// <summary></summary>
     public KokoroTtsService(
-        ILogger<KokoroTtsService> logger,
-        IIntegrationsService integrationsService)
+        ILogger<KokoroTtsService> logger)
     {
         _logger = logger;
-        _integrationsService = integrationsService;
     }
     
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         _logger.LogInformation("Generating audio using Kokoro TTS");
         var normalizedMessage = NormalizeForKokoro(request.Message);
         
@@ -112,7 +108,7 @@ public class KokoroTtsService : ITtsService
         await KokoroTTS.LoadModelAsync(model: KModel.float32);
         
         var synth = new KokoroWavSynthesizer("kokoro.onnx");
-        var voice = KokoroVoiceManager.GetVoice(effectiveVoiceId);
+        var voice = KokoroVoiceManager.GetVoice(request.VoiceId);
 
         cancellationToken.ThrowIfCancellationRequested();
         var audioBytes = await synth.SynthesizeAsync(normalizedMessage, voice);
@@ -129,15 +125,13 @@ public class KokoroTtsService : ITtsService
     
     /// <inheritdoc />
     public Task<Stream> GenerateAudioStreamAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken = default) => GenerateAudioStreamInternalAsync(request, cancellationToken);
     
     private async Task<Stream> GenerateAudioStreamInternalAsync(
-        TtsRequestDto request,
+        TtsRequest request,
         CancellationToken cancellationToken)
     {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         _logger.LogInformation("Generating streaming audio using Kokoro TTS");
         var normalizedMessage = NormalizeForKokoro(request.Message);
 
@@ -145,7 +139,7 @@ public class KokoroTtsService : ITtsService
         cancellationToken.ThrowIfCancellationRequested();
         await KokoroTTS.LoadModelAsync(model: KModel.float32);
 
-        var voice = KokoroVoiceManager.GetVoice(effectiveVoiceId);
+        var voice = KokoroVoiceManager.GetVoice(request.VoiceId);
 
         return new PcmWavStreamingStream(
             sampleRate: KokoroPlayback.waveFormat.SampleRate,
