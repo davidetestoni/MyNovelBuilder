@@ -9,7 +9,9 @@
     <h3>Text Generation</h3>
 
     <div class="form-group">
-      <label for="textGenerationProvider">Select Text Generation Provider:</label>
+      <label for="textGenerationProvider"
+        >Select Text Generation Provider:</label
+      >
       <p-select
         id="textGenerationProvider"
         [options]="textGenerationProviderOptions"
@@ -27,9 +29,7 @@
 
       @if (hasOpenRouterApiKey) {
         <div class="api-key-status">
-          <i
-            class="pi pi-check-circle success-icon"
-          ></i>
+          <i class="pi pi-check-circle success-icon"></i>
           <span>An OpenRouter API key is currently configured.</span>
         </div>
       } @else {
@@ -56,9 +56,7 @@
 
       @if (hasGoogleGenAiApiKey) {
         <div class="api-key-status">
-          <i
-            class="pi pi-check-circle success-icon"
-          ></i>
+          <i class="pi pi-check-circle success-icon"></i>
           <span>A Google GenAI API key is currently configured.</span>
         </div>
       } @else {
@@ -95,9 +93,7 @@
 
       @if (hasElevenLabsApiKey) {
         <div class="api-key-status">
-          <i
-            class="pi pi-check-circle success-icon"
-          ></i>
+          <i class="pi pi-check-circle success-icon"></i>
           <span>An ElevenLabs API key is currently configured.</span>
         </div>
       } @else {
@@ -121,9 +117,7 @@
 
       @if (hasUnrealSpeechApiKey) {
         <div class="api-key-status">
-          <i
-            class="pi pi-check-circle success-icon"
-          ></i>
+          <i class="pi pi-check-circle success-icon"></i>
           <span>An UnrealSpeech API key is currently configured.</span>
         </div>
       } @else {
@@ -145,21 +139,37 @@
     @if (ttsVoiceOptions.length > 0) {
       <div class="form-group">
         <label for="ttsVoiceId">Select TTS Voice:</label>
-        <p-select
-          id="ttsVoiceId"
-          [options]="ttsVoiceOptions"
-          formControlName="ttsVoiceId"
-          placeholder="Select a TTS voice"
-          [style]="{ width: '100%' }"
-          [filter]="true"
-        />
+        <div class="tts-voice-controls">
+          <p-select
+            id="ttsVoiceId"
+            [options]="ttsVoiceOptions"
+            formControlName="ttsVoiceId"
+            placeholder="Select a TTS voice"
+            [style]="{ width: '100%' }"
+            [filter]="true"
+          />
+
+          <p-button
+            type="button"
+            label="Preview"
+            variant="outlined"
+            icon="pi pi-play"
+            [loading]="isPreviewingTtsVoice"
+            [disabled]="
+              !integrationsForm.value.ttsVoiceId || isPreviewingTtsVoice
+            "
+            (onClick)="previewTtsVoice()"
+          />
+        </div>
       </div>
     }
 
     <h3>Image Generation</h3>
 
     <div class="form-group">
-      <label for="imageGenerationProvider">Select Image Generation Provider:</label>
+      <label for="imageGenerationProvider"
+        >Select Image Generation Provider:</label
+      >
       <p-select
         id="imageGenerationProvider"
         [options]="imageGenerationProviderOptions"
@@ -177,9 +187,7 @@
 
       @if (hasDeApiApiKey) {
         <div class="api-key-status">
-          <i
-            class="pi pi-check-circle success-icon"
-          ></i>
+          <i class="pi pi-check-circle success-icon"></i>
           <span>A DeAPI API key is currently configured.</span>
         </div>
       } @else {

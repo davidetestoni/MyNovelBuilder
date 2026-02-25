@@ -49,6 +49,17 @@
         display: block;
         margin-bottom: 8px;
       }
+
+      .tts-voice-controls {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+
+        p-select {
+          flex: 1;
+        }
+      }
     }
   }
 }

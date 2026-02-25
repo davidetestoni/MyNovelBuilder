@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -20,6 +20,7 @@ import { TextGenerationProvider } from '../../types/enums/text-generation-provid
 import { ImageGenerationProvider } from '../../types/enums/image-generation-provider';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
+import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 
 @Component({
   selector: 'app-integrations',
@@ -34,7 +35,7 @@ import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
   templateUrl: './integrations.component.html',
   styleUrl: './integrations.component.scss',
 })
-export class IntegrationsComponent implements OnInit {
+export class IntegrationsComponent implements OnInit, OnDestroy {
   protected readonly TextGenerationProvider = TextGenerationProvider;
   protected readonly TtsProvider = TtsProvider;
   protected readonly ImageGenerationProvider = ImageGenerationProvider;
@@ -63,6 +64,10 @@ export class IntegrationsComponent implements OnInit {
   hasElevenLabsApiKey: boolean = false;
   hasUnrealSpeechApiKey: boolean = false;
   hasDeApiApiKey: boolean = false;
+  isPreviewingTtsVoice: boolean = false;
+  private previewPlayer: StreamingWavPlayer | null = null;
+  private readonly ttsPreviewSampleText =
+    'Hello, this is a quick sample to preview the selected voice.';
 
   ttsProviderOptions = Object.values(TtsProvider).map((provider) => ({
     // camelCase to spaced Pascal Case for display
@@ -127,6 +132,10 @@ export class IntegrationsComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this.previewPlayer?.stop();
+  }
+
   loadTtsVoices(provider: TtsProvider, selectedVoiceId?: string): void {
     this.generateAudioService.getAvailableVoices(provider).subscribe({
       next: (voices: TtsVoiceDto[]) => {
@@ -152,6 +161,54 @@ export class IntegrationsComponent implements OnInit {
         this.ttsVoiceOptions = [];
       },
     });
+  }
+
+  async previewTtsVoice(): Promise<void> {
+    if (this.isPreviewingTtsVoice) {
+      return;
+    }
+
+    if (!this.integrationsForm.value.ttsVoiceId) {
+      this.toastrService.error('Please select a TTS voice first.');
+      return;
+    }
+
+    this.isPreviewingTtsVoice = true;
+    this.previewPlayer?.stop();
+    this.previewPlayer = new StreamingWavPlayer();
+
+    try {
+      const response = await this.generateAudioService.textToSpeechStreamResponse(
+        {
+          message: this.ttsPreviewSampleText,
+        },
+      );
+
+      const stream = response.body;
+      if (!stream) {
+        this.toastrService.error('No audio stream was returned.');
+        return;
+      }
+
+      const reader = stream.getReader();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        if (value) {
+          this.previewPlayer.addChunk(value);
+        }
+      }
+    } catch (error) {
+      console.error('WAV preview streaming error:', error);
+      this.toastrService.error(
+        'Could not preview voice. Please verify your TTS configuration.',
+      );
+    } finally {
+      this.isPreviewingTtsVoice = false;
+    }
   }
 
   onSubmit(): void {
