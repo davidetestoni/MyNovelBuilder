@@ -140,7 +140,7 @@ public class DeApiImageGenerationService : IImageGenerationService
         // Polling
         while (DateTime.UtcNow - startTime < timeout)
         {
-            await Task.Delay(2000, cancellationToken);
+            await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
 
             var statusRequest = new HttpRequestMessage
             {

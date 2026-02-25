@@ -5,6 +5,8 @@ using MyNovelBuilder.WebApi.Attributes;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Helpers;
+using NAudio.Wave;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
@@ -17,6 +19,7 @@ public class DeApiTtsService : ITtsService
     private readonly ILogger<DeApiTtsService> _logger;
     private readonly HttpClient _httpClient;
     private readonly IIntegrationsService _integrationsService;
+    private const int _maxChunkLength = 500;
 
     /// <inheritdoc />
     public bool SupportsEmphasisTags => false;
@@ -61,7 +64,7 @@ public class DeApiTtsService : ITtsService
         // Polling
         while (DateTime.UtcNow - startTime < timeout)
         {
-            await Task.Delay(2000, cancellationToken);
+            await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
 
             var statusRequest = new HttpRequestMessage
             {
@@ -113,6 +116,12 @@ public class DeApiTtsService : ITtsService
     {
         var apiKey = await GetApiKeyAsync(cancellationToken);
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
+        
+        if (textChunks.Count == 0)
+        {
+            return [];
+        }
         
         var voiceParts = config.TtsVoiceId.Split('/');
         
@@ -125,43 +134,80 @@ public class DeApiTtsService : ITtsService
         var modelSlug = voiceParts[0];
         var languageCode = voiceParts[1];
         var voiceSlug = voiceParts[2];
-        
-        // TODO: This endpoint only supports text up to 1000 characters!
-        //  Use TextChunker to split into multiple requests, maybe use a stream like
-        //  for UnrealSpeech
-        var httpRequest = new HttpRequestMessage
-        {
-            Method = HttpMethod.Post,
-            RequestUri = new Uri(_httpClient.BaseAddress!, "txt2audio"),
-            Content = new StringContent(
-                JsonSerializer.Serialize(new
-                {
-                    model = modelSlug,
-                    text = request.Message,
-                    voice = voiceSlug,
-                    lang = languageCode,
-                    speed = 1,
-                    format = "wav",
-                    sample_rate = 24000
-                }), Encoding.UTF8, "application/json")
-        };
-        httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
 
-        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
-        var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+        await using var fullPcmStream = new MemoryStream();
+        WaveFormat? outputFormat = null;
         
-        if (!response.IsSuccessStatusCode)
+        foreach (var textChunk in textChunks)
         {
-            _logger.LogError("DeAPI TTS generation failed. Status code: {StatusCode}, Response: {Response}",
-                response.StatusCode, jsonResponse);
-            throw new ApiException(ErrorCodes.ExternalServiceError,
-                "TTS generation failed with DeAPI.");
+            var httpRequest = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri(_httpClient.BaseAddress!, "txt2audio"),
+                Content = new StringContent(
+                    JsonSerializer.Serialize(new
+                    {
+                        model = modelSlug,
+                        text = textChunk,
+                        voice = voiceSlug,
+                        lang = languageCode,
+                        speed = 1,
+                        format = "wav",
+                        sample_rate = 24000
+                    }), Encoding.UTF8, "application/json")
+            };
+            httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
+            
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+            var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("DeAPI TTS generation failed. Status code: {StatusCode}, Response: {Response}",
+                    response.StatusCode, jsonResponse);
+                throw new ApiException(ErrorCodes.ExternalServiceError,
+                    "TTS generation failed with DeAPI.");
+            }
+            
+            var responseObject = JsonNode.Parse(jsonResponse)!;
+            var requestId = responseObject["data"]!["request_id"]!.GetValue<string>();
+            var wavChunk = await PollForResultAsync(requestId, apiKey, cancellationToken);
+            
+            await using var chunkStream = new MemoryStream(wavChunk);
+            await using var wavReader = new WaveFileReader(chunkStream);
+            
+            if (outputFormat is null)
+            {
+                outputFormat = wavReader.WaveFormat;
+            }
+            else if (outputFormat.SampleRate != wavReader.WaveFormat.SampleRate
+                     || outputFormat.BitsPerSample != wavReader.WaveFormat.BitsPerSample
+                     || outputFormat.Channels != wavReader.WaveFormat.Channels)
+            {
+                throw new ApiException(
+                    ErrorCodes.ExternalServiceError,
+                    "DeAPI returned inconsistent WAV formats across chunks.");
+            }
+            
+            var buffer = new byte[8192];
+            int bytesRead;
+
+            while ((bytesRead = await wavReader.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)) > 0)
+            {
+                await fullPcmStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+            }
         }
-
-        var responseObject = JsonNode.Parse(jsonResponse)!;
-        var requestId = responseObject["data"]!["request_id"]!.GetValue<string>();
-
-        return await PollForResultAsync(requestId, apiKey, cancellationToken);
+        
+        if (outputFormat is null)
+        {
+            return [];
+        }
+        
+        using var finalWavStream = new MemoryStream();
+        await using var wavWriter = new WaveFileWriter(finalWavStream, outputFormat);
+        await wavWriter.WriteAsync(fullPcmStream.ToArray(), cancellationToken);
+        
+        return finalWavStream.ToArray();
     }
 
     /// <inheritdoc />
