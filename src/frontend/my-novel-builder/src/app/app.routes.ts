@@ -93,4 +93,10 @@ export const routes: Routes = [
       ),
     data: mainLayoutData,
   },
+  {
+    path: 'voices',
+    loadComponent: () =>
+      import('./pages/voices/voices.component').then((m) => m.VoicesComponent),
+    data: mainLayoutData,
+  },
 ];

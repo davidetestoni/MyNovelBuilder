@@ -60,6 +60,19 @@
           flex: 1;
         }
       }
+
+      .manage-custom-voices-btn {
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .manage-custom-voices-btn:hover,
+      .manage-custom-voices-btn:focus,
+      .manage-custom-voices-btn:active,
+      .manage-custom-voices-btn:visited {
+        text-decoration: none;
+        color: inherit;
+      }
     }
   }
 }

@@ -28,6 +28,11 @@ public interface IUnitOfWork
     IPromptRepository Prompts { get; }
     
     /// <summary>
+    /// Repository for voices.
+    /// </summary>
+    IVoiceRepository Voices { get; }
+    
+    /// <summary>
     /// Complete the current transaction.
     /// </summary>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

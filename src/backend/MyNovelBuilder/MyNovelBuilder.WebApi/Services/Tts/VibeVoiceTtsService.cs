@@ -41,12 +41,13 @@ public class VibeVoiceTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         
         // The websocket accepts query parameters for text and voice
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
-        query["voice"] = config.TtsVoiceId;
+        query["voice"] = effectiveVoiceId;
         uriBuilder.Query = query.ToString();
         
         using var ws = new ClientWebSocket();
@@ -121,11 +122,12 @@ public class VibeVoiceTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         
         var uriBuilder = new UriBuilder($"ws://{_host}/stream");
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
-        query["voice"] = config.TtsVoiceId;
+        query["voice"] = effectiveVoiceId;
         uriBuilder.Query = query.ToString();
         
         var ws = new ClientWebSocket();

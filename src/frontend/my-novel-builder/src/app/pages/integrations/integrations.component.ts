@@ -181,6 +181,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       const response = await this.generateAudioService.textToSpeechStreamResponse(
         {
           message: this.ttsPreviewSampleText,
+          voiceId: this.integrationsForm.value.ttsVoiceId ?? undefined,
+          provider: this.integrationsForm.value.ttsProvider ?? undefined,
         },
       );
 

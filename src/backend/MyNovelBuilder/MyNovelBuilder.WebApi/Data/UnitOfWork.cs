@@ -17,6 +17,7 @@ public class UnitOfWork : IUnitOfWork
         Compendia = new CompendiumRepository(_context);
         CompendiumRecords = new CompendiumRecordRepository(_context);
         Prompts = new PromptRepository(_context);
+        Voices = new VoiceRepository(_context);
     }
     
     /// <inheritdoc />
@@ -30,6 +31,9 @@ public class UnitOfWork : IUnitOfWork
 
     /// <inheritdoc />
     public IPromptRepository Prompts { get; }
+    
+    /// <inheritdoc />
+    public IVoiceRepository Voices { get; }
 
     /// <inheritdoc />
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

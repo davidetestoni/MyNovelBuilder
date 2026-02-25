@@ -86,6 +86,7 @@ public class UnrealSpeechTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var apiKey = config.UnrealSpeechApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -103,7 +104,7 @@ public class UnrealSpeechTtsService : ITtsService
                 JsonSerializer.Serialize(new
                 {
                     Text = request.Message,
-                    VoiceId = config.TtsVoiceId,
+                    VoiceId = effectiveVoiceId,
                     Bitrate = "320k",
                     AudioFormat = "mp3",
                     OutputFormat = "uri",
@@ -154,12 +155,13 @@ public class UnrealSpeechTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         
         // This endpoint only supports text up to 1000 characters
         var textChunks = new TextChunker(1000).ChunkText(request.Message).ToList();
         
         return new UnrealSpeechStreamingStream(
-            _httpClient, config.TtsVoiceId, textChunks);
+            _httpClient, effectiveVoiceId, textChunks);
     }
     
     /// <inheritdoc />

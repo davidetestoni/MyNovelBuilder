@@ -116,6 +116,7 @@ public class DeApiTtsService : ITtsService
     {
         var apiKey = await GetApiKeyAsync(cancellationToken);
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
         
         if (textChunks.Count == 0)
@@ -123,7 +124,7 @@ public class DeApiTtsService : ITtsService
             return [];
         }
         
-        var voiceParts = config.TtsVoiceId.Split('/');
+        var voiceParts = effectiveVoiceId.Split('/');
         
         if (voiceParts.Length != 3)
         {

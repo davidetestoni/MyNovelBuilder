@@ -103,6 +103,7 @@ public class KokoroTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         _logger.LogInformation("Generating audio using Kokoro TTS");
         var normalizedMessage = NormalizeForKokoro(request.Message);
         
@@ -111,7 +112,7 @@ public class KokoroTtsService : ITtsService
         await KokoroTTS.LoadModelAsync(model: KModel.float32);
         
         var synth = new KokoroWavSynthesizer("kokoro.onnx");
-        var voice = KokoroVoiceManager.GetVoice(config.TtsVoiceId);
+        var voice = KokoroVoiceManager.GetVoice(effectiveVoiceId);
 
         cancellationToken.ThrowIfCancellationRequested();
         var audioBytes = await synth.SynthesizeAsync(normalizedMessage, voice);
@@ -136,6 +137,7 @@ public class KokoroTtsService : ITtsService
         CancellationToken cancellationToken)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         _logger.LogInformation("Generating streaming audio using Kokoro TTS");
         var normalizedMessage = NormalizeForKokoro(request.Message);
 
@@ -143,7 +145,7 @@ public class KokoroTtsService : ITtsService
         cancellationToken.ThrowIfCancellationRequested();
         await KokoroTTS.LoadModelAsync(model: KModel.float32);
 
-        var voice = KokoroVoiceManager.GetVoice(config.TtsVoiceId);
+        var voice = KokoroVoiceManager.GetVoice(effectiveVoiceId);
 
         return new PcmWavStreamingStream(
             sampleRate: KokoroPlayback.waveFormat.SampleRate,

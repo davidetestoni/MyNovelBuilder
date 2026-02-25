@@ -1,0 +1,58 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="name" class="form-field-label">Name *</label>
+        <input
+          pInputText
+          id="name"
+          type="text"
+          formControlName="name"
+          placeholder="Voice name"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="voiceGender" class="form-field-label">Gender *</label>
+        <p-select
+          id="voiceGender"
+          formControlName="voiceGender"
+          [options]="voiceGenderOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select gender"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="voiceFile" class="form-field-label">Voice File (.wav) *</label>
+        <input
+          id="voiceFile"
+          type="file"
+          accept=".wav,audio/wav"
+          (change)="onFileSelected($event)"
+        />
+        @if (selectedFileName) {
+          <small>{{ selectedFileName }}</small>
+        }
+      </div>
+
+      <div class="form-buttons-container">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          type="button"
+          (onClick)="cancel()"
+        />
+        <p-button
+          [label]="data.mode === 'edit' ? 'Save' : 'Create'"
+          type="button"
+          (onClick)="submit()"
+          [disabled]="formGroup.invalid"
+        />
+      </div>
+    </form>
+  </div>
+</div>

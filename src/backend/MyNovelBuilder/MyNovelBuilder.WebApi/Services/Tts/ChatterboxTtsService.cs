@@ -1,9 +1,13 @@
-using System.Text;
-using System.Text.Json;
+using System.Net.Http.Headers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Attributes;
+using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Options;
 using NAudio.Wave;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
@@ -16,8 +20,11 @@ public class ChatterboxTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
     private readonly IIntegrationsService _integrationsService;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly string _voicesFolder;
     private const int _maxChunkLength = 500;
     private const int _sampleRate = 24000;
+    private const string _defaultVoiceId = "default";
 
     /// <inheritdoc />
     public bool SupportsEmphasisTags => false;
@@ -28,10 +35,14 @@ public class ChatterboxTtsService : ITtsService
     /// <summary></summary>
     public ChatterboxTtsService(
         HttpClient httpClient,
-        IIntegrationsService integrationsService)
+        IIntegrationsService integrationsService,
+        IOptions<AppStorageOptions> storageOptions,
+        IServiceScopeFactory serviceScopeFactory)
     {
         _httpClient = httpClient;
         _integrationsService = integrationsService;
+        _serviceScopeFactory = serviceScopeFactory;
+        _voicesFolder = Path.Combine(storageOptions.Value.DataFolder, "voices");
         _httpClient.BaseAddress = new Uri("http://localhost:8000");
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
     }
@@ -74,7 +85,9 @@ public class ChatterboxTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
+        var referenceWavPath = GetReferenceWavPath(effectiveVoiceId);
 
         if (textChunks.Count == 0)
         {
@@ -85,20 +98,39 @@ public class ChatterboxTtsService : ITtsService
 
         foreach (var chunk in textChunks)
         {
-            var jsonPayload = JsonSerializer.Serialize(new
+            using var formData = new MultipartFormDataContent();
+            formData.Add(new StringContent(NormalizeText(chunk)), "text");
+
+            if (referenceWavPath is not null)
             {
-                text = NormalizeText(chunk),
-                voice = config.TtsVoiceId
-            });
+                await using var referenceWavStream = File.OpenRead(referenceWavPath);
+                using var wavContent = new StreamContent(referenceWavStream);
+                wavContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+                formData.Add(
+                    wavContent,
+                    "reference_wav",
+                    Path.GetFileName(referenceWavPath));
 
-            using var response = await _httpClient.PostAsync(
-                "tts",
-                new StringContent(jsonPayload, Encoding.UTF8, "application/json"),
-                cancellationToken);
-            response.EnsureSuccessStatusCode();
+                using var response = await _httpClient.PostAsync(
+                    "tts",
+                    formData,
+                    cancellationToken);
+                response.EnsureSuccessStatusCode();
 
-            var pcmChunk = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            await fullPcmStream.WriteAsync(pcmChunk, cancellationToken);
+                var pcmChunk = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                await fullPcmStream.WriteAsync(pcmChunk, cancellationToken);
+            }
+            else
+            {
+                using var response = await _httpClient.PostAsync(
+                    "tts",
+                    formData,
+                    cancellationToken);
+                response.EnsureSuccessStatusCode();
+
+                var pcmChunk = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+                await fullPcmStream.WriteAsync(pcmChunk, cancellationToken);
+            }
         }
 
         var combinedPcm = fullPcmStream.ToArray();
@@ -120,16 +152,52 @@ public class ChatterboxTtsService : ITtsService
     /// <inheritdoc />
     public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.GetAsync("voices", cancellationToken);
-        response.EnsureSuccessStatusCode();
+        using var scope = _serviceScopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        var voices = JsonSerializer.Deserialize<List<string>>(json) ?? [];
+        var customVoices = await dbContext.Voices
+            .AsNoTracking()
+            .OrderBy(v => v.Name)
+            .Select(v => new TtsVoiceDto
+            {
+                VoiceId = v.Id.ToString(),
+                Name = v.Name,
+            })
+            .ToListAsync(cancellationToken);
 
-        return voices.Select(v => new TtsVoiceDto
+        var defaultVoice = new TtsVoiceDto
         {
-            VoiceId = v,
-            Name = v,
-        });
+            VoiceId = _defaultVoiceId,
+            Name = "Default"
+        };
+
+        return [defaultVoice, .. customVoices];
+    }
+
+    private string? GetReferenceWavPath(string? voiceId)
+    {
+        if (string.IsNullOrWhiteSpace(voiceId)
+            || voiceId.Equals(_defaultVoiceId, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (!Guid.TryParse(voiceId, out var id))
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                $"Invalid Chatterbox voice ID: {voiceId}");
+        }
+
+        var wavPath = Path.Combine(_voicesFolder, $"{id}.wav");
+
+        if (!File.Exists(wavPath))
+        {
+            throw new ApiException(
+                ErrorCodes.InvalidFile,
+                $"Voice sample file was not found for voice ID: {voiceId}");
+        }
+
+        return wavPath;
     }
 }

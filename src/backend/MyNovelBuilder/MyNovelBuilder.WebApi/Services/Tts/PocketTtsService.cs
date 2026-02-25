@@ -55,10 +55,11 @@ public class PocketTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         
         using var response = await _httpClient.PostAsync(
             "http://localhost:8000/tts", CreateRequestContent(
-                request.Message, config.TtsVoiceId),
+                request.Message, effectiveVoiceId),
             cancellationToken);
         
         // The response is a wav file, so just return it
@@ -71,12 +72,13 @@ public class PocketTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         
         using var httpRequest = new HttpRequestMessage();
         httpRequest.RequestUri = new Uri("http://localhost:8000/tts");
         httpRequest.Method = HttpMethod.Post;
         httpRequest.Content = CreateRequestContent(
-            request.Message, config.TtsVoiceId);
+            request.Message, effectiveVoiceId);
         
         var response = await _httpClient.SendAsync(
             httpRequest,

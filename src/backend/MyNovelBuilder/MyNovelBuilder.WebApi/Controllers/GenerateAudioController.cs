@@ -160,12 +160,14 @@ public class GenerateAudioController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var ttsService = await GetTtsServiceAsync(config.TtsProvider, cancellationToken);
+        var effectiveProvider = dto.Provider ?? config.TtsProvider;
+        var effectiveVoiceId = dto.VoiceId ?? config.TtsVoiceId;
+        var ttsService = await GetTtsServiceAsync(effectiveProvider, cancellationToken);
         var audioParameters = new AudioGenerationParameters
         {
             Text = dto.Message,
-            Provider = config.TtsProvider,
-            VoiceId = config.TtsVoiceId
+            Provider = effectiveProvider,
+            VoiceId = effectiveVoiceId
         };
         
         _logger.LogInformation("Generating audio for text: {Text}", dto.Message);
@@ -212,12 +214,14 @@ public class GenerateAudioController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var ttsService = await GetTtsServiceAsync(config.TtsProvider, cancellationToken);
+        var effectiveProvider = dto.Provider ?? config.TtsProvider;
+        var effectiveVoiceId = dto.VoiceId ?? config.TtsVoiceId;
+        var ttsService = await GetTtsServiceAsync(effectiveProvider, cancellationToken);
         var audioParameters = new AudioGenerationParameters
         {
             Text = dto.Message,
-            Provider = config.TtsProvider,
-            VoiceId = config.TtsVoiceId
+            Provider = effectiveProvider,
+            VoiceId = effectiveVoiceId
         };
         
         _logger.LogInformation("Generating audio stream for text: {Text}", dto.Message);

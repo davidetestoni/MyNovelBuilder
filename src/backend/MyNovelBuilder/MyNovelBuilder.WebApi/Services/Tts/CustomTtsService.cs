@@ -45,11 +45,12 @@ public class CustomTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         
         var jsonPayload = JsonSerializer.Serialize(new TtsRequest
         {
             Message = request.Message,
-            VoiceId = config.TtsVoiceId
+            VoiceId = effectiveVoiceId
         }, _jsonSerializerOptions);
         using var response = await _httpClient.PostAsync(
             "generate/audio",

@@ -36,6 +36,11 @@ public class AppDbContext : DbContext
     /// The prompts in the database.
     /// </summary>
     public DbSet<Prompt> Prompts { get; init; }
+    
+    /// <summary>
+    /// The voices in the database.
+    /// </summary>
+    public DbSet<Voice> Voices { get; init; }
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

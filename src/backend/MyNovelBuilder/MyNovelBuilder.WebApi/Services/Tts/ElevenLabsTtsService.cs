@@ -38,6 +38,7 @@ public class ElevenLabsTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var apiKey = config.ElevenLabsApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -51,7 +52,7 @@ public class ElevenLabsTtsService : ITtsService
 
         var voiceClip = await client.TextToSpeechEndpoint.TextToSpeechAsync(
             new TextToSpeechRequest(
-                new Voice(config.TtsVoiceId, string.Empty),
+                new Voice(effectiveVoiceId, string.Empty),
                 request.Message,
                 model: new Model("eleven_v3"),
                 outputFormat: OutputFormat.PCM_24000),
@@ -72,6 +73,7 @@ public class ElevenLabsTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
         var apiKey = config.ElevenLabsApiKey;
         
         if (string.IsNullOrWhiteSpace(apiKey))
@@ -91,7 +93,7 @@ public class ElevenLabsTtsService : ITtsService
             {
                 await client.TextToSpeechEndpoint.TextToSpeechAsync(
                     new TextToSpeechRequest(
-                        new Voice(config.TtsVoiceId, string.Empty),
+                        new Voice(effectiveVoiceId, string.Empty),
                         request.Message,
                         model: new Model("eleven_v3"),
                         outputFormat: OutputFormat.PCM_24000),
