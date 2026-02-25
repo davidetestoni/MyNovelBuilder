@@ -39,4 +39,9 @@ public enum TtsProvider
     /// DeAPI TTS provider.
     /// </summary>
     DeApi,
+    
+    /// <summary>
+    /// Chatterbox TTS provider.
+    /// </summary>
+    Chatterbox,
 }
