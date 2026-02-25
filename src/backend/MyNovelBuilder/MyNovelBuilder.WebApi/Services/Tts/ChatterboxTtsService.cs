@@ -142,7 +142,53 @@ public class ChatterboxTtsService : ITtsService
         TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
+        var referenceWavPath = GetReferenceWavPath(request.VoiceId);
+
+        return Task.FromResult<Stream>(new PcmWavStreamingStream(
+            sampleRate: _sampleRate,
+            channels: 1,
+            bitsPerSample: 16,
+            producer: async (writeAsync, ct) =>
+            {
+                foreach (var chunk in textChunks)
+                {
+                    using var formData = new MultipartFormDataContent();
+                    formData.Add(new StringContent(NormalizeText(chunk)), "text");
+
+                    if (referenceWavPath is not null)
+                    {
+                        await using var referenceWavStream = File.OpenRead(referenceWavPath);
+                        using var wavContent = new StreamContent(referenceWavStream);
+                        wavContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+                        formData.Add(
+                            wavContent,
+                            "reference_wav",
+                            Path.GetFileName(referenceWavPath));
+
+                        using var response = await _httpClient.PostAsync(
+                            "tts",
+                            formData,
+                            ct);
+                        response.EnsureSuccessStatusCode();
+
+                        var pcmChunk = await response.Content.ReadAsByteArrayAsync(ct);
+                        await writeAsync(pcmChunk);
+                    }
+                    else
+                    {
+                        using var response = await _httpClient.PostAsync(
+                            "tts",
+                            formData,
+                            ct);
+                        response.EnsureSuccessStatusCode();
+
+                        var pcmChunk = await response.Content.ReadAsByteArrayAsync(ct);
+                        await writeAsync(pcmChunk);
+                    }
+                }
+            },
+            ct: cancellationToken));
     }
 
     /// <inheritdoc />
