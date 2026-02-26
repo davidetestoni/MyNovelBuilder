@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environment';
 import { VoiceDto } from '../types/dtos/voice/voice.dto';
 import { VoiceGender } from '../types/enums/voice-gender';
+import { WritingLanguage } from '../types/enums/writing-language';
 import { VoiceService } from './voice.service';
 
 @Injectable()
@@ -19,11 +20,13 @@ export class ApiVoiceService extends VoiceService {
   createVoice(
     name: string,
     voiceGender: VoiceGender,
+    language: WritingLanguage,
     file: File,
   ): Observable<VoiceDto> {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('voiceGender', voiceGender);
+    formData.append('language', language);
     formData.append('file', file);
     return this.http.post<VoiceDto>(`${this.baseUrl}/voices`, formData);
   }
@@ -32,12 +35,14 @@ export class ApiVoiceService extends VoiceService {
     id: string,
     name: string,
     voiceGender: VoiceGender,
+    language: WritingLanguage,
     file: File,
   ): Observable<VoiceDto> {
     const formData = new FormData();
     formData.append('id', id);
     formData.append('name', name);
     formData.append('voiceGender', voiceGender);
+    formData.append('language', language);
     formData.append('file', file);
     return this.http.put<VoiceDto>(`${this.baseUrl}/voices`, formData);
   }

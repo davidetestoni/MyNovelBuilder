@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { VoiceDto } from '../types/dtos/voice/voice.dto';
 import { VoiceGender } from '../types/enums/voice-gender';
+import { WritingLanguage } from '../types/enums/writing-language';
 
 @Injectable()
 export abstract class VoiceService {
@@ -9,12 +10,14 @@ export abstract class VoiceService {
   abstract createVoice(
     name: string,
     voiceGender: VoiceGender,
+    language: WritingLanguage,
     file: File,
   ): Observable<VoiceDto>;
   abstract updateVoice(
     id: string,
     name: string,
     voiceGender: VoiceGender,
+    language: WritingLanguage,
     file: File,
   ): Observable<VoiceDto>;
   abstract deleteVoice(id: string): Observable<void>;

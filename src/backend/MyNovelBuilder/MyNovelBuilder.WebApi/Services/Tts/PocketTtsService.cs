@@ -20,6 +20,7 @@ public class PocketTtsService : ITtsService
         {
             VoiceId = v,
             Name = char.ToUpper(v[0]) + v[1..],
+            Language = WritingLanguage.English
         }).ToArray();
 
     /// <inheritdoc/>

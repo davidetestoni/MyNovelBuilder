@@ -43,6 +43,9 @@
           <div class="voice-meta voice-meta-gender">
             <span class="meta-value">{{ getGenderLabel(voice.voiceGender) }}</span>
           </div>
+          <div class="voice-meta">
+            <span class="meta-value">{{ voice.language | titlecase }}</span>
+          </div>
           <p-button
             class="voice-preview-button"
             type="button"

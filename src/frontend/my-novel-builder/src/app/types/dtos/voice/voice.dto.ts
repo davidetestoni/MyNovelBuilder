@@ -1,4 +1,5 @@
 import { VoiceGender } from '../../enums/voice-gender';
+import { WritingLanguage } from '../../enums/writing-language';
 
 export interface VoiceDto {
   id: string;
@@ -6,4 +7,5 @@ export interface VoiceDto {
   updatedAt: string;
   name: string;
   voiceGender: VoiceGender;
+  language: WritingLanguage;
 }

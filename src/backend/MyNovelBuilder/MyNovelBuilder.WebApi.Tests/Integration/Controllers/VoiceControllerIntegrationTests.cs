@@ -32,12 +32,14 @@ public class VoiceControllerIntegrationTests(
         var firstVoice = new Voice
         {
             Name = "Narrator One",
-            VoiceGender = VoiceGender.Female
+            VoiceGender = VoiceGender.Female,
+            Language = WritingLanguage.English
         };
         var secondVoice = new Voice
         {
             Name = "Narrator Two",
-            VoiceGender = VoiceGender.Male
+            VoiceGender = VoiceGender.Male,
+            Language = WritingLanguage.German
         };
         UnitOfWork.Voices.Add(firstVoice);
         UnitOfWork.Voices.Add(secondVoice);
@@ -50,8 +52,18 @@ public class VoiceControllerIntegrationTests(
         Assert.True(result.IsOk);
         var voices = result.Value.ToList();
         Assert.Equal(2, voices.Count);
-        Assert.Contains(voices, v => v.Id == firstVoice.Id && v.Name == firstVoice.Name && v.VoiceGender == firstVoice.VoiceGender);
-        Assert.Contains(voices, v => v.Id == secondVoice.Id && v.Name == secondVoice.Name && v.VoiceGender == secondVoice.VoiceGender);
+        Assert.Contains(
+            voices,
+            v => v.Id == firstVoice.Id
+                 && v.Name == firstVoice.Name
+                 && v.VoiceGender == firstVoice.VoiceGender
+                 && v.Language == firstVoice.Language);
+        Assert.Contains(
+            voices,
+            v => v.Id == secondVoice.Id
+                 && v.Name == secondVoice.Name
+                 && v.VoiceGender == secondVoice.VoiceGender
+                 && v.Language == secondVoice.Language);
     }
 
     [Fact]
@@ -63,6 +75,7 @@ public class VoiceControllerIntegrationTests(
         using var content = CreateVoiceFormData(
             name: "New Voice",
             voiceGender: VoiceGender.Both,
+            language: WritingLanguage.Spanish,
             fileName: "voice.wav",
             fileBytes: wavBytes);
 
@@ -76,6 +89,7 @@ public class VoiceControllerIntegrationTests(
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var createdVoice = dbContext.Voices.Single(v => v.Name == "New Voice");
         Assert.Equal(VoiceGender.Both, createdVoice.VoiceGender);
+        Assert.Equal(WritingLanguage.Spanish, createdVoice.Language);
 
         var wavPath = GetVoiceWavPath(createdVoice.Id);
         Assert.True(File.Exists(wavPath));
@@ -91,7 +105,8 @@ public class VoiceControllerIntegrationTests(
         var voice = new Voice
         {
             Name = "Original Voice",
-            VoiceGender = VoiceGender.Male
+            VoiceGender = VoiceGender.Male,
+            Language = WritingLanguage.English
         };
         UnitOfWork.Voices.Add(voice);
         await UnitOfWork.SaveChangesAsync();
@@ -105,6 +120,7 @@ public class VoiceControllerIntegrationTests(
         using var content = CreateVoiceFormData(
             name: "Updated Voice",
             voiceGender: VoiceGender.Female,
+            language: WritingLanguage.French,
             fileName: "updated.wav",
             fileBytes: updatedBytes,
             id: voice.Id);
@@ -120,6 +136,7 @@ public class VoiceControllerIntegrationTests(
         var updatedVoice = dbContext.Voices.Single(v => v.Id == voice.Id);
         Assert.Equal("Updated Voice", updatedVoice.Name);
         Assert.Equal(VoiceGender.Female, updatedVoice.VoiceGender);
+        Assert.Equal(WritingLanguage.French, updatedVoice.Language);
 
         var storedBytes = await File.ReadAllBytesAsync(wavPath);
         Assert.Equal(updatedBytes, storedBytes);
@@ -133,7 +150,8 @@ public class VoiceControllerIntegrationTests(
         var voice = new Voice
         {
             Name = "Voice To Delete",
-            VoiceGender = VoiceGender.Both
+            VoiceGender = VoiceGender.Both,
+            Language = WritingLanguage.English
         };
         UnitOfWork.Voices.Add(voice);
         await UnitOfWork.SaveChangesAsync();
@@ -164,7 +182,8 @@ public class VoiceControllerIntegrationTests(
         var voice = new Voice
         {
             Name = "Preview Voice",
-            VoiceGender = VoiceGender.Both
+            VoiceGender = VoiceGender.Both,
+            Language = WritingLanguage.English
         };
         UnitOfWork.Voices.Add(voice);
         await UnitOfWork.SaveChangesAsync();
@@ -193,6 +212,7 @@ public class VoiceControllerIntegrationTests(
         using var content = CreateVoiceFormData(
             name: "Invalid File Voice",
             voiceGender: VoiceGender.Both,
+            language: WritingLanguage.English,
             fileName: "voice.mp3",
             fileBytes: [0x01, 0x02, 0x03],
             contentType: "audio/mpeg");
@@ -215,6 +235,7 @@ public class VoiceControllerIntegrationTests(
         using var content = CreateVoiceFormData(
             name: "Missing Voice",
             voiceGender: VoiceGender.Both,
+            language: WritingLanguage.English,
             fileName: "voice.wav",
             fileBytes: CreateWavBytes(seconds: 1),
             id: Guid.NewGuid());
@@ -236,7 +257,8 @@ public class VoiceControllerIntegrationTests(
         var voice = new Voice
         {
             Name = "Voice For Invalid Preview",
-            VoiceGender = VoiceGender.Both
+            VoiceGender = VoiceGender.Both,
+            Language = WritingLanguage.English
         };
         UnitOfWork.Voices.Add(voice);
         await UnitOfWork.SaveChangesAsync();
@@ -277,6 +299,7 @@ public class VoiceControllerIntegrationTests(
     private static MultipartFormDataContent CreateVoiceFormData(
         string name,
         VoiceGender voiceGender,
+        WritingLanguage language,
         string fileName,
         byte[] fileBytes,
         string contentType = "audio/wav",
@@ -291,6 +314,7 @@ public class VoiceControllerIntegrationTests(
 
         content.Add(new StringContent(name), "name");
         content.Add(new StringContent(voiceGender.ToString()), "voiceGender");
+        content.Add(new StringContent(language.ToString()), "language");
 
         var fileContent = new ByteArrayContent(fileBytes);
         fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);

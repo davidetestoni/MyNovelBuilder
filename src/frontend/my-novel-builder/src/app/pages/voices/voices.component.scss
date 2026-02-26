@@ -13,12 +13,12 @@
 
 .voices-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 250px);
+  grid-template-columns: repeat(auto-fill, 350px);
   gap: 16px;
 }
 
 .voice-card {
-  width: 250px;
+  width: 350px;
   border: 1px solid $grey7;
   border-radius: 8px;
   padding: 14px;
@@ -81,7 +81,6 @@
       font-size: 0.95rem;
     }
   }
-
 }
 
 :host ::ng-deep .voice-preview-button {

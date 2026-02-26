@@ -168,6 +168,7 @@ public class UnrealSpeechTtsService : ITtsService
         {
             VoiceId = v,
             Name = v,
+            Language = WritingLanguage.English
         }));
     }
     

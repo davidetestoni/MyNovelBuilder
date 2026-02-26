@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using Mapster;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.Tts;
@@ -73,8 +72,14 @@ public class CustomTtsService : ITtsService
         
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         var voices = JsonSerializer.Deserialize<IEnumerable<TtsVoice>>(
-            json, _jsonSerializerOptions);
-        
-        return voices.Adapt<IEnumerable<TtsVoiceDto>>();
+            json, _jsonSerializerOptions) ?? [];
+
+        return voices.Select(v => new TtsVoiceDto
+        {
+            VoiceId = v.VoiceId,
+            Name = v.Name,
+            PreviewUrl = v.PreviewUrl,
+            Language = WritingLanguage.English
+        });
     }
 }

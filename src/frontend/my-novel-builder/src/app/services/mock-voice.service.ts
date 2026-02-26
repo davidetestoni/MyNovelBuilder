@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { VoiceDto } from '../types/dtos/voice/voice.dto';
 import { VoiceGender } from '../types/enums/voice-gender';
+import { WritingLanguage } from '../types/enums/writing-language';
 import { mockObservable } from './mocks/mock-utils';
 import { mockedVoices } from './mocks/mock-voice.data';
 import { VoiceService } from './voice.service';
@@ -17,6 +18,7 @@ export class MockVoiceService extends VoiceService {
   createVoice(
     name: string,
     voiceGender: VoiceGender,
+    language: WritingLanguage,
     _file: File,
   ): Observable<VoiceDto> {
     const now = new Date().toISOString();
@@ -26,6 +28,7 @@ export class MockVoiceService extends VoiceService {
       updatedAt: now,
       name,
       voiceGender,
+      language,
     };
 
     this.voices = [voice, ...this.voices];
@@ -36,6 +39,7 @@ export class MockVoiceService extends VoiceService {
     id: string,
     name: string,
     voiceGender: VoiceGender,
+    language: WritingLanguage,
     _file: File,
   ): Observable<VoiceDto> {
     const current = this.voices.find((v) => v.id === id);
@@ -45,6 +49,7 @@ export class MockVoiceService extends VoiceService {
       updatedAt: new Date().toISOString(),
       name,
       voiceGender,
+      language,
     };
 
     this.voices = this.voices.map((voice) => (voice.id === id ? updated : voice));

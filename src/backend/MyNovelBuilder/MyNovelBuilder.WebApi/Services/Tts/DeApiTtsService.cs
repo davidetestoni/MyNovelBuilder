@@ -269,7 +269,9 @@ public class DeApiTtsService : ITtsService
                     voices.Add(new TtsVoiceDto
                     {
                         VoiceId = $"{modelSlug}/{languageCode}/{voiceSlug}",
-                        Name = $"{modelName} - {languageName} - {voiceName}"
+                        Name = $"{modelName} - {languageName} - {voiceName}",
+                        // TODO: Map actual language code to WritingLanguage enum if possible
+                        Language = WritingLanguage.English
                     });
                 }
             }

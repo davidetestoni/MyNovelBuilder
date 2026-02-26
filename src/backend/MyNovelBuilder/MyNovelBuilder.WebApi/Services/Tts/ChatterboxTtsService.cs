@@ -25,6 +25,7 @@ public class ChatterboxTtsService : ITtsService
     private const int _maxChunkLength = 500;
     private const int _sampleRate = 24000;
     private const string _defaultVoiceId = "default";
+    private const string _defaultLanguageCode = "en";
 
     /// <inheritdoc />
     public bool SupportsEmphasisTags => false;
@@ -90,12 +91,15 @@ public class ChatterboxTtsService : ITtsService
             return [];
         }
 
+        var languageCode = await ResolveLanguageCodeAsync(request.VoiceId, cancellationToken);
+
         await using var fullPcmStream = new MemoryStream();
 
         foreach (var chunk in textChunks)
         {
             using var formData = new MultipartFormDataContent();
             formData.Add(new StringContent(NormalizeText(chunk)), "text");
+            formData.Add(new StringContent(languageCode), "language");
 
             if (referenceWavPath is not null)
             {
@@ -151,10 +155,13 @@ public class ChatterboxTtsService : ITtsService
             bitsPerSample: 16,
             producer: async (writeAsync, ct) =>
             {
+                var languageCode = await ResolveLanguageCodeAsync(request.VoiceId, ct);
+
                 foreach (var chunk in textChunks)
                 {
                     using var formData = new MultipartFormDataContent();
                     formData.Add(new StringContent(NormalizeText(chunk)), "text");
+                    formData.Add(new StringContent(languageCode), "language");
 
                     if (referenceWavPath is not null)
                     {
@@ -204,13 +211,15 @@ public class ChatterboxTtsService : ITtsService
             {
                 VoiceId = v.Id.ToString(),
                 Name = v.Name,
+                Language = v.Language
             })
             .ToListAsync(cancellationToken);
 
         var defaultVoice = new TtsVoiceDto
         {
             VoiceId = _defaultVoiceId,
-            Name = "Default"
+            Name = "Default",
+            Language = WritingLanguage.English
         };
 
         return [defaultVoice, .. customVoices];
@@ -241,5 +250,45 @@ public class ChatterboxTtsService : ITtsService
         }
 
         return wavPath;
+    }
+
+    private async Task<string> ResolveLanguageCodeAsync(string? voiceId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(voiceId)
+            || voiceId.Equals(_defaultVoiceId, StringComparison.OrdinalIgnoreCase))
+        {
+            return _defaultLanguageCode;
+        }
+
+        if (!Guid.TryParse(voiceId, out var id))
+        {
+            return _defaultLanguageCode;
+        }
+
+        using var scope = _serviceScopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var voiceLanguage = await dbContext.Voices
+            .AsNoTracking()
+            .Where(v => v.Id == id)
+            .Select(v => (WritingLanguage?)v.Language)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return voiceLanguage.HasValue
+            ? MapToChatterboxLanguageCode(voiceLanguage.Value)
+            : _defaultLanguageCode;
+    }
+
+    private static string MapToChatterboxLanguageCode(WritingLanguage language)
+    {
+        return language switch
+        {
+            WritingLanguage.English => "en",
+            WritingLanguage.Italian => "it",
+            WritingLanguage.French => "fr",
+            WritingLanguage.Spanish => "es",
+            WritingLanguage.German => "de",
+            WritingLanguage.Russian => "ru",
+            _ => _defaultLanguageCode
+        };
     }
 }

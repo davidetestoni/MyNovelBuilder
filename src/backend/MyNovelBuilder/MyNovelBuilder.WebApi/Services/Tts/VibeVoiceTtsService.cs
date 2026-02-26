@@ -195,6 +195,7 @@ public class VibeVoiceTtsService : ITtsService
             {
                 Name = v.GetString()!,
                 VoiceId = v.GetString()!,
+                Language = WritingLanguage.English
             })
             .ToList();
         

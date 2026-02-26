@@ -19,4 +19,9 @@ public class TtsVoiceDto
     /// The URL to a preview of the voice.
     /// </summary>
     public string? PreviewUrl { get; set; }
+
+    /// <summary>
+    /// The language associated with this voice.
+    /// </summary>
+    public required Enums.WritingLanguage Language { get; set; } = Enums.WritingLanguage.English;
 }

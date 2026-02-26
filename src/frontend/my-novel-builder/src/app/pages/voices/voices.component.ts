@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { TitleCasePipe } from '@angular/common';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -13,7 +14,7 @@ import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 @Component({
   selector: 'app-voices',
   standalone: true,
-  imports: [ButtonModule, ConfirmDialogModule],
+  imports: [ButtonModule, ConfirmDialogModule, TitleCasePipe],
   templateUrl: './voices.component.html',
   styleUrl: './voices.component.scss',
   providers: [DialogService, ConfirmationService],

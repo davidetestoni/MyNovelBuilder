@@ -26,6 +26,24 @@
       </div>
 
       <div class="form-field">
+        <label for="language" class="form-field-label">Language *</label>
+        <p-select
+          id="language"
+          formControlName="language"
+          [options]="languageOptions"
+          placeholder="Select language"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template let-option #item>
+            {{ option | titlecase }}
+          </ng-template>
+          <ng-template let-option #selectedItem>
+            {{ option | titlecase }}
+          </ng-template>
+        </p-select>
+      </div>
+
+      <div class="form-field">
         <label for="voiceFile" class="form-field-label">Voice File (.wav) *</label>
         <input
           id="voiceFile"

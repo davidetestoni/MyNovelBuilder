@@ -21,6 +21,7 @@ import { ImageGenerationProvider } from '../../types/enums/image-generation-prov
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
 import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
+import { WritingLanguage } from '../../types/enums/writing-language';
 
 @Component({
   selector: 'app-integrations',
@@ -66,8 +67,6 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   hasDeApiApiKey: boolean = false;
   isPreviewingTtsVoice: boolean = false;
   private previewPlayer: StreamingWavPlayer | null = null;
-  private readonly ttsPreviewSampleText =
-    'Hello, this is a quick sample to preview the selected voice.';
 
   ttsProviderOptions = Object.values(TtsProvider).map((provider) => ({
     // camelCase to spaced Pascal Case for display
@@ -77,7 +76,11 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     value: provider,
   }));
 
-  ttsVoiceOptions: { label: string; value: string }[] = [];
+  ttsVoiceOptions: {
+    label: string;
+    value: string;
+    language: WritingLanguage;
+  }[] = [];
 
   textGenerationProviderOptions = Object.values(TextGenerationProvider).map(
     (provider) => ({
@@ -142,6 +145,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.ttsVoiceOptions = voices.map((v) => ({
           label: v.name,
           value: v.voiceId,
+          language: v.language,
         }));
 
         if (selectedVoiceId) {
@@ -178,13 +182,14 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     this.previewPlayer = new StreamingWavPlayer();
 
     try {
-      const response = await this.generateAudioService.textToSpeechStreamResponse(
-        {
-          message: this.ttsPreviewSampleText,
+      const previewMessage = this.getPreviewSampleTextForSelectedVoice();
+
+      const response =
+        await this.generateAudioService.textToSpeechStreamResponse({
+          message: previewMessage,
           voiceId: this.integrationsForm.value.ttsVoiceId ?? undefined,
           provider: this.integrationsForm.value.ttsProvider ?? undefined,
-        },
-      );
+        });
 
       const stream = response.body;
       if (!stream) {
@@ -210,6 +215,33 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       );
     } finally {
       this.isPreviewingTtsVoice = false;
+    }
+  }
+
+  private getPreviewSampleTextForSelectedVoice(): string {
+    const selectedVoiceId = this.integrationsForm.value.ttsVoiceId;
+    const language =
+      this.ttsVoiceOptions.find((voice) => voice.value === selectedVoiceId)
+        ?.language ?? WritingLanguage.English;
+
+    return this.getPreviewSampleText(language);
+  }
+
+  private getPreviewSampleText(language: WritingLanguage): string {
+    switch (language) {
+      case WritingLanguage.Italian:
+        return "Ciao, questo è un breve esempio per ascoltare l'anteprima della voce selezionata.";
+      case WritingLanguage.French:
+        return 'Bonjour, ceci est un court exemple pour prévisualiser la voix sélectionnée.';
+      case WritingLanguage.Spanish:
+        return 'Hola, este es un ejemplo rápido para previsualizar la voz seleccionada.';
+      case WritingLanguage.German:
+        return 'Hallo, dies ist ein kurzes Beispiel, um die ausgewählte Stimme vorzuhören.';
+      case WritingLanguage.Russian:
+        return 'Привет, это короткий пример для предварительного прослушивания выбранного голоса.';
+      case WritingLanguage.English:
+      default:
+        return 'Hello, this is a quick sample to preview the selected voice.';
     }
   }
 

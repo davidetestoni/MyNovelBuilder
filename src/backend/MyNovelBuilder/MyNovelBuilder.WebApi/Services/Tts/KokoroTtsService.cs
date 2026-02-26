@@ -254,6 +254,7 @@ public class KokoroTtsService : ITtsService
         {
             VoiceId = v,
             Name = v,
+            Language = WritingLanguage.English
         }));
     }
 }

@@ -1,5 +1,6 @@
 import { VoiceDto } from '../../types/dtos/voice/voice.dto';
 import { VoiceGender } from '../../types/enums/voice-gender';
+import { WritingLanguage } from '../../types/enums/writing-language';
 import { indexToGuid } from './mock-utils';
 
 export const mockedVoices: VoiceDto[] = [
@@ -9,6 +10,7 @@ export const mockedVoices: VoiceDto[] = [
     updatedAt: '2026-02-01T10:21:00Z',
     name: 'Narrator One',
     voiceGender: VoiceGender.Both,
+    language: WritingLanguage.English,
   },
   {
     id: indexToGuid(12),
@@ -16,6 +18,7 @@ export const mockedVoices: VoiceDto[] = [
     updatedAt: '2026-02-03T09:08:00Z',
     name: 'Deep Male',
     voiceGender: VoiceGender.Male,
+    language: WritingLanguage.English,
   },
   {
     id: indexToGuid(13),
@@ -23,5 +26,6 @@ export const mockedVoices: VoiceDto[] = [
     updatedAt: '2026-02-05T15:40:00Z',
     name: 'Soft Female',
     voiceGender: VoiceGender.Female,
+    language: WritingLanguage.English,
   },
 ];

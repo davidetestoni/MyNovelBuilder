@@ -125,6 +125,7 @@ public class ElevenLabsTtsService : ITtsService
         {
             VoiceId = v.Id,
             Name = v.Name,
+            Language = WritingLanguage.English
         });
     }
 

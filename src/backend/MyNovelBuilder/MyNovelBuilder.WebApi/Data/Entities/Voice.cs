@@ -19,4 +19,9 @@ public class Voice : TimestampedEntity
     /// The voice's gender.
     /// </summary>
     public required VoiceGender VoiceGender { get; init; } = VoiceGender.Both;
+
+    /// <summary>
+    /// The language for this voice.
+    /// </summary>
+    public WritingLanguage Language { get; init; } = WritingLanguage.English;
 }

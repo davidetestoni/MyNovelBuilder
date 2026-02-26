@@ -19,6 +19,11 @@ public class CreateVoiceDto
     public required VoiceGender VoiceGender { get; set; }
 
     /// <summary>
+    /// The voice's language.
+    /// </summary>
+    public WritingLanguage Language { get; set; } = WritingLanguage.English;
+
+    /// <summary>
     /// The voice sample WAV file.
     /// </summary>
     public required IFormFile File { get; set; }
@@ -30,6 +35,7 @@ internal class CreateVoiceDtoValidator : AbstractValidator<CreateVoiceDto>
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.VoiceGender).IsInEnum();
+        RuleFor(x => x.Language).IsInEnum();
         RuleFor(x => x.File)
             .NotNull()
             .Must(file => string.Equals(Path.GetExtension(file.FileName), ".wav", StringComparison.OrdinalIgnoreCase))

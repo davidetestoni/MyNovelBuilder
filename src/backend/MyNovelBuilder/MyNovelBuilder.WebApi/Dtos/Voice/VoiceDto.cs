@@ -31,4 +31,9 @@ public class VoiceDto
     /// The voice's gender.
     /// </summary>
     public required VoiceGender VoiceGender { get; set; }
+
+    /// <summary>
+    /// The voice's language.
+    /// </summary>
+    public required WritingLanguage Language { get; set; }
 }

@@ -1,3 +1,4 @@
+import { TitleCasePipe } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -8,6 +9,7 @@ import { SelectModule } from 'primeng/select';
 import { VoiceService } from '../../services/voice.service';
 import { VoiceDto } from '../../types/dtos/voice/voice.dto';
 import { VoiceGender } from '../../types/enums/voice-gender';
+import { WritingLanguage } from '../../types/enums/writing-language';
 
 export interface VoiceDialogData {
   mode: 'create' | 'edit';
@@ -17,7 +19,7 @@ export interface VoiceDialogData {
 @Component({
   selector: 'app-voice-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, InputTextModule, SelectModule, ButtonModule],
+  imports: [ReactiveFormsModule, InputTextModule, SelectModule, ButtonModule, TitleCasePipe],
   templateUrl: './voice-dialog.component.html',
   styleUrl: './voice-dialog.component.scss',
 })
@@ -36,9 +38,12 @@ export class VoiceDialogComponent {
     { label: 'Female', value: VoiceGender.Female },
   ];
 
+  protected readonly languageOptions = Object.values(WritingLanguage);
+
   protected readonly formGroup = new FormGroup({
     name: new FormControl('', [Validators.required, Validators.maxLength(100)]),
     voiceGender: new FormControl<VoiceGender>(VoiceGender.Both, [Validators.required]),
+    language: new FormControl<WritingLanguage>(WritingLanguage.English, [Validators.required]),
     file: new FormControl<File | null>(null, [Validators.required]),
   });
 
@@ -47,6 +52,7 @@ export class VoiceDialogComponent {
       this.formGroup.patchValue({
         name: this.data.voice.name,
         voiceGender: this.data.voice.voiceGender,
+        language: this.data.voice.language,
       });
     }
   }
@@ -81,6 +87,7 @@ export class VoiceDialogComponent {
 
     const name = this.formGroup.controls.name.value?.trim() ?? '';
     const voiceGender = this.formGroup.controls.voiceGender.value ?? VoiceGender.Both;
+    const language = this.formGroup.controls.language.value ?? WritingLanguage.English;
     const file = this.formGroup.controls.file.value;
 
     if (!name || file === null) {
@@ -89,7 +96,7 @@ export class VoiceDialogComponent {
 
     if (this.data.mode === 'edit' && this.data.voice) {
       this.voiceService
-        .updateVoice(this.data.voice.id, name, voiceGender, file)
+        .updateVoice(this.data.voice.id, name, voiceGender, language, file)
         .subscribe(() => {
           this.toastr.success('Voice updated successfully.');
           this.dialogRef.close(true);
@@ -97,7 +104,7 @@ export class VoiceDialogComponent {
       return;
     }
 
-    this.voiceService.createVoice(name, voiceGender, file).subscribe(() => {
+    this.voiceService.createVoice(name, voiceGender, language, file).subscribe(() => {
       this.toastr.success('Voice created successfully.');
       this.dialogRef.close(true);
     });
