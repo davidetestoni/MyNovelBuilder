@@ -21,6 +21,7 @@
           optionLabel="label"
           optionValue="value"
           placeholder="Select gender"
+          appendTo="body"
           [style]="{ width: '100%' }"
         />
       </div>
@@ -32,6 +33,7 @@
           formControlName="language"
           [options]="languageOptions"
           placeholder="Select language"
+          appendTo="body"
           [style]="{ width: '100%' }"
         >
           <ng-template let-option #item>
@@ -44,7 +46,9 @@
       </div>
 
       <div class="form-field">
-        <label for="voiceFile" class="form-field-label">Voice File (.wav) *</label>
+        <label for="voiceFile" class="form-field-label"
+          >Voice File (.wav) *</label
+        >
         <input
           id="voiceFile"
           type="file"
