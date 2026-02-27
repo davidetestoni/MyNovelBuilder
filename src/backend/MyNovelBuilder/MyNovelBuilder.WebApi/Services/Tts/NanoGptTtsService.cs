@@ -19,22 +19,7 @@ public class NanoGptTtsService : ITtsService
 {
     private static readonly TimeSpan _pollDelay = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _pollTimeout = TimeSpan.FromMinutes(5);
-    private const string _elevenLabsTurboV25Model = "Elevenlabs-Turbo-V2.5";
     private const string _elevenLabsV3Model = "Elevenlabs-V3";
-    private static readonly string[] _elevenLabsVoices =
-    [
-        "Adam", "Alice", "Antoni", "Aria", "Arnold", "Bella", "Bill", "Brian",
-        "Callum", "Charlie", "Charlotte", "Chris", "Daniel", "Domi", "Dorothy",
-        "Drew", "Elli", "Emily", "Eric", "Ethan", "Fin", "Freya", "George",
-        "Gigi", "Giovanni", "Grace", "James", "Jeremy", "Jessica", "Joseph",
-        "Josh", "Laura", "Liam", "Lily", "Matilda", "Matthew", "Michael",
-        "Nicole", "Rachel", "River", "Roger", "Ryan", "Sam", "Sarah", "Thomas", "Will"
-    ];
-
-    private static readonly string[] _openAiVoices =
-    [
-        "alloy", "echo", "fable", "onyx", "nova", "shimmer"
-    ];
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<NanoGptTtsService> _logger;
@@ -78,7 +63,7 @@ public class NanoGptTtsService : ITtsService
             model,
             input = request.Message,
             voice,
-            response_format = "wav",
+            response_format = "mp3",
         };
 
         var httpRequest = new HttpRequestMessage
@@ -106,9 +91,9 @@ public class NanoGptTtsService : ITtsService
                 ErrorCodes.ExternalServiceError,
                 GetErrorMessage(errorResponse) ?? "TTS generation failed with NanoGPT.");
         }
-
+        
         var contentType = response.Content.Headers.ContentType?.MediaType;
-
+        
         if (string.Equals(contentType, "application/json", StringComparison.OrdinalIgnoreCase))
         {
             var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -121,7 +106,7 @@ public class NanoGptTtsService : ITtsService
         }
 
         var audioBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-        return await NormalizeAudioAsync(model, contentType, audioBytes, cancellationToken);
+        return await AudioConversionHelper.ConvertMp3ToWavBytesAsync(audioBytes, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -131,18 +116,76 @@ public class NanoGptTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
     {
+        using var response = await _httpClient.GetAsync("v1/audio-models?detailed=true", cancellationToken);
+        var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError(
+                "NanoGPT audio models request failed. Status code: {StatusCode}, Response: {Response}",
+                response.StatusCode,
+                jsonResponse);
+
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                GetErrorMessage(jsonResponse) ?? "Failed to get TTS models from NanoGPT.");
+        }
+
+        var responseObject = JsonNode.Parse(jsonResponse)?.AsObject() 
+                             ?? throw new ApiException(
+                                 ErrorCodes.ExternalServiceError,
+                                 "NanoGPT returned an invalid JSON response for audio models.");
+
         var voices = new List<TtsVoiceDto>();
+        var models = responseObject["data"]?.AsArray()
+                     ?? throw new ApiException(
+                         ErrorCodes.ExternalServiceError,
+                         "NanoGPT audio models response did not include a data array.");
 
-        AddVoices(voices, _elevenLabsTurboV25Model, _elevenLabsVoices, "ElevenLabs");
-        AddVoices(voices, _elevenLabsV3Model, _elevenLabsVoices, "ElevenLabs");
+        foreach (var modelNode in models)
+        {
+            if (modelNode is not JsonObject modelObject || modelObject["capabilities"]?["text_to_speech"]?.GetValue<bool>() != true)
+            {
+                continue;
+            }
 
-        AddVoices(voices, "tts-1", _openAiVoices, "OpenAI");
-        AddVoices(voices, "tts-1-hd", _openAiVoices, "OpenAI");
-        AddVoices(voices, "gpt-4o-mini-tts", _openAiVoices, "OpenAI");
+            var modelId = modelObject["id"]?.GetValue<string>();
+            if (string.IsNullOrWhiteSpace(modelId))
+            {
+                continue;
+            }
 
-        return Task.FromResult(voices.AsEnumerable());
+            var modelName = modelObject["name"]?.GetValue<string>() ?? modelId;
+            var providerName = modelObject["owned_by"]?.GetValue<string>() ?? "NanoGPT";
+            var modelVoices = modelObject["supported_parameters"]?["voices"]?.AsArray();
+
+            if (modelVoices is null)
+            {
+                continue;
+            }
+
+            foreach (var voiceNode in modelVoices)
+            {
+                var voice = voiceNode?.GetValue<string>();
+                if (string.IsNullOrWhiteSpace(voice))
+                {
+                    continue;
+                }
+
+                voices.Add(new TtsVoiceDto
+                {
+                    VoiceId = $"{modelId}/{voice}",
+                    Name = $"{providerName} - {modelName} - {voice}",
+                    Language = WritingLanguage.English
+                });
+            }
+        }
+
+        return voices
+            .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(v => v.VoiceId, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
@@ -208,23 +251,6 @@ public class NanoGptTtsService : ITtsService
         model = voiceParts[0];
         voice = voiceParts[1];
         return !string.IsNullOrWhiteSpace(model) && !string.IsNullOrWhiteSpace(voice);
-    }
-
-    private static void AddVoices(
-        ICollection<TtsVoiceDto> voices,
-        string model,
-        IEnumerable<string> modelVoices,
-        string providerName)
-    {
-        foreach (var voice in modelVoices)
-        {
-            voices.Add(new TtsVoiceDto
-            {
-                VoiceId = $"{model}/{voice}",
-                Name = $"{providerName} - {model} - {voice}",
-                Language = WritingLanguage.English
-            });
-        }
     }
 
     private static string? GetErrorMessage(string errorResponse)
@@ -418,31 +444,6 @@ public class NanoGptTtsService : ITtsService
         }
 
         var audioBytes = await audioResponse.Content.ReadAsByteArrayAsync(cancellationToken);
-        var contentType = audioResponse.Content.Headers.ContentType?.MediaType;
-        return await NormalizeAudioAsync(model, contentType, audioBytes, cancellationToken);
-    }
-
-    private async Task<byte[]> NormalizeAudioAsync(
-        string model,
-        string? contentType,
-        byte[] audioBytes,
-        CancellationToken cancellationToken)
-    {
-        if (!model.StartsWith("Elevenlabs-", StringComparison.OrdinalIgnoreCase))
-        {
-            return audioBytes;
-        }
-
-        if (!AudioConversionHelper.IsMp3ContentType(contentType)
-            && !AudioConversionHelper.LooksLikeMp3(audioBytes))
-        {
-            return audioBytes;
-        }
-
-        _logger.LogWarning(
-            "NanoGPT returned MP3 audio for model {Model} despite requesting WAV. Converting to WAV.",
-            model);
-
         return await AudioConversionHelper.ConvertMp3ToWavBytesAsync(audioBytes, cancellationToken);
     }
 
