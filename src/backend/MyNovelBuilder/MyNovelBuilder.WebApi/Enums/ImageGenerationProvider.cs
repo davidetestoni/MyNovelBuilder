@@ -14,4 +14,9 @@ public enum ImageGenerationProvider
     /// DeAPI image generation provider.
     /// </summary>
     DeApi,
+    
+    /// <summary>
+    /// NanoGPT image generation provider.
+    /// </summary>
+    NanoGpt,
 }

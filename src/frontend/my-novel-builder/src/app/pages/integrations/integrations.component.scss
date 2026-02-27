@@ -2,76 +2,124 @@
 @use "../../../styles/variables" as *;
 
 .integrations-container {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 24px;
+  width: 100%;
 
-  h2 {
-    color: $grey17;
-    margin-bottom: 30px;
-    text-align: center;
+  .page-header {
+    margin-bottom: 24px;
+
+    h2 {
+      color: $grey17;
+      margin: 0 0 8px;
+    }
+
+    p {
+      margin: 0;
+      color: $grey11;
+    }
   }
 
   .integration-form {
-    background-color: $grey2;
-    padding: 25px;
-    border-radius: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+  }
+
+  .integration-card {
+    background: linear-gradient(180deg, $grey2 0%, $grey1 100%);
     border: 1px solid $grey5;
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 100%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+
+    .card-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid $grey5;
+    }
 
     h3 {
       color: $grey17;
-      margin-top: 0;
-      margin-bottom: 20px;
-      border-bottom: 1px solid $grey5;
-      padding-bottom: 10px;
+      margin: 0;
     }
 
-    .api-key-status {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      background-color: $grey3;
+    h4 {
       color: $grey17;
-      padding: 10px 15px;
-      border-radius: 5px;
-      margin-bottom: 20px;
+      margin: 24px 0 12px;
+    }
+  }
 
-      .success-icon {
-        color: green;
-        margin-right: 0.5rem;
+  .api-key-status {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background-color: $grey3;
+    color: $grey17;
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+
+    .success-icon {
+      color: green;
+      margin-right: 0.5rem;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .tts-voice-controls {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+
+      p-select {
+        flex: 1;
       }
     }
 
-    .form-group {
-      margin-bottom: 20px;
+    .manage-custom-voices-btn {
+      text-decoration: none;
+      color: inherit;
+      width: 100%;
+    }
 
-      label {
-        display: block;
-        margin-bottom: 8px;
-      }
+    .manage-custom-voices-btn:hover,
+    .manage-custom-voices-btn:focus,
+    .manage-custom-voices-btn:active,
+    .manage-custom-voices-btn:visited {
+      text-decoration: none;
+      color: inherit;
+    }
+  }
 
-      .tts-voice-controls {
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-        flex-wrap: wrap;
+  .form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+  }
+}
 
-        p-select {
-          flex: 1;
-        }
-      }
+@media (max-width: 960px) {
+  .integrations-container {
+    .integration-form {
+      grid-template-columns: 1fr;
+    }
 
-      .manage-custom-voices-btn {
-        text-decoration: none;
-        color: inherit;
-      }
+    .form-actions {
+      justify-content: stretch;
 
-      .manage-custom-voices-btn:hover,
-      .manage-custom-voices-btn:focus,
-      .manage-custom-voices-btn:active,
-      .manage-custom-voices-btn:visited {
-        text-decoration: none;
-        color: inherit;
+      .save-button {
+        width: 100%;
       }
     }
   }

@@ -287,7 +287,7 @@ public class NanoGptTtsService : ITtsService
         if (!string.IsNullOrWhiteSpace(audioUrl))
         {
             LogCost(requestedModel, cost, paymentSource);
-            return await DownloadAudioAsync(audioUrl, requestedModel, cancellationToken);
+            return await DownloadAudioAsync(audioUrl, cancellationToken);
         }
 
         if (string.Equals(status, "pending", StringComparison.OrdinalIgnoreCase))
@@ -385,7 +385,7 @@ public class NanoGptTtsService : ITtsService
                 && !string.IsNullOrWhiteSpace(audioUrl))
             {
                 LogCost(model, responseCost, responsePaymentSource);
-                return await DownloadAudioAsync(audioUrl, model, cancellationToken);
+                return await DownloadAudioAsync(audioUrl, cancellationToken);
             }
 
             if (string.Equals(status, "error", StringComparison.OrdinalIgnoreCase))
@@ -425,7 +425,6 @@ public class NanoGptTtsService : ITtsService
 
     private async Task<byte[]> DownloadAudioAsync(
         string audioUrl,
-        string model,
         CancellationToken cancellationToken)
     {
         using var audioResponse = await _httpClient.GetAsync(audioUrl, cancellationToken);

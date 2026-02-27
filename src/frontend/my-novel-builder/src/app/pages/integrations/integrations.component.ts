@@ -76,7 +76,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     // camelCase to spaced Pascal Case for display
     label: provider
       .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, (str) => str.toUpperCase()),
+      .replace(/^./, (str) => str.toUpperCase())
+      .replace('Gpt', 'GPT'),
     value: provider,
   }));
 
@@ -104,7 +105,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       label: provider
         .replace(/([A-Z])/g, ' $1')
         .replace(/^./, (str) => str.toUpperCase())
-        .replace('Api', 'API'),
+        .replace('Api', 'API')
+        .replace('Gpt', 'GPT'),
       value: provider,
     }),
   );
