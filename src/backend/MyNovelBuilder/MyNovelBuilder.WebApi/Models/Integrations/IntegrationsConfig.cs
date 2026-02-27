@@ -33,6 +33,11 @@ public class IntegrationsConfig
     public string? DeApiApiKey { get; set; }
     
     /// <summary>
+    /// The NanoGPT API key.
+    /// </summary>
+    public string? NanoGptApiKey { get; set; }
+    
+    /// <summary>
     /// The Text Generation provider to use to generate text.
     /// </summary>
     public TextGenerationProvider TextGenerationProvider { get; set; } = TextGenerationProvider.OpenRouter;

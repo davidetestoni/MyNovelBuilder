@@ -22,7 +22,7 @@ public class CustomTtsService : ITtsService
     };
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags => false;
+    public bool SupportsEmphasisTags(string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Mp3;

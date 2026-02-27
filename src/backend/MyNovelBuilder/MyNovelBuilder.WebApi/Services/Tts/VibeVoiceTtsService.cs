@@ -21,7 +21,7 @@ public class VibeVoiceTtsService : ITtsService
     private const string _host = "localhost:8000";
     
     /// <inheritdoc/>
-    public bool SupportsEmphasisTags => false;
+    public bool SupportsEmphasisTags(string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;

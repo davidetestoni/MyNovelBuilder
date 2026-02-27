@@ -9,6 +9,7 @@ export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   hasElevenLabsApiKey: false,
   hasUnrealSpeechApiKey: false,
   hasDeApiApiKey: false,
+  hasNanoGptApiKey: false,
   textGenerationProvider: TextGenerationProvider.OpenRouter,
   ttsProvider: TtsProvider.Custom,
   imageGenerationProvider: ImageGenerationProvider.DeApi,

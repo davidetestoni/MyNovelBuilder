@@ -21,7 +21,7 @@ public class ElevenLabsTtsService : ITtsService
     private readonly IIntegrationsService _integrationsService;
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags => true;
+    public bool SupportsEmphasisTags(string voiceId) => true;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;

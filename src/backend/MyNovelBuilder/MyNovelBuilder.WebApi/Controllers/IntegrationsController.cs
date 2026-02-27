@@ -37,6 +37,7 @@ public class IntegrationsController : ControllerBase
             HasElevenLabsApiKey = !string.IsNullOrWhiteSpace(config.ElevenLabsApiKey),
             HasUnrealSpeechApiKey = !string.IsNullOrWhiteSpace(config.UnrealSpeechApiKey),
             HasDeApiApiKey = !string.IsNullOrWhiteSpace(config.DeApiApiKey),
+            HasNanoGptApiKey = !string.IsNullOrWhiteSpace(config.NanoGptApiKey),
             TextGenerationProvider = config.TextGenerationProvider,
             TtsProvider = config.TtsProvider,
             ImageGenerationProvider = config.ImageGenerationProvider,
@@ -77,6 +78,11 @@ public class IntegrationsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(dto.DeApiApiKey))
         {
             config.DeApiApiKey = dto.DeApiApiKey;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.NanoGptApiKey))
+        {
+            config.NanoGptApiKey = dto.NanoGptApiKey;
         }
         
         if (dto.TextGenerationProvider.HasValue)

@@ -8,6 +8,7 @@ export interface IntegrationsConfigDto {
   hasElevenLabsApiKey: boolean;
   hasUnrealSpeechApiKey: boolean;
   hasDeApiApiKey: boolean;
+  hasNanoGptApiKey: boolean;
   textGenerationProvider: TextGenerationProvider;
   ttsProvider: TtsProvider;
   imageGenerationProvider: ImageGenerationProvider;
@@ -20,6 +21,7 @@ export interface UpdateIntegrationsConfigDto {
   elevenLabsApiKey?: string | null;
   unrealSpeechApiKey?: string | null;
   deApiApiKey?: string | null;
+  nanoGptApiKey?: string | null;
   textGenerationProvider?: TextGenerationProvider | null;
   ttsProvider?: TtsProvider | null;
   imageGenerationProvider?: ImageGenerationProvider | null;

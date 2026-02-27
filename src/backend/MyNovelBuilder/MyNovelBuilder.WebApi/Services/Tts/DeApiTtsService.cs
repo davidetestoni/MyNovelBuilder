@@ -23,7 +23,7 @@ public class DeApiTtsService : ITtsService
     private const int _maxChunkLength = 500;
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags => false;
+    public bool SupportsEmphasisTags(string voiceId) => false;
 
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;

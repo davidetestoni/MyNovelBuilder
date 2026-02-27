@@ -32,6 +32,11 @@ public class IntegrationsConfigDto
     /// Indicates whether a DeAPI API key is configured.
     /// </summary>
     public required bool HasDeApiApiKey { get; init; }
+
+    /// <summary>
+    /// Indicates whether a NanoGPT API key is configured.
+    /// </summary>
+    public required bool HasNanoGptApiKey { get; init; }
     
     /// <summary>
     /// The configured Text Generation provider.

@@ -28,7 +28,7 @@ public class ChatterboxTtsService : ITtsService
     private const string _defaultLanguageCode = "en";
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags => false;
+    public bool SupportsEmphasisTags(string voiceId) => false;
 
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -42,7 +42,7 @@ public class ChatterboxTtsService : ITtsService
         _httpClient = httpClient;
         _serviceScopeFactory = serviceScopeFactory;
         _voicesFolder = Path.Combine(storageOptions.Value.DataFolder, "voices");
-        _httpClient.BaseAddress = new Uri("http://localhost:8000");
+        _httpClient.BaseAddress = new Uri("http://192.168.178.30:8000");
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
     }
 

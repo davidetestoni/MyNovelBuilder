@@ -32,6 +32,11 @@ public class UpdateIntegrationsConfigDto
     /// The DeAPI API key.
     /// </summary>
     public string? DeApiApiKey { get; init; }
+
+    /// <summary>
+    /// The NanoGPT API key.
+    /// </summary>
+    public string? NanoGptApiKey { get; init; }
     
     /// <summary>
     /// The Text Generation provider to use to generate text.
@@ -63,6 +68,7 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.ElevenLabsApiKey).MaximumLength(500);
         RuleFor(x => x.UnrealSpeechApiKey).MaximumLength(500);
         RuleFor(x => x.DeApiApiKey).MaximumLength(500);
+        RuleFor(x => x.NanoGptApiKey).MaximumLength(500);
         RuleFor(x => x.TtsVoiceId).MaximumLength(200);
 
         RuleFor(x => x.TextGenerationProvider)

@@ -24,7 +24,7 @@ public class PocketTtsService : ITtsService
         }).ToArray();
 
     /// <inheritdoc/>
-    public bool SupportsEmphasisTags => false;
+    public bool SupportsEmphasisTags(string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;

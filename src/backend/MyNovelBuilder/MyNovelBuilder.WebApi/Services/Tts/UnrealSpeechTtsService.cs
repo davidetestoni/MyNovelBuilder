@@ -64,7 +64,7 @@ public class UnrealSpeechTtsService : ITtsService
     ];
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags => false;
+    public bool SupportsEmphasisTags(string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;

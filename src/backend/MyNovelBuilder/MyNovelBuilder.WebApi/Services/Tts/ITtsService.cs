@@ -10,9 +10,9 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public interface ITtsService
 {
     /// <summary>
-    /// Indicates if the TTS service supports emphasis tags in the text.
+    /// Indicates if the TTS service supports emphasis tags in the text for the given voice/model.
     /// </summary>
-    bool SupportsEmphasisTags { get; }
+    bool SupportsEmphasisTags(string voiceId);
     
     /// <summary>
     /// The audio format of the generated output.

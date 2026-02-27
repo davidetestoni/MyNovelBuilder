@@ -54,6 +54,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     ttsProvider: new FormControl<TtsProvider>(TtsProvider.Custom),
     elevenLabsApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     unrealSpeechApiKey: new FormControl<string>('', Validators.maxLength(1000)),
+    nanoGptApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsVoiceId: new FormControl<string>(''),
     imageGenerationProvider: new FormControl<ImageGenerationProvider>(
       ImageGenerationProvider.DeApi,
@@ -65,6 +66,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   hasElevenLabsApiKey: boolean = false;
   hasUnrealSpeechApiKey: boolean = false;
   hasDeApiApiKey: boolean = false;
+  hasNanoGptApiKey: boolean = false;
   isPreviewingTtsVoice: boolean = false;
   private previewPlayer: StreamingWavPlayer | null = null;
 
@@ -121,6 +123,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.hasElevenLabsApiKey = config.hasElevenLabsApiKey;
         this.hasUnrealSpeechApiKey = config.hasUnrealSpeechApiKey;
         this.hasDeApiApiKey = config.hasDeApiApiKey;
+        this.hasNanoGptApiKey = config.hasNanoGptApiKey;
         this.integrationsForm.patchValue({
           textGenerationProvider: config.textGenerationProvider,
           ttsProvider: config.ttsProvider,
@@ -261,6 +264,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.integrationsForm.value.elevenLabsApiKey || undefined,
       unrealSpeechApiKey:
         this.integrationsForm.value.unrealSpeechApiKey || undefined,
+      nanoGptApiKey: this.integrationsForm.value.nanoGptApiKey || undefined,
       deApiApiKey: this.integrationsForm.value.deApiApiKey || undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
@@ -285,6 +289,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         if (this.integrationsForm.value.unrealSpeechApiKey) {
           this.hasUnrealSpeechApiKey = true;
           this.integrationsForm.get('unrealSpeechApiKey')?.reset();
+        }
+        if (this.integrationsForm.value.nanoGptApiKey) {
+          this.hasNanoGptApiKey = true;
+          this.integrationsForm.get('nanoGptApiKey')?.reset();
         }
         if (this.integrationsForm.value.deApiApiKey) {
           this.hasDeApiApiKey = true;

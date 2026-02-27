@@ -136,6 +136,30 @@
       </div>
     }
 
+    @if (integrationsForm.value.ttsProvider === TtsProvider.NanoGpt) {
+      <h4>NanoGPT Configuration</h4>
+
+      @if (hasNanoGptApiKey) {
+        <div class="api-key-status">
+          <i class="pi pi-check-circle success-icon"></i>
+          <span>A NanoGPT API key is currently configured.</span>
+        </div>
+      } @else {
+        <p>No NanoGPT API key is configured.</p>
+      }
+
+      <div class="form-group">
+        <label for="nanoGptApiKey">Enter New NanoGPT API Key:</label>
+        <p-password
+          id="nanoGptApiKey"
+          formControlName="nanoGptApiKey"
+          placeholder="Enter API Key"
+          [feedback]="false"
+          [toggleMask]="true"
+        />
+      </div>
+    }
+
     @if (ttsVoiceOptions.length > 0) {
       <div class="form-group">
         <label for="ttsVoiceId">Select TTS Voice:</label>

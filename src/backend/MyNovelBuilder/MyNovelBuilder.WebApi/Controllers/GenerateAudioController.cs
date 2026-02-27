@@ -9,9 +9,6 @@ using MyNovelBuilder.WebApi.Prompts;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
-using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
-using NLayer.NAudioSupport;
 
 namespace MyNovelBuilder.WebApi.Controllers;
 
@@ -112,46 +109,6 @@ public class GenerateAudioController : ControllerBase
             );
     }
     
-    private static async Task<Stream> ConvertMp3ToWavStreamAsync(
-        Stream mp3Stream,
-        CancellationToken cancellationToken)
-    {
-        // TODO: Make this not blocking by streaming the conversion
-        //  instead of buffering the entire MP3 in memory first.
-        Stream? bufferedMp3 = null;
-        var sourceStream = mp3Stream;
-
-        if (!mp3Stream.CanSeek)
-        {
-            bufferedMp3 = new MemoryStream();
-            await mp3Stream.CopyToAsync(bufferedMp3, cancellationToken);
-            bufferedMp3.Position = 0;
-            sourceStream = bufferedMp3;
-        }
-        else
-        {
-            mp3Stream.Position = 0;
-        }
-
-        try
-        {
-            var builder = new Mp3FileReaderBase.FrameDecompressorBuilder(wf => new Mp3FrameDecompressor(wf));
-            await using var reader = new Mp3FileReaderBase(sourceStream, builder);
-            var sampleProvider = reader.ToSampleProvider();
-            var pcm16Provider = new SampleToWaveProvider16(sampleProvider);
-            using var wavBuffer = new MemoryStream();
-            WaveFileWriter.WriteWavFileToStream(wavBuffer, pcm16Provider);
-            return new MemoryStream(wavBuffer.ToArray());
-        }
-        finally
-        {
-            if (bufferedMp3 is not null)
-            {
-                await bufferedMp3.DisposeAsync();
-            }
-        }
-    }
-
     /// <summary>
     /// Generate audio from text.
     /// </summary>
@@ -187,7 +144,7 @@ public class GenerateAudioController : ControllerBase
         }
         
         // Emphasis
-        if (ttsService.SupportsEmphasisTags)
+        if (ttsService.SupportsEmphasisTags(effectiveVoiceId))
         {
             var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
             ttsRequest.Message = emphasizedText.Trim();
@@ -199,7 +156,7 @@ public class GenerateAudioController : ControllerBase
         if (ttsService.OutputAudioFormat == AudioFormat.Mp3)
         {
             await using var mp3Stream = new MemoryStream(ttsResponse);
-            await using var wavStream = await ConvertMp3ToWavStreamAsync(mp3Stream, cancellationToken);
+            await using var wavStream = await AudioConversionHelper.ConvertMp3ToWavStreamAsync(mp3Stream, cancellationToken);
             await using var wavBuffer = new MemoryStream();
             await wavStream.CopyToAsync(wavBuffer, cancellationToken);
             var wavBytes = wavBuffer.ToArray();
@@ -246,7 +203,7 @@ public class GenerateAudioController : ControllerBase
         }
         
         // Emphasis
-        if (ttsService.SupportsEmphasisTags)
+        if (ttsService.SupportsEmphasisTags(effectiveVoiceId))
         {
             var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
             ttsRequest.Message = emphasizedText.Trim();
@@ -272,7 +229,7 @@ public class GenerateAudioController : ControllerBase
             var originalStream = audioStream;
             await using (originalStream)
             {
-                audioStream = await ConvertMp3ToWavStreamAsync(
+                audioStream = await AudioConversionHelper.ConvertMp3ToWavStreamAsync(
                     originalStream,
                     cancellationToken);
             }
