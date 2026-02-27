@@ -49,7 +49,7 @@ public class NanoGptImageGenerationService : IImageGenerationService
             response_format = "url",
         };
 
-        return await GenerateImageInternalAsync(payload, apiKey, cancellationToken);
+        return await GenerateImageInternalAsync(payload, request.ModelId, apiKey, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -69,7 +69,7 @@ public class NanoGptImageGenerationService : IImageGenerationService
             imageDataUrl = CreateImageDataUrl(imageBytes),
         };
 
-        return await GenerateImageInternalAsync(payload, apiKey, cancellationToken);
+        return await GenerateImageInternalAsync(payload, request.ModelId, apiKey, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -163,6 +163,7 @@ public class NanoGptImageGenerationService : IImageGenerationService
 
     private async Task<byte[]> GenerateImageInternalAsync<TPayload>(
         TPayload payload,
+        string model,
         string apiKey,
         CancellationToken cancellationToken)
     {
@@ -191,6 +192,10 @@ public class NanoGptImageGenerationService : IImageGenerationService
                              ?? throw new ApiException(
                                  ErrorCodes.ExternalServiceError,
                                  "NanoGPT returned an invalid JSON response for image generation.");
+        var cost = responseObject["cost"]?.GetValue<decimal?>();
+        var paymentSource = responseObject["paymentSource"]?.GetValue<string>();
+
+        LogCost(model, cost, paymentSource);
 
         var imageData = responseObject["data"]?.AsArray().FirstOrDefault()?.AsObject()
                         ?? throw new ApiException(
@@ -228,6 +233,20 @@ public class NanoGptImageGenerationService : IImageGenerationService
     {
         var base64 = Convert.ToBase64String(imageBytes);
         return $"data:image/png;base64,{base64}";
+    }
+
+    private void LogCost(string model, decimal? cost, string? paymentSource)
+    {
+        if (!cost.HasValue)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "NanoGPT image generation cost for model {Model}: {Cost} {PaymentSource}",
+            model,
+            cost.Value,
+            paymentSource ?? "unknown");
     }
 
     private static string? GetErrorMessage(string errorResponse)
