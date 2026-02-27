@@ -37,4 +37,10 @@ export class ApiGenerateAudioService extends GenerateAudioService {
   getAvailableVoices(ttsProvider: TtsProvider | null): Observable<TtsVoiceDto[]> {
     return this.http.get<TtsVoiceDto[]>(`${this.baseUrl}/generate/audio/tts/voices?provider=${ttsProvider}`);
   }
+
+  getBalanceUsd(provider: TtsProvider): Observable<number | null> {
+    return this.http.get<number | null>(
+      `${this.baseUrl}/generate/audio/balance-usd?provider=${provider}`,
+    );
+  }
 }

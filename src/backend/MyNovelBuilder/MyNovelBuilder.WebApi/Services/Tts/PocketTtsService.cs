@@ -84,4 +84,8 @@ public class PocketTtsService : ITtsService
     /// <inheritdoc/>
     public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IEnumerable<TtsVoiceDto>>(_voices);
+
+    /// <inheritdoc />
+    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<decimal?>(null);
 }

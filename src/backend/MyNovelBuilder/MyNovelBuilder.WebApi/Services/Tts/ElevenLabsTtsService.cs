@@ -129,4 +129,8 @@ public class ElevenLabsTtsService : ITtsService
         });
     }
 
+    /// <inheritdoc />
+    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<decimal?>(null);
+
 }

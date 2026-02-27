@@ -225,6 +225,10 @@ public class ChatterboxTtsService : ITtsService
         return [defaultVoice, .. customVoices];
     }
 
+    /// <inheritdoc />
+    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<decimal?>(null);
+
     private string? GetReferenceWavPath(string? voiceId)
     {
         if (string.IsNullOrWhiteSpace(voiceId)

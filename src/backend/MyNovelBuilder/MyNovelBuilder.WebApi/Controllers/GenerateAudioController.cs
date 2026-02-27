@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Hybrid;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Models.Prompts;
@@ -23,18 +25,21 @@ public class GenerateAudioController : ControllerBase
     private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
     private readonly IAudioRepository _audioRepository;
+    private readonly HybridCache _hybridCache;
 
     /// <summary></summary>
     public GenerateAudioController(
         ILogger<GenerateAudioController> logger,
         IServiceProvider serviceProvider,
         IIntegrationsService integrationsService,
-        IAudioRepository audioRepository)
+        IAudioRepository audioRepository,
+        HybridCache hybridCache)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
         _audioRepository = audioRepository;
+        _hybridCache = hybridCache;
     }
     
     private async ValueTask<ITtsService> GetTtsServiceAsync(
@@ -262,5 +267,37 @@ public class GenerateAudioController : ControllerBase
         var voices = await ttsService.GetVoicesAsync(cancellationToken);
         
         return Ok(voices);
+    }
+
+    /// <summary>
+    /// Get the NanoGPT USD balance.
+    /// </summary>
+    [HttpGet("balance-usd")]
+    public async Task<ActionResult<decimal?>> GetBalanceUsdAsync(
+        [FromQuery] TtsProvider provider,
+        CancellationToken cancellationToken = default)
+    {
+        var ttsService = _serviceProvider.GetKeyedService<ITtsService>(provider);
+        if (ttsService is null)
+        {
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                $"TTS service '{provider}' is not registered.");
+        }
+
+        var cacheKey = $"tts-balance-usd-{provider}";
+        var balance = await _hybridCache.GetOrCreateAsync<ITtsService, decimal?>(
+            cacheKey,
+            ttsService,
+            static async (service, token) => await service.GetBalanceUsdAsync(token),
+            new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromSeconds(30),
+                LocalCacheExpiration = TimeSpan.FromSeconds(30)
+            },
+            tags: ["tts", provider.ToString(), "balance"],
+            cancellationToken: cancellationToken);
+
+        return Ok(balance);
     }
 }

@@ -82,4 +82,8 @@ public class CustomTtsService : ITtsService
             Language = WritingLanguage.English
         });
     }
+
+    /// <inheritdoc />
+    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<decimal?>(null);
 }

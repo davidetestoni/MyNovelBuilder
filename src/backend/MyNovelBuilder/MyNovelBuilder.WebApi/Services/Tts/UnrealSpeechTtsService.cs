@@ -171,6 +171,10 @@ public class UnrealSpeechTtsService : ITtsService
             Language = WritingLanguage.English
         }));
     }
+
+    /// <inheritdoc />
+    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<decimal?>(null);
     
     private sealed class UnrealSpeechStreamingStream : Stream
     {

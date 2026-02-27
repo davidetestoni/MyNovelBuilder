@@ -144,6 +144,12 @@
           <i class="pi pi-check-circle success-icon"></i>
           <span>A NanoGPT API key is currently configured.</span>
         </div>
+
+        @if (isLoadingNanoGptBalance) {
+          <p>Loading USD balance...</p>
+        } @else if (nanoGptBalanceUsd !== null) {
+          <p>USD balance: {{ formatUsdBalance(nanoGptBalanceUsd) }}</p>
+        }
       } @else {
         <p>No NanoGPT API key is configured.</p>
       }

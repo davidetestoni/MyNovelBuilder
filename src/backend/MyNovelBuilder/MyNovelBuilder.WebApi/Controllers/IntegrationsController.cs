@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Hybrid;
 using MyNovelBuilder.WebApi.Dtos.Integrations;
 using MyNovelBuilder.WebApi.Services;
 
@@ -13,14 +14,17 @@ public class IntegrationsController : ControllerBase
 {
     private readonly IIntegrationsService _integrationsService;
     private readonly ILogger<IntegrationsController> _logger;
+    private readonly HybridCache _hybridCache;
 
     /// <summary></summary>
     public IntegrationsController(
         IIntegrationsService integrationsService,
-        ILogger<IntegrationsController> logger)
+        ILogger<IntegrationsController> logger,
+        HybridCache hybridCache)
     {
         _integrationsService = integrationsService;
         _logger = logger;
+        _hybridCache = hybridCache;
     }
     
     /// <summary>
@@ -54,6 +58,7 @@ public class IntegrationsController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var invalidatedTags = new HashSet<string>();
         
         if (!string.IsNullOrWhiteSpace(dto.OpenRouterApiKey))
         {
@@ -68,21 +73,25 @@ public class IntegrationsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(dto.ElevenLabsApiKey))
         {
             config.ElevenLabsApiKey = dto.ElevenLabsApiKey;
+            invalidatedTags.Add(Enums.TtsProvider.ElevenLabs.ToString());
         }
         
         if (!string.IsNullOrWhiteSpace(dto.UnrealSpeechApiKey))
         {
             config.UnrealSpeechApiKey = dto.UnrealSpeechApiKey;
+            invalidatedTags.Add(Enums.TtsProvider.UnrealSpeech.ToString());
         }
 
         if (!string.IsNullOrWhiteSpace(dto.DeApiApiKey))
         {
             config.DeApiApiKey = dto.DeApiApiKey;
+            invalidatedTags.Add(Enums.TtsProvider.DeApi.ToString());
         }
 
         if (!string.IsNullOrWhiteSpace(dto.NanoGptApiKey))
         {
             config.NanoGptApiKey = dto.NanoGptApiKey;
+            invalidatedTags.Add(Enums.TtsProvider.NanoGpt.ToString());
         }
         
         if (dto.TextGenerationProvider.HasValue)
@@ -106,6 +115,12 @@ public class IntegrationsController : ControllerBase
         }
         
         await _integrationsService.UpdateConfigAsync(config, cancellationToken);
+
+        foreach (var tag in invalidatedTags)
+        {
+            await _hybridCache.RemoveByTagAsync(tag, cancellationToken);
+        }
+
         _logger.LogInformation("Integrations config updated");
         return NoContent();
     }

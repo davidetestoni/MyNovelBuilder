@@ -257,4 +257,8 @@ public class KokoroTtsService : ITtsService
             Language = WritingLanguage.English
         }));
     }
+
+    /// <inheritdoc />
+    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<decimal?>(null);
 }

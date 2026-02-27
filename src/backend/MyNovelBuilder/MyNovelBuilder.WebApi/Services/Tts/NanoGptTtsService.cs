@@ -145,6 +145,35 @@ public class NanoGptTtsService : ITtsService
         return Task.FromResult(voices.AsEnumerable());
     }
 
+    /// <inheritdoc />
+    public async Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default)
+    {
+        var apiKey = await GetApiKeyAsync(cancellationToken);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "check-balance");
+        request.Headers.TryAddWithoutValidation("x-api-key", apiKey);
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                $"NanoGPT balance request failed with status {(int)response.StatusCode}.");
+        }
+
+        var balanceValue = JsonNode.Parse(json)?["usd_balance"]?.ToString();
+        if (!decimal.TryParse(balanceValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsedBalance))
+        {
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                "NanoGPT balance response did not include a valid usd_balance value.");
+        }
+
+        return parsedBalance;
+    }
+
     private async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);

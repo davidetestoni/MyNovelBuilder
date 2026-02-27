@@ -10,4 +10,5 @@ export abstract class GenerateAudioService {
   abstract textToSpeech(request: TtsRequestDto): Observable<HttpEvent<Blob>>;
   abstract textToSpeechStreamResponse(request: TtsRequestDto): Promise<Response>;
   abstract getAvailableVoices(ttsProvider: TtsProvider | null): Observable<TtsVoiceDto[]>;
+  abstract getBalanceUsd(provider: TtsProvider): Observable<number | null>;
 }

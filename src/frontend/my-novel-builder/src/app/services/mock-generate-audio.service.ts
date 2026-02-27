@@ -31,4 +31,8 @@ export class MockGenerateAudioService extends GenerateAudioService {
   getAvailableVoices(_ttsProvider: TtsProvider | null): Observable<TtsVoiceDto[]> {
     return mockObservable(mockedAvailableVoices);
   }
+
+  getBalanceUsd(_provider: TtsProvider): Observable<number | null> {
+    return mockObservable(8.76);
+  }
 }

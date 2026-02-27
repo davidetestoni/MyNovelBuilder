@@ -67,6 +67,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   hasUnrealSpeechApiKey: boolean = false;
   hasDeApiApiKey: boolean = false;
   hasNanoGptApiKey: boolean = false;
+  nanoGptBalanceUsd: number | null = null;
+  isLoadingNanoGptBalance: boolean = false;
   isPreviewingTtsVoice: boolean = false;
   private previewPlayer: StreamingWavPlayer | null = null;
 
@@ -131,6 +133,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         });
 
         this.loadTtsVoices(config.ttsProvider, config.ttsVoiceId);
+        this.loadConfiguredBalances();
       },
       error: (error) => {
         console.error('Error loading configuration:', error);
@@ -166,6 +169,30 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       error: (error) => {
         console.error('Error loading TTS voices:', error);
         this.ttsVoiceOptions = [];
+      },
+    });
+  }
+
+  loadConfiguredBalances(): void {
+    if (this.hasNanoGptApiKey) {
+      this.loadNanoGptBalance();
+    } else {
+      this.nanoGptBalanceUsd = null;
+    }
+  }
+
+  loadNanoGptBalance(): void {
+    this.isLoadingNanoGptBalance = true;
+
+    this.generateAudioService.getBalanceUsd(TtsProvider.NanoGpt).subscribe({
+      next: (balance) => {
+        this.nanoGptBalanceUsd = balance;
+        this.isLoadingNanoGptBalance = false;
+      },
+      error: (error) => {
+        console.error('Error loading NanoGPT balance:', error);
+        this.nanoGptBalanceUsd = null;
+        this.isLoadingNanoGptBalance = false;
       },
     });
   }
@@ -301,10 +328,24 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.toastrService.success(
           'Integrations configuration updated successfully.',
         );
+        this.loadConfiguredBalances();
       },
       error: (error) => {
         console.error('Error updating configuration:', error);
       },
     });
+  }
+
+  protected formatUsdBalance(balance: number | null): string {
+    if (balance === null) {
+      return '$0.00';
+    }
+
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(balance);
   }
 }

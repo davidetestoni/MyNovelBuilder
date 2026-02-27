@@ -35,4 +35,9 @@ public interface ITtsService
     /// Get a list of available voices.
     /// </summary>
     Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get the current provider's USD balance, if available.
+    /// </summary>
+    Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default);
 }

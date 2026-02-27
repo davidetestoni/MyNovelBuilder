@@ -18,7 +18,6 @@ export abstract class GenerateTextService {
   abstract generateTextCompletion(request: GenerateTextRequestDto): Observable<GenerateTextCompletion>;
   abstract getGenerationPreview(request: GenerateTextRequestDto): Observable<TextGenerationPreviewDto>;
   abstract describeImage(image: Blob, request: DescribeImageRequestDto): Observable<string>;
-
   getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
     return this.fetchAvailableModelInfos();
   }

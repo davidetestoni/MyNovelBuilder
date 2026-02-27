@@ -201,4 +201,8 @@ public class VibeVoiceTtsService : ITtsService
         
         return voices;
     }
+
+    /// <inheritdoc />
+    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<decimal?>(null);
 }
