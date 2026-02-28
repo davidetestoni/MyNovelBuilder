@@ -21,7 +21,7 @@ public class VibeVoiceTtsService : ITtsService
     private const string _host = "localhost:8000";
     
     /// <inheritdoc/>
-    public bool SupportsEmphasisTags(string voiceId) => false;
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -181,7 +181,7 @@ public class VibeVoiceTtsService : ITtsService
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.GetAsync($"http://{_host}/config", cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -198,8 +198,16 @@ public class VibeVoiceTtsService : ITtsService
                 Language = WritingLanguage.English
             })
             .ToList();
-        
-        return voices;
+
+        return
+        [
+            new TtsModelDto
+            {
+                ModelId = "VibeVoice-Realtime-0.5B",
+                Name = "VibeVoice Realtime 0.5B",
+                Voices = voices
+            }
+        ];
     }
 
     /// <inheritdoc />

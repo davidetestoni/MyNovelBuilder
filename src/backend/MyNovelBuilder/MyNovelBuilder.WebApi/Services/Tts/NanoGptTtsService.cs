@@ -26,11 +26,8 @@ public class NanoGptTtsService : ITtsService
     private readonly IIntegrationsService _integrationsService;
     
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string voiceId)
-    {
-        var model = voiceId.Split('/', 2)[0];
-        return string.Equals(model, _elevenLabsV3Model, StringComparison.OrdinalIgnoreCase);
-    }
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) =>
+        string.Equals(modelId, _elevenLabsV3Model, StringComparison.OrdinalIgnoreCase);
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -51,12 +48,15 @@ public class NanoGptTtsService : ITtsService
     public async Task<byte[]> GenerateAudioAsync(TtsRequest request, CancellationToken cancellationToken = default)
     {
         var apiKey = await GetApiKeyAsync(cancellationToken);
-        if (!TryParseVoiceId(request.VoiceId, out var model, out var voice))
+        if (string.IsNullOrWhiteSpace(request.ModelId) || string.IsNullOrWhiteSpace(request.VoiceId))
         {
             throw new ApiException(
                 ErrorCodes.MissingOrInvalidServiceCredentials,
-                "NanoGPT TTS voice ID is not in the correct format. Expected format: {model}/{voice}");
+                "NanoGPT TTS model and voice IDs are required.");
         }
+
+        var model = request.ModelId;
+        var voice = request.VoiceId;
 
         var payload = new
         {
@@ -116,7 +116,7 @@ public class NanoGptTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _httpClient.GetAsync("v1/audio-models?detailed=true", cancellationToken);
         var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -138,7 +138,7 @@ public class NanoGptTtsService : ITtsService
                                  ErrorCodes.ExternalServiceError,
                                  "NanoGPT returned an invalid JSON response for audio models.");
 
-        var voices = new List<TtsVoiceDto>();
+        var modelsById = new List<TtsModelDto>();
         var models = responseObject["data"]?.AsArray()
                      ?? throw new ApiException(
                          ErrorCodes.ExternalServiceError,
@@ -166,26 +166,32 @@ public class NanoGptTtsService : ITtsService
                 continue;
             }
 
-            foreach (var voiceNode in modelVoices)
-            {
-                var voice = voiceNode?.GetValue<string>();
-                if (string.IsNullOrWhiteSpace(voice))
+            var voices = modelVoices
+                .Select(voiceNode => voiceNode?.GetValue<string>())
+                .Where(voice => !string.IsNullOrWhiteSpace(voice))
+                .Select(voice => new TtsVoiceDto
                 {
-                    continue;
-                }
-
-                voices.Add(new TtsVoiceDto
-                {
-                    VoiceId = $"{modelId}/{voice}",
-                    Name = $"{providerName} - {modelName} - {voice}",
+                    VoiceId = voice!,
+                    Name = voice!,
                     Language = WritingLanguage.English
-                });
+                })
+                .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (voices.Count == 0)
+            {
+                continue;
             }
+
+            modelsById.Add(new TtsModelDto
+            {
+                ModelId = modelId,
+                Name = $"{providerName} - {modelName}",
+                Voices = voices
+            });
         }
 
-        return voices
-            .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(v => v.VoiceId, StringComparer.OrdinalIgnoreCase);
+        return modelsById.OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase);
     }
 
     /// <inheritdoc />
@@ -230,27 +236,6 @@ public class NanoGptTtsService : ITtsService
         }
 
         return apiKey;
-    }
-
-    private static bool TryParseVoiceId(string? voiceId, out string model, out string voice)
-    {
-        model = string.Empty;
-        voice = string.Empty;
-
-        if (string.IsNullOrWhiteSpace(voiceId))
-        {
-            return false;
-        }
-
-        var voiceParts = voiceId.Split('/', 2);
-        if (voiceParts.Length != 2)
-        {
-            return false;
-        }
-
-        model = voiceParts[0];
-        voice = voiceParts[1];
-        return !string.IsNullOrWhiteSpace(model) && !string.IsNullOrWhiteSpace(voice);
     }
 
     private static string? GetErrorMessage(string errorResponse)

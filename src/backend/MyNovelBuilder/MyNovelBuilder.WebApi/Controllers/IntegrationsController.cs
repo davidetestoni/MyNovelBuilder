@@ -45,6 +45,7 @@ public class IntegrationsController : ControllerBase
             TextGenerationProvider = config.TextGenerationProvider,
             TtsProvider = config.TtsProvider,
             ImageGenerationProvider = config.ImageGenerationProvider,
+            TtsModelId = config.TtsModelId,
             TtsVoiceId = config.TtsVoiceId,
         };
     }
@@ -107,6 +108,11 @@ public class IntegrationsController : ControllerBase
         if (dto.ImageGenerationProvider.HasValue)
         {
             config.ImageGenerationProvider = dto.ImageGenerationProvider.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.TtsModelId))
+        {
+            config.TtsModelId = dto.TtsModelId;
         }
         
         if (!string.IsNullOrWhiteSpace(dto.TtsVoiceId))

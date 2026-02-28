@@ -23,7 +23,7 @@ public class DeApiTtsService : ITtsService
     private const int _maxChunkLength = 500;
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string voiceId) => false;
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
 
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -123,17 +123,14 @@ public class DeApiTtsService : ITtsService
             return [];
         }
         
-        var voiceParts = request.VoiceId.Split('/');
-        
-        if (voiceParts.Length != 3)
+        if (!TrySplitModelId(request.ModelId, out var modelSlug, out var languageCode)
+            || string.IsNullOrWhiteSpace(request.VoiceId))
         {
             throw new ApiException(ErrorCodes.MissingOrInvalidServiceCredentials,
-                "DeAPI TTS voice ID is not in the correct format. Expected format: {modelSlug}/{languageCode}/{voiceSlug}");
+                "DeAPI TTS model and voice IDs are not in the correct format.");
         }
-        
-        var modelSlug = voiceParts[0];
-        var languageCode = voiceParts[1];
-        var voiceSlug = voiceParts[2];
+
+        var voiceSlug = request.VoiceId;
 
         await using var fullPcmStream = new MemoryStream();
         WaveFormat? outputFormat = null;
@@ -217,7 +214,7 @@ public class DeApiTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
         var apiKey = await GetApiKeyAsync(cancellationToken);
         
@@ -240,7 +237,7 @@ public class DeApiTtsService : ITtsService
         }
         
         var responseObject = JsonNode.Parse(jsonResponse)!;
-        var voices = new List<TtsVoiceDto>();
+        var models = new List<TtsModelDto>();
         
         foreach (var m in responseObject["data"]!.AsArray())
         {
@@ -261,26 +258,61 @@ public class DeApiTtsService : ITtsService
                 var languageCode = language["slug"]!.GetValue<string>();
                 var languageVoices = language["voices"]?.AsArray() ?? [];
                 
+                var voices = new List<TtsVoiceDto>();
+
                 foreach (var voice in languageVoices)
                 {
                     var voiceName = voice!["name"]!.GetValue<string>();
                     var voiceSlug = voice["slug"]!.GetValue<string>();
-                    
+
                     voices.Add(new TtsVoiceDto
                     {
-                        VoiceId = $"{modelSlug}/{languageCode}/{voiceSlug}",
-                        Name = $"{modelName} - {languageName} - {voiceName}",
+                        VoiceId = voiceSlug,
+                        Name = voiceName,
                         // TODO: Map actual language code to WritingLanguage enum if possible
                         Language = WritingLanguage.English
                     });
                 }
+
+                if (voices.Count == 0)
+                {
+                    continue;
+                }
+
+                models.Add(new TtsModelDto
+                {
+                    ModelId = $"{modelSlug}/{languageCode}",
+                    Name = $"{modelName} - {languageName}",
+                    Voices = voices
+                });
             }
         }
         
-        return voices;
+        return models;
     }
 
     /// <inheritdoc />
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
+
+    private static bool TrySplitModelId(string? modelId, out string modelSlug, out string languageCode)
+    {
+        modelSlug = string.Empty;
+        languageCode = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(modelId))
+        {
+            return false;
+        }
+
+        var parts = modelId.Split('/', 2, StringSplitOptions.TrimEntries);
+        if (parts.Length != 2)
+        {
+            return false;
+        }
+
+        modelSlug = parts[0];
+        languageCode = parts[1];
+        return !string.IsNullOrWhiteSpace(modelSlug) && !string.IsNullOrWhiteSpace(languageCode);
+    }
 }

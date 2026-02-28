@@ -176,6 +176,19 @@
         </div>
       }
 
+      @if (ttsModelOptions.length > 1) {
+        <div class="form-group">
+          <label for="ttsModelId">Select TTS Model:</label>
+          <p-select
+            id="ttsModelId"
+            [options]="ttsModelOptions"
+            formControlName="ttsModelId"
+            placeholder="Select a TTS model"
+            [style]="{ width: '100%' }"
+          />
+        </div>
+      }
+
       @if (ttsVoiceOptions.length > 0) {
         <div class="form-group">
           <label for="ttsVoiceId">Select TTS Voice:</label>

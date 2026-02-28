@@ -2,9 +2,9 @@ import { HttpEvent, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { TtsRequestDto } from '../types/dtos/generate/tts-request.dto';
-import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
+import { TtsModelDto } from '../types/dtos/generate/tts-model.dto';
 import { TtsProvider } from '../types/enums/tts-provider';
-import { mockedAvailableVoices } from './mocks/mock-generate-audio.data';
+import { mockedAvailableModels } from './mocks/mock-generate-audio.data';
 import { mockObservable } from './mocks/mock-utils';
 import { GenerateAudioService } from './generate-audio.service';
 
@@ -28,8 +28,8 @@ export class MockGenerateAudioService extends GenerateAudioService {
     );
   }
 
-  getAvailableVoices(_ttsProvider: TtsProvider | null): Observable<TtsVoiceDto[]> {
-    return mockObservable(mockedAvailableVoices);
+  getAvailableModels(_ttsProvider: TtsProvider | null): Observable<TtsModelDto[]> {
+    return mockObservable(mockedAvailableModels);
   }
 
   getBalanceUsd(_provider: TtsProvider): Observable<number | null> {

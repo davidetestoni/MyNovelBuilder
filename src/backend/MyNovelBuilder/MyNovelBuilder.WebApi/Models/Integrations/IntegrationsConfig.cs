@@ -53,6 +53,11 @@ public class IntegrationsConfig
     public ImageGenerationProvider ImageGenerationProvider { get; set; } = ImageGenerationProvider.DeApi;
     
     /// <summary>
+    /// The TTS model ID to use for text-to-speech generation.
+    /// </summary>
+    public string TtsModelId { get; set; } = string.Empty;
+
+    /// <summary>
     /// The TTS voice ID to use for text-to-speech generation.
     /// </summary>
     public string TtsVoiceId { get; set; } = string.Empty;

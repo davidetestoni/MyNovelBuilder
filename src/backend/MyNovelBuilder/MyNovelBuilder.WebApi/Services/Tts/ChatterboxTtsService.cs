@@ -28,7 +28,7 @@ public class ChatterboxTtsService : ITtsService
     private const string _defaultLanguageCode = "en";
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string voiceId) => false;
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
 
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -199,7 +199,7 @@ public class ChatterboxTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -222,7 +222,15 @@ public class ChatterboxTtsService : ITtsService
             Language = WritingLanguage.English
         };
 
-        return [defaultVoice, .. customVoices];
+        return
+        [
+            new TtsModelDto
+            {
+                ModelId = "chatterbox-multilingual",
+                Name = "Chatterbox Multilingual",
+                Voices = [defaultVoice, .. customVoices]
+            }
+        ];
     }
 
     /// <inheritdoc />

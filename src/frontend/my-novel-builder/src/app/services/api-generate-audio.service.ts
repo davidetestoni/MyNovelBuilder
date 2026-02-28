@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environment';
 import { TtsRequestDto } from '../types/dtos/generate/tts-request.dto';
-import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
+import { TtsModelDto } from '../types/dtos/generate/tts-model.dto';
 import { TtsProvider } from '../types/enums/tts-provider';
 import { GenerateAudioService } from './generate-audio.service';
 
@@ -34,8 +34,8 @@ export class ApiGenerateAudioService extends GenerateAudioService {
     });
   }
 
-  getAvailableVoices(ttsProvider: TtsProvider | null): Observable<TtsVoiceDto[]> {
-    return this.http.get<TtsVoiceDto[]>(`${this.baseUrl}/generate/audio/tts/voices?provider=${ttsProvider}`);
+  getAvailableModels(ttsProvider: TtsProvider | null): Observable<TtsModelDto[]> {
+    return this.http.get<TtsModelDto[]>(`${this.baseUrl}/generate/audio/tts/models?provider=${ttsProvider}`);
   }
 
   getBalanceUsd(provider: TtsProvider): Observable<number | null> {

@@ -19,7 +19,7 @@ import { SelectModule } from 'primeng/select';
 import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
 import { ImageGenerationProvider } from '../../types/enums/image-generation-provider';
 import { GenerateAudioService } from '../../services/generate-audio.service';
-import { TtsVoiceDto } from '../../types/dtos/generate/tts-voice.dto';
+import { TtsModelDto } from '../../types/dtos/generate/tts-model.dto';
 import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 import { WritingLanguage } from '../../types/enums/writing-language';
 
@@ -55,6 +55,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     elevenLabsApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     unrealSpeechApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     nanoGptApiKey: new FormControl<string>('', Validators.maxLength(1000)),
+    ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
     imageGenerationProvider: new FormControl<ImageGenerationProvider>(
       ImageGenerationProvider.DeApi,
@@ -81,11 +82,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     value: provider,
   }));
 
-  ttsVoiceOptions: {
-    label: string;
-    value: string;
-    language: WritingLanguage;
-  }[] = [];
+  availableTtsModels: TtsModelDto[] = [];
 
   textGenerationProviderOptions = Object.values(TextGenerationProvider).map(
     (provider) => ({
@@ -115,10 +112,14 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     this.integrationsForm.controls.ttsProvider.valueChanges.subscribe(
       (provider) => {
         if (provider) {
-          this.loadTtsVoices(provider);
+          this.loadTtsModels(provider);
         }
       },
     );
+
+    this.integrationsForm.controls.ttsModelId.valueChanges.subscribe((modelId) => {
+      this.ensureValidTtsVoiceSelection(modelId ?? undefined);
+    });
 
     this.integrationsService.getIntegrationsConfig().subscribe({
       next: (config: IntegrationsConfigDto) => {
@@ -132,9 +133,13 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           textGenerationProvider: config.textGenerationProvider,
           ttsProvider: config.ttsProvider,
           imageGenerationProvider: config.imageGenerationProvider,
-        });
+        }, { emitEvent: false });
 
-        this.loadTtsVoices(config.ttsProvider, config.ttsVoiceId);
+        this.loadTtsModels(
+          config.ttsProvider,
+          config.ttsModelId,
+          config.ttsVoiceId,
+        );
         this.loadConfiguredBalances();
       },
       error: (error) => {
@@ -147,30 +152,62 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     this.previewPlayer?.stop();
   }
 
-  loadTtsVoices(provider: TtsProvider, selectedVoiceId?: string): void {
-    this.generateAudioService.getAvailableVoices(provider).subscribe({
-      next: (voices: TtsVoiceDto[]) => {
-        this.ttsVoiceOptions = voices.map((v) => ({
-          label: v.name,
-          value: v.voiceId,
-          language: v.language,
-        }));
+  protected get ttsModelOptions(): { label: string; value: string }[] {
+    return this.availableTtsModels.map((model) => ({
+      label: model.name,
+      value: model.modelId,
+    }));
+  }
 
-        if (selectedVoiceId) {
-          this.integrationsForm.patchValue({ ttsVoiceId: selectedVoiceId });
-        } else if (
-          voices.length > 0 &&
-          !this.ttsVoiceOptions.find(
-            (v) => v.value === this.integrationsForm.value.ttsVoiceId,
-          )
-        ) {
-          // If the current value is not in the new list, select the first one or reset
-          this.integrationsForm.patchValue({ ttsVoiceId: voices[0].voiceId });
-        }
+  protected get ttsVoiceOptions(): {
+    label: string;
+    value: string;
+    language: WritingLanguage;
+  }[] {
+    return this.getSelectedModel()?.voices.map((voice) => ({
+      label: voice.name,
+      value: voice.voiceId,
+      language: voice.language,
+    })) ?? [];
+  }
+
+  private loadTtsModels(
+    provider: TtsProvider,
+    selectedModelId?: string,
+    selectedVoiceId?: string,
+  ): void {
+    this.generateAudioService.getAvailableModels(provider).subscribe({
+      next: (models: TtsModelDto[]) => {
+        this.availableTtsModels = models;
+        const nextModelId =
+          selectedModelId ||
+          this.resolveModelIdForVoice(selectedVoiceId) ||
+          this.integrationsForm.value.ttsModelId ||
+          this.availableTtsModels[0]?.modelId ||
+          '';
+
+        this.integrationsForm.patchValue(
+          {
+            ttsModelId: this.isValidModelId(nextModelId) ? nextModelId : '',
+          },
+          { emitEvent: false },
+        );
+
+        this.ensureValidTtsVoiceSelection(
+          this.integrationsForm.value.ttsModelId ?? undefined,
+          selectedVoiceId,
+        );
       },
       error: (error) => {
         console.error('Error loading TTS voices:', error);
-        this.ttsVoiceOptions = [];
+        this.availableTtsModels = [];
+        this.integrationsForm.patchValue(
+          {
+            ttsModelId: '',
+            ttsVoiceId: '',
+          },
+          { emitEvent: false },
+        );
       },
     });
   }
@@ -219,6 +256,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       const response =
         await this.generateAudioService.textToSpeechStreamResponse({
           message: previewMessage,
+          modelId: this.integrationsForm.value.ttsModelId ?? undefined,
           voiceId: this.integrationsForm.value.ttsVoiceId ?? undefined,
           provider: this.integrationsForm.value.ttsProvider ?? undefined,
         });
@@ -253,10 +291,48 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   private getPreviewSampleTextForSelectedVoice(): string {
     const selectedVoiceId = this.integrationsForm.value.ttsVoiceId;
     const language =
-      this.ttsVoiceOptions.find((voice) => voice.value === selectedVoiceId)
-        ?.language ?? WritingLanguage.English;
+      this.getSelectedModel()
+        ?.voices.find((voice) => voice.voiceId === selectedVoiceId)?.language ??
+      WritingLanguage.English;
 
     return this.getPreviewSampleText(language);
+  }
+
+  private ensureValidTtsVoiceSelection(
+    selectedModelId?: string,
+    preferredVoiceId?: string,
+  ): void {
+    const voices = this.getSelectedModel(selectedModelId)?.voices ?? [];
+    const currentVoiceId = preferredVoiceId ?? this.integrationsForm.value.ttsVoiceId;
+    const nextVoiceId = voices.some((voice) => voice.voiceId === currentVoiceId)
+      ? currentVoiceId
+      : (voices[0]?.voiceId ?? '');
+
+    this.integrationsForm.patchValue(
+      {
+        ttsVoiceId: nextVoiceId,
+      },
+      { emitEvent: false },
+    );
+  }
+
+  private resolveModelIdForVoice(selectedVoiceId?: string): string | undefined {
+    if (!selectedVoiceId) {
+      return undefined;
+    }
+
+    return this.availableTtsModels.find((model) =>
+      model.voices.some((voice) => voice.voiceId === selectedVoiceId),
+    )?.modelId;
+  }
+
+  private getSelectedModel(selectedModelId?: string): TtsModelDto | undefined {
+    const modelId = selectedModelId ?? this.integrationsForm.value.ttsModelId ?? '';
+    return this.availableTtsModels.find((model) => model.modelId === modelId);
+  }
+
+  private isValidModelId(modelId?: string | null): modelId is string {
+    return !!modelId && this.availableTtsModels.some((model) => model.modelId === modelId);
   }
 
   private getPreviewSampleText(language: WritingLanguage): string {
@@ -296,6 +372,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       nanoGptApiKey: this.integrationsForm.value.nanoGptApiKey || undefined,
       deApiApiKey: this.integrationsForm.value.deApiApiKey || undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
+      ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
       imageGenerationProvider:
         this.integrationsForm.value.imageGenerationProvider,

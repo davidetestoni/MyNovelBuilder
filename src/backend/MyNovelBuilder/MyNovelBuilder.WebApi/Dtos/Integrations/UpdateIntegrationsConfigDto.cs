@@ -54,6 +54,11 @@ public class UpdateIntegrationsConfigDto
     public ImageGenerationProvider? ImageGenerationProvider { get; init; }
     
     /// <summary>
+    /// The TTS model ID to use for text-to-speech generation.
+    /// </summary>
+    public string? TtsModelId { get; init; }
+
+    /// <summary>
     /// The TTS voice ID to use for text-to-speech generation.
     /// </summary>
     public string? TtsVoiceId { get; init; }
@@ -69,6 +74,7 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.UnrealSpeechApiKey).MaximumLength(500);
         RuleFor(x => x.DeApiApiKey).MaximumLength(500);
         RuleFor(x => x.NanoGptApiKey).MaximumLength(500);
+        RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.TtsVoiceId).MaximumLength(200);
 
         RuleFor(x => x.TextGenerationProvider)

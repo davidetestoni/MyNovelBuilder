@@ -12,6 +12,7 @@ export interface IntegrationsConfigDto {
   textGenerationProvider: TextGenerationProvider;
   ttsProvider: TtsProvider;
   imageGenerationProvider: ImageGenerationProvider;
+  ttsModelId: string;
   ttsVoiceId: string;
 }
 
@@ -25,5 +26,6 @@ export interface UpdateIntegrationsConfigDto {
   textGenerationProvider?: TextGenerationProvider | null;
   ttsProvider?: TtsProvider | null;
   imageGenerationProvider?: ImageGenerationProvider | null;
+  ttsModelId?: string | null;
   ttsVoiceId?: string | null;
 }

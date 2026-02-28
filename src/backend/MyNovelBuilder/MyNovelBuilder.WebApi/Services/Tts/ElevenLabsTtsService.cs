@@ -21,7 +21,7 @@ public class ElevenLabsTtsService : ITtsService
     private readonly IIntegrationsService _integrationsService;
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string voiceId) => true;
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) => true;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -54,7 +54,7 @@ public class ElevenLabsTtsService : ITtsService
             new TextToSpeechRequest(
                 new Voice(request.VoiceId, string.Empty),
                 request.Message,
-                model: new Model("eleven_v3"),
+                model: new Model(request.ModelId ?? "eleven_v3"),
                 outputFormat: OutputFormat.PCM_24000),
             cancellationToken: cancellationToken);
         
@@ -94,7 +94,7 @@ public class ElevenLabsTtsService : ITtsService
                     new TextToSpeechRequest(
                         new Voice(request.VoiceId, string.Empty),
                         request.Message,
-                        model: new Model("eleven_v3"),
+                        model: new Model(request.ModelId ?? "eleven_v3"),
                         outputFormat: OutputFormat.PCM_24000),
                     partialClipCallback: partialClip => writeAsync(partialClip.ClipData), cancellationToken: ct);
             },
@@ -102,7 +102,7 @@ public class ElevenLabsTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var apiKey = config.ElevenLabsApiKey;
@@ -120,13 +120,21 @@ public class ElevenLabsTtsService : ITtsService
         {
             PageSize = 100
         }, cancellationToken);
-        
-        return voices.Voices.Select(v => new TtsVoiceDto
-        {
-            VoiceId = v.Id,
-            Name = v.Name,
-            Language = WritingLanguage.English
-        });
+
+        return
+        [
+            new TtsModelDto
+            {
+                ModelId = "eleven_v3",
+                Name = "Eleven v3",
+                Voices = voices.Voices.Select(v => new TtsVoiceDto
+                {
+                    VoiceId = v.Id,
+                    Name = v.Name,
+                    Language = WritingLanguage.English
+                })
+            }
+        ];
     }
 
     /// <inheritdoc />

@@ -22,7 +22,7 @@ public class CustomTtsService : ITtsService
     };
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string voiceId) => false;
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Mp3;
@@ -42,6 +42,7 @@ public class CustomTtsService : ITtsService
     {
         var jsonPayload = JsonSerializer.Serialize(new TtsRequest
         {
+            ModelId = request.ModelId,
             Message = request.Message,
             VoiceId = request.VoiceId
         }, _jsonSerializerOptions);
@@ -64,7 +65,7 @@ public class CustomTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _httpClient.GetAsync("tts/speakers", cancellationToken);
         
@@ -74,13 +75,21 @@ public class CustomTtsService : ITtsService
         var voices = JsonSerializer.Deserialize<IEnumerable<TtsVoice>>(
             json, _jsonSerializerOptions) ?? [];
 
-        return voices.Select(v => new TtsVoiceDto
-        {
-            VoiceId = v.VoiceId,
-            Name = v.Name,
-            PreviewUrl = v.PreviewUrl,
-            Language = WritingLanguage.English
-        });
+        return
+        [
+            new TtsModelDto
+            {
+                ModelId = "default",
+                Name = "Default Model",
+                Voices = voices.Select(v => new TtsVoiceDto
+                {
+                    VoiceId = v.VoiceId,
+                    Name = v.Name,
+                    PreviewUrl = v.PreviewUrl,
+                    Language = WritingLanguage.English
+                })
+            }
+        ];
     }
 
     /// <inheritdoc />

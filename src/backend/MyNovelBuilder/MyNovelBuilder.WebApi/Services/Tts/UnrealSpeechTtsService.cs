@@ -64,7 +64,7 @@ public class UnrealSpeechTtsService : ITtsService
     ];
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string voiceId) => false;
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -162,15 +162,21 @@ public class UnrealSpeechTtsService : ITtsService
     }
     
     /// <inheritdoc />
-    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(_voices.Select(v => new TtsVoiceDto
-        {
-            VoiceId = v,
-            Name = v,
-            Language = WritingLanguage.English
-        }));
-    }
+    public Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IEnumerable<TtsModelDto>>(
+        [
+            new TtsModelDto
+            {
+                ModelId = "kokoro-82M",
+                Name = "Kokoro 82M",
+                Voices = _voices.Select(v => new TtsVoiceDto
+                {
+                    VoiceId = v,
+                    Name = v,
+                    Language = WritingLanguage.English
+                })
+            }
+        ]);
 
     /// <inheritdoc />
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>

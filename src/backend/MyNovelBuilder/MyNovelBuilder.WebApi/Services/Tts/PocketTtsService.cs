@@ -24,7 +24,7 @@ public class PocketTtsService : ITtsService
         }).ToArray();
 
     /// <inheritdoc/>
-    public bool SupportsEmphasisTags(string voiceId) => false;
+    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -80,10 +80,17 @@ public class PocketTtsService : ITtsService
         
         return await response.Content.ReadAsStreamAsync(cancellationToken);
     }
-    
+
     /// <inheritdoc/>
-    public Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<IEnumerable<TtsVoiceDto>>(_voices);
+    public Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IEnumerable<TtsModelDto>>([
+            new TtsModelDto
+            {
+                ModelId = "pocket-tts",
+                Name = "Pocket TTS",
+                Voices = _voices
+            }
+        ]);
 
     /// <inheritdoc />
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>

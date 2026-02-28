@@ -31,6 +31,7 @@ public class IntegrationsControllerIntegrationTests(
             NanoGptApiKey = "nano-gpt-api-key",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TtsProvider = TtsProvider.PocketTts,
+            TtsModelId = "test-model-id",
             TtsVoiceId = "test-voice-id"
         };
         await IntegrationsService.UpdateConfigAsync(config);
@@ -47,6 +48,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.True(dto.HasNanoGptApiKey);
         Assert.Equal(TextGenerationProvider.OpenRouter, dto.TextGenerationProvider);
         Assert.Equal(TtsProvider.PocketTts, dto.TtsProvider);
+        Assert.Equal(config.TtsModelId, dto.TtsModelId);
         Assert.Equal(config.TtsVoiceId, dto.TtsVoiceId);
     }
 
@@ -60,6 +62,7 @@ public class IntegrationsControllerIntegrationTests(
             OpenRouterApiKey = "test-api-key",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TtsProvider = TtsProvider.PocketTts,
+            TtsModelId = "test-model-id",
             TtsVoiceId = "test-voice-id"
         };
         await IntegrationsService.UpdateConfigAsync(config);
@@ -69,6 +72,7 @@ public class IntegrationsControllerIntegrationTests(
             NanoGptApiKey = "new-nano-gpt-api-key",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TtsProvider = TtsProvider.Kokoro,
+            TtsModelId = "new-model",
             TtsVoiceId = "new-voice"
         };
 
@@ -84,6 +88,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(updateDto.NanoGptApiKey, updatedConfig.NanoGptApiKey);
         Assert.Equal(updateDto.TextGenerationProvider, updatedConfig.TextGenerationProvider);
         Assert.Equal(updateDto.TtsProvider, updatedConfig.TtsProvider);
+        Assert.Equal(updateDto.TtsModelId, updatedConfig.TtsModelId);
         Assert.Equal(updateDto.TtsVoiceId, updatedConfig.TtsVoiceId);
     }
 

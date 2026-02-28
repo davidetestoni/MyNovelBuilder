@@ -13,5 +13,6 @@ export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   textGenerationProvider: TextGenerationProvider.OpenRouter,
   ttsProvider: TtsProvider.Custom,
   imageGenerationProvider: ImageGenerationProvider.DeApi,
+  ttsModelId: 'model-1',
   ttsVoiceId: 'voice-1',
 };

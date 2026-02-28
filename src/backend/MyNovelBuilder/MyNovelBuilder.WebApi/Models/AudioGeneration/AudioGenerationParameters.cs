@@ -19,6 +19,11 @@ public class AudioGenerationParameters
     public required TtsProvider Provider { get; set; }
     
     /// <summary>
+    /// The model ID to use for audio generation, if applicable.
+    /// </summary>
+    public string? ModelId { get; set; }
+
+    /// <summary>
     /// The voice ID to use for audio generation.
     /// </summary>
     public required string VoiceId { get; set; }
@@ -28,7 +33,7 @@ public class AudioGenerationParameters
     /// </summary>
     public string GetHash()
     {
-        var input = $"{Provider}:{VoiceId}:{Text}";
+        var input = $"{Provider}:{ModelId}:{VoiceId}:{Text}";
         var hashBytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(input));
         return Convert.ToBase64String(hashBytes);
     }

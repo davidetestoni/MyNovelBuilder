@@ -12,7 +12,7 @@ public interface ITtsService
     /// <summary>
     /// Indicates if the TTS service supports emphasis tags in the text for the given voice/model.
     /// </summary>
-    bool SupportsEmphasisTags(string voiceId);
+    bool SupportsEmphasisTags(string? modelId, string voiceId);
     
     /// <summary>
     /// The audio format of the generated output.
@@ -32,9 +32,9 @@ public interface ITtsService
     Task<Stream> GenerateAudioStreamAsync(TtsRequest request, CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Get a list of available voices.
+    /// Get a list of available models and voices.
     /// </summary>
-    Task<IEnumerable<TtsVoiceDto>> GetVoicesAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get the current provider's USD balance, if available.

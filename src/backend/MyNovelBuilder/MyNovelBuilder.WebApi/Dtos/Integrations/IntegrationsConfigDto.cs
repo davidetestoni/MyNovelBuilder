@@ -54,6 +54,11 @@ public class IntegrationsConfigDto
     public required ImageGenerationProvider ImageGenerationProvider { get; init; }
     
     /// <summary>
+    /// The TTS model ID to use for text-to-speech generation.
+    /// </summary>
+    public required string TtsModelId { get; init; }
+
+    /// <summary>
     /// The TTS voice ID to use for text-to-speech generation.
     /// </summary>
     public required string TtsVoiceId { get; init; } 

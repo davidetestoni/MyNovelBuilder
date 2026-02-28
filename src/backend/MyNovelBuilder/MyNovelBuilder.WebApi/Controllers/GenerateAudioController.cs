@@ -124,10 +124,12 @@ public class GenerateAudioController : ControllerBase
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var effectiveProvider = dto.Provider ?? config.TtsProvider;
+        var effectiveModelId = dto.ModelId ?? config.TtsModelId;
         var effectiveVoiceId = dto.VoiceId ?? config.TtsVoiceId;
         var ttsRequest = new TtsRequest
         {
             Message = dto.Message,
+            ModelId = effectiveModelId,
             VoiceId = effectiveVoiceId
         };
         var ttsService = await GetTtsServiceAsync(effectiveProvider, cancellationToken);
@@ -135,6 +137,7 @@ public class GenerateAudioController : ControllerBase
         {
             Text = dto.Message,
             Provider = effectiveProvider,
+            ModelId = effectiveModelId,
             VoiceId = effectiveVoiceId
         };
         
@@ -149,7 +152,7 @@ public class GenerateAudioController : ControllerBase
         }
         
         // Emphasis
-        if (ttsService.SupportsEmphasisTags(effectiveVoiceId))
+        if (ttsService.SupportsEmphasisTags(effectiveModelId, effectiveVoiceId))
         {
             var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
             ttsRequest.Message = emphasizedText.Trim();
@@ -183,10 +186,12 @@ public class GenerateAudioController : ControllerBase
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var effectiveProvider = dto.Provider ?? config.TtsProvider;
+        var effectiveModelId = dto.ModelId ?? config.TtsModelId;
         var effectiveVoiceId = dto.VoiceId ?? config.TtsVoiceId;
         var ttsRequest = new TtsRequest
         {
             Message = dto.Message,
+            ModelId = effectiveModelId,
             VoiceId = effectiveVoiceId
         };
         var ttsService = await GetTtsServiceAsync(effectiveProvider, cancellationToken);
@@ -194,6 +199,7 @@ public class GenerateAudioController : ControllerBase
         {
             Text = dto.Message,
             Provider = effectiveProvider,
+            ModelId = effectiveModelId,
             VoiceId = effectiveVoiceId
         };
         
@@ -208,7 +214,7 @@ public class GenerateAudioController : ControllerBase
         }
         
         // Emphasis
-        if (ttsService.SupportsEmphasisTags(effectiveVoiceId))
+        if (ttsService.SupportsEmphasisTags(effectiveModelId, effectiveVoiceId))
         {
             var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
             ttsRequest.Message = emphasizedText.Trim();
@@ -255,18 +261,18 @@ public class GenerateAudioController : ControllerBase
     }
 
     /// <summary>
-    /// Get available TTS voices.
+    /// Get available TTS models.
     /// </summary>
-    [HttpGet("tts/voices")]
-    public async Task<ActionResult<IEnumerable<TtsVoiceDto>>> GetVoices(
+    [HttpGet("tts/models")]
+    public async Task<ActionResult<IEnumerable<TtsModelDto>>> GetModels(
         [FromQuery] TtsProvider? provider,
         CancellationToken cancellationToken = default)
     {
         var ttsService = await GetTtsServiceAsync(provider, cancellationToken);
         
-        var voices = await ttsService.GetVoicesAsync(cancellationToken);
+        var models = await ttsService.GetModelsAsync(cancellationToken);
         
-        return Ok(voices);
+        return Ok(models);
     }
 
     /// <summary>

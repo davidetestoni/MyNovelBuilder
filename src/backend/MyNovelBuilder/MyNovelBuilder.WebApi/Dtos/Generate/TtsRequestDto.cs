@@ -14,6 +14,12 @@ public class TtsRequestDto
     public required string Message { get; set; }
     
     /// <summary>
+    /// Optional model ID override for this request.
+    /// If null or empty, the configured integrations model is used.
+    /// </summary>
+    public string? ModelId { get; set; }
+
+    /// <summary>
     /// Optional voice ID override for this request.
     /// If null or empty, the configured integrations voice is used.
     /// </summary>
@@ -31,6 +37,7 @@ internal class TtsRequestDtoValidator : AbstractValidator<TtsRequestDto>
     public TtsRequestDtoValidator()
     {
         RuleFor(x => x.Message).NotEmpty().MaximumLength(50_000);
+        RuleFor(x => x.ModelId).MaximumLength(200);
         RuleFor(x => x.VoiceId).MaximumLength(200);
         RuleFor(x => x.Provider)
             .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
