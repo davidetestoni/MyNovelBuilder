@@ -33,4 +33,28 @@ public class NovelExportController : ControllerBase
         var fileName = $"{novel.Title.SanitizeFileName().ToLower().Replace(" ", "_")}.md";
         return File(Encoding.UTF8.GetBytes(markdown), "text/markdown", fileName);
     }
+
+    /// <summary>
+    /// Exports a novel to HTML.
+    /// </summary>
+    [HttpGet("html")]
+    public async Task<IActionResult> ExportToHtml(Guid novelId, CancellationToken cancellationToken = default)
+    {
+        var novel = await _novelService.GetByIdAsync(novelId, cancellationToken);
+        var html = await _novelExportService.ExportToHtmlAsync(novelId, cancellationToken);
+        var fileName = $"{novel.Title.SanitizeFileName().ToLower().Replace(" ", "_")}.html";
+        return File(Encoding.UTF8.GetBytes(html), "text/html", fileName);
+    }
+
+    /// <summary>
+    /// Exports a novel to PDF.
+    /// </summary>
+    [HttpGet("pdf")]
+    public async Task<IActionResult> ExportToPdf(Guid novelId, CancellationToken cancellationToken = default)
+    {
+        var novel = await _novelService.GetByIdAsync(novelId, cancellationToken);
+        var pdf = await _novelExportService.ExportToPdfAsync(novelId, cancellationToken);
+        var fileName = $"{novel.Title.SanitizeFileName().ToLower().Replace(" ", "_")}.pdf";
+        return File(pdf, "application/pdf", fileName);
+    }
 }

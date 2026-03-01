@@ -7,7 +7,7 @@ import { Prose } from '../types/dtos/novel/prose';
 import { UpdateNovelDto } from '../types/dtos/novel/update-novel.dto';
 import { mockedNovels, mockedProse } from './mocks/mock-novel.data';
 import { mockObservable } from './mocks/mock-utils';
-import { NovelService } from './novel.service';
+import { NovelExportFormat, NovelService } from './novel.service';
 
 @Injectable()
 export class MockNovelService extends NovelService {
@@ -51,12 +51,26 @@ export class MockNovelService extends NovelService {
     return mockObservable<void>(undefined);
   }
 
-  exportNovelToMarkdown(_novelId: string): Observable<HttpResponse<Blob>> {
+  exportNovel(
+    _novelId: string,
+    format: NovelExportFormat,
+  ): Observable<HttpResponse<Blob>> {
+    const content =
+      format === 'html'
+        ? '<h1>Mock Novel Export</h1><p>This is a mocked HTML export.</p>'
+        : format === 'pdf'
+          ? '%PDF-1.4\n% Mock PDF export\n'
+        : '# Mock Novel Export\n\nThis is a mocked markdown export.';
+    const contentType =
+      format === 'html'
+        ? 'text/html'
+        : format === 'pdf'
+          ? 'application/pdf'
+          : 'text/markdown';
+
     return mockObservable(
       new HttpResponse({
-        body: new Blob(['# Mock Novel Export\n\nThis is a mocked markdown export.'], {
-          type: 'text/markdown',
-        }),
+        body: new Blob([content], { type: contentType }),
         status: 200,
       }),
     );

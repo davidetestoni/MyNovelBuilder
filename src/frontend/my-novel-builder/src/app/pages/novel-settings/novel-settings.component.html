@@ -16,11 +16,12 @@
         <span>{{ novel.title }}</span>
       </div>
       <div class="novel-settings-header-actions">
+        <p-menu #exportMenu [model]="exportFormatMenuItems" [popup]="true" appendTo="body" />
         <p-button
-          label="Export as Markdown"
+          label="Export as..."
           variant="text"
           icon="pi pi-download"
-          (onClick)="exportAsMarkdown()"
+          (onClick)="exportMenu.toggle($event)"
         />
         <p-button
           label="Plan"

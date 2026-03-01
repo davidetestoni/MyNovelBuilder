@@ -17,7 +17,11 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
+import { firstValueFrom } from 'rxjs';
 import { getFileNameFromResponse } from '../../utils/http.utils';
+import { NovelExportFormat } from '../../services/novel.service';
 
 @Component({
   selector: 'app-novel-settings',
@@ -32,6 +36,7 @@ import { getFileNameFromResponse } from '../../utils/http.utils';
     SelectModule,
     FileUploadModule,
     MultiSelectModule,
+    MenuModule,
   ],
   templateUrl: './novel-settings.component.html',
   styleUrl: './novel-settings.component.scss',
@@ -60,6 +65,24 @@ export class NovelSettingsComponent {
     WritingLanguage.Spanish,
     WritingLanguage.German,
     WritingLanguage.Russian,
+  ];
+
+  exportFormatMenuItems: MenuItem[] = [
+    {
+      label: 'Markdown',
+      icon: 'pi pi-file-edit',
+      command: () => void this.exportNovel('markdown'),
+    },
+    {
+      label: 'HTML',
+      icon: 'pi pi-code',
+      command: () => void this.exportNovel('html'),
+    },
+    {
+      label: 'PDF',
+      icon: 'pi pi-file-pdf',
+      command: () => void this.exportNovel('pdf'),
+    },
   ];
 
   ngOnInit(): void {
@@ -147,30 +170,32 @@ export class NovelSettingsComponent {
     this.onBlur();
   }
 
-  exportAsMarkdown(): void {
+  async exportNovel(format: NovelExportFormat): Promise<void> {
     if (this.novel === null) {
       return;
     }
 
-    this.novelService
-      .exportNovelToMarkdown(this.novel.id)
-      .subscribe((response) => {
-        const blob = response.body;
-        if (!blob) {
-          return;
-        }
+    const response = await firstValueFrom(
+      this.novelService.exportNovel(this.novel.id, format),
+    );
+    const blob = response.body;
+    if (!blob) {
+      return;
+    }
 
-        const fileName = getFileNameFromResponse(
-          response,
-          `${this.novel?.id}.md`,
-        );
+    const fileName = getFileNameFromResponse(
+      response,
+      `${this.novel.id}.${format === 'markdown' ? 'md' : format}`,
+    );
+    this.downloadBlob(blob, fileName);
+  }
 
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        window.URL.revokeObjectURL(url);
-      });
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    window.URL.revokeObjectURL(url);
   }
 }

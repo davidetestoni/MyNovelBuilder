@@ -7,6 +7,8 @@ import { UpdateNovelDto } from '../types/dtos/novel/update-novel.dto';
 import { Prose } from '../types/dtos/novel/prose';
 import { CompendiumRecordMediaDto } from '../types/dtos/compendium-record/compendium-record-media.dto';
 
+export type NovelExportFormat = 'markdown' | 'html' | 'pdf';
+
 interface FloatedMedia {
   [key: string]: CompendiumRecordMediaDto[];
 }
@@ -25,7 +27,10 @@ export abstract class NovelService {
   abstract updateNovel(novel: UpdateNovelDto): Observable<NovelDto>;
   abstract updateNovelProse(novelId: string, prose: Prose): Observable<void>;
   abstract deleteNovel(novelId: string): Observable<void>;
-  abstract exportNovelToMarkdown(novelId: string): Observable<HttpResponse<Blob>>;
+  abstract exportNovel(
+    novelId: string,
+    format: NovelExportFormat,
+  ): Observable<HttpResponse<Blob>>;
 
   private getFloatedMedia(): FloatedMedia {
     const floatedMedia = localStorage.getItem(this.floatedMediaKey);
