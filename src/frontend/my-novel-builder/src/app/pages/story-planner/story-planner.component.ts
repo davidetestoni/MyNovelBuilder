@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   CdkDragDrop,
   DragDropModule,
@@ -24,6 +24,7 @@ import { ConfirmationService } from 'primeng/api';
 })
 export class StoryPlannerComponent {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private confirmationService = inject(ConfirmationService);
   readonly novelService: NovelService = inject(NovelService);
   readonly toastrService: ToastrService = inject(ToastrService);
@@ -54,6 +55,10 @@ export class StoryPlannerComponent {
       this.prose = prose;
       this.selectedSections.clear();
     });
+  }
+
+  async goToProse(): Promise<void> {
+    await this.router.navigate(['/novel', this.novelId]);
   }
 
   get sectionDropListIds(): string[] {

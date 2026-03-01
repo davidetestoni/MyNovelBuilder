@@ -13,7 +13,7 @@
         </div>
       }
       <div class="novel-settings-header-title">
-        <span>{{ novel.title }}</span>
+        <span (click)="goToProse()">{{ novel.title }}</span>
       </div>
       <div class="novel-settings-header-actions">
         <p-menu #exportMenu [model]="exportFormatMenuItems" [popup]="true" appendTo="body" />

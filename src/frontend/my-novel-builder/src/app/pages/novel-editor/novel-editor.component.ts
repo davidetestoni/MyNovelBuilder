@@ -131,6 +131,22 @@ export class NovelEditorComponent {
     });
   }
 
+  async goToProse(): Promise<void> {
+    const proseUrl = `/novel/${this.novelId}`;
+    const currentPath =
+      '/' +
+      this.router
+        .parseUrl(this.router.url)
+        .root.children['primary']?.segments.map((segment) => segment.path)
+        .join('/');
+
+    if (currentPath === proseUrl) {
+      await this.router.navigateByUrl('/novels', { skipLocationChange: true });
+    }
+
+    await this.router.navigate(['/novel', this.novelId]);
+  }
+
   getPrompts(): void {
     this.promptService.getPrompts().subscribe((prompts) => {
       this.prompts = prompts;

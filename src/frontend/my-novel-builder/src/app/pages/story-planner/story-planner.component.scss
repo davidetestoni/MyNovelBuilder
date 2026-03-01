@@ -31,6 +31,10 @@
     .story-planner-header-title {
       font-size: 1.2rem;
       font-weight: bold;
+
+      span {
+        cursor: pointer;
+      }
     }
 
     .story-planner-header-actions {

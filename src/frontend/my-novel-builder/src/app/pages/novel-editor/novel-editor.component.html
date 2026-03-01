@@ -13,7 +13,7 @@
         </div>
       }
       <div class="novel-editor-header-title">
-        <span>{{ novel.title }}</span>
+        <span (click)="goToProse()">{{ novel.title }}</span>
       </div>
       <div class="novel-editor-header-actions">
         @if (prose() !== null) {

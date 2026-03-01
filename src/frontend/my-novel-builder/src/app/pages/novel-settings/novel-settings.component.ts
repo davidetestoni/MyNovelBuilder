@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { NovelService } from '../../services/novel.service';
 import { FormsModule } from '@angular/forms';
@@ -43,6 +43,7 @@ import { NovelExportFormat } from '../../services/novel.service';
 })
 export class NovelSettingsComponent {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   novel: NovelDto | null = null;
   compendia: CompendiumDto[] | null = null;
@@ -101,6 +102,10 @@ export class NovelSettingsComponent {
     this.compendiumService.getCompendia().subscribe((compendia) => {
       this.compendia = compendia;
     });
+  }
+
+  async goToProse(): Promise<void> {
+    await this.router.navigate(['/novel', this.novelId]);
   }
 
   onBlur() {
