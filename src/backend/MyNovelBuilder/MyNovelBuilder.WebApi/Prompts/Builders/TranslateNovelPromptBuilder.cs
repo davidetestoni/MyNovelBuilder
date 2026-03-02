@@ -63,31 +63,20 @@ public partial class TranslateNovelPromptBuilder : PromptBuilder<TranslateNovelC
     {
         return JsonSerializer.Serialize(new
         {
-            chapterTitle = NormalizePlainText(chapter.Title),
+            chapterTitle = chapter.Title,
             storyEvents = chapter.StoryEvents.Select(e => new
             {
-                title = NormalizePlainText(e.Title),
-                date = NormalizePlainText(e.Date),
-                description = NormalizePlainText(e.Description)
+                title = e.Title,
+                date = e.Date,
+                description = e.Description
             }),
             sections = chapter.Sections.Select((section, index) => new
             {
                 sectionIndex = index,
-                summary = NormalizePlainText(section.Summary),
+                summary = section.Summary,
                 text = NormalizeHtmlForPrompt(section.Text)
             })
         }, _jsonSerializerOptions);
-    }
-
-    private static string NormalizePlainText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return string.Empty;
-        }
-
-        var decoded = System.Net.WebUtility.HtmlDecode(text);
-        return decoded.Replace('\u00A0', ' ');
     }
 
     private static string NormalizeHtmlForPrompt(string html)
