@@ -29,6 +29,14 @@ export interface CreateStoryEventsContextInfoDto
   chapterIndex: number;
 }
 
+export interface TranslateNovelContextInfoDto
+  extends NovelTextGenerationContextInfoDto {
+  $type: NovelTextGenerationType.TranslateNovel;
+  chapterIndex: number;
+  targetLanguage: string;
+  instructions: string | null;
+}
+
 export interface SummarizeTextContextInfoDto extends NovelTextGenerationContextInfoDto {
   $type: NovelTextGenerationType.SummarizeText;
   chapterIndex: number;
@@ -85,6 +93,7 @@ export enum NovelTextGenerationType {
   EditCompendiumRecord = 'editCompendiumRecord',
   SendChatMessage = 'sendChatMessage',
   CreateStoryEvents = 'createStoryEvents',
+  TranslateNovel = 'translateNovel',
 }
 
 export interface CompendiumTextGenerationContextInfoDto {

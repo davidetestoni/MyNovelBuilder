@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { NovelService } from '../../services/novel.service';
@@ -22,6 +22,14 @@ import { MenuItem } from 'primeng/api';
 import { firstValueFrom } from 'rxjs';
 import { getFileNameFromResponse } from '../../utils/http.utils';
 import { NovelExportFormat } from '../../services/novel.service';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { PromptService } from '../../services/prompt.service';
+import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
+import { PromptType } from '../../types/enums/prompt-type';
+import {
+  TranslateNovelDialogComponent,
+  TranslateNovelDialogResult,
+} from '../../components/translate-novel-dialog/translate-novel-dialog.component';
 
 @Component({
   selector: 'app-novel-settings',
@@ -38,17 +46,21 @@ import { NovelExportFormat } from '../../services/novel.service';
     MultiSelectModule,
     MenuModule,
   ],
+  providers: [DialogService],
   templateUrl: './novel-settings.component.html',
   styleUrl: './novel-settings.component.scss',
 })
-export class NovelSettingsComponent {
+export class NovelSettingsComponent implements OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialogService = inject(DialogService);
+  private dialogRef: DynamicDialogRef | null = null;
 
   novel: NovelDto | null = null;
   compendia: CompendiumDto[] | null = null;
   readonly novelService: NovelService = inject(NovelService);
   readonly compendiumService: CompendiumService = inject(CompendiumService);
+  readonly promptService: PromptService = inject(PromptService);
   novelId!: string;
 
   writingTenses: WritingTense[] = [WritingTense.Past, WritingTense.Present];
@@ -90,6 +102,10 @@ export class NovelSettingsComponent {
     this.novelId = this.route.snapshot.paramMap.get('id')!;
     this.getNovel();
     this.getCompendia();
+  }
+
+  ngOnDestroy(): void {
+    this.dialogRef?.close();
   }
 
   getNovel(): void {
@@ -193,6 +209,43 @@ export class NovelSettingsComponent {
       `${this.novel.id}.${format === 'markdown' ? 'md' : format}`,
     );
     this.downloadBlob(blob, fileName);
+  }
+
+  async openTranslateDialog(): Promise<void> {
+    if (this.novel === null) {
+      return;
+    }
+
+    const [prose, prompts] = await Promise.all([
+      firstValueFrom(this.novelService.getNovelProse(this.novel.id)),
+      firstValueFrom(this.promptService.getPrompts()),
+    ]);
+
+    this.dialogRef = this.dialogService.open(TranslateNovelDialogComponent, {
+      header: 'Translate novel',
+      width: '52rem',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
+      data: {
+        novel: this.novel,
+        prose,
+        prompts: prompts.filter(
+          (prompt: PromptDto) => prompt.type === PromptType.TranslateNovel,
+        ),
+      },
+    });
+
+    this.dialogRef?.onClose.subscribe((result: TranslateNovelDialogResult | undefined) => {
+      if (!result) {
+        return;
+      }
+
+      void this.router.navigate(['/novel', result.novelId, 'settings']);
+    });
   }
 
   private downloadBlob(blob: Blob, fileName: string): void {

@@ -16,6 +16,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 [JsonDerivedType(typeof(DescribeImageContextInfoDto), typeDiscriminator: "describeImage")]
 [JsonDerivedType(typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto), typeDiscriminator: "createCompendiumRecordImageGenerationPrompt")]
 [JsonDerivedType(typeof(CreateStoryEventsContextInfoDto), typeDiscriminator: "createStoryEvents")]
+[JsonDerivedType(typeof(TranslateNovelContextInfoDto), typeDiscriminator: "translateNovel")]
 public abstract class TextGenerationContextInfoDto
 {
     /// <summary>
@@ -295,6 +296,72 @@ public class CreateStoryEventsContextInfoDto : NovelTextGenerationContextInfoDto
     {
         SchemaName = "story_events",
         JsonSchema = _storyEventsJsonSchema,
+        Strict = true
+    };
+}
+
+/// <summary>
+/// DTO for the context information for translating a novel.
+/// </summary>
+public class TranslateNovelContextInfoDto : NovelTextGenerationContextInfoDto
+{
+    private const string _translatedNovelJsonSchema = """
+                                                      {
+                                                        "type": "object",
+                                                        "properties": {
+                                                          "chapterTitle": { "type": "string" },
+                                                          "storyEvents": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "title": { "type": "string" },
+                                                                "date": { "type": "string" },
+                                                                "description": { "type": "string" }
+                                                              },
+                                                              "required": ["title", "date", "description"],
+                                                              "additionalProperties": false
+                                                            }
+                                                          },
+                                                          "sections": {
+                                                            "type": "array",
+                                                            "items": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "sectionIndex": { "type": "integer" },
+                                                                "summary": { "type": "string" },
+                                                                "text": { "type": "string" }
+                                                              },
+                                                              "required": ["sectionIndex", "summary", "text"],
+                                                              "additionalProperties": false
+                                                            }
+                                                          }
+                                                        },
+                                                        "required": ["chapterTitle", "storyEvents", "sections"],
+                                                        "additionalProperties": false
+                                                      }
+                                                      """;
+
+    /// <summary>
+    /// The chapter index to translate from.
+    /// </summary>
+    public int ChapterIndex { get; set; }
+
+    /// <summary>
+    /// The target language of the translation.
+    /// </summary>
+    public WritingLanguage TargetLanguage { get; set; }
+
+    /// <summary>
+    /// Optional user instructions for the translation.
+    /// </summary>
+    public string? Instructions { get; set; }
+
+    /// <inheritdoc />
+    public override StructuredOutputOptions? GetStructuredOutputOptions() => new()
+    {
+        SchemaName = "translated_novel_sections",
+        JsonSchema = _translatedNovelJsonSchema,
         Strict = true
     };
 }

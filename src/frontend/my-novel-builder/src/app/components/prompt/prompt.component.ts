@@ -48,6 +48,7 @@ export class PromptComponent {
     PromptType.DescribeImage,
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
+    PromptType.TranslateNovel,
   ];
 
   promptMessageRoles: PromptMessageRole[] = [
@@ -210,6 +211,25 @@ export class PromptComponent {
         description: 'Information from relevant compendium records.',
       },
     ],
+    [PromptType.TranslateNovel]: [
+      {
+        keyword: '{{targetLanguage}}',
+        description: 'The language to translate the selected chapter into.',
+      },
+      {
+        keyword: '{{context}}',
+        description:
+          'A JSON object containing the source chapter title, story events, and sections.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'Optional extra translation instructions.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
   };
 
   novelKeywords = [
@@ -270,6 +290,7 @@ export class PromptComponent {
       PromptType.EditCompendiumRecord,
       PromptType.SendChatMessage,
       PromptType.CreateStoryEvents,
+      PromptType.TranslateNovel,
     ].includes(promptType);
   }
 }

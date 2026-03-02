@@ -49,4 +49,9 @@ public enum PromptType
     /// A prompt for creating story events.
     /// </summary>
     CreateStoryEvents = 8,
+
+    /// <summary>
+    /// A prompt for translating sections of a novel.
+    /// </summary>
+    TranslateNovel = 9,
 }

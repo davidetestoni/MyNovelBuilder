@@ -25,6 +25,11 @@ public class PromptBuilderTests
                     records, (prose, chapterIndex, sectionIndex));
         }
     }
+
+    private sealed class TestTranslateNovelPromptBuilder(string prompt)
+        : TranslateNovelPromptBuilder(prompt)
+    {
+    }
     
     private class TestTextGenerationContextInfoDto : NovelTextGenerationContextInfoDto
     {
@@ -244,5 +249,75 @@ public class PromptBuilderTests
         builder.ReplacePlaceholders(context);
         
         Assert.Equal("Past tense", builder.ToString());
+    }
+
+    [Fact]
+    public void TranslateNovelPromptBuilder_NormalizesHtmlEntities_AndStripsInlineBase64Images()
+    {
+        var novel = new Novel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test",
+            Tense = WritingTense.Past,
+            Pov = WritingPov.FirstPerson,
+            Language = WritingLanguage.English
+        };
+
+        var prose = new Prose
+        {
+            Chapters = new List<Chapter>
+            {
+                new()
+                {
+                    Title = "Chapter &amp; One",
+                    StoryEvents =
+                    [
+                        new StoryEvent
+                        {
+                            Title = "Meet&nbsp;up",
+                            Date = "Day&nbsp;1",
+                            Description = "Client&#39;s meeting"
+                        }
+                    ],
+                    Sections = new List<Section>
+                    {
+                        new()
+                        {
+                            Summary = "Another&nbsp;meeting",
+                            Text = "<p>Hello&nbsp;world &#39;test&#39;.</p><p><img src=\"data:image/png;base64,AAAA\" /></p>"
+                        }
+                    }
+                }
+            }
+        };
+
+        var context = new PromptBuilderContext<TranslateNovelContextInfoDto>
+        {
+            Client = new TranslateNovelContextInfoDto
+            {
+                NovelId = novel.Id,
+                ChapterIndex = 0,
+                TargetLanguage = WritingLanguage.Italian
+            },
+            Novel = novel,
+            Prose = prose,
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+
+        var builder = new TestTranslateNovelPromptBuilder("{{context}}");
+        builder.ReplacePlaceholders(context);
+
+        var prompt = builder.ToString();
+        Assert.Contains("Chapter & One", prompt);
+        Assert.Contains("Meet up", prompt);
+        Assert.Contains("Day 1", prompt);
+        Assert.Contains("Client's meeting", prompt);
+        Assert.Contains("Another meeting", prompt);
+        Assert.Contains("<p>Hello world 'test'.</p>", prompt);
+        Assert.Contains("embedded image omitted", prompt);
+        Assert.DoesNotContain("data:image/png;base64", prompt);
+        Assert.DoesNotContain(@"\u0026nbsp", prompt);
+        Assert.DoesNotContain(@"\u003C", prompt);
     }
 }

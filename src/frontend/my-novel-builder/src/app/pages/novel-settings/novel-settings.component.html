@@ -24,6 +24,12 @@
           (onClick)="exportMenu.toggle($event)"
         />
         <p-button
+          label="Translate"
+          variant="text"
+          icon="pi pi-language"
+          (onClick)="openTranslateDialog()"
+        />
+        <p-button
           label="Plan"
           [routerLink]="['/novel', novel.id, 'planner']"
           variant="text"

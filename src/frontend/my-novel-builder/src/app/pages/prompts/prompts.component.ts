@@ -33,6 +33,7 @@ export class PromptsComponent implements OnInit, OnDestroy {
     PromptType.DescribeImage,
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
+    PromptType.TranslateNovel,
   ];
   selectedPromptType: PromptType | null = null;
   promptTypeOptions = this.promptTypes.map((type) => ({

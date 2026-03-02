@@ -57,6 +57,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             PromptType.EditCompendiumRecord => typeof(EditCompendiumRecordContextInfoDto),
             PromptType.SendChatMessage => typeof(SendChatMessageContextInfoDto),
             PromptType.CreateStoryEvents => typeof(CreateStoryEventsContextInfoDto),
+            PromptType.TranslateNovel => typeof(TranslateNovelContextInfoDto),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "This prompt type is not valid for novel prompt generation.")
         };
@@ -89,6 +90,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             EditCompendiumRecordContextInfoDto e => ProcessPrompt(e, prompt, novel, prose, records),
             SendChatMessageContextInfoDto m => ProcessPrompt(m, prompt, novel, prose, records),
             CreateStoryEventsContextInfoDto s => ProcessPrompt(s, prompt, novel, prose, records),
+            TranslateNovelContextInfoDto t => ProcessPrompt(t, prompt, novel, prose, records),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "The prompt context is invalid.")
         };
@@ -156,6 +158,15 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                     .ReplacePlaceholders(new PromptBuilderContext<CreateStoryEventsContextInfoDto>
                     {
                         Client = s,
+                        Novel = novel,
+                        Prose = prose,
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
+                    }).ToString(),
+                TranslateNovelContextInfoDto t => new TranslateNovelPromptBuilder(message.Message)
+                    .ReplacePlaceholders(new PromptBuilderContext<TranslateNovelContextInfoDto>
+                    {
+                        Client = t,
                         Novel = novel,
                         Prose = prose,
                         CompendiumRecords = records,

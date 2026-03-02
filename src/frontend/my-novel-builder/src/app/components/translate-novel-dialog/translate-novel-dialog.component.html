@@ -1,0 +1,120 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="title" class="form-field-label">New novel title</label>
+        <input
+          id="title"
+          pInputText
+          formControlName="title"
+          placeholder="Defaults to source title plus target language"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="targetLanguage" class="form-field-label">Target language *</label>
+        <p-select
+          id="targetLanguage"
+          formControlName="targetLanguage"
+          [options]="writingLanguages"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template let-language pTemplate="item">
+            {{ language | spaced }}
+          </ng-template>
+          <ng-template let-language pTemplate="selectedItem">
+            {{ language | spaced }}
+          </ng-template>
+        </p-select>
+      </div>
+
+      <div class="form-field">
+        <label for="promptId" class="form-field-label">Prompt *</label>
+        <app-prompt-select
+          id="promptId"
+          formControlName="promptId"
+          [prompts]="data.prompts"
+          [promptType]="promptType"
+          [storagePromptType]="promptType"
+          (optionsChanged)="onPromptOptionsChanged($event)"
+          placeholder="Select a prompt"
+          width="100%"
+        />
+        @if (!hasTranslationPromptOptions) {
+          <small class="model-help-text">
+            No translation prompts found. Create a prompt of type
+            <code>TranslateNovel</code> first.
+          </small>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="model" class="form-field-label">Model *</label>
+        <app-model-select
+          id="model"
+          formControlName="model"
+          capability="structuredOutput"
+          placeholder="Select a model"
+          width="100%"
+        />
+        <small class="model-help-text">
+          Only models that support structured outputs are shown.
+        </small>
+      </div>
+
+      <div class="form-field">
+        <label for="instructions" class="form-field-label">Extra instructions</label>
+        <input
+          id="instructions"
+          pInputText
+          formControlName="instructions"
+          placeholder="Optional glossary or style notes"
+        />
+      </div>
+
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <p-button
+            label="Generate"
+            variant="text"
+            (click)="generate()"
+            [disabled]="!canGenerate"
+          />
+          @if (translatedProse !== null) {
+            <p-button
+              label="Create Translated Novel"
+              (click)="accept()"
+              [disabled]="!canAccept"
+            />
+          }
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+@if (isGenerating) {
+  <div class="generation-status">Generating translated prose...</div>
+}
+
+@if (isSaving) {
+  <div class="generation-status">Creating translated novel...</div>
+}
+
+@if (generationError) {
+  <div class="generation-error">{{ generationError }}</div>
+}
+
+@if (progressItems.length > 0) {
+  <div class="generated-results">
+    @for (item of progressItems; track item.chapterIndex) {
+      <div class="generated-chapter">
+        <div class="generated-chapter-title">{{ item.chapterTitle }}</div>
+        <div class="progress-copy">
+          {{ item.isCompleted ? 'Chapter translated' : 'Waiting to translate' }}
+        </div>
+      </div>
+    }
+  </div>
+}

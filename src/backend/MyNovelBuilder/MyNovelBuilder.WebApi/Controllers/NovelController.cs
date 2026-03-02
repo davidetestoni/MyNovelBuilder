@@ -150,7 +150,7 @@ public class NovelController : ControllerBase
     {
         await _novelService.DeleteAsync(id, cancellationToken);
     }
-    
+
     /// <summary>
     /// Upload a new cover image for a novel.
     /// </summary>

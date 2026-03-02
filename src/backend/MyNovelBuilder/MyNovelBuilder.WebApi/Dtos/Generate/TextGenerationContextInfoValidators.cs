@@ -17,6 +17,7 @@ internal class TextGenerationContextInfoDtoValidator : AbstractValidator<TextGen
             v.Add(new DescribeImageContextInfoDtoValidator());
             v.Add(new CreateCompendiumRecordImageGenerationPromptContextInfoDtoValidator());
             v.Add(new CreateStoryEventsContextInfoDtoValidator());
+            v.Add(new TranslateNovelContextInfoDtoValidator());
         });
     }
 }
@@ -131,5 +132,16 @@ internal class CreateStoryEventsContextInfoDtoValidator : AbstractValidator<Crea
     {
         RuleFor(x => x.NovelId).NotEmpty();
         RuleFor(x => x.ChapterIndex).GreaterThanOrEqualTo(0);
+    }
+}
+
+internal class TranslateNovelContextInfoDtoValidator : AbstractValidator<TranslateNovelContextInfoDto>
+{
+    public TranslateNovelContextInfoDtoValidator()
+    {
+        RuleFor(x => x.NovelId).NotEmpty();
+        RuleFor(x => x.ChapterIndex).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.TargetLanguage).IsInEnum();
+        RuleFor(x => x.Instructions).MaximumLength(5_000);
     }
 }
