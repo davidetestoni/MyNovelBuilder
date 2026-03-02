@@ -247,7 +247,7 @@ export class NovelSettingsComponent implements OnDestroy {
         return;
       }
 
-      void this.router.navigate(['/novel', result.novelId, 'settings']);
+      void this.router.navigate(['/novel', result.novelId]);
     });
   }
 

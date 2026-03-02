@@ -1,6 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, ViewChild, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import {
   FormControl,
   FormGroup,
@@ -82,7 +81,6 @@ export class TranslateNovelDialogComponent {
 
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
-  private router = inject(Router);
   private toastrService = inject(ToastrService);
 
   readonly generateTextService = inject(GenerateTextService);
@@ -299,7 +297,6 @@ export class TranslateNovelDialogComponent {
       );
 
       this.toastrService.success('Translated novel created.');
-      await this.router.navigate(['/novel', createdNovel.id]);
       this.dialogRef.close({
         novelId: createdNovel.id,
       } as TranslateNovelDialogResult);
