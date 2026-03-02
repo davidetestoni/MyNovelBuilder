@@ -72,8 +72,8 @@ public class NovelService : INovelService
         
         _unitOfWork.Novels.Remove(novel);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        
-        DeleteCoverImage(id);
+
+        DeleteNovelFiles(id);
     }
 
     /// <inheritdoc />
@@ -190,6 +190,21 @@ public class NovelService : INovelService
         foreach (var coverFile in coverFiles)
         {
             File.Delete(coverFile);
+        }
+    }
+
+    private void DeleteNovelFiles(Guid id)
+    {
+        var proseFolder = Path.Combine(_dataFolder, "novels", id.ToString());
+        if (Directory.Exists(proseFolder))
+        {
+            Directory.Delete(proseFolder, true);
+        }
+
+        var staticNovelFolder = Path.Combine(_staticFilesRoot, "novels", id.ToString());
+        if (Directory.Exists(staticNovelFolder))
+        {
+            Directory.Delete(staticNovelFolder, true);
         }
     }
 

@@ -212,6 +212,34 @@ public class NovelControllerIntegrationTests(
         UnitOfWork.Novels.Add(novel);
         await UnitOfWork.SaveChangesAsync();
 
+        var prose = new Prose
+        {
+            Chapters =
+            [
+                new Chapter
+                {
+                    Title = "Chapter 1",
+                    Sections =
+                    [
+                        new Section { Text = "Section text" }
+                    ]
+                }
+            ]
+        };
+        await PutJsonAsync<object>(client, $"api/novel/{novel.Id}/prose", prose);
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/png");
+        content.Add(fileContent, "file", "cover.png");
+        var uploadResponse = await client.PostAsync($"api/novel/{novel.Id}/cover-image", content);
+        Assert.True(uploadResponse.IsSuccessStatusCode);
+
+        var prosePath = Path.Combine(StorageOptions.DataFolder, "novels", novel.Id.ToString(), "prose.json");
+        var staticNovelFolder = Path.Combine(StorageOptions.StaticFilesRoot, "novels", novel.Id.ToString());
+        Assert.True(File.Exists(prosePath));
+        Assert.True(Directory.Exists(staticNovelFolder));
+
         // Act
         var error = await DeleteAsync(
             client, $"api/novel/{novel.Id}");
@@ -223,6 +251,8 @@ public class NovelControllerIntegrationTests(
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var deletedNovel = await dbContext.Novels.FindAsync(novel.Id);
         Assert.Null(deletedNovel);
+        Assert.False(File.Exists(prosePath));
+        Assert.False(Directory.Exists(staticNovelFolder));
     }
 
     [Fact]

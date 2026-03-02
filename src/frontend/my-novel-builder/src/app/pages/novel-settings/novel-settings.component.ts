@@ -18,7 +18,7 @@ import { SelectModule } from 'primeng/select';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { MenuModule } from 'primeng/menu';
-import { MenuItem } from 'primeng/api';
+import { ConfirmationService, MenuItem } from 'primeng/api';
 import { firstValueFrom } from 'rxjs';
 import { getFileNameFromResponse } from '../../utils/http.utils';
 import { NovelExportFormat } from '../../services/novel.service';
@@ -30,6 +30,7 @@ import {
   TranslateNovelDialogComponent,
   TranslateNovelDialogResult,
 } from '../../components/translate-novel-dialog/translate-novel-dialog.component';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-novel-settings',
@@ -45,8 +46,9 @@ import {
     FileUploadModule,
     MultiSelectModule,
     MenuModule,
+    ConfirmDialogModule,
   ],
-  providers: [DialogService],
+  providers: [DialogService, ConfirmationService],
   templateUrl: './novel-settings.component.html',
   styleUrl: './novel-settings.component.scss',
 })
@@ -54,6 +56,7 @@ export class NovelSettingsComponent implements OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private dialogService = inject(DialogService);
+  private confirmationService = inject(ConfirmationService);
   private dialogRef: DynamicDialogRef | null = null;
 
   novel: NovelDto | null = null;
@@ -245,6 +248,25 @@ export class NovelSettingsComponent implements OnDestroy {
       }
 
       void this.router.navigate(['/novel', result.novelId, 'settings']);
+    });
+  }
+
+  confirmDeleteNovel(): void {
+    if (this.novel === null) {
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message:
+        'Are you sure you want to delete this novel? This action cannot be undone.',
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.novelService.deleteNovel(this.novel!.id).subscribe(() => {
+          void this.router.navigate(['/novels']);
+        });
+      },
     });
   }
 

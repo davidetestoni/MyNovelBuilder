@@ -131,6 +131,26 @@
       align-items: start;
     }
 
+    .novel-settings-actions {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+
+      .novel-settings-actions-buttons {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+    }
+
+    .novel-settings-section {
+      > .label {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+    }
+
     .novel-compendia {
       ::ng-deep .p-multiselect {
         width: 100%;
