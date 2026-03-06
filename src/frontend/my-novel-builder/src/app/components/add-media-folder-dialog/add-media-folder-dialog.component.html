@@ -1,0 +1,31 @@
+<form class="dialog-form" [formGroup]="formGroup">
+  <div class="form-field">
+    <label for="media-folder-name">Folder name</label>
+    <input
+      id="media-folder-name"
+      pInputText
+      type="text"
+      formControlName="name"
+      placeholder="Reference images"
+    />
+  </div>
+
+  <div class="form-field">
+    <label for="media-folder-path">Absolute folder path</label>
+    <input
+      id="media-folder-path"
+      pInputText
+      type="text"
+      formControlName="path"
+      placeholder="/home/me/Pictures/References"
+    />
+  </div>
+
+  <div class="dialog-actions">
+    <p-button
+      label="Add Folder"
+      [disabled]="formGroup.invalid"
+      (onClick)="submit()"
+    />
+  </div>
+</form>

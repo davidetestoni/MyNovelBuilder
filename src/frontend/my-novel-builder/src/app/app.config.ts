@@ -38,6 +38,9 @@ import { MockGenerateAudioService } from './services/mock-generate-audio.service
 import { VoiceService } from './services/voice.service';
 import { ApiVoiceService } from './services/api-voice.service';
 import { MockVoiceService } from './services/mock-voice.service';
+import { MediaLibraryService } from './services/media-library.service';
+import { ApiMediaLibraryService } from './services/api-media-library.service';
+import { MockMediaLibraryService } from './services/mock-media-library.service';
 
 const primeNgTheme = definePreset(Nora, {
   semantic: {
@@ -108,6 +111,12 @@ export const appConfig: ApplicationConfig = {
     {
       provide: VoiceService,
       useClass: environment.mocked ? MockVoiceService : ApiVoiceService,
+    },
+    {
+      provide: MediaLibraryService,
+      useClass: environment.mocked
+        ? MockMediaLibraryService
+        : ApiMediaLibraryService,
     },
     provideToastr(),
     provideMarkdown(),

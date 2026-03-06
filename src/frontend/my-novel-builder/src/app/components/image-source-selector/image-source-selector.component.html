@@ -1,12 +1,12 @@
 <div class="image-source-selector">
   <p-button
-    label="Upload Image"
+    [label]="uploadLabel"
     icon="pi pi-upload"
     (onClick)="select('upload')"
   ></p-button>
   <div class="divider">OR</div>
   <p-button
-    label="Generate Image"
+    [label]="generateLabel"
     icon="icon icon-ai"
     (onClick)="select('generate')"
     variant="outlined"

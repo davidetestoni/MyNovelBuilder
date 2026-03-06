@@ -42,6 +42,11 @@ public class AppDbContext : DbContext
     /// </summary>
     public DbSet<Voice> Voices { get; init; }
 
+    /// <summary>
+    /// The linked media folders in the database.
+    /// </summary>
+    public DbSet<MediaFolder> MediaFolders { get; init; }
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -86,6 +86,14 @@ export const routes: Routes = [
     data: mainLayoutData,
   },
   {
+    path: 'media-library',
+    loadComponent: () =>
+      import('./pages/media-library/media-library.component').then(
+        (m) => m.MediaLibraryComponent,
+      ),
+    data: mainLayoutData,
+  },
+  {
     path: 'integrations',
     loadComponent: () =>
       import('./pages/integrations/integrations.component').then(

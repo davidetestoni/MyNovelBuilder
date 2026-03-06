@@ -31,6 +31,11 @@ public interface IUnitOfWork
     /// Repository for voices.
     /// </summary>
     IVoiceRepository Voices { get; }
+
+    /// <summary>
+    /// Repository for media folders.
+    /// </summary>
+    IMediaFolderRepository MediaFolders { get; }
     
     /// <summary>
     /// Complete the current transaction.

@@ -1,0 +1,33 @@
+<form class="dialog-form" [formGroup]="formGroup">
+  <div class="form-field">
+    <label for="media-name">Media file name</label>
+    <input
+      id="media-name"
+      pInputText
+      type="text"
+      formControlName="name"
+      placeholder="generated-image.png"
+    />
+  </div>
+
+  <div class="form-field">
+    <label for="media-file">File</label>
+    <input
+      id="media-file"
+      type="file"
+      accept="image/*,video/*"
+      (change)="onFileSelected($event)"
+    />
+    @if (selectedFile !== null) {
+      <div class="selected-file">{{ selectedFile.name }}</div>
+    }
+  </div>
+
+  <div class="dialog-actions">
+    <p-button
+      label="Upload"
+      [disabled]="formGroup.invalid || selectedFile === null"
+      (onClick)="submit()"
+    />
+  </div>
+</form>

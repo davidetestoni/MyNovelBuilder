@@ -18,6 +18,7 @@ public class UnitOfWork : IUnitOfWork
         CompendiumRecords = new CompendiumRecordRepository(_context);
         Prompts = new PromptRepository(_context);
         Voices = new VoiceRepository(_context);
+        MediaFolders = new MediaFolderRepository(_context);
     }
     
     /// <inheritdoc />
@@ -34,6 +35,9 @@ public class UnitOfWork : IUnitOfWork
     
     /// <inheritdoc />
     public IVoiceRepository Voices { get; }
+
+    /// <inheritdoc />
+    public IMediaFolderRepository MediaFolders { get; }
 
     /// <inheritdoc />
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

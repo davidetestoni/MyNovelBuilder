@@ -1,0 +1,82 @@
+@use "../../../styles/colors" as *;
+
+.media-library-page {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: calc(100vh - 88px);
+}
+
+.folder-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background-color: $grey2;
+  border: 1px solid $grey7;
+  border-radius: 8px;
+  padding: 16px;
+
+  @media (max-width: 960px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.folder-toolbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.folder-toolbar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex: 1;
+
+  @media (max-width: 960px) {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+}
+
+.folder-toolbar-controls p-select,
+.folder-toolbar-controls ::ng-deep .p-select {
+  min-width: 280px;
+  flex: 1;
+}
+
+.folder-toolbar-status {
+  color: $grey11;
+  font-size: 0.9rem;
+}
+
+.folder-select-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.folder-select-name {
+  min-width: 0;
+}
+
+.folder-select-path {
+  color: $grey11;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-panel {
+  background-color: $grey2;
+  border: 1px solid $grey7;
+  border-radius: 8px;
+  padding: 16px;
+  flex: 1;
+}

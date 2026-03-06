@@ -49,6 +49,11 @@ public static class ErrorCodes
     /// The voice was not found.
     /// </summary>
     public const string VoiceNotFound = "voice_not_found";
+
+    /// <summary>
+    /// The media folder was not found.
+    /// </summary>
+    public const string MediaFolderNotFound = "media_folder_not_found";
     
     /// <summary>
     /// The chat was not found.
