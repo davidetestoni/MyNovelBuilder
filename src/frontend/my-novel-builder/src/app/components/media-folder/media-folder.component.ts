@@ -727,6 +727,38 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
     );
   }
 
+  ensureVideoPlayback(event: Event): void {
+    const video = event.target;
+    if (!(video instanceof HTMLVideoElement)) {
+      return;
+    }
+
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    const playPromise = video.play();
+    if (playPromise instanceof Promise) {
+      playPromise.catch(() => undefined);
+    }
+  }
+
+  ensureOverlayVideoPlayback(event: Event): void {
+    const video = event.target;
+    if (!(video instanceof HTMLVideoElement)) {
+      return;
+    }
+
+    video.defaultMuted = false;
+    video.muted = false;
+    video.playsInline = true;
+
+    const playPromise = video.play();
+    if (playPromise instanceof Promise) {
+      playPromise.catch(() => undefined);
+    }
+  }
+
   private async loadZoomedMediaPrompt(media: MediaPreview): Promise<void> {
     if (media.isVideo || media.url === null) {
       this.zoomedMediaPrompt = null;

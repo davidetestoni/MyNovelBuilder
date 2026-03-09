@@ -45,7 +45,17 @@
                 @if (!media.isVideo) {
                   <img [src]="media.url" [alt]="media.fileName" />
                 } @else {
-                  <video autoplay muted loop [src]="media.url"></video>
+                  <video
+                    autoplay
+                    muted
+                    [defaultMuted]="true"
+                    [muted]="true"
+                    loop
+                    playsinline
+                    [src]="media.url"
+                    (loadedmetadata)="ensureVideoPlayback($event)"
+                    (canplay)="ensureVideoPlayback($event)"
+                  ></video>
                 }
               } @else {
                 <div class="media-preview-unavailable">Preview unavailable</div>
@@ -83,7 +93,15 @@
         @if (!zoomedMedia.isVideo) {
           <img [src]="zoomedMedia.url" [alt]="zoomedMedia.fileName" />
         } @else {
-          <video autoplay muted loop [src]="zoomedMedia.url" controls></video>
+          <video
+            autoplay
+            loop
+            playsinline
+            [src]="zoomedMedia.url"
+            controls
+            (loadedmetadata)="ensureOverlayVideoPlayback($event)"
+            (canplay)="ensureOverlayVideoPlayback($event)"
+          ></video>
         }
       </div>
 
