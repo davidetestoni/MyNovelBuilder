@@ -307,6 +307,26 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
     this.isZoomedMediaPromptLoading = false;
   }
 
+  editZoomedMedia(): void {
+    const media = this.zoomedMedia;
+    if (media === null || media.isVideo) {
+      return;
+    }
+
+    this.unzoomMedia();
+    this.editImage(media);
+  }
+
+  deleteZoomedMedia(): void {
+    const media = this.zoomedMedia;
+    if (media === null) {
+      return;
+    }
+
+    this.unzoomMedia();
+    this.confirmDeleteMedia(media.fileName);
+  }
+
   @HostListener('document:keydown', ['$event'])
   onDocumentKeyDown(event: KeyboardEvent): void {
     if (this.zoomedMedia === null) {

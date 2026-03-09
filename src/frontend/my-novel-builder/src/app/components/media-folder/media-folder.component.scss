@@ -187,10 +187,18 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 0.6rem;
   font-size: 0.78rem;
   opacity: 0.95;
+}
+
+.zoomed-media-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
 
   button {
     display: inline-flex;
@@ -206,6 +214,11 @@
 
     &:hover {
       background: rgba($grey21, 0.14);
+    }
+
+    &.danger:hover {
+      background: rgba(255, 84, 84, 0.16);
+      border-color: rgba(255, 84, 84, 0.3);
     }
   }
 }

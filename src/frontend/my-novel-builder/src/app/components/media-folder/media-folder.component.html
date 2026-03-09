@@ -91,12 +91,24 @@
         <div class="zoomed-media-details" (click)="$event.stopPropagation()">
           <div class="zoomed-media-details-header">
             <span>Image details</span>
-            @if (zoomedMediaPrompt) {
-              <button type="button" (click)="copyZoomedMediaPrompt()">
-                <i class="pi pi-copy"></i>
-                <span>Copy prompt</span>
+            <div class="zoomed-media-details-actions">
+              <button type="button" (click)="editZoomedMedia()">
+                <i class="icon icon-edit"></i>
+                <span>Edit</span>
               </button>
-            }
+
+              <button type="button" class="danger" (click)="deleteZoomedMedia()">
+                <i class="icon icon-close"></i>
+                <span>Delete</span>
+              </button>
+
+              @if (zoomedMediaPrompt) {
+                <button type="button" (click)="copyZoomedMediaPrompt()">
+                  <i class="pi pi-copy"></i>
+                  <span>Copy prompt</span>
+                </button>
+              }
+            </div>
           </div>
 
           <div class="zoomed-media-details-section">
