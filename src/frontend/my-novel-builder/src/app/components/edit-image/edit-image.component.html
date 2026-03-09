@@ -48,12 +48,15 @@
       </div>
       <div class="form-buttons-container">
         <p-button
-          label="{{ isGenerating ? 'Editing...' : 'Edit' }}"
+          label="{{ editButtonLabel }}"
           (click)="editImage()"
           [disabled]="isGenerating || formGroup.invalid || !originalImage"
           [loading]="isGenerating"
           variant="text"
         />
+        @if (generationStatusLabel; as statusLabel) {
+          <span class="generation-status">{{ statusLabel }}</span>
+        }
         @if (imageBlob !== null) {
           <p-button
             label="Accept"

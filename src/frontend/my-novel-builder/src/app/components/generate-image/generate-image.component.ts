@@ -59,6 +59,8 @@ export interface GenerateImageComponentData {
 })
 export class GenerateImageComponent implements OnInit, OnDestroy {
   private readonly storageContext = 'generate';
+  private generationTimerId: ReturnType<typeof setInterval> | null = null;
+  private generationStartedAt: number | null = null;
 
   dialogRef = inject(DynamicDialogRef);
   config = inject(DynamicDialogConfig);
@@ -91,6 +93,8 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
   imageBlob: Blob | null = null;
   imagePreview: SafeUrl | null = null;
   isGenerating = false;
+  generationElapsedSeconds = 0;
+  lastGenerationDurationSeconds: number | null = null;
 
   constructor() {
     this.data = (this.config.data ?? {}) as GenerateImageComponentData;
@@ -117,6 +121,7 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopGenerationTimer();
     this.promptGenerationDialogRef?.close();
   }
 
@@ -146,6 +151,8 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
     );
 
     this.isGenerating = true;
+    this.lastGenerationDurationSeconds = null;
+    this.startGenerationTimer();
 
     this.generateImageService
       .generateImage({
@@ -169,11 +176,31 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
         error: (err) => {
           console.error('Image generation failed', err);
           this.isGenerating = false;
+          this.stopGenerationTimer();
         },
         complete: () => {
           this.isGenerating = false;
+          this.stopGenerationTimer();
         },
       });
+  }
+
+  get generateButtonLabel(): string {
+    return this.isGenerating
+      ? `Generating (${this.generationElapsedSeconds}s)`
+      : 'Generate';
+  }
+
+  get generationStatusLabel(): string | null {
+    if (this.isGenerating) {
+      return null;
+    }
+
+    if (this.lastGenerationDurationSeconds === null) {
+      return null;
+    }
+
+    return `Generation took ${this.lastGenerationDurationSeconds}s`;
   }
 
   accept(): void {
@@ -294,5 +321,35 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
       !!this.data.compendiumId &&
       !!this.data.compendiumRecordId
     );
+  }
+
+  private startGenerationTimer(): void {
+    this.stopGenerationTimer();
+    this.generationStartedAt = Date.now();
+    this.generationElapsedSeconds = 0;
+    this.generationTimerId = setInterval(() => {
+      if (this.generationStartedAt === null) {
+        return;
+      }
+
+      this.generationElapsedSeconds = Math.floor(
+        (Date.now() - this.generationStartedAt) / 1000,
+      );
+    }, 1000);
+  }
+
+  private stopGenerationTimer(): void {
+    if (this.generationTimerId !== null) {
+      clearInterval(this.generationTimerId);
+      this.generationTimerId = null;
+    }
+
+    if (this.generationStartedAt !== null) {
+      this.lastGenerationDurationSeconds = Math.floor(
+        (Date.now() - this.generationStartedAt) / 1000,
+      );
+      this.generationElapsedSeconds = this.lastGenerationDurationSeconds;
+      this.generationStartedAt = null;
+    }
   }
 }

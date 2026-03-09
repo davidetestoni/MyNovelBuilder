@@ -72,3 +72,10 @@ input:not([type="checkbox"]) {
     border-radius: 5px;
   }
 }
+
+.generation-status {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+}

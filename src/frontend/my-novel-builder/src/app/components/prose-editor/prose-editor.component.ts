@@ -362,23 +362,24 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   async textToSpeech(chapterIndex: number, sectionIndex: number) {
-    const response = await this.generateAudioService.textToSpeechStreamResponse(
-      {
-        message: this.getRawText(
-          this.prose.chapters[chapterIndex].sections[sectionIndex].text,
-        ),
-      },
-    );
-
-    const stream = response.body;
-    if (!stream) {
-      this.toastr.error('No audio stream was returned.');
-      return;
-    }
-    const player = new StreamingWavPlayer();
-    const reader = stream.getReader();
-
+    const timerLabel = `TTS section ${chapterIndex}-${sectionIndex}`;
     try {
+      console.time(timerLabel);
+      const response =
+        await this.generateAudioService.textToSpeechStreamResponse({
+          message: this.getRawText(
+            this.prose.chapters[chapterIndex].sections[sectionIndex].text,
+          ),
+        });
+
+      const stream = response.body;
+      if (!stream) {
+        this.toastr.error('No audio stream was returned.');
+        return;
+      }
+      const player = new StreamingWavPlayer();
+      const reader = stream.getReader();
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -386,6 +387,8 @@ export class ProseEditorComponent implements OnDestroy {
       }
     } catch (error) {
       console.error('WAV streaming error:', error);
+    } finally {
+      console.timeEnd(timerLabel);
     }
   }
 

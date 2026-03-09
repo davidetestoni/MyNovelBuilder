@@ -237,6 +237,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   }
 
   async previewTtsVoice(): Promise<void> {
+    const timerLabel = 'TTS voice preview';
+
     if (this.isPreviewingTtsVoice) {
       return;
     }
@@ -251,6 +253,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     this.previewPlayer = new StreamingWavPlayer();
 
     try {
+      console.time(timerLabel);
       const previewMessage = this.getPreviewSampleTextForSelectedVoice();
 
       const response =
@@ -284,6 +287,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         'Could not preview voice. Please verify your TTS configuration.',
       );
     } finally {
+      console.timeEnd(timerLabel);
       this.isPreviewingTtsVoice = false;
     }
   }

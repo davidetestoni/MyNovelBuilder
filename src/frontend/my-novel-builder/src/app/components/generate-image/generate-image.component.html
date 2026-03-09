@@ -47,12 +47,15 @@
           />
         }
         <p-button
-          label="{{ isGenerating ? 'Generating...' : 'Generate' }}"
+          label="{{ generateButtonLabel }}"
           (click)="generateImage()"
           [disabled]="isGenerating || formGroup.invalid"
           [loading]="isGenerating"
           variant="text"
         />
+        @if (generationStatusLabel; as statusLabel) {
+          <span class="generation-status">{{ statusLabel }}</span>
+        }
         @if (imageBlob !== null) {
           <p-button
             label="Accept"

@@ -23,10 +23,13 @@
     <div class="result-actions">
       <p-button label="Back" (click)="goBack()" [disabled]="isGenerating" />
       <p-button
-        label="Retry"
+        label="{{ retryButtonLabel }}"
         (click)="generateText()"
         [disabled]="isGenerating"
       />
+      @if (generationStatusLabel; as statusLabel) {
+        <span class="generation-status">{{ statusLabel }}</span>
+      }
       <p-button
         label="{{ data.textToReplace.length > 0 ? 'Replace' : 'Insert' }}"
         (click)="accept()"

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
 import {
   HttpEvent,
@@ -23,7 +23,10 @@ export interface GenerateTextResultComponentData {
   templateUrl: './generate-text-result.component.html',
   styleUrl: './generate-text-result.component.scss',
 })
-export class GenerateTextResultComponent implements OnInit {
+export class GenerateTextResultComponent implements OnInit, OnDestroy {
+  private generationTimerId: ReturnType<typeof setInterval> | null = null;
+  private generationStartedAt: number | null = null;
+
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
 
@@ -33,6 +36,8 @@ export class GenerateTextResultComponent implements OnInit {
     inject(GenerateTextService);
   isGenerating = true;
   generatedText = '';
+  generationElapsedSeconds = 0;
+  lastGenerationDurationSeconds: number | null = null;
 
   constructor() {
     this.data = this.config.data as GenerateTextResultComponentData;
@@ -42,9 +47,15 @@ export class GenerateTextResultComponent implements OnInit {
     this.generateText();
   }
 
+  ngOnDestroy(): void {
+    this.stopGenerationTimer();
+  }
+
   generateText(): void {
     this.generatedText = '[Generating text...]';
     this.isGenerating = true;
+    this.lastGenerationDurationSeconds = null;
+    this.startGenerationTimer();
 
     this.generateTextService.generateText(this.data.request).subscribe({
       next: (event: HttpEvent<string>) => {
@@ -74,15 +85,36 @@ export class GenerateTextResultComponent implements OnInit {
             const message = responseChunks.map((item) => item.content).join('');
 
             this.generatedText = message;
-            this.isGenerating = false;
           }
+
+          this.isGenerating = false;
+          this.stopGenerationTimer();
         }
       },
       error: (error) => {
         console.error('Error generating text:', error);
         this.isGenerating = false;
+        this.stopGenerationTimer();
       },
     });
+  }
+
+  get retryButtonLabel(): string {
+    return this.isGenerating
+      ? `Generating (${this.generationElapsedSeconds}s)`
+      : 'Retry';
+  }
+
+  get generationStatusLabel(): string | null {
+    if (this.isGenerating) {
+      return null;
+    }
+
+    if (this.lastGenerationDurationSeconds === null) {
+      return null;
+    }
+
+    return `Generation took ${this.lastGenerationDurationSeconds}s`;
   }
 
   accept() {
@@ -97,5 +129,35 @@ export class GenerateTextResultComponent implements OnInit {
 
   goBack() {
     this.dialogRef.close('back');
+  }
+
+  private startGenerationTimer(): void {
+    this.stopGenerationTimer();
+    this.generationStartedAt = Date.now();
+    this.generationElapsedSeconds = 0;
+    this.generationTimerId = setInterval(() => {
+      if (this.generationStartedAt === null) {
+        return;
+      }
+
+      this.generationElapsedSeconds = Math.floor(
+        (Date.now() - this.generationStartedAt) / 1000,
+      );
+    }, 1000);
+  }
+
+  private stopGenerationTimer(): void {
+    if (this.generationTimerId !== null) {
+      clearInterval(this.generationTimerId);
+      this.generationTimerId = null;
+    }
+
+    if (this.generationStartedAt !== null) {
+      this.lastGenerationDurationSeconds = Math.floor(
+        (Date.now() - this.generationStartedAt) / 1000,
+      );
+      this.generationElapsedSeconds = this.lastGenerationDurationSeconds;
+      this.generationStartedAt = null;
+    }
   }
 }
