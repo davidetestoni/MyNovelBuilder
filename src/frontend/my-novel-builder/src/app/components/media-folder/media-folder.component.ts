@@ -241,9 +241,10 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
             return;
           }
 
+          const editedFileName = this.buildEditedFileName(media.fileName);
           this.uploadMedia({
-            name: media.fileName,
-            file: new File([editedImage], media.fileName, {
+            name: editedFileName,
+            file: new File([editedImage], editedFileName, {
               type: editedImage.type || 'image/png',
             }),
           });
@@ -568,6 +569,28 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
       this.currentPageFirst + this.currentPageSize,
     );
     this.loadMediaPreviews();
+  }
+
+  private buildEditedFileName(originalFileName: string): string {
+    const extensionIndex = originalFileName.lastIndexOf('.');
+    const hasExtension = extensionIndex > 0;
+    const baseName = hasExtension
+      ? originalFileName.slice(0, extensionIndex)
+      : originalFileName;
+    const extension = hasExtension ? originalFileName.slice(extensionIndex) : '';
+    const existingNames = new Set(this.allMediaFiles.map((file) => file.fileName));
+    const firstCandidate = `${baseName}-edited${extension}`;
+
+    if (!existingNames.has(firstCandidate)) {
+      return firstCandidate;
+    }
+
+    let suffix = 2;
+    while (existingNames.has(`${baseName}-edited-${suffix}${extension}`)) {
+      suffix += 1;
+    }
+
+    return `${baseName}-edited-${suffix}${extension}`;
   }
 
   private syncOrderedPreviews(): void {
