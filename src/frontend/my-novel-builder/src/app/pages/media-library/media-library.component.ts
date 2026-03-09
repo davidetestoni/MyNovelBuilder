@@ -34,6 +34,9 @@ import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto'
   providers: [DialogService, ConfirmationService],
 })
 export class MediaLibraryComponent implements OnInit, OnDestroy {
+  private static readonly LAST_SELECTED_FOLDER_STORAGE_KEY =
+    'media-library:last-selected-folder-id';
+
   private mediaLibraryService = inject(MediaLibraryService);
   private toastrService = inject(ToastrService);
   private dialogService = inject(DialogService);
@@ -68,12 +71,14 @@ export class MediaLibraryComponent implements OnInit, OnDestroy {
         path: folder.path,
       }));
 
-      const nextFolderId =
-        selectFolderId && folders.some((folder) => folder.id === selectFolderId)
-          ? selectFolderId
-          : folders[0]?.id ?? null;
+      const storedFolderId = this.getStoredSelectedFolderId();
+      const nextFolderId = this.resolveNextFolderId(
+        folders,
+        selectFolderId,
+        storedFolderId,
+      );
 
-      this.selectedFolderId = nextFolderId;
+      this.setSelectedFolderId(nextFolderId);
 
       if (nextFolderId === null) {
         return;
@@ -82,12 +87,7 @@ export class MediaLibraryComponent implements OnInit, OnDestroy {
   }
 
   selectFolder(folderId: string | null): void {
-    if (folderId === null) {
-      this.selectedFolderId = null;
-      return;
-    }
-
-    this.selectedFolderId = folderId;
+    this.setSelectedFolderId(folderId);
   }
 
   openAddFolderDialog(): void {
@@ -153,5 +153,43 @@ export class MediaLibraryComponent implements OnInit, OnDestroy {
         this.selectedFolderId === folder.id ? null : this.selectedFolderId;
       this.loadFolders(nextFolderId);
     });
+  }
+
+  private resolveNextFolderId(
+    folders: MediaFolderDto[],
+    requestedFolderId?: string | null,
+    storedFolderId?: string | null,
+  ): string | null {
+    if (requestedFolderId && folders.some((folder) => folder.id === requestedFolderId)) {
+      return requestedFolderId;
+    }
+
+    if (storedFolderId && folders.some((folder) => folder.id === storedFolderId)) {
+      return storedFolderId;
+    }
+
+    return folders[0]?.id ?? null;
+  }
+
+  private setSelectedFolderId(folderId: string | null): void {
+    this.selectedFolderId = folderId;
+
+    if (folderId === null) {
+      localStorage.removeItem(
+        MediaLibraryComponent.LAST_SELECTED_FOLDER_STORAGE_KEY,
+      );
+      return;
+    }
+
+    localStorage.setItem(
+      MediaLibraryComponent.LAST_SELECTED_FOLDER_STORAGE_KEY,
+      folderId,
+    );
+  }
+
+  private getStoredSelectedFolderId(): string | null {
+    return localStorage.getItem(
+      MediaLibraryComponent.LAST_SELECTED_FOLDER_STORAGE_KEY,
+    );
   }
 }
