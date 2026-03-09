@@ -16,6 +16,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
+import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 
 @Component({
   selector: 'app-create-novel',
@@ -107,19 +108,35 @@ export class CreateNovelComponent {
     const input = event.target as HTMLInputElement;
 
     if (input.files && input.files[0]) {
-      const file = input.files[0];
-      this.imageFile = file;
-
-      const reader = new FileReader();
-
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        const target = e.target as FileReader;
-        if (target.result !== undefined) {
-          this.imagePreview = target.result;
-        }
-      };
-
-      reader.readAsDataURL(file);
+      this.setImageFile(input.files[0]);
     }
+  }
+
+  async readImageFromClipboard(): Promise<void> {
+    try {
+      const file = await readImageFileFromClipboard();
+      this.setImageFile(file);
+    } catch (error) {
+      this.toastr.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to read image from clipboard.',
+      );
+    }
+  }
+
+  private setImageFile(file: File): void {
+    this.imageFile = file;
+
+    const reader = new FileReader();
+
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const target = e.target as FileReader;
+      if (target.result !== undefined) {
+        this.imagePreview = target.result;
+      }
+    };
+
+    reader.readAsDataURL(file);
   }
 }
