@@ -186,9 +186,14 @@ export class ModelSelectComponent
     }
 
     if (this.capability === 'imageGeneration' || this.capability === 'imageEdit') {
-      const storedModel = this.localStorageService.getStringForKey(
-        LocalStorageKey.LastImageModel,
-      );
+      const storageContext =
+        this.capability === 'imageEdit' ? 'edit' : 'generate';
+      const storedModel =
+        this.localStorageService.getNestedStringForKey(
+          LocalStorageKey.LastImageModelByContext,
+          storageContext,
+        ) ??
+        this.localStorageService.getStringForKey(LocalStorageKey.LastImageModel);
       if (
         storedModel !== null &&
         this.options.some((option) => option.value === storedModel)

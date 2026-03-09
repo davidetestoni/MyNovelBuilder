@@ -32,6 +32,8 @@ import { ModelSelectComponent } from '../model-select/model-select.component';
   styleUrl: './edit-image.component.scss',
 })
 export class EditImageComponent {
+  private readonly storageContext = 'edit';
+
   dialogRef = inject(DynamicDialogRef);
   config = inject(DynamicDialogConfig);
 
@@ -57,9 +59,12 @@ export class EditImageComponent {
   height = 0;
 
   constructor() {
-    const prompt = this.localStorageService.getStringForKey(
-      LocalStorageKey.LastImagePrompt,
-    );
+    const prompt =
+      this.localStorageService.getNestedStringForKey(
+        LocalStorageKey.LastImagePromptByContext,
+        this.storageContext,
+      ) ??
+      this.localStorageService.getStringForKey(LocalStorageKey.LastImagePrompt);
 
     if (prompt !== null && prompt.trim() !== '') {
       this.formGroup.patchValue({
@@ -91,12 +96,14 @@ export class EditImageComponent {
     }
 
     // Save the prompt and model
-    this.localStorageService.setStringForKey(
-      LocalStorageKey.LastImagePrompt,
+    this.localStorageService.setNestedStringForKey(
+      LocalStorageKey.LastImagePromptByContext,
+      this.storageContext,
       this.formGroup.get('prompt')!.value!,
     );
-    this.localStorageService.setStringForKey(
-      LocalStorageKey.LastImageModel,
+    this.localStorageService.setNestedStringForKey(
+      LocalStorageKey.LastImageModelByContext,
+      this.storageContext,
       this.formGroup.get('model')!.value!,
     );
 

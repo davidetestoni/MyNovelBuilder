@@ -3,4 +3,6 @@ export enum LocalStorageKey {
     RecentPrompts = 'recentPrompts',
     LastImagePrompt = 'lastImagePrompt',
     LastImageModel = 'lastImageModel',
+    LastImagePromptByContext = 'lastImagePromptByContext',
+    LastImageModelByContext = 'lastImageModelByContext',
 }

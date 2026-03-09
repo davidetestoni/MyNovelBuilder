@@ -58,6 +58,8 @@ export interface GenerateImageComponentData {
   styleUrl: './generate-image.component.scss',
 })
 export class GenerateImageComponent implements OnInit, OnDestroy {
+  private readonly storageContext = 'generate';
+
   dialogRef = inject(DynamicDialogRef);
   config = inject(DynamicDialogConfig);
 
@@ -93,9 +95,12 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
   constructor() {
     this.data = (this.config.data ?? {}) as GenerateImageComponentData;
 
-    const prompt = this.localStorageService.getStringForKey(
-      LocalStorageKey.LastImagePrompt,
-    );
+    const prompt =
+      this.localStorageService.getNestedStringForKey(
+        LocalStorageKey.LastImagePromptByContext,
+        this.storageContext,
+      ) ??
+      this.localStorageService.getStringForKey(LocalStorageKey.LastImagePrompt);
 
     if (prompt !== null && prompt.trim() !== '') {
       this.formGroup.patchValue({
@@ -129,12 +134,14 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
     }
 
     // Save the prompt and model
-    this.localStorageService.setStringForKey(
-      LocalStorageKey.LastImagePrompt,
+    this.localStorageService.setNestedStringForKey(
+      LocalStorageKey.LastImagePromptByContext,
+      this.storageContext,
       prompt,
     );
-    this.localStorageService.setStringForKey(
-      LocalStorageKey.LastImageModel,
+    this.localStorageService.setNestedStringForKey(
+      LocalStorageKey.LastImageModelByContext,
+      this.storageContext,
       model,
     );
 
