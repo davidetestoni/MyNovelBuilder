@@ -26,7 +26,7 @@
           [first]="currentPageFirst"
           [rows]="currentPageSize"
           [totalRecords]="allMediaFiles.length"
-          [rowsPerPageOptions]="[currentPageSize]"
+          [rowsPerPageOptions]="rowsPerPageOptions"
           (onPageChange)="onPageChange($event)"
         />
       </div>

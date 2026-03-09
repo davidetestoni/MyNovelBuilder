@@ -5,4 +5,5 @@ export enum LocalStorageKey {
     LastImageModel = 'lastImageModel',
     LastImagePromptByContext = 'lastImagePromptByContext',
     LastImageModelByContext = 'lastImageModelByContext',
+    MediaFolderRowsPerPage = 'mediaFolderRowsPerPage',
 }

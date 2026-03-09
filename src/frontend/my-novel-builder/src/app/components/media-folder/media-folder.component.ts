@@ -30,9 +30,11 @@ import {
   UploadMediaDialogResult,
 } from '../upload-media-dialog/upload-media-dialog.component';
 import { FileSizePipe } from '../../pipes/file-size.pipe';
+import { LocalStorageService } from '../../services/local-storage.service';
 import { MediaLibraryService } from '../../services/media-library.service';
 import { MediaFileDto } from '../../types/dtos/media-library/media-file.dto';
 import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto';
+import { LocalStorageKey } from '../../types/enums/local-storage-key';
 
 interface MediaPreview extends MediaFileDto {
   url: string | null;
@@ -49,8 +51,9 @@ interface MediaPreview extends MediaFileDto {
 export class MediaFolderComponent implements OnChanges, OnDestroy {
   private readonly mediaCardMinWidth = 200;
   private readonly mediaGridGap = 12;
-  private readonly mediaGridRowsPerPage = 2;
+  private readonly maxMediaGridRowsPerPage = 5;
   private mediaLibraryService = inject(MediaLibraryService);
+  private localStorageService = inject(LocalStorageService);
   private toastrService = inject(ToastrService);
   private confirmationService = inject(ConfirmationService);
   private dialogService = inject(DialogService);
@@ -60,6 +63,8 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   private previewRequestId = 0;
   private zoomedPromptRequestId = 0;
   private currentFolderId: string | null = null;
+  private currentGridColumns = 1;
+  private selectedGridRowsPerPage = 2;
   private mediaPreviewByFileName = new Map<string, MediaPreview>();
 
   private _folder: MediaFolderDto | null = null;
@@ -119,6 +124,19 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   zoomedMediaPrompt: string | null = null;
   isZoomedMediaPromptLoading = false;
 
+  constructor() {
+    const storedRowsPerPage = Number(
+      this.localStorageService.getStringForKey(LocalStorageKey.MediaFolderRowsPerPage),
+    );
+
+    if (Number.isFinite(storedRowsPerPage) && storedRowsPerPage >= 1) {
+      this.selectedGridRowsPerPage = Math.min(
+        this.maxMediaGridRowsPerPage,
+        Math.floor(storedRowsPerPage),
+      );
+    }
+  }
+
   get showingMediaStart(): number {
     if (this.allMediaFiles.length === 0) {
       return 0;
@@ -137,6 +155,18 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
 
   get shouldShowPaginator(): boolean {
     return this.allMediaFiles.length > this.currentPageSize;
+  }
+
+  get rowsPerPageOptions(): number[] {
+    const options = Array.from(
+      new Set(
+        Array.from({ length: this.maxMediaGridRowsPerPage }, (_, index) =>
+          this.currentGridColumns * (index + 1),
+        ),
+      ),
+    );
+
+    return options.sort((left, right) => left - right);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -158,7 +188,16 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
 
     this.currentPageFirst = nextFirst;
     if (nextRows !== this.currentPageSize) {
-      this.currentPageSize = nextRows;
+      const nextGridRowsPerPage = Math.min(
+        this.maxMediaGridRowsPerPage,
+        Math.max(1, Math.round(nextRows / this.currentGridColumns)),
+      );
+      this.selectedGridRowsPerPage = nextGridRowsPerPage;
+      this.localStorageService.setStringForKey(
+        LocalStorageKey.MediaFolderRowsPerPage,
+        String(nextGridRowsPerPage),
+      );
+      this.currentPageSize = this.currentGridColumns * nextGridRowsPerPage;
     }
 
     this.updateVisibleMediaFiles();
@@ -539,7 +578,8 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
       1,
       Math.floor((panelWidth + this.mediaGridGap) / (this.mediaCardMinWidth + this.mediaGridGap)),
     );
-    const nextPageSize = columns * this.mediaGridRowsPerPage;
+    this.currentGridColumns = columns;
+    const nextPageSize = columns * this.selectedGridRowsPerPage;
 
     if (nextPageSize === this.currentPageSize) {
       return;
