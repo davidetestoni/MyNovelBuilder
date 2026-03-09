@@ -21,6 +21,12 @@ import { EditImageComponent } from '../edit-image/edit-image.component';
 import { HttpClient } from '@angular/common/http';
 import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastrService } from 'ngx-toastr';
+import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import {
+  ImageSourceSelectorComponent,
+  ImageSourceSelectorComponentData,
+} from '../image-source-selector/image-source-selector.component';
 
 @Component({
   selector: 'app-compendium-record',
@@ -50,6 +56,7 @@ export class CompendiumRecordComponent {
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
   private http = inject(HttpClient);
+  private toastr = inject(ToastrService);
   private dialogRef: DynamicDialogRef | null = null;
 
   recordTypes: CompendiumRecordType[] = [
@@ -127,7 +134,35 @@ export class CompendiumRecordComponent {
     });
   }
 
-  addMedia(): void {
+  openAddMediaDialog(): void {
+    this.dialogRef = this.dialogService.open(ImageSourceSelectorComponent, {
+      header: 'Add Media',
+      width: '300px',
+      modal: true,
+      closable: true,
+      dismissableMask: true,
+      closeOnEscape: true,
+      data: <ImageSourceSelectorComponentData>{
+        uploadLabel: 'Upload Image',
+        generateLabel: 'Generate Image',
+        clipboardLabel: 'Paste from Clipboard',
+      },
+    });
+
+    this.dialogRef?.onClose.subscribe(
+      (result: 'upload' | 'generate' | 'clipboard' | undefined) => {
+        if (result === 'upload') {
+          this.addMedia();
+        } else if (result === 'generate') {
+          this.generateImage();
+        } else if (result === 'clipboard') {
+          void this.addClipboardImage();
+        }
+      },
+    );
+  }
+
+  private addMedia(): void {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*,video/*';
@@ -141,14 +176,7 @@ export class CompendiumRecordComponent {
             this.record.media.length === 0,
           )
           .subscribe(() => {
-            // Get the record and update the media
-            this.compendiumService
-              .getRecord(this.record.id)
-              .subscribe((record) => {
-                this.record.media = record.media;
-                this.updateRecord.emit(this.record);
-              });
-
+            this.refreshRecordMedia();
             fileInput.remove();
           });
       }
@@ -156,7 +184,24 @@ export class CompendiumRecordComponent {
     fileInput.click();
   }
 
-  generateImage() {
+  private async addClipboardImage(): Promise<void> {
+    try {
+      const file = await readImageFileFromClipboard();
+      this.compendiumService
+        .uploadRecordMedia(this.record.id, file, this.record.media.length === 0)
+        .subscribe(() => {
+          this.refreshRecordMedia();
+        });
+    } catch (error) {
+      this.toastr.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to read image from clipboard.',
+      );
+    }
+  }
+
+  private generateImage() {
     this.dialogRef = this.dialogService.open(GenerateImageComponent, {
       header: 'Generate Image',
       width: '50vw',
@@ -220,12 +265,7 @@ export class CompendiumRecordComponent {
             this.compendiumService
               .uploadRecordMedia(this.record.id, editedImage, media.isCurrent)
               .subscribe(() => {
-                this.compendiumService
-                  .getRecord(this.record.id)
-                  .subscribe((record) => {
-                    this.record.media = record.media;
-                    this.updateRecord.emit(this.record);
-                  });
+                this.refreshRecordMedia();
               });
           }
         });
@@ -233,6 +273,13 @@ export class CompendiumRecordComponent {
       error: (err) => {
         console.error('Failed to download image', err);
       },
+    });
+  }
+
+  private refreshRecordMedia(): void {
+    this.compendiumService.getRecord(this.record.id).subscribe((record) => {
+      this.record.media = record.media;
+      this.updateRecord.emit(this.record);
     });
   }
 }

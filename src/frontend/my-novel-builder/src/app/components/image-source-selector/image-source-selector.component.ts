@@ -5,6 +5,7 @@ import { ButtonModule } from 'primeng/button';
 export interface ImageSourceSelectorComponentData {
   uploadLabel?: string;
   generateLabel?: string;
+  clipboardLabel?: string;
 }
 
 @Component({
@@ -32,7 +33,14 @@ export class ImageSourceSelectorComponent {
     );
   }
 
-  select(source: 'upload' | 'generate') {
+  get clipboardLabel(): string {
+    return (
+      (this.config.data as ImageSourceSelectorComponentData | undefined)
+        ?.clipboardLabel ?? 'Paste from Clipboard'
+    );
+  }
+
+  select(source: 'upload' | 'generate' | 'clipboard') {
     this.dialogRef.close(source);
   }
 }

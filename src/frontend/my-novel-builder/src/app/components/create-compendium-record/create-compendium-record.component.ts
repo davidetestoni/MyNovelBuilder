@@ -23,6 +23,7 @@ import { ButtonModule } from 'primeng/button';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 import { DescribeImageComponent } from '../describe-image/describe-image.component';
 import { TooltipModule } from 'primeng/tooltip';
+import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 
 @Component({
   selector: 'app-create-compendium-record',
@@ -124,19 +125,20 @@ export class CreateCompendiumRecordComponent {
     const input = event.target as HTMLInputElement;
 
     if (input.files && input.files[0]) {
-      const file = input.files[0];
-      this.imageFile = file;
+      this.setImageFile(input.files[0]);
+    }
+  }
 
-      const reader = new FileReader();
-
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        const target = e.target as FileReader;
-        if (target.result !== undefined) {
-          this.imagePreview = target.result;
-        }
-      };
-
-      reader.readAsDataURL(file);
+  async readImageFromClipboard(): Promise<void> {
+    try {
+      const file = await readImageFileFromClipboard();
+      this.setImageFile(file);
+    } catch (error) {
+      this.toastr.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to read image from clipboard.',
+      );
     }
   }
 
@@ -175,5 +177,20 @@ export class CreateCompendiumRecordComponent {
       this.formGroup.get('context')!.markAsDirty();
       this.formGroup.get('context')!.markAsTouched();
     });
+  }
+
+  private setImageFile(file: File): void {
+    this.imageFile = file;
+
+    const reader = new FileReader();
+
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const target = e.target as FileReader;
+      if (target.result !== undefined) {
+        this.imagePreview = target.result;
+      }
+    };
+
+    reader.readAsDataURL(file);
   }
 }

@@ -35,6 +35,7 @@ import { MediaLibraryService } from '../../services/media-library.service';
 import { MediaFileDto } from '../../types/dtos/media-library/media-file.dto';
 import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
+import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 
 interface MediaPreview extends MediaFileDto {
   url: string | null;
@@ -240,13 +241,17 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
 
     this.dialogRef = dialogRef;
 
-    dialogRef.onClose.subscribe((result: 'upload' | 'generate' | undefined) => {
+    dialogRef.onClose.subscribe(
+      (result: 'upload' | 'generate' | 'clipboard' | undefined) => {
       if (result === 'upload') {
         this.openUploadMediaDialog();
       } else if (result === 'generate') {
         this.openGenerateImageDialog();
+      } else if (result === 'clipboard') {
+        this.openUploadMediaFromClipboardDialog();
       }
-    });
+      },
+    );
   }
 
   editImage(media: MediaPreview): void {
@@ -586,6 +591,23 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
         initialName: file.name,
       });
     });
+  }
+
+  private async openUploadMediaFromClipboardDialog(): Promise<void> {
+    try {
+      const file = await readImageFileFromClipboard();
+      const defaultName = file.name.replace(/\.[^.]+$/, '');
+      this.openUploadMediaDialog({
+        initialFile: file,
+        initialName: defaultName,
+      });
+    } catch (error) {
+      this.toastrService.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to read image from clipboard.',
+      );
+    }
   }
 
   private updatePageSizeFromLayout(): void {

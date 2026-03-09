@@ -100,18 +100,10 @@
           <div
             class="add-compendium-record-media"
             [class.place-media]="record.type === CompendiumRecordType.Place"
-            (click)="addMedia()"
+            (click)="openAddMediaDialog()"
           >
             <i class="icon icon-plus"></i>
-            <span>Upload</span>
-          </div>
-          <div
-            class="add-compendium-record-media"
-            [class.place-media]="record.type === CompendiumRecordType.Place"
-            (click)="generateImage()"
-          >
-            <i class="icon icon-plus"></i>
-            <span>Generate</span>
+            <span>Add</span>
           </div>
         </div>
       </div>

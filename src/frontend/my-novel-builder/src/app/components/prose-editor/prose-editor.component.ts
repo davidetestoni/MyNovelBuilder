@@ -58,6 +58,7 @@ import { ConfirmationService } from 'primeng/api';
 import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
 import { GenerateImageComponent } from '../generate-image/generate-image.component';
 import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
+import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 
 interface LastSelection {
   editor: Quill;
@@ -750,13 +751,17 @@ export class ProseEditorComponent implements OnDestroy {
       dismissableMask: true,
     });
 
-    this.dialogRef?.onClose.subscribe((result: 'upload' | 'generate') => {
+    this.dialogRef?.onClose.subscribe(
+      (result: 'upload' | 'generate' | 'clipboard') => {
       if (result === 'upload') {
         this.uploadProseImageFile(chapterIndex, sectionIndex);
       } else if (result === 'generate') {
         this.generateProseImage(chapterIndex, sectionIndex);
+      } else if (result === 'clipboard') {
+        this.uploadClipboardProseImage(chapterIndex, sectionIndex);
       }
-    });
+      },
+    );
   }
 
   uploadProseImageFile(chapterIndex: number, sectionIndex: number) {
@@ -779,6 +784,30 @@ export class ProseEditorComponent implements OnDestroy {
       }
     };
     fileInput.click();
+  }
+
+  async uploadClipboardProseImage(
+    chapterIndex: number,
+    sectionIndex: number,
+  ): Promise<void> {
+    try {
+      const file = await readImageFileFromClipboard();
+      this.novelService
+        .uploadProseImage(this.novelId, file)
+        .subscribe((location: string) => {
+          this.prose.chapters[chapterIndex].sections[sectionIndex].images =
+            this.prose.chapters[chapterIndex].sections[
+              sectionIndex
+            ].images.concat(location);
+          this.saveProse();
+        });
+    } catch (error) {
+      this.toastr.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to read image from clipboard.',
+      );
+    }
   }
 
   generateProseImage(chapterIndex: number, sectionIndex: number) {

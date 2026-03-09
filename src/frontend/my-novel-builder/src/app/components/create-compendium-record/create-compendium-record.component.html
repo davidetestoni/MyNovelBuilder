@@ -99,6 +99,14 @@
               (change)="onImageChange($event)"
               accept="image/*"
             />
+            <div class="clipboard-image-button">
+              <p-button
+                label="Paste from clipboard"
+                type="button"
+                variant="text"
+                (click)="readImageFromClipboard()"
+              />
+            </div>
           </div>
         </div>
       </div>
