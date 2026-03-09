@@ -63,11 +63,34 @@
     </div>
   </section>
 
-  <section class="media-panel">
+  <div class="media-library-layout-toggle">
+    <p-selectbutton
+      [(ngModel)]="selectedLayout"
+      [options]="layoutOptions"
+      optionLabel="label"
+      optionValue="value"
+      ariaLabel="Media library layout"
+    />
+  </div>
+
+  <section
+    class="media-panel"
+    [class.media-panel-two-column]="isImageGenerationStudioVisible && selectedFolder !== null"
+  >
     <div class="media-panel-content">
       <app-media-folder
         [folder]="selectedFolder"
+        [refreshVersion]="mediaFolderRefreshVersion"
       />
     </div>
+
+    @if (isImageGenerationStudioVisible && selectedFolder !== null) {
+      <div class="media-panel-content media-panel-studio">
+        <app-image-generation-studio
+          [folder]="selectedFolder"
+          (mediaSaved)="onStudioMediaSaved()"
+        />
+      </div>
+    }
   </section>
 </div>

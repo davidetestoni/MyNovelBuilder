@@ -94,6 +94,8 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
     return this._mediaFiles;
   }
 
+  @Input() refreshVersion = 0;
+
   @ViewChild('mediaFolderContent')
   set mediaFolderContentRef(value: ElementRef<HTMLElement> | null | undefined) {
     const nextContent = value ?? null;
@@ -173,6 +175,14 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['folder']) {
       this.loadMediaPreviews();
+    }
+
+    if (
+      changes['refreshVersion'] &&
+      !changes['refreshVersion'].firstChange &&
+      this.folder !== null
+    ) {
+      this.loadInitialMedia(this.folder.id);
     }
   }
 

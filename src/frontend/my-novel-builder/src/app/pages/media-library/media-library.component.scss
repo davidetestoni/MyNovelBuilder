@@ -40,11 +40,65 @@ h1 {
   justify-content: flex-end;
   gap: 12px;
   flex: 1;
+  min-width: 0;
 
   @media (max-width: 960px) {
     flex-wrap: wrap;
     justify-content: stretch;
   }
+}
+
+.media-library-layout-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+
+  @media (max-width: 960px) {
+    justify-content: stretch;
+    margin-top: 0;
+  }
+}
+
+.media-library-layout-toggle ::ng-deep .p-selectbutton {
+  display: flex;
+  justify-content: flex-end;
+
+  @media (max-width: 960px) {
+    justify-content: stretch;
+  }
+}
+
+.media-library-layout-toggle ::ng-deep .p-selectbutton .p-togglebutton {
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.media-library-layout-toggle
+  ::ng-deep
+  .p-selectbutton
+  .p-togglebutton:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.media-library-layout-toggle
+  ::ng-deep
+  .p-selectbutton
+  .p-togglebutton:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+.media-library-layout-toggle ::ng-deep .p-selectbutton .p-togglebutton,
+.media-library-layout-toggle
+  ::ng-deep
+  .p-selectbutton
+  .p-togglebutton.p-togglebutton-checked {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .folder-toolbar-controls p-select,
@@ -83,10 +137,33 @@ h1 {
   border-radius: 8px;
   padding: 16px;
   flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.media-panel-two-column {
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .media-panel-content {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+
+.media-panel-studio {
+  border-left: 1px solid $grey7;
+  padding-left: 16px;
+
+  @media (max-width: 1100px) {
+    border-left: 0;
+    border-top: 1px solid $grey7;
+    padding-left: 0;
+    padding-top: 16px;
+  }
 }

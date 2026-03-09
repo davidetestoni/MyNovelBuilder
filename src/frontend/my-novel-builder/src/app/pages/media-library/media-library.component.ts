@@ -11,10 +11,12 @@ import { ButtonModule } from 'primeng/button';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import {
   AddMediaFolderDialogComponent,
   AddMediaFolderDialogResult,
 } from '../../components/add-media-folder-dialog/add-media-folder-dialog.component';
+import { ImageGenerationStudioComponent } from '../../components/image-generation-studio/image-generation-studio.component';
 import { MediaFolderComponent } from '../../components/media-folder/media-folder.component';
 import { MediaLibraryService } from '../../services/media-library.service';
 import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto';
@@ -28,7 +30,9 @@ import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto'
     FormsModule,
     ButtonModule,
     SelectModule,
+    SelectButtonModule,
     ConfirmDialogModule,
+    ImageGenerationStudioComponent,
     MediaFolderComponent,
   ],
   providers: [DialogService, ConfirmationService],
@@ -44,14 +48,24 @@ export class MediaLibraryComponent implements OnInit, OnDestroy {
   private dialogRef: DynamicDialogRef | null = null;
 
   folderOptions: { label: string; value: string; path: string }[] = [];
+  layoutOptions = [
+    { label: 'Folder', value: 'folder' },
+    { label: 'Studio', value: 'studio' },
+  ];
   folders: MediaFolderDto[] | null = null;
   selectedFolderId: string | null = null;
   creatingFolder = false;
+  mediaFolderRefreshVersion = 0;
+  selectedLayout: 'folder' | 'studio' = 'studio';
 
   get selectedFolder(): MediaFolderDto | null {
     return (
       this.folders?.find((folder) => folder.id === this.selectedFolderId) ?? null
     );
+  }
+
+  get isImageGenerationStudioVisible(): boolean {
+    return this.selectedLayout === 'studio';
   }
 
   ngOnInit(): void {
@@ -88,6 +102,10 @@ export class MediaLibraryComponent implements OnInit, OnDestroy {
 
   selectFolder(folderId: string | null): void {
     this.setSelectedFolderId(folderId);
+  }
+
+  onStudioMediaSaved(): void {
+    this.mediaFolderRefreshVersion += 1;
   }
 
   openAddFolderDialog(): void {
