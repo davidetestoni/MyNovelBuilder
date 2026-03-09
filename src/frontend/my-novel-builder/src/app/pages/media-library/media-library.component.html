@@ -64,15 +64,10 @@
   </section>
 
   <section class="media-panel">
-    <app-media-folder
-      [folder]="selectedFolder"
-      [mediaFiles]="mediaFiles"
-      [uploadingMedia]="uploadingMedia"
-      [isLoadingMoreMedia]="isLoadingMoreMedia"
-      [hasMoreMedia]="hasMoreMedia"
-      (addMedia)="openAddMediaDialog()"
-      (deleteMedia)="deleteMedia($event)"
-      (replaceMedia)="uploadMedia($event)"
-    />
+    <div class="media-panel-content">
+      <app-media-folder
+        [folder]="selectedFolder"
+      />
+    </div>
   </section>
 </div>

@@ -12,6 +12,47 @@
   min-width: 0;
 }
 
+.media-paginator-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  margin-bottom: 16px;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.media-paginator-summary {
+  color: $grey11;
+  font-size: 0.9rem;
+}
+
+.media-paginator {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+
+  @media (max-width: 720px) {
+    margin-left: 0;
+  }
+}
+
+:host ::ng-deep .media-paginator.p-paginator {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+:host ::ng-deep .media-paginator .p-paginator-content {
+  gap: 0.25rem;
+}
+
 .selected-folder-path {
   color: $grey11;
   font-size: 0.9rem;
@@ -26,12 +67,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
-}
-
-.media-grid-status {
-  margin-top: 14px;
-  color: $grey11;
-  font-size: 0.9rem;
 }
 
 .media-card {

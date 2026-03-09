@@ -8,6 +8,10 @@
   min-height: calc(100vh - 88px);
 }
 
+h1 {
+  margin: 0px;
+}
+
 .folder-toolbar {
   display: flex;
   align-items: center;
@@ -79,4 +83,10 @@
   border-radius: 8px;
   padding: 16px;
   flex: 1;
+}
+
+.media-panel-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }

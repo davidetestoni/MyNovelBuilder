@@ -1,22 +1,34 @@
 import { DatePipe } from '@angular/common';
 import {
   Component,
-  EventEmitter,
+  ElementRef,
   HostListener,
   Input,
   OnChanges,
   OnDestroy,
-  Output,
   SimpleChanges,
+  ViewChild,
   inject,
 } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { PaginatorModule } from 'primeng/paginator';
+import type { PaginatorState } from 'primeng/paginator';
 import { catchError, forkJoin, map, of, Subscription } from 'rxjs';
 import * as ExifReader from 'exifreader';
 import { EditImageComponent } from '../edit-image/edit-image.component';
+import {
+  ImageSourceSelectorComponent,
+  ImageSourceSelectorComponentData,
+} from '../image-source-selector/image-source-selector.component';
+import { GenerateImageComponent } from '../generate-image/generate-image.component';
+import {
+  UploadMediaDialogComponent,
+  UploadMediaDialogData,
+  UploadMediaDialogResult,
+} from '../upload-media-dialog/upload-media-dialog.component';
 import { FileSizePipe } from '../../pipes/file-size.pipe';
 import { MediaLibraryService } from '../../services/media-library.service';
 import { MediaFileDto } from '../../types/dtos/media-library/media-file.dto';
@@ -30,17 +42,21 @@ interface MediaPreview extends MediaFileDto {
 @Component({
   selector: 'app-media-folder',
   standalone: true,
-  imports: [ButtonModule, DatePipe, FileSizePipe],
+  imports: [ButtonModule, DatePipe, FileSizePipe, PaginatorModule],
   templateUrl: './media-folder.component.html',
   styleUrl: './media-folder.component.scss',
 })
 export class MediaFolderComponent implements OnChanges, OnDestroy {
+  private readonly mediaCardMinWidth = 200;
+  private readonly mediaGridGap = 12;
+  private readonly mediaGridRowsPerPage = 2;
   private mediaLibraryService = inject(MediaLibraryService);
   private toastrService = inject(ToastrService);
   private confirmationService = inject(ConfirmationService);
   private dialogService = inject(DialogService);
   private previewLoadSubscription: Subscription | null = null;
   private dialogRef: DynamicDialogRef | null = null;
+  private resizeObserver: ResizeObserver | null = null;
   private previewRequestId = 0;
   private zoomedPromptRequestId = 0;
   private currentFolderId: string | null = null;
@@ -49,39 +65,82 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   private _folder: MediaFolderDto | null = null;
   private _mediaFiles: MediaFileDto[] | null = null;
 
+  allMediaFiles: MediaFileDto[] = [];
+
+  private mediaFolderContent: ElementRef<HTMLElement> | null = null;
+
   @Input()
   set folder(value: MediaFolderDto | null | undefined) {
-    this._folder = value ?? null;
+    const nextFolder = value ?? null;
+    const previousFolderId = this._folder?.id ?? null;
+    this._folder = nextFolder;
+
+    if (nextFolder?.id !== previousFolderId) {
+      this.handleFolderChange();
+    }
   }
 
   get folder(): MediaFolderDto | null {
     return this._folder;
   }
 
-  @Input()
-  set mediaFiles(value: MediaFileDto[] | null | undefined) {
-    this._mediaFiles = value ?? null;
-  }
-
   get mediaFiles(): MediaFileDto[] | null {
     return this._mediaFiles;
   }
 
-  @Input() uploadingMedia = false;
-  @Input() isLoadingMoreMedia = false;
-  @Input() hasMoreMedia = false;
+  @ViewChild('mediaFolderContent')
+  set mediaFolderContentRef(value: ElementRef<HTMLElement> | null | undefined) {
+    const nextContent = value ?? null;
+    if (this.mediaFolderContent?.nativeElement === nextContent?.nativeElement) {
+      return;
+    }
 
-  @Output() addMedia = new EventEmitter<void>();
-  @Output() deleteMedia = new EventEmitter<string>();
-  @Output() replaceMedia = new EventEmitter<{ name: string; file: File }>();
+    this.resizeObserver?.disconnect();
+    this.mediaFolderContent = nextContent;
+
+    const element = nextContent?.nativeElement;
+    if (!element) {
+      return;
+    }
+
+    this.resizeObserver = new ResizeObserver(() => {
+      this.updatePageSizeFromLayout();
+    });
+    this.resizeObserver.observe(element);
+    this.updatePageSizeFromLayout();
+  }
+
+  uploadingMedia = false;
+  currentPageFirst = 0;
+  currentPageSize = 8;
 
   mediaPreviews: MediaPreview[] | null = null;
   zoomedMedia: MediaPreview | null = null;
   zoomedMediaPrompt: string | null = null;
   isZoomedMediaPromptLoading = false;
 
+  get showingMediaStart(): number {
+    if (this.allMediaFiles.length === 0) {
+      return 0;
+    }
+
+    return this.currentPageFirst + 1;
+  }
+
+  get showingMediaEnd(): number {
+    if (this.allMediaFiles.length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.currentPageFirst + this.currentPageSize, this.allMediaFiles.length);
+  }
+
+  get shouldShowPaginator(): boolean {
+    return this.allMediaFiles.length > this.currentPageSize;
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['folder'] || changes['mediaFiles']) {
+    if (changes['folder']) {
       this.loadMediaPreviews();
     }
   }
@@ -89,7 +148,20 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.previewLoadSubscription?.unsubscribe();
     this.dialogRef?.close();
+    this.resizeObserver?.disconnect();
     this.clearPreviewCache();
+  }
+
+  onPageChange(event: PaginatorState): void {
+    const nextFirst = event.first ?? this.currentPageFirst;
+    const nextRows = event.rows ?? this.currentPageSize;
+
+    this.currentPageFirst = nextFirst;
+    if (nextRows !== this.currentPageSize) {
+      this.currentPageSize = nextRows;
+    }
+
+    this.updateVisibleMediaFiles();
   }
 
   confirmDeleteMedia(fileName: string): void {
@@ -99,8 +171,42 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.deleteMedia.emit(fileName);
+        this.deleteMedia(fileName);
       },
+    });
+  }
+
+  openAddMediaDialog(): void {
+    if (this.folder === null) {
+      this.toastrService.error('Select a media folder first.');
+      return;
+    }
+
+    const dialogRef = this.dialogService.open(ImageSourceSelectorComponent, {
+      header: 'Add Media',
+      width: '300px',
+      modal: true,
+      closable: true,
+      dismissableMask: true,
+      closeOnEscape: true,
+      data: <ImageSourceSelectorComponentData>{
+        uploadLabel: 'Upload File',
+        generateLabel: 'Generate Image',
+      },
+    });
+
+    if (dialogRef === null) {
+      return;
+    }
+
+    this.dialogRef = dialogRef;
+
+    dialogRef.onClose.subscribe((result: 'upload' | 'generate' | undefined) => {
+      if (result === 'upload') {
+        this.openUploadMediaDialog();
+      } else if (result === 'generate') {
+        this.openGenerateImageDialog();
+      }
     });
   }
 
@@ -135,7 +241,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
             return;
           }
 
-          this.replaceMedia.emit({
+          this.uploadMedia({
             name: media.fileName,
             file: new File([editedImage], media.fileName, {
               type: editedImage.type || 'image/png',
@@ -275,6 +381,193 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
 
       this.syncOrderedPreviews();
     });
+  }
+
+  private handleFolderChange(): void {
+    const nextFolderId = this.folder?.id ?? null;
+
+    if (nextFolderId === null) {
+      this.currentFolderId = null;
+      this.allMediaFiles = [];
+      this.currentPageFirst = 0;
+      this._mediaFiles = null;
+      this.clearPreviewCache();
+      return;
+    }
+
+    if (nextFolderId === this.currentFolderId) {
+      return;
+    }
+
+    this.loadInitialMedia(nextFolderId);
+  }
+
+  private loadInitialMedia(folderId: string): void {
+    this.currentFolderId = folderId;
+    this._mediaFiles = null;
+    this.allMediaFiles = [];
+    this.currentPageFirst = 0;
+    this.mediaLibraryService.getMedia(folderId).subscribe({
+      next: (mediaFiles) => {
+        if (this.folder?.id !== folderId) {
+          return;
+        }
+
+        this.allMediaFiles = mediaFiles;
+        this.updateVisibleMediaFiles(true);
+        queueMicrotask(() => this.updatePageSizeFromLayout());
+      },
+      error: () => {
+        if (this.folder?.id !== folderId) {
+          return;
+        }
+
+        this._mediaFiles = [];
+        this.loadMediaPreviews();
+      },
+    });
+  }
+
+  private uploadMedia(request: { name: string; file: File }): void {
+    if (this.folder === null) {
+      this.toastrService.error('Select a media folder first.');
+      return;
+    }
+
+    if (request.file === null) {
+      this.toastrService.error('Choose a file to upload.');
+      return;
+    }
+
+    const name = request.name.trim();
+    if (name === '') {
+      this.toastrService.error('Media name is required.');
+      return;
+    }
+
+    this.uploadingMedia = true;
+    this.mediaLibraryService.uploadMedia(this.folder.id, name, request.file).subscribe({
+      next: () => {
+        this.uploadingMedia = false;
+        this.toastrService.success('Media uploaded.');
+        this.loadInitialMedia(this.folder!.id);
+      },
+      error: () => {
+        this.uploadingMedia = false;
+      },
+    });
+  }
+
+  private deleteMedia(fileName: string): void {
+    if (this.folder === null) {
+      return;
+    }
+
+    this.mediaLibraryService.deleteMedia(this.folder.id, fileName).subscribe(() => {
+      this.toastrService.success('Media deleted.');
+      this.loadInitialMedia(this.folder!.id);
+    });
+  }
+
+  private openUploadMediaDialog(data?: UploadMediaDialogData): void {
+    const dialogRef = this.dialogService.open(UploadMediaDialogComponent, {
+      header: 'Upload Media',
+      width: '32rem',
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
+      contentStyle: { overflow: 'visible' },
+      data,
+    });
+
+    if (dialogRef === null) {
+      return;
+    }
+
+    this.dialogRef = dialogRef;
+
+    dialogRef.onClose.subscribe((result: UploadMediaDialogResult | undefined) => {
+      if (result) {
+        this.uploadMedia(result);
+      }
+    });
+  }
+
+  private openGenerateImageDialog(): void {
+    const dialogRef = this.dialogService.open(GenerateImageComponent, {
+      header: 'Generate Image',
+      width: '50vw',
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      closable: true,
+      closeOnEscape: true,
+      modal: true,
+      dismissableMask: true,
+    });
+
+    if (dialogRef === null) {
+      return;
+    }
+
+    this.dialogRef = dialogRef;
+
+    dialogRef.onClose.subscribe((image: Blob | undefined) => {
+      if (!image) {
+        return;
+      }
+
+      const file = new File([image], 'generated-image.png', {
+        type: image.type || 'image/png',
+      });
+
+      this.openUploadMediaDialog({
+        initialFile: file,
+        initialName: file.name,
+      });
+    });
+  }
+
+  private updatePageSizeFromLayout(): void {
+    const panelWidth = this.mediaFolderContent?.nativeElement.clientWidth ?? 0;
+    if (panelWidth <= 0) {
+      return;
+    }
+
+    const columns = Math.max(
+      1,
+      Math.floor((panelWidth + this.mediaGridGap) / (this.mediaCardMinWidth + this.mediaGridGap)),
+    );
+    const nextPageSize = columns * this.mediaGridRowsPerPage;
+
+    if (nextPageSize === this.currentPageSize) {
+      return;
+    }
+
+    const currentPageIndex = Math.floor(this.currentPageFirst / this.currentPageSize);
+    this.currentPageSize = nextPageSize;
+    this.currentPageFirst = currentPageIndex * nextPageSize;
+    this.updateVisibleMediaFiles();
+  }
+
+  private updateVisibleMediaFiles(resetPage = false): void {
+    if (resetPage) {
+      this.currentPageFirst = 0;
+    }
+
+    if (this.currentPageFirst >= this.allMediaFiles.length) {
+      const lastPageIndex = Math.max(
+        0,
+        Math.ceil(this.allMediaFiles.length / this.currentPageSize) - 1,
+      );
+      this.currentPageFirst = lastPageIndex * this.currentPageSize;
+    }
+
+    this._mediaFiles = this.allMediaFiles.slice(
+      this.currentPageFirst,
+      this.currentPageFirst + this.currentPageSize,
+    );
+    this.loadMediaPreviews();
   }
 
   private syncOrderedPreviews(): void {
