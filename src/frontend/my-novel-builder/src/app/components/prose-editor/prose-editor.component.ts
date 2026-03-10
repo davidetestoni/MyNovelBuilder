@@ -885,6 +885,9 @@ export class ProseEditorComponent implements OnDestroy {
       data: <RecordOverridesEditorComponentData>{
         recordOverrides: section.recordOverrides || [],
         availableRecords: availableRecords,
+        prose: this.prose,
+        chapterIndex,
+        sectionIndex,
       },
     });
 

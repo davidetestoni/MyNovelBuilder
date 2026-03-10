@@ -36,9 +36,7 @@
                 <label>Record</label>
                 <p-select
                   [(ngModel)]="override.compendiumRecordId"
-                  (onChange)="
-                    fetchSuggestedKeywords(override.compendiumRecordId)
-                  "
+                  (onChange)="onRecordChange(override)"
                   [options]="availableRecords"
                   optionLabel="name"
                   optionValue="id"
@@ -69,8 +67,15 @@
                   [dropdown]="true"
                   [suggestions]="filteredKeywords"
                   (completeMethod)="searchKeywords($event)"
+                  (ngModelChange)="onKeywordChange()"
                   style="width: 100%"
                 />
+              </div>
+            </div>
+            <div class="field">
+              <label>Previous Description</label>
+              <div class="previous-description">
+                {{ getPreviousDescriptionMessage(override) }}
               </div>
             </div>
             <div class="field">
@@ -78,6 +83,7 @@
               <textarea
                 pTextarea
                 [(ngModel)]="override.description"
+                (ngModelChange)="onDescriptionChange()"
                 placeholder="New description"
                 [autoResize]="true"
                 rows="3"

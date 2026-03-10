@@ -92,6 +92,17 @@
             font-weight: 600;
             color: $grey13;
           }
+
+          .previous-description {
+            min-height: 5.5rem;
+            padding: 0.75rem 0.875rem;
+            border: 1px solid $grey4;
+            border-radius: 0.5rem;
+            background: $grey1;
+            color: $grey12;
+            white-space: pre-wrap;
+            line-height: 1.45;
+          }
         }
       }
 
