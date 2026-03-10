@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -292,8 +293,45 @@ public class DeApiTtsService : ITtsService
     }
 
     /// <inheritdoc />
-    public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult<decimal?>(null);
+    public async Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default)
+    {
+        var apiKey = await GetApiKeyAsync(cancellationToken);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, "balance");
+        request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError(
+                "DeAPI balance request failed. Status code: {StatusCode}, Response: {Response}",
+                response.StatusCode,
+                jsonResponse);
+
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                $"DeAPI balance request failed with status {(int)response.StatusCode}.");
+        }
+
+        var responseObject = JsonNode.Parse(jsonResponse);
+        var balanceValue = responseObject?["balance"]?.ToString()
+                           ?? responseObject?["data"]?["balance"]?.ToString();
+
+        if (!decimal.TryParse(
+                balanceValue,
+                NumberStyles.Any,
+                CultureInfo.InvariantCulture,
+                out var parsedBalance))
+        {
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                "DeAPI balance response did not include a valid balance value.");
+        }
+
+        return parsedBalance;
+    }
 
     private static bool TrySplitModelId(string? modelId, out string modelSlug, out string languageCode)
     {

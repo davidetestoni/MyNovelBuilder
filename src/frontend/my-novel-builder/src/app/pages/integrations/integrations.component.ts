@@ -68,7 +68,9 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   hasUnrealSpeechApiKey: boolean = false;
   hasDeApiApiKey: boolean = false;
   hasNanoGptApiKey: boolean = false;
+  deApiBalanceUsd: number | null = null;
   nanoGptBalanceUsd: number | null = null;
+  isLoadingDeApiBalance: boolean = false;
   isLoadingNanoGptBalance: boolean = false;
   isPreviewingTtsVoice: boolean = false;
   private previewPlayer: StreamingWavPlayer | null = null;
@@ -213,11 +215,33 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   }
 
   loadConfiguredBalances(): void {
+    if (this.hasDeApiApiKey) {
+      this.loadDeApiBalance();
+    } else {
+      this.deApiBalanceUsd = null;
+    }
+
     if (this.hasNanoGptApiKey) {
       this.loadNanoGptBalance();
     } else {
       this.nanoGptBalanceUsd = null;
     }
+  }
+
+  loadDeApiBalance(): void {
+    this.isLoadingDeApiBalance = true;
+
+    this.generateAudioService.getBalanceUsd(TtsProvider.DeApi).subscribe({
+      next: (balance) => {
+        this.deApiBalanceUsd = balance;
+        this.isLoadingDeApiBalance = false;
+      },
+      error: (error) => {
+        console.error('Error loading DeAPI balance:', error);
+        this.deApiBalanceUsd = null;
+        this.isLoadingDeApiBalance = false;
+      },
+    });
   }
 
   loadNanoGptBalance(): void {
