@@ -26,11 +26,13 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { PromptService } from '../../services/prompt.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
+import { ToastrModule, ToastrService } from 'ngx-toastr';
 import {
   TranslateNovelDialogComponent,
   TranslateNovelDialogResult,
 } from '../../components/translate-novel-dialog/translate-novel-dialog.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 
 @Component({
   selector: 'app-novel-settings',
@@ -47,6 +49,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
     MultiSelectModule,
     MenuModule,
     ConfirmDialogModule,
+    ToastrModule,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './novel-settings.component.html',
@@ -57,6 +60,7 @@ export class NovelSettingsComponent implements OnDestroy {
   private router = inject(Router);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
+  private toastr = inject(ToastrService);
   private dialogRef: DynamicDialogRef | null = null;
 
   novel: NovelDto | null = null;
@@ -164,6 +168,25 @@ export class NovelSettingsComponent implements OnDestroy {
         .subscribe(() => {
           this.getNovel();
         });
+    }
+  }
+
+  async readCoverImageFromClipboard(): Promise<void> {
+    if (this.novel === null) {
+      return;
+    }
+
+    try {
+      const file = await readImageFileFromClipboard();
+      this.novelService.uploadNovelCoverImage(this.novel.id, file).subscribe(() => {
+        this.getNovel();
+      });
+    } catch (error) {
+      this.toastr.error(
+        error instanceof Error
+          ? error.message
+          : 'Failed to read image from clipboard.',
+      );
     }
   }
 

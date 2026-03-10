@@ -185,6 +185,14 @@
               (change)="updateNovelCoverImage($event)"
               accept="image/*"
             />
+            <div class="clipboard-image-button">
+              <p-button
+                label="Paste from clipboard"
+                type="button"
+                variant="text"
+                (onClick)="readCoverImageFromClipboard()"
+              />
+            </div>
           </div>
         </div>
       </div>
