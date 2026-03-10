@@ -63,20 +63,31 @@ public partial class TranslateNovelPromptBuilder : PromptBuilder<TranslateNovelC
     {
         return JsonSerializer.Serialize(new
         {
-            chapterTitle = chapter.Title,
+            chapterTitle = NormalizeTextForPrompt(chapter.Title),
             storyEvents = chapter.StoryEvents.Select(e => new
             {
-                title = e.Title,
-                date = e.Date,
-                description = e.Description
+                title = NormalizeTextForPrompt(e.Title),
+                date = NormalizeTextForPrompt(e.Date),
+                description = NormalizeTextForPrompt(e.Description)
             }),
             sections = chapter.Sections.Select((section, index) => new
             {
                 sectionIndex = index,
-                summary = section.Summary,
+                summary = NormalizeTextForPrompt(section.Summary),
                 text = NormalizeHtmlForPrompt(section.Text)
             })
         }, _jsonSerializerOptions);
+    }
+
+    private static string NormalizeTextForPrompt(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        return System.Net.WebUtility.HtmlDecode(text)
+            .Replace('\u00A0', ' ');
     }
 
     private static string NormalizeHtmlForPrompt(string html)
@@ -86,8 +97,7 @@ public partial class TranslateNovelPromptBuilder : PromptBuilder<TranslateNovelC
             return string.Empty;
         }
 
-        var decoded = System.Net.WebUtility.HtmlDecode(html)
-            .Replace('\u00A0', ' ');
+        var decoded = NormalizeTextForPrompt(html);
 
         // Inline base64 image data wastes a large amount of tokens and is not useful for translation.
         return InlineBase64ImageRegex().Replace(decoded, "<img alt=\"embedded image omitted\" />");
