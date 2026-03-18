@@ -43,6 +43,8 @@ export class NovelEditorComponent {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private readonly chapterQueryParamName = 'chapter';
+  private readonly sidebarCollapsedStorageKey =
+    'novel-editor-left-sidebar-collapsed';
   private chapterSelectionFromQuery: number | null | undefined = undefined;
 
   compendia: CompendiumDto[] | null = null;
@@ -76,6 +78,7 @@ export class NovelEditorComponent {
   isZoomedMediaPromptLoading = false;
   selectedChapterIndex: number | null = null;
   isStoryTimelineOpen = signal(false);
+  isLeftSidebarCollapsed = signal(this.readLeftSidebarCollapsedState());
   private saveToastId: number | undefined;
   private zoomedPromptRequestId = 0;
 
@@ -326,6 +329,14 @@ export class NovelEditorComponent {
     this.isStoryTimelineOpen.update((isOpen) => !isOpen);
   }
 
+  toggleLeftSidebar(): void {
+    this.isLeftSidebarCollapsed.update((isCollapsed) => {
+      const nextState = !isCollapsed;
+      this.persistLeftSidebarCollapsedState(nextState);
+      return nextState;
+    });
+  }
+
   removeStoryEvent(event: {
     chapterIndex: number;
     storyEventIndex: number;
@@ -527,6 +538,27 @@ export class NovelEditorComponent {
     );
 
     this.updateProse({ ...prose, chapters: updatedChapters });
+  }
+
+  private readLeftSidebarCollapsedState(): boolean {
+    if (typeof localStorage === 'undefined') {
+      return false;
+    }
+
+    return (
+      localStorage.getItem(this.sidebarCollapsedStorageKey) === 'true'
+    );
+  }
+
+  private persistLeftSidebarCollapsedState(isCollapsed: boolean): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    localStorage.setItem(
+      this.sidebarCollapsedStorageKey,
+      String(isCollapsed),
+    );
   }
 
   addGeneratedStoryEvents(

@@ -44,70 +44,92 @@
       </div>
     </div>
     <div class="novel-editor-body">
-      <div class="compendia-sidebar">
-        <div class="compendium-filters">
-          <p-select
-            [(ngModel)]="selectedCompendium"
-            [options]="compendia"
-            optionLabel="name"
-            placeholder="All Compendia"
-            [showClear]="true"
-            [style]="{ width: '100%' }"
-          >
-            <ng-template #item let-compendium>
-              <app-compendium-option-preview [compendium]="compendium" />
-            </ng-template>
-            <ng-template #selectedItem let-compendium>
-              @if (compendium) {
+      <div
+        class="compendia-sidebar"
+        [class.is-collapsed]="isLeftSidebarCollapsed()"
+      >
+        <button
+          type="button"
+          class="compendia-sidebar-toggle"
+          (click)="toggleLeftSidebar()"
+          [attr.aria-label]="
+            isLeftSidebarCollapsed()
+              ? 'Expand compendium sidebar'
+              : 'Collapse compendium sidebar'
+          "
+          [attr.aria-expanded]="!isLeftSidebarCollapsed()"
+        >
+          <i
+            class="pi"
+            [class.pi-chevron-right]="isLeftSidebarCollapsed()"
+            [class.pi-chevron-left]="!isLeftSidebarCollapsed()"
+          ></i>
+        </button>
+        <div class="compendia-sidebar-content">
+          <div class="compendium-filters">
+            <p-select
+              [(ngModel)]="selectedCompendium"
+              [options]="compendia"
+              optionLabel="name"
+              placeholder="All Compendia"
+              [showClear]="true"
+              [style]="{ width: '100%' }"
+            >
+              <ng-template #item let-compendium>
                 <app-compendium-option-preview [compendium]="compendium" />
+              </ng-template>
+              <ng-template #selectedItem let-compendium>
+                @if (compendium) {
+                  <app-compendium-option-preview [compendium]="compendium" />
+                }
+              </ng-template>
+            </p-select>
+            <input
+              pInputText
+              type="text"
+              placeholder="Search records..."
+              [(ngModel)]="recordsFilter"
+            />
+          </div>
+          <div class="compendium-records">
+            @for (type of compendiumRecordTypes; track type) {
+              @if (getCompendiumRecordsByType(type).length > 0) {
+                <div class="compendium-records-type">
+                  <div class="compendium-records-type-name">
+                    <span>{{ type | spaced }}s</span>
+                  </div>
+                  <div class="compendium-records-list">
+                    @for (
+                      record of getCompendiumRecordsByType(type);
+                      track record.id
+                    ) {
+                      <div
+                        class="compendium-record"
+                        [class.selected]="selectedRecordOverview === record"
+                        (click)="selectRecord(record)"
+                      >
+                        <div class="compendium-record-image">
+                          @if (record.imageUrl !== null) {
+                            <img
+                              src="{{ record.imageUrl }}"
+                              alt="{{ record.name }}"
+                            />
+                          } @else {
+                            <div class="no-image">
+                              <i class="icon icon-compendium"></i>
+                            </div>
+                          }
+                        </div>
+                        <div class="compendium-record-name">
+                          <span>{{ record.name }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
               }
-            </ng-template>
-          </p-select>
-          <input
-            pInputText
-            type="text"
-            placeholder="Search records..."
-            [(ngModel)]="recordsFilter"
-          />
-        </div>
-        <div class="compendium-records">
-          @for (type of compendiumRecordTypes; track type) {
-            @if (getCompendiumRecordsByType(type).length > 0) {
-              <div class="compendium-records-type">
-                <div class="compendium-records-type-name">
-                  <span>{{ type | spaced }}s</span>
-                </div>
-                <div class="compendium-records-list">
-                  @for (
-                    record of getCompendiumRecordsByType(type);
-                    track record.id
-                  ) {
-                    <div
-                      class="compendium-record"
-                      [class.selected]="selectedRecordOverview === record"
-                      (click)="selectRecord(record)"
-                    >
-                      <div class="compendium-record-image">
-                        @if (record.imageUrl !== null) {
-                          <img
-                            src="{{ record.imageUrl }}"
-                            alt="{{ record.name }}"
-                          />
-                        } @else {
-                          <div class="no-image">
-                            <i class="icon icon-compendium"></i>
-                          </div>
-                        }
-                      </div>
-                      <div class="compendium-record-name">
-                        <span>{{ record.name }}</span>
-                      </div>
-                    </div>
-                  }
-                </div>
-              </div>
             }
-          }
+          </div>
         </div>
       </div>
       @if (selectedRecord !== null) {
