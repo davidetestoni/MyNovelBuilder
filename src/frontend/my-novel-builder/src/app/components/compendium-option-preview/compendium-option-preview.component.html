@@ -1,0 +1,16 @@
+<div class="record-option">
+  <div class="compendium-option-preview">
+    @for (imageUrl of previewImages; track $index) {
+      <div class="compendium-option-preview-slot">
+        @if (imageUrl) {
+          <img [src]="imageUrl" [alt]="compendium.name" />
+        } @else {
+          <div class="no-image">
+            <i class="icon icon-compendium"></i>
+          </div>
+        }
+      </div>
+    }
+  </div>
+  <span>{{ compendium.name }}</span>
+</div>

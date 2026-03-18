@@ -65,14 +65,7 @@
               [style]="{ width: '180px' }"
             >
               <ng-template #item let-comp>
-                <div class="record-option">
-                  <div class="record-option-image">
-                    <div class="no-image">
-                      <i class="icon icon-compendium"></i>
-                    </div>
-                  </div>
-                  <span>{{ comp.name }}</span>
-                </div>
+                <app-compendium-option-preview [compendium]="comp" />
               </ng-template>
             </p-multiSelect>
           }
@@ -90,18 +83,10 @@
               [style]="{ width: '180px' }"
             >
               <ng-template #item let-record>
-                <div class="record-option">
-                  <div class="record-option-image">
-                    @if (record.imageUrl) {
-                      <img [src]="record.imageUrl" [alt]="record.name" />
-                    } @else {
-                      <div class="no-image">
-                        <i class="icon icon-compendium"></i>
-                      </div>
-                    }
-                  </div>
-                  <span>{{ record.name }}</span>
-                </div>
+                <app-record-option-preview
+                  [name]="record.name"
+                  [imageUrl]="record.imageUrl"
+                />
               </ng-template>
             </p-multiSelect>
           }

@@ -33,6 +33,8 @@ import {
 } from '../../components/translate-novel-dialog/translate-novel-dialog.component';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import { CompendiumOptionPreviewComponent } from '../../components/compendium-option-preview/compendium-option-preview.component';
+import { RecordOptionPreviewComponent } from '../../components/record-option-preview/record-option-preview.component';
 
 @Component({
   selector: 'app-novel-settings',
@@ -50,6 +52,8 @@ import { readImageFileFromClipboard } from '../../utils/clipboard-image';
     MenuModule,
     ConfirmDialogModule,
     ToastrModule,
+    CompendiumOptionPreviewComponent,
+    RecordOptionPreviewComponent,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './novel-settings.component.html',
@@ -123,7 +127,10 @@ export class NovelSettingsComponent implements OnDestroy {
 
   getCompendia(): void {
     this.compendiumService.getCompendia().subscribe((compendia) => {
-      this.compendia = compendia;
+      this.compendia = [...compendia].sort(
+        (a, b) =>
+          this.getCompendiumTimestamp(b) - this.getCompendiumTimestamp(a),
+      );
     });
   }
 
@@ -202,7 +209,13 @@ export class NovelSettingsComponent implements OnDestroy {
       .filter((compendium) => this.novel?.compendiumIds.includes(compendium.id))
       .map((compendium) => compendium.records)
       .flat()
-      .filter((record) => record.type === CompendiumRecordType.Character);
+      .filter((record) => record.type === CompendiumRecordType.Character)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  private getCompendiumTimestamp(compendium: CompendiumDto): number {
+    const timestamp = Date.parse(compendium.updatedAt || compendium.createdAt);
+    return Number.isNaN(timestamp) ? 0 : timestamp;
   }
 
   toggleCompendium(compendiumId: string): void {

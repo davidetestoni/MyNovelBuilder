@@ -53,7 +53,16 @@
             placeholder="All Compendia"
             [showClear]="true"
             [style]="{ width: '100%' }"
-          />
+          >
+            <ng-template #item let-compendium>
+              <app-compendium-option-preview [compendium]="compendium" />
+            </ng-template>
+            <ng-template #selectedItem let-compendium>
+              @if (compendium) {
+                <app-compendium-option-preview [compendium]="compendium" />
+              }
+            </ng-template>
+          </p-select>
           <input
             pInputText
             type="text"

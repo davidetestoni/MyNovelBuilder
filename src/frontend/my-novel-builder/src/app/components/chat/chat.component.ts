@@ -54,6 +54,8 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
+import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/compendium-option-preview.component';
+import { RecordOptionPreviewComponent } from '../record-option-preview/record-option-preview.component';
 
 @Component({
   selector: 'app-chat',
@@ -72,6 +74,8 @@ import { ModelSelectComponent } from '../model-select/model-select.component';
     MarkdownComponent,
     PromptSelectComponent,
     ModelSelectComponent,
+    CompendiumOptionPreviewComponent,
+    RecordOptionPreviewComponent,
   ],
   providers: [ConfirmationService, DialogService],
 })

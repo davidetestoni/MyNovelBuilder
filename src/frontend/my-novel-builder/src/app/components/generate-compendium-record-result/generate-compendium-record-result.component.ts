@@ -20,6 +20,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
+import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/compendium-option-preview.component';
 
 export interface GenerateCompendiumRecordComponentData {
   generatedText: string;
@@ -38,6 +39,7 @@ export interface GenerateCompendiumRecordComponentData {
     SelectModule,
     ButtonModule,
     AliasSuggestionsComponent,
+    CompendiumOptionPreviewComponent,
   ],
   templateUrl: './generate-compendium-record-result.component.html',
   styleUrl: './generate-compendium-record-result.component.scss',

@@ -13,7 +13,16 @@
           optionValue="id"
           placeholder="Select a compendium"
           [style]="{ width: '100%' }"
-        ></p-select>
+        >
+          <ng-template #item let-compendium>
+            <app-compendium-option-preview [compendium]="compendium" />
+          </ng-template>
+          <ng-template #selectedItem let-compendium>
+            @if (compendium) {
+              <app-compendium-option-preview [compendium]="compendium" />
+            }
+          </ng-template>
+        </p-select>
       </div>
 
       <!-- Name Input -->

@@ -20,6 +20,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { StorylineComponent } from '../../components/storyline/storyline.component';
 import { ToastrService } from 'ngx-toastr';
 import * as ExifReader from 'exifreader';
+import { CompendiumOptionPreviewComponent } from '../../components/compendium-option-preview/compendium-option-preview.component';
 
 @Component({
   selector: 'app-novel-editor',
@@ -33,6 +34,7 @@ import * as ExifReader from 'exifreader';
     ButtonModule,
     SelectModule,
     InputTextModule,
+    CompendiumOptionPreviewComponent,
   ],
   templateUrl: './novel-editor.component.html',
   styleUrl: './novel-editor.component.scss',

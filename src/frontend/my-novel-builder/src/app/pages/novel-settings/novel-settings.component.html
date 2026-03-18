@@ -151,7 +151,13 @@
                 (onChange)="onBlur()"
                 [style]="{ width: '100%' }"
                 display="chip"
+                [filter]="true"
+                filterBy="name,description"
+                filterPlaceholder="Search compendia"
               >
+                <ng-template #item let-compendium>
+                  <app-compendium-option-preview [compendium]="compendium" />
+                </ng-template>
               </p-multiSelect>
             </div>
 
@@ -168,7 +174,24 @@
                 (onChange)="onBlur()"
                 [style]="{ width: '100%' }"
                 [showClear]="true"
+                [filter]="true"
+                filterBy="name"
+                filterPlaceholder="Search records"
               >
+                <ng-template #item let-record>
+                  <app-record-option-preview
+                    [name]="record.name"
+                    [imageUrl]="record.imageUrl"
+                  />
+                </ng-template>
+                <ng-template #selectedItem let-record>
+                  @if (record) {
+                    <app-record-option-preview
+                      [name]="record.name"
+                      [imageUrl]="record.imageUrl"
+                    />
+                  }
+                </ng-template>
               </p-select>
             </div>
           </div>
