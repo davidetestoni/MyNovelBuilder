@@ -8,7 +8,7 @@ namespace MyNovelBuilder.WebApi.Prompts.Builders;
 /// A prompt builder for creating an image generation prompt for a compendium record.
 /// </summary>
 public class CreateCompendiumRecordImageGenerationPromptBuilder
-    : PromptBuilder<CreateCompendiumRecordImageGenerationPromptContextInfoDto>
+    : CompendiumPromptBuilder<CreateCompendiumRecordImageGenerationPromptContextInfoDto>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateCompendiumRecordImageGenerationPromptBuilder"/> class.
@@ -18,8 +18,8 @@ public class CreateCompendiumRecordImageGenerationPromptBuilder
     }
 
     /// <inheritdoc />
-    public override PromptBuilder<CreateCompendiumRecordImageGenerationPromptContextInfoDto> ReplacePlaceholders(
-        PromptBuilderContext<CreateCompendiumRecordImageGenerationPromptContextInfoDto> context)
+    public override CompendiumPromptBuilder<CreateCompendiumRecordImageGenerationPromptContextInfoDto> ReplacePlaceholders(
+        CompendiumPromptBuilderContext<CreateCompendiumRecordImageGenerationPromptContextInfoDto> context)
     {
         base.ReplacePlaceholders(context);
 
@@ -33,12 +33,15 @@ public class CreateCompendiumRecordImageGenerationPromptBuilder
                 $"Compendium record with ID {context.Client.CompendiumRecordId} not found.");
         }
 
-        TrackIncludedRecords(context, context.CompendiumRecords);
+        PromptBuilderUtils.TrackIncludedRecords(
+            context.IncludedCompendiumRecordIds,
+            context.CompendiumRecords);
 
         Builder
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
-            .Replace("{{record}}", CreateCompendiumRecordsString([record]))
-            .Replace("{{records}}", CreateCompendiumRecordsString(context.CompendiumRecords));
+            .Replace("{{record}}", PromptBuilderUtils.CreateCompendiumRecordsString([record]))
+            .Replace("{{records}}", PromptBuilderUtils.CreateCompendiumRecordsString(
+                context.CompendiumRecords));
 
         return this;
     }

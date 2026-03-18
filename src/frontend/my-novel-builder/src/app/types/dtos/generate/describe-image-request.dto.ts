@@ -1,6 +1,10 @@
 export interface DescribeImageRequestDto {
   model: string;
   promptId: string;
-  compendiumId: string;
   instructions: string | null;
+}
+
+export interface DescribeCompendiumImageRequestDto
+  extends DescribeImageRequestDto {
+  compendiumId: string;
 }

@@ -110,7 +110,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             Message = clientContext switch
             {
                 GenerateTextContextInfoDto g => new GenerateTextPromptBuilder(message.Message)
-                    .ReplacePlaceholders(new PromptBuilderContext<GenerateTextContextInfoDto>
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<GenerateTextContextInfoDto>
                     {
                         Client = g,
                         Novel = novel,
@@ -119,7 +119,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 SummarizeTextContextInfoDto s => new SummarizeTextPromptBuilder(message.Message)
-                    .ReplacePlaceholders(new PromptBuilderContext<SummarizeTextContextInfoDto>
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<SummarizeTextContextInfoDto>
                     {
                         Client = s,
                         Novel = novel,
@@ -128,7 +128,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 ReplaceTextContextInfoDto r => new ReplaceTextPromptBuilder(message.Message)
-                    .ReplacePlaceholders(new PromptBuilderContext<ReplaceTextContextInfoDto>
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<ReplaceTextContextInfoDto>
                     {
                         Client = r,
                         Novel = novel,
@@ -137,7 +137,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 CreateCompendiumRecordContextInfoDto c => new CreateCompendiumRecordPromptBuilder(message.Message)
-                    .ReplacePlaceholders(new PromptBuilderContext<CreateCompendiumRecordContextInfoDto>
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<CreateCompendiumRecordContextInfoDto>
                     {
                         Client = c,
                         Novel = novel,
@@ -146,7 +146,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 SendChatMessageContextInfoDto s => new SendChatMessagePromptBuilder(message.Message)
-                    .ReplacePlaceholders(new PromptBuilderContext<SendChatMessageContextInfoDto>
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<SendChatMessageContextInfoDto>
                     {
                         Client = s,
                         Novel = novel,
@@ -155,7 +155,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 CreateStoryEventsContextInfoDto s => new CreateStoryEventsPromptBuilder(message.Message)
-                    .ReplacePlaceholders(new PromptBuilderContext<CreateStoryEventsContextInfoDto>
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<CreateStoryEventsContextInfoDto>
                     {
                         Client = s,
                         Novel = novel,
@@ -164,7 +164,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                         IncludedCompendiumRecordIds = includedCompendiumRecordIds
                     }).ToString(),
                 TranslateNovelContextInfoDto t => new TranslateNovelPromptBuilder(message.Message)
-                    .ReplacePlaceholders(new PromptBuilderContext<TranslateNovelContextInfoDto>
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<TranslateNovelContextInfoDto>
                     {
                         Client = t,
                         Novel = novel,

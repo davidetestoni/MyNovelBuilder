@@ -14,14 +14,18 @@ import { ButtonModule } from 'primeng/button';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { ToastrService } from 'ngx-toastr';
-import { DescribeImageRequestDto } from '../../types/dtos/generate/describe-image-request.dto';
+import {
+  DescribeCompendiumImageRequestDto,
+  DescribeImageRequestDto,
+} from '../../types/dtos/generate/describe-image-request.dto';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
 
 export interface DescribeImageComponentData {
   image: File;
-  compendiumId: string;
+  compendiumId?: string | null;
+  promptType?: PromptType;
 }
 
 @Component({
@@ -70,7 +74,7 @@ export class DescribeImageComponent {
 
     const instructions = this.localStorageService.getNestedStringForKey(
       LocalStorageKey.RecentInstructions,
-      PromptType.DescribeImage,
+      this.selectedPromptType,
     );
 
     if (instructions !== null) {
@@ -79,7 +83,7 @@ export class DescribeImageComponent {
 
     const promptId = this.localStorageService.getNestedStringForKey(
       LocalStorageKey.RecentPrompts,
-      PromptType.DescribeImage,
+      this.selectedPromptType,
     );
 
     if (promptId !== null) {
@@ -87,9 +91,21 @@ export class DescribeImageComponent {
     }
   }
 
+  get selectedPromptType(): PromptType {
+    return this.data.promptType ?? PromptType.DescribeImage;
+  }
+
   describeImage(): void {
     if (this.formGroup.invalid) {
       this.toastrService.error('Please fill out all required fields');
+      return;
+    }
+
+    if (
+      this.selectedPromptType === PromptType.DescribeCompendiumImage &&
+      (!this.data.compendiumId || this.data.compendiumId.trim() === '')
+    ) {
+      this.toastrService.error('Compendium context is required for this prompt type');
       return;
     }
 
@@ -99,9 +115,29 @@ export class DescribeImageComponent {
     const request: DescribeImageRequestDto = {
       model: this.formGroup.get('model')!.value!,
       promptId: this.formGroup.get('promptId')!.value!,
-      compendiumId: this.data.compendiumId,
       instructions: this.formGroup.get('instructions')!.value,
     };
+
+    if (this.selectedPromptType === PromptType.DescribeCompendiumImage) {
+      const compendiumRequest: DescribeCompendiumImageRequestDto = {
+        ...request,
+        compendiumId: this.data.compendiumId!,
+      };
+
+      this.generateTextService.describeImage(this.data.image, compendiumRequest).subscribe({
+        next: (description) => {
+          this.description = description;
+        },
+        error: () => {
+          this.toastrService.error('Failed to describe image');
+          this.isGenerating = false;
+        },
+        complete: () => {
+          this.isGenerating = false;
+        },
+      });
+      return;
+    }
 
     this.generateTextService.describeImage(this.data.image, request).subscribe({
       next: (description) => {
@@ -124,13 +160,13 @@ export class DescribeImageComponent {
 
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentInstructions,
-      PromptType.DescribeImage,
+      this.selectedPromptType,
       this.formGroup.get('instructions')!.value ?? '',
     );
 
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
-      PromptType.DescribeImage,
+      this.selectedPromptType,
       this.formGroup.get('promptId')!.value!,
     );
 

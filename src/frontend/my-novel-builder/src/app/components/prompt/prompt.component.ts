@@ -45,6 +45,7 @@ export class PromptComponent {
     PromptType.CreateCompendiumRecord,
     PromptType.EditCompendiumRecord,
     PromptType.SendChatMessage,
+    PromptType.DescribeCompendiumImage,
     PromptType.DescribeImage,
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
@@ -165,7 +166,7 @@ export class PromptComponent {
         description: 'Information from selected compendium records.',
       },
     ],
-    [PromptType.DescribeImage]: [
+    [PromptType.DescribeCompendiumImage]: [
       {
         keyword: '{{instructions}}',
         description: 'Additional instructions for how to describe the image.',
@@ -174,6 +175,12 @@ export class PromptComponent {
         keyword: '{{records}}',
         description:
           "Information from other compendium records in the record's compendium.",
+      },
+    ],
+    [PromptType.DescribeImage]: [
+      {
+        keyword: '{{instructions}}',
+        description: 'Additional instructions for how to describe the image.',
       },
     ],
     [PromptType.CreateCompendiumRecordImageGenerationPrompt]: [

@@ -9,7 +9,7 @@ namespace MyNovelBuilder.WebApi.Prompts.Builders;
 /// <summary>
 /// Prompt builder for translating a chapter of a novel.
 /// </summary>
-public partial class TranslateNovelPromptBuilder : PromptBuilder<TranslateNovelContextInfoDto>
+public partial class TranslateNovelPromptBuilder : NovelPromptBuilder<TranslateNovelContextInfoDto>
 {
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
@@ -24,31 +24,38 @@ public partial class TranslateNovelPromptBuilder : PromptBuilder<TranslateNovelC
     }
 
     /// <inheritdoc />
-    public override PromptBuilder<TranslateNovelContextInfoDto> ReplacePlaceholders(
-        PromptBuilderContext<TranslateNovelContextInfoDto> context)
+    public override NovelPromptBuilder<TranslateNovelContextInfoDto> ReplacePlaceholders(
+        NovelPromptBuilderContext<TranslateNovelContextInfoDto> context)
     {
         base.ReplacePlaceholders(context);
 
-        var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
+        var chapter = PromptBuilderUtils.GetChapter(context.Prose, context.Client.ChapterIndex);
         var sections = chapter.Sections.ToList();
 
         var textForFiltering = string.Join(
             "\n\n",
             sections.Select(s => $"{s.Summary}\n{s.Text.StripHtml()}"));
-        var recordsInContext = FilterRecordsInContext(context.CompendiumRecords, textForFiltering);
+        var recordsInContext = PromptBuilderUtils.FilterRecordsInContext(
+            context.CompendiumRecords,
+            textForFiltering);
         if (!string.IsNullOrWhiteSpace(context.Client.Instructions))
         {
-            recordsInContext.UnionWith(FilterRecordsInContext(context.CompendiumRecords, context.Client.Instructions));
+            recordsInContext.UnionWith(
+                PromptBuilderUtils.FilterRecordsInContext(
+                    context.CompendiumRecords,
+                    context.Client.Instructions));
         }
 
         var recordsInContextList = recordsInContext.ToList();
-        TrackIncludedRecords(context, recordsInContextList);
+        PromptBuilderUtils.TrackIncludedRecords(
+            context.IncludedCompendiumRecordIds,
+            recordsInContextList);
 
         Builder
             .Replace("{{targetLanguage}}", context.Client.TargetLanguage.ToString())
             .Replace("{{context}}", SerializeChapter(chapter))
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
-            .Replace("{{records}}", CreateCompendiumRecordsString(
+            .Replace("{{records}}", PromptBuilderUtils.CreateCompendiumRecordsString(
                 recordsInContextList,
                 (
                     context.Prose,

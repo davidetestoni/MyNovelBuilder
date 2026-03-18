@@ -14,6 +14,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 [JsonDerivedType(typeof(EditCompendiumRecordContextInfoDto), typeDiscriminator: "editCompendiumRecord")]
 [JsonDerivedType(typeof(SendChatMessageContextInfoDto), typeDiscriminator: "sendChatMessage")]
 [JsonDerivedType(typeof(DescribeImageContextInfoDto), typeDiscriminator: "describeImage")]
+[JsonDerivedType(typeof(DescribeCompendiumImageContextInfoDto), typeDiscriminator: "describeCompendiumImage")]
 [JsonDerivedType(typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto), typeDiscriminator: "createCompendiumRecordImageGenerationPrompt")]
 [JsonDerivedType(typeof(CreateStoryEventsContextInfoDto), typeDiscriminator: "createStoryEvents")]
 [JsonDerivedType(typeof(TranslateNovelContextInfoDto), typeDiscriminator: "translateNovel")]
@@ -45,6 +46,13 @@ public abstract class CompendiumTextGenerationContextInfoDto : TextGenerationCon
     /// The ID of the compendium.
     /// </summary>
     public required Guid CompendiumId { get; set; }
+}
+
+/// <summary>
+/// DTO for the context information for text generation that is not scoped to a novel or compendium.
+/// </summary>
+public abstract class GenericTextGenerationContextInfoDto : TextGenerationContextInfoDto
+{
 }
 
 /// <summary>
@@ -241,7 +249,18 @@ public class SendChatMessageContextInfoDto : NovelTextGenerationContextInfoDto
 /// <summary>
 /// DTO for the context information for image description.
 /// </summary>
-public class DescribeImageContextInfoDto : CompendiumTextGenerationContextInfoDto
+public class DescribeImageContextInfoDto : GenericTextGenerationContextInfoDto
+{
+    /// <summary>
+    /// Additional instructions for the image description.
+    /// </summary>
+    public string? Instructions { get; set; }
+}
+
+/// <summary>
+/// DTO for the context information for image description.
+/// </summary>
+public class DescribeCompendiumImageContextInfoDto : CompendiumTextGenerationContextInfoDto
 {
     /// <summary>
     /// Additional instructions for the image description.

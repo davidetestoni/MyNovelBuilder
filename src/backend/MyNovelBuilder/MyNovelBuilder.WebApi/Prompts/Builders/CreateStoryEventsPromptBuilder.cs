@@ -7,7 +7,7 @@ namespace MyNovelBuilder.WebApi.Prompts.Builders;
 /// <summary>
 /// A prompt builder for creating story events.
 /// </summary>
-public class CreateStoryEventsPromptBuilder : PromptBuilder<CreateStoryEventsContextInfoDto>
+public class CreateStoryEventsPromptBuilder : NovelPromptBuilder<CreateStoryEventsContextInfoDto>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="CreateStoryEventsPromptBuilder"/> class.
@@ -17,28 +17,34 @@ public class CreateStoryEventsPromptBuilder : PromptBuilder<CreateStoryEventsCon
     }
 
     /// <inheritdoc />
-    public override PromptBuilder<CreateStoryEventsContextInfoDto> ReplacePlaceholders(
-        PromptBuilderContext<CreateStoryEventsContextInfoDto> context)
+    public override NovelPromptBuilder<CreateStoryEventsContextInfoDto> ReplacePlaceholders(
+        NovelPromptBuilderContext<CreateStoryEventsContextInfoDto> context)
     {
         base.ReplacePlaceholders(context);
 
-        var contextString = GetWholeChapter(context.Prose, context.Client.ChapterIndex);
+        var contextString = PromptBuilderUtils.GetWholeChapter(
+            context.Prose,
+            context.Client.ChapterIndex);
         var previousChapter = context.Client.ChapterIndex > 0
-            ? GetChapter(context.Prose, context.Client.ChapterIndex - 1)
+            ? PromptBuilderUtils.GetChapter(context.Prose, context.Client.ChapterIndex - 1)
             : null;
         var nextChapter = context.Client.ChapterIndex < context.Prose.Chapters.Count - 1
-            ? GetChapter(context.Prose, context.Client.ChapterIndex + 1)
+            ? PromptBuilderUtils.GetChapter(context.Prose, context.Client.ChapterIndex + 1)
             : null;
 
-        var recordsInContext = FilterRecordsInContext(context.CompendiumRecords, contextString);
+        var recordsInContext = PromptBuilderUtils.FilterRecordsInContext(
+            context.CompendiumRecords,
+            contextString);
         var recordsInContextList = recordsInContext.ToList();
-        TrackIncludedRecords(context, recordsInContextList);
+        PromptBuilderUtils.TrackIncludedRecords(
+            context.IncludedCompendiumRecordIds,
+            recordsInContextList);
 
         Builder
             .Replace("{{context}}", contextString)
             .Replace("{{previousChapterEvents}}", SerializeStoryEvents(previousChapter))
             .Replace("{{nextChapterEvents}}", SerializeStoryEvents(nextChapter))
-            .Replace("{{records}}", CreateCompendiumRecordsString(
+            .Replace("{{records}}", PromptBuilderUtils.CreateCompendiumRecordsString(
                 recordsInContextList,
                 (
                     context.Prose,

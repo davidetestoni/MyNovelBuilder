@@ -8,21 +8,20 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Prompts.Builders;
 
 public class PromptBuilderTests
 {
-    private class TestPromptBuilder(string prompt) : PromptBuilder<TextGenerationContextInfoDto>(prompt)
+    private class TestPromptBuilder(string prompt)
+        : NovelPromptBuilder<TestTextGenerationContextInfoDto>(prompt)
     {
-        public new static HashSet<CompendiumRecord> FilterRecordsInContext(
+        public static HashSet<CompendiumRecord> FilterRecordsInContext(
             IList<CompendiumRecord> records, string context)
         {
-            return PromptBuilder<TextGenerationContextInfoDto>
-                .FilterRecordsInContext(records, context);
+            return PromptBuilderUtils.FilterRecordsInContext(records, context);
         }
 
         public static string CreateCompendiumRecordsString(
             IList<CompendiumRecord> records, Prose prose, int? chapterIndex, int? sectionIndex)
         {
-            return PromptBuilder<TextGenerationContextInfoDto>
-                .CreateCompendiumRecordsString(
-                    records, (prose, chapterIndex, sectionIndex));
+            return PromptBuilderUtils.CreateCompendiumRecordsString(
+                records, (prose, chapterIndex, sectionIndex));
         }
     }
 
@@ -171,7 +170,7 @@ public class PromptBuilderTests
             Tense = WritingTense.Past
         };
         
-        var context = new PromptBuilderContext<TextGenerationContextInfoDto>
+        var context = new NovelPromptBuilderContext<TestTextGenerationContextInfoDto>
         {
             Client = new TestTextGenerationContextInfoDto
             {
@@ -205,7 +204,7 @@ public class PromptBuilderTests
                 Type = CompendiumRecordType.Character
             }
         };
-        var context = new PromptBuilderContext<TextGenerationContextInfoDto>
+        var context = new NovelPromptBuilderContext<TestTextGenerationContextInfoDto>
         {
             Client = new TestTextGenerationContextInfoDto
             {
@@ -233,7 +232,7 @@ public class PromptBuilderTests
             Tense = WritingTense.Past,
             Language = WritingLanguage.English
         };
-        var context = new PromptBuilderContext<TextGenerationContextInfoDto>
+        var context = new NovelPromptBuilderContext<TestTextGenerationContextInfoDto>
         {
             Client = new TestTextGenerationContextInfoDto
             {
@@ -291,7 +290,7 @@ public class PromptBuilderTests
             }
         };
 
-        var context = new PromptBuilderContext<TranslateNovelContextInfoDto>
+        var context = new NovelPromptBuilderContext<TranslateNovelContextInfoDto>
         {
             Client = new TranslateNovelContextInfoDto
             {

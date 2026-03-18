@@ -1,7 +1,10 @@
 import { HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
+import {
+  DescribeCompendiumImageRequestDto,
+  DescribeImageRequestDto,
+} from '../types/dtos/generate/describe-image-request.dto';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
@@ -40,7 +43,10 @@ export class MockGenerateTextService extends GenerateTextService {
     });
   }
 
-  describeImage(_image: Blob, request: DescribeImageRequestDto): Observable<string> {
+  describeImage(
+    _image: Blob,
+    request: DescribeImageRequestDto | DescribeCompendiumImageRequestDto,
+  ): Observable<string> {
     this.saveRecentlyUsedModel(request.model);
     return mockObservable('A generated image description. This is mocked data from the frontend service.');
   }

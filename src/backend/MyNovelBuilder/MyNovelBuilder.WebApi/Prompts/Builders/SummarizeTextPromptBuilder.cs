@@ -6,7 +6,7 @@ namespace MyNovelBuilder.WebApi.Prompts.Builders;
 /// <summary>
 /// A prompt builder for text summarization.
 /// </summary>
-public class SummarizeTextPromptBuilder : PromptBuilder<SummarizeTextContextInfoDto>
+public class SummarizeTextPromptBuilder : NovelPromptBuilder<SummarizeTextContextInfoDto>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="SummarizeTextPromptBuilder"/> class.
@@ -17,23 +17,25 @@ public class SummarizeTextPromptBuilder : PromptBuilder<SummarizeTextContextInfo
     }
 
     /// <inheritdoc />
-    public override PromptBuilder<SummarizeTextContextInfoDto> ReplacePlaceholders(
-        PromptBuilderContext<SummarizeTextContextInfoDto> context)
+    public override NovelPromptBuilder<SummarizeTextContextInfoDto> ReplacePlaceholders(
+        NovelPromptBuilderContext<SummarizeTextContextInfoDto> context)
     {
         base.ReplacePlaceholders(context);
 
-        var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
-        var section = GetSection(chapter, context.Client.SectionIndex);
+        var chapter = PromptBuilderUtils.GetChapter(context.Prose, context.Client.ChapterIndex);
+        var section = PromptBuilderUtils.GetSection(chapter, context.Client.SectionIndex);
         var sectionText = section?.Text ?? string.Empty;
         
-        var recordsInContext = FilterRecordsInContext(
+        var recordsInContext = PromptBuilderUtils.FilterRecordsInContext(
             context.CompendiumRecords, sectionText.StripHtml());
         var recordsInContextList = recordsInContext.ToList();
-        TrackIncludedRecords(context, recordsInContextList);
+        PromptBuilderUtils.TrackIncludedRecords(
+            context.IncludedCompendiumRecordIds,
+            recordsInContextList);
         
         Builder
             .Replace("{{context}}", sectionText.StripHtml())
-            .Replace("{{records}}", CreateCompendiumRecordsString(
+            .Replace("{{records}}", PromptBuilderUtils.CreateCompendiumRecordsString(
                 recordsInContextList, (
                     context.Prose,
                     context.Client.ChapterIndex,

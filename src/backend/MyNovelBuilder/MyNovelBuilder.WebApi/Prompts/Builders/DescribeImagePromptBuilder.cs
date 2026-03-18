@@ -1,12 +1,11 @@
-using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 
 namespace MyNovelBuilder.WebApi.Prompts.Builders;
 
 /// <summary>
-/// A prompt builder for image description.
+/// A prompt builder for generic image description.
 /// </summary>
-public class DescribeImagePromptBuilder : PromptBuilder<DescribeImageContextInfoDto>
+public class DescribeImagePromptBuilder : GenericPromptBuilder<DescribeImageContextInfoDto>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DescribeImagePromptBuilder"/> class.
@@ -16,15 +15,10 @@ public class DescribeImagePromptBuilder : PromptBuilder<DescribeImageContextInfo
     }
 
     /// <inheritdoc />
-    public override PromptBuilder<DescribeImageContextInfoDto> ReplacePlaceholders(
-        PromptBuilderContext<DescribeImageContextInfoDto> context)
+    public override GenericPromptBuilder<DescribeImageContextInfoDto> ReplacePlaceholders(
+        GenericPromptBuilderContext<DescribeImageContextInfoDto> context)
     {
-        TrackIncludedRecords(context, context.CompendiumRecords);
-
-        Builder
-            .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
-            .Replace("{{records}}", CreateCompendiumRecordsString(context.CompendiumRecords));
-
+        Builder.Replace("{{instructions}}", context.Client.Instructions ?? string.Empty);
         return this;
     }
 }

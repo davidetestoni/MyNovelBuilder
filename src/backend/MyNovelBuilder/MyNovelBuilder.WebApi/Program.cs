@@ -119,6 +119,7 @@ builder.Services.AddSingleton<ITokenizerService, TokenizerService>();
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<INovelPromptCreatorService, NovelPromptCreatorService>();
 builder.Services.AddSingleton<ICompendiumPromptCreatorService, CompendiumPromptCreatorService>();
+builder.Services.AddSingleton<IGenericPromptCreatorService, GenericPromptCreatorService>();
 
 // Text generation services
 builder.Services.RegisterKeyedServicesFromAssembly<ITextGenerationService>();

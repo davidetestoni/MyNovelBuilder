@@ -1,7 +1,10 @@
 import { HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
+import {
+  DescribeCompendiumImageRequestDto,
+  DescribeImageRequestDto,
+} from '../types/dtos/generate/describe-image-request.dto';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
@@ -17,7 +20,10 @@ export abstract class GenerateTextService {
   abstract generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>>;
   abstract generateTextCompletion(request: GenerateTextRequestDto): Observable<GenerateTextCompletion>;
   abstract getGenerationPreview(request: GenerateTextRequestDto): Observable<TextGenerationPreviewDto>;
-  abstract describeImage(image: Blob, request: DescribeImageRequestDto): Observable<string>;
+  abstract describeImage(
+    image: Blob,
+    request: DescribeImageRequestDto | DescribeCompendiumImageRequestDto,
+  ): Observable<string>;
   getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
     return this.fetchAvailableModelInfos();
   }

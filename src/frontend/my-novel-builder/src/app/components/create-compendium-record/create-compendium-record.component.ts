@@ -14,6 +14,7 @@ import {
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { CompendiumService } from '../../services/compendium.service';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
+import { PromptType } from '../../types/enums/prompt-type';
 import { TitleCasePipe } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
@@ -159,6 +160,7 @@ export class CreateCompendiumRecordComponent {
       data: {
         image: this.imageFile,
         compendiumId: this.config.data.compendiumId,
+        promptType: PromptType.DescribeCompendiumImage,
       },
     });
 

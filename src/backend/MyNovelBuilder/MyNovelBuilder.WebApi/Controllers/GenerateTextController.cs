@@ -5,6 +5,8 @@ using Microsoft.Extensions.Caching.Hybrid;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 
@@ -20,6 +22,8 @@ public class GenerateTextController : ControllerBase
     private readonly ILogger<GenerateTextController> _logger;
     private readonly INovelPromptCreatorService _novelPromptCreatorService;
     private readonly ICompendiumPromptCreatorService _compendiumPromptCreatorService;
+    private readonly IGenericPromptCreatorService _genericPromptCreatorService;
+    private readonly IPromptService _promptService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
     private readonly ITokenizerService _tokenizerService;
@@ -31,6 +35,8 @@ public class GenerateTextController : ControllerBase
         ILogger<GenerateTextController> logger,
         INovelPromptCreatorService novelPromptCreatorService,
         ICompendiumPromptCreatorService compendiumPromptCreatorService,
+        IGenericPromptCreatorService genericPromptCreatorService,
+        IPromptService promptService,
         IServiceProvider serviceProvider,
         IIntegrationsService integrationsService,
         ITokenizerService tokenizerService,
@@ -39,6 +45,8 @@ public class GenerateTextController : ControllerBase
         _logger = logger;
         _novelPromptCreatorService = novelPromptCreatorService;
         _compendiumPromptCreatorService = compendiumPromptCreatorService;
+        _genericPromptCreatorService = genericPromptCreatorService;
+        _promptService = promptService;
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
         _tokenizerService = tokenizerService;
@@ -84,6 +92,7 @@ public class GenerateTextController : ControllerBase
         {
             NovelTextGenerationContextInfoDto => await _novelPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
             CompendiumTextGenerationContextInfoDto => await _compendiumPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
+            GenericTextGenerationContextInfoDto => await _genericPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext, "The prompt context is invalid.")
         };
 
@@ -116,6 +125,7 @@ public class GenerateTextController : ControllerBase
         {
             NovelTextGenerationContextInfoDto => await _novelPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
             CompendiumTextGenerationContextInfoDto => await _compendiumPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
+            GenericTextGenerationContextInfoDto => await _genericPromptCreatorService.CreatePromptAsync(dto, cancellationToken),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext, "The prompt context is invalid.")
         };
 
@@ -142,38 +152,89 @@ public class GenerateTextController : ControllerBase
         [FromForm] DescribeImageRequestDto dto,
         CancellationToken cancellationToken = default)
     {
+        var messages = (
+            await _genericPromptCreatorService.CreatePromptAsync(
+                new GenerateTextRequestDto
+                {
+                    Model = dto.Model,
+                    PromptId = dto.PromptId,
+                    ContextInfo = new DescribeImageContextInfoDto
+                    {
+                        Instructions = dto.Instructions
+                    }
+                },
+                cancellationToken)
+        ).Messages;
+
+        return Ok(await DescribeImageAsync(
+            image,
+            dto.Model,
+            messages,
+            cancellationToken));
+    }
+
+    /// <summary>
+    /// Describe an image with compendium context.
+    /// </summary>
+    [HttpPost("describe-compendium-image")]
+    public async Task<ActionResult<string>> DescribeCompendiumImageAsync(
+        IFormFile image,
+        [FromForm] DescribeCompendiumImageRequestDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var prompt = await _promptService.GetByIdAsync(dto.PromptId, cancellationToken);
+        if (prompt.Type != PromptType.DescribeCompendiumImage)
+        {
+            throw new ApiException(
+                ErrorCodes.InvalidPromptContext,
+                "This prompt type is not valid for compendium image description.");
+        }
+
+        var messages = (
+            await _compendiumPromptCreatorService.CreatePromptAsync(
+                new GenerateTextRequestDto
+                {
+                    Model = dto.Model,
+                    PromptId = dto.PromptId,
+                    ContextInfo = new DescribeCompendiumImageContextInfoDto
+                    {
+                        CompendiumId = dto.CompendiumId,
+                        Instructions = dto.Instructions
+                    }
+                },
+                cancellationToken)
+        ).Messages;
+
+        return Ok(await DescribeImageAsync(
+            image,
+            dto.Model,
+            messages,
+            cancellationToken));
+    }
+
+    private async Task<string> DescribeImageAsync(
+        IFormFile image,
+        string model,
+        IEnumerable<PromptMessage> messages,
+        CancellationToken cancellationToken)
+    {
         if (image.Length == 0)
         {
-            return BadRequest("Image file is required.");
+            throw new ApiException(ErrorCodes.InvalidPromptContext, "Image file is required.");
         }
 
         await using var imageStream = image.OpenReadStream();
         using var ms = new MemoryStream();
         await imageStream.CopyToAsync(ms, cancellationToken);
         var imageBytes = ms.ToArray();
-
-        var processedPrompt = await _compendiumPromptCreatorService.CreatePromptAsync(
-            new GenerateTextRequestDto
-            {
-                Model = dto.Model,
-                PromptId = dto.PromptId,
-                ContextInfo = new DescribeImageContextInfoDto
-                {
-                    CompendiumId = dto.CompendiumId,
-                    Instructions = dto.Instructions
-                }
-            },
-            cancellationToken);
         
         var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
-        var description = await textGenerationService.DescribeImageAsync(
-            dto.Model,
-            processedPrompt.Messages,
+        return await textGenerationService.DescribeImageAsync(
+            model,
+            messages,
             imageBytes,
             string.IsNullOrWhiteSpace(image.ContentType) ? "image/png" : image.ContentType,
             cancellationToken);
-
-        return Ok(description);
     }
     
     /// <summary>

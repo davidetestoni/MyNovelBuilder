@@ -18,6 +18,7 @@ import { PaginatorModule } from 'primeng/paginator';
 import type { PaginatorState } from 'primeng/paginator';
 import { catchError, forkJoin, map, of, Subscription } from 'rxjs';
 import * as ExifReader from 'exifreader';
+import { DescribeImageComponent } from '../describe-image/describe-image.component';
 import { EditImageComponent } from '../edit-image/edit-image.component';
 import {
   ImageSourceSelectorComponent,
@@ -35,6 +36,7 @@ import { MediaLibraryService } from '../../services/media-library.service';
 import { MediaFileDto } from '../../types/dtos/media-library/media-file.dto';
 import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
+import { PromptType } from '../../types/enums/prompt-type';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 
 interface MediaPreview extends MediaFileDto {
@@ -125,6 +127,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   mediaPreviews: MediaPreview[] | null = null;
   zoomedMedia: MediaPreview | null = null;
   zoomedMediaPrompt: string | null = null;
+  zoomedMediaDescription: string | null = null;
   isZoomedMediaPromptLoading = false;
 
   constructor() {
@@ -312,13 +315,13 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    this.zoomedMedia = media;
-    void this.loadZoomedMediaPrompt(media);
+    this.setZoomedMedia(media);
   }
 
   unzoomMedia(): void {
     this.zoomedMedia = null;
     this.zoomedMediaPrompt = null;
+    this.zoomedMediaDescription = null;
     this.isZoomedMediaPromptLoading = false;
   }
 
@@ -706,7 +709,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
 
     const previousIndex =
       (currentIndex - 1 + this.mediaPreviews.length) % this.mediaPreviews.length;
-    this.zoomedMedia = this.mediaPreviews[previousIndex];
+    this.setZoomedMedia(this.mediaPreviews[previousIndex]);
   }
 
   private showNextMedia(): void {
@@ -723,12 +726,18 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
     }
 
     const nextIndex = (currentIndex + 1) % this.mediaPreviews.length;
-    this.zoomedMedia = this.mediaPreviews[nextIndex];
+    this.setZoomedMedia(this.mediaPreviews[nextIndex]);
+  }
+
+  private setZoomedMedia(media: MediaPreview): void {
+    this.zoomedMedia = media;
+    void this.loadZoomedMediaPrompt(media);
   }
 
   private clearPreviewCache(): void {
     this.zoomedMedia = null;
     this.zoomedMediaPrompt = null;
+    this.zoomedMediaDescription = null;
     this.isZoomedMediaPromptLoading = false;
     for (const preview of this.mediaPreviewByFileName.values()) {
       if (preview.url !== null) {
@@ -749,14 +758,57 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   }
 
   copyZoomedMediaPrompt(): void {
-    if (!this.zoomedMediaPrompt) {
+    const text = this.zoomedMediaPrompt ?? this.zoomedMediaDescription;
+    if (!text) {
       return;
     }
 
-    navigator.clipboard.writeText(this.zoomedMediaPrompt).then(
-      () => this.toastrService.success('Prompt copied to clipboard'),
-      () => this.toastrService.error('Failed to copy prompt'),
+    navigator.clipboard.writeText(text).then(
+      () => this.toastrService.success('Text copied to clipboard'),
+      () => this.toastrService.error('Failed to copy text'),
     );
+  }
+
+  describeZoomedMedia(): void {
+    const media = this.zoomedMedia;
+    const folder = this.folder;
+    if (media === null || folder === null || media.isVideo) {
+      return;
+    }
+
+    this.mediaLibraryService.getMediaBlob(folder.id, media.fileName).subscribe({
+      next: (blob) => {
+        const file = new File([blob], media.fileName, {
+          type: blob.type || 'image/png',
+        });
+
+        this.dialogRef = this.dialogService.open(DescribeImageComponent, {
+          header: 'Describe Image',
+          width: '70vw',
+          contentStyle: { overflow: 'auto' },
+          baseZIndex: 10000,
+          closable: true,
+          closeOnEscape: true,
+          modal: true,
+          dismissableMask: true,
+          data: {
+            image: file,
+            promptType: PromptType.DescribeImage,
+          },
+        });
+
+        this.dialogRef?.onClose.subscribe((description: string | undefined) => {
+          if (!description || description.trim() === '') {
+            return;
+          }
+
+          this.zoomedMediaDescription = description.trim();
+        });
+      },
+      error: () => {
+        this.toastrService.error('Failed to load image');
+      },
+    });
   }
 
   ensureVideoPlayback(event: Event): void {
@@ -794,6 +846,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   private async loadZoomedMediaPrompt(media: MediaPreview): Promise<void> {
     if (media.isVideo || media.url === null) {
       this.zoomedMediaPrompt = null;
+      this.zoomedMediaDescription = null;
       this.isZoomedMediaPromptLoading = false;
       return;
     }
@@ -801,6 +854,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
     const requestId = ++this.zoomedPromptRequestId;
     this.isZoomedMediaPromptLoading = true;
     this.zoomedMediaPrompt = null;
+    this.zoomedMediaDescription = null;
 
     try {
       const response = await fetch(media.url);

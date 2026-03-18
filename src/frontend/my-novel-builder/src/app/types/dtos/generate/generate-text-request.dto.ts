@@ -103,7 +103,7 @@ export interface CompendiumTextGenerationContextInfoDto {
 
 export interface DescribeImageContextInfoDto
   extends CompendiumTextGenerationContextInfoDto {
-  $type: CompendiumTextGenerationType.DescribeImage;
+  $type: CompendiumTextGenerationType.DescribeCompendiumImage;
   instructions: string | null;
 }
 
@@ -115,6 +115,6 @@ export interface CreateCompendiumRecordImageGenerationPromptContextInfoDto
 }
 
 export enum CompendiumTextGenerationType {
-  DescribeImage = 'describeImage',
+  DescribeCompendiumImage = 'describeCompendiumImage',
   CreateCompendiumRecordImageGenerationPrompt = 'createCompendiumRecordImageGenerationPrompt',
 }

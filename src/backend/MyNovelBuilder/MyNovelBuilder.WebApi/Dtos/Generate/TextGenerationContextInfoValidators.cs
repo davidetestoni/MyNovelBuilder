@@ -15,6 +15,7 @@ internal class TextGenerationContextInfoDtoValidator : AbstractValidator<TextGen
             v.Add(new EditCompendiumRecordContextInfoDtoValidator());
             v.Add(new SendChatMessageContextInfoDtoValidator());
             v.Add(new DescribeImageContextInfoDtoValidator());
+            v.Add(new DescribeCompendiumImageContextInfoDtoValidator());
             v.Add(new CreateCompendiumRecordImageGenerationPromptContextInfoDtoValidator());
             v.Add(new CreateStoryEventsContextInfoDtoValidator());
             v.Add(new TranslateNovelContextInfoDtoValidator());
@@ -106,11 +107,19 @@ internal class SendChatMessageContextInfoDtoValidator : AbstractValidator<SendCh
     }
 }
 
+internal class DescribeCompendiumImageContextInfoDtoValidator : AbstractValidator<DescribeCompendiumImageContextInfoDto>
+{
+    public DescribeCompendiumImageContextInfoDtoValidator()
+    {
+        RuleFor(x => x.CompendiumId).NotEmpty();
+        RuleFor(x => x.Instructions).MaximumLength(5_000);
+    }
+}
+
 internal class DescribeImageContextInfoDtoValidator : AbstractValidator<DescribeImageContextInfoDto>
 {
     public DescribeImageContextInfoDtoValidator()
     {
-        RuleFor(x => x.CompendiumId).NotEmpty();
         RuleFor(x => x.Instructions).MaximumLength(5_000);
     }
 }

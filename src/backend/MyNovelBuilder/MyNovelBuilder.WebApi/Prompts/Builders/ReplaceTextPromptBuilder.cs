@@ -6,7 +6,7 @@ namespace MyNovelBuilder.WebApi.Prompts.Builders;
 /// <summary>
 /// A prompt builder for text replacement.
 /// </summary>
-public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
+public class ReplaceTextPromptBuilder : NovelPromptBuilder<ReplaceTextContextInfoDto>
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ReplaceTextPromptBuilder"/> class.
@@ -17,13 +17,13 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
     }
 
     /// <inheritdoc />
-    public override PromptBuilder<ReplaceTextContextInfoDto> ReplacePlaceholders(
-        PromptBuilderContext<ReplaceTextContextInfoDto> context)
+    public override NovelPromptBuilder<ReplaceTextContextInfoDto> ReplacePlaceholders(
+        NovelPromptBuilderContext<ReplaceTextContextInfoDto> context)
     {
         base.ReplacePlaceholders(context);
         
-        var chapter = GetChapter(context.Prose, context.Client.ChapterIndex);
-        var section = GetSection(chapter, context.Client.SectionIndex);
+        var chapter = PromptBuilderUtils.GetChapter(context.Prose, context.Client.ChapterIndex);
+        var section = PromptBuilderUtils.GetSection(chapter, context.Client.SectionIndex);
         var text = section?.Text.StripHtml() ?? string.Empty;
         
         var textBefore = text[..context.Client.TextOffset].StripHtml();
@@ -32,26 +32,34 @@ public class ReplaceTextPromptBuilder : PromptBuilder<ReplaceTextContextInfoDto>
         var textToReplace = text.Substring(context.Client.TextOffset,
             context.Client.TextLength);
 
-        var recordsInContext = FilterRecordsInContext(context.CompendiumRecords, textToReplace);
-        recordsInContext.UnionWith(FilterRecordsInContext(context.CompendiumRecords, textBefore));
-        recordsInContext.UnionWith(FilterRecordsInContext(context.CompendiumRecords, textAfter));
+        var recordsInContext = PromptBuilderUtils.FilterRecordsInContext(
+            context.CompendiumRecords,
+            textToReplace);
+        recordsInContext.UnionWith(
+            PromptBuilderUtils.FilterRecordsInContext(context.CompendiumRecords, textBefore));
+        recordsInContext.UnionWith(
+            PromptBuilderUtils.FilterRecordsInContext(context.CompendiumRecords, textAfter));
         
         // If there are instructions, also search for records in them
         if (!string.IsNullOrWhiteSpace(context.Client.Instructions))
         {
             recordsInContext.UnionWith(
-                FilterRecordsInContext(context.CompendiumRecords, context.Client.Instructions));
+                PromptBuilderUtils.FilterRecordsInContext(
+                    context.CompendiumRecords,
+                    context.Client.Instructions));
         }
 
         var recordsInContextList = recordsInContext.ToList();
-        TrackIncludedRecords(context, recordsInContextList);
+        PromptBuilderUtils.TrackIncludedRecords(
+            context.IncludedCompendiumRecordIds,
+            recordsInContextList);
         
         Builder
             .Replace("{{textBefore}}", textBefore)
             .Replace("{{textAfter}}", textAfter)
             .Replace("{{instructions}}", context.Client.Instructions ?? string.Empty)
             .Replace("{{textToReplace}}", textToReplace)
-            .Replace("{{records}}", CreateCompendiumRecordsString(
+            .Replace("{{records}}", PromptBuilderUtils.CreateCompendiumRecordsString(
                 recordsInContextList, (
                     context.Prose,
                     context.Client.ChapterIndex,

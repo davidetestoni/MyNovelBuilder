@@ -120,10 +120,17 @@
                 <span>Delete</span>
               </button>
 
-              @if (zoomedMediaPrompt) {
+              @if (zoomedMediaPrompt || zoomedMediaDescription) {
                 <button type="button" (click)="copyZoomedMediaPrompt()">
                   <i class="pi pi-copy"></i>
-                  <span>Copy prompt</span>
+                  <span>Copy text</span>
+                </button>
+              }
+
+              @if (!isZoomedMediaPromptLoading && !zoomedMediaPrompt) {
+                <button type="button" (click)="describeZoomedMedia()">
+                  <i class="pi pi-eye"></i>
+                  <span>{{ zoomedMediaDescription ? 'Describe again' : 'Describe image' }}</span>
                 </button>
               }
             </div>
@@ -143,6 +150,13 @@
             <div class="zoomed-media-details-section">
               <span class="zoomed-media-details-label">Prompt</span>
               <span>{{ zoomedMediaPrompt }}</span>
+            </div>
+          }
+
+          @if (zoomedMediaDescription) {
+            <div class="zoomed-media-details-section">
+              <span class="zoomed-media-details-label">Description</span>
+              <span>{{ zoomedMediaDescription }}</span>
             </div>
           }
         </div>

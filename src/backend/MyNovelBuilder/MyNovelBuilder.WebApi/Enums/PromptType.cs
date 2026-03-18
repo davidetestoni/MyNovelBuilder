@@ -36,9 +36,9 @@ public enum PromptType
     SendChatMessage = 5,
     
     /// <summary>
-    /// A prompt for describing an image.
+    /// A prompt for describing an image with compendium context.
     /// </summary>
-    DescribeImage = 6,
+    DescribeCompendiumImage = 6,
 
     /// <summary>
     /// A prompt for generating an image prompt for a compendium record.
@@ -54,4 +54,9 @@ public enum PromptType
     /// A prompt for translating sections of a novel.
     /// </summary>
     TranslateNovel = 9,
+
+    /// <summary>
+    /// A prompt for describing an image without compendium context.
+    /// </summary>
+    DescribeImage = 10,
 }

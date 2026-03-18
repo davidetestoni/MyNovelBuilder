@@ -7,7 +7,10 @@ import {
 import { inject, Injectable } from '@angular/core';
 import { Observable, filter, map } from 'rxjs';
 import { environment } from '../../environment';
-import { DescribeImageRequestDto } from '../types/dtos/generate/describe-image-request.dto';
+import {
+  DescribeCompendiumImageRequestDto,
+  DescribeImageRequestDto,
+} from '../types/dtos/generate/describe-image-request.dto';
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
@@ -70,20 +73,29 @@ export class ApiGenerateTextService extends GenerateTextService {
     );
   }
 
-  describeImage(image: Blob, request: DescribeImageRequestDto): Observable<string> {
+  describeImage(
+    image: Blob,
+    request: DescribeImageRequestDto | DescribeCompendiumImageRequestDto,
+  ): Observable<string> {
     this.saveRecentlyUsedModel(request.model);
 
     const formData = new FormData();
     formData.append('image', image, 'image.png');
     formData.append('model', request.model);
     formData.append('promptId', request.promptId);
-    formData.append('compendiumId', request.compendiumId);
+    const endpoint = 'compendiumId' in request
+      ? 'describe-compendium-image'
+      : 'describe-image';
+
+    if ('compendiumId' in request) {
+      formData.append('compendiumId', request.compendiumId);
+    }
 
     if (request.instructions !== null && request.instructions.trim() !== '') {
       formData.append('instructions', request.instructions);
     }
 
-    return this.http.post(`${this.baseUrl}/generate/text/describe-image`, formData, {
+    return this.http.post(`${this.baseUrl}/generate/text/${endpoint}`, formData, {
       responseType: 'text' as const,
     });
   }

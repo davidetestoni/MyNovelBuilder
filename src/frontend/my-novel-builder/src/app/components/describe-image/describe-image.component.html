@@ -8,8 +8,8 @@
             <app-prompt-select
               id="promptId"
               formControlName="promptId"
-              [promptType]="PromptType.DescribeImage"
-              [storagePromptType]="PromptType.DescribeImage"
+              [promptType]="selectedPromptType"
+              [storagePromptType]="selectedPromptType"
               (optionsChanged)="onPromptOptionsChanged($event)"
               placeholder="Select a prompt"
               width="100%"

@@ -30,6 +30,7 @@ export class PromptsComponent implements OnInit, OnDestroy {
     PromptType.CreateCompendiumRecord,
     PromptType.EditCompendiumRecord,
     PromptType.SendChatMessage,
+    PromptType.DescribeCompendiumImage,
     PromptType.DescribeImage,
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
