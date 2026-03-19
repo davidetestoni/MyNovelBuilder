@@ -59,6 +59,7 @@ import { ImageSourceSelectorComponent } from '../image-source-selector/image-sou
 import { GenerateImageComponent } from '../generate-image/generate-image.component';
 import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import { marked } from 'marked';
 
 interface LastSelection {
   editor: Quill;
@@ -362,6 +363,20 @@ export class ProseEditorComponent implements OnDestroy {
     return innerText;
   }
 
+  private async convertMarkdownToHtml(markdown: string): Promise<string> {
+    const html = await marked.parse(markdown);
+    return typeof html === 'string' ? html : markdown;
+  }
+
+  private async insertGeneratedMarkdown(
+    editor: Quill,
+    offset: number,
+    markdown: string,
+  ): Promise<void> {
+    const html = await this.convertMarkdownToHtml(markdown);
+    editor.clipboard.dangerouslyPasteHTML(offset, html, 'user');
+  }
+
   async textToSpeech(chapterIndex: number, sectionIndex: number) {
     const timerLabel = `TTS section ${chapterIndex}-${sectionIndex}`;
     try {
@@ -537,7 +552,7 @@ export class ProseEditorComponent implements OnDestroy {
       },
     });
 
-    this.dialogRef?.onClose.subscribe((result: string | 'back' | undefined) => {
+    this.dialogRef?.onClose.subscribe(async (result: string | 'back' | undefined) => {
       if (result === 'back') {
         this.openGenerateTextDialog();
       } else if (result) {
@@ -550,7 +565,11 @@ export class ProseEditorComponent implements OnDestroy {
         const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
 
         // Append the generated text at the end of the range in the Quill editor.
-        selection.editor.insertText(contextInfo.textOffset, result);
+        await this.insertGeneratedMarkdown(
+          selection.editor,
+          contextInfo.textOffset,
+          result,
+        );
 
         const section =
           this.prose.chapters[contextInfo.chapterIndex].sections[
@@ -629,7 +648,7 @@ export class ProseEditorComponent implements OnDestroy {
       },
     });
 
-    this.dialogRef?.onClose.subscribe((result: string | 'back' | undefined) => {
+    this.dialogRef?.onClose.subscribe(async (result: string | 'back' | undefined) => {
       if (result === 'back') {
         this.openReplaceTextDialog();
       } else if (result) {
@@ -648,7 +667,19 @@ export class ProseEditorComponent implements OnDestroy {
           contextInfo.textOffset,
           contextInfo.textLength,
         );
-        selection.editor.insertText(contextInfo.textOffset, result);
+        await this.insertGeneratedMarkdown(
+          selection.editor,
+          contextInfo.textOffset,
+          result,
+        );
+
+        const section =
+          this.prose.chapters[contextInfo.chapterIndex].sections[
+            contextInfo.sectionIndex
+          ];
+
+        section.text = selection.editor.getSemanticHTML();
+        this.saveProse();
       }
     });
   }

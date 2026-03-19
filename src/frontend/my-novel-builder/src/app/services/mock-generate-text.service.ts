@@ -20,7 +20,9 @@ import { GenerateTextCompletion, GenerateTextService } from './generate-text.ser
 export class MockGenerateTextService extends GenerateTextService {
   generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>> {
     this.saveRecentlyUsedModel(request.model);
-    return mockedTextGenerationResponse('This is a generated text response');
+    return mockedTextGenerationResponse(
+      'The lantern cast a *soft amber glow* across the room, and the letter contained **one unmistakable warning**.',
+    );
   }
 
   generateTextCompletion(request: GenerateTextRequestDto): Observable<GenerateTextCompletion> {

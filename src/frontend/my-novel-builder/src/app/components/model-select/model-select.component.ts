@@ -95,6 +95,7 @@ export class ModelSelectComponent
 
   registerOnChange(fn: (value: string | null) => void): void {
     this.onChange = fn;
+    this.onChange(this.value);
   }
 
   registerOnTouched(fn: () => void): void {
