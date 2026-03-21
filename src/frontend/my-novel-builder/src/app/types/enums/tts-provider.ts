@@ -6,6 +6,7 @@ export enum TtsProvider {
   Kokoro = 'kokoro',
   NanoGpt = 'nanoGpt',
   PocketTts = 'pocketTts',
+  Qwen3 = 'qwen3',
   UnrealSpeech = 'unrealSpeech',
   VibeVoice = 'vibeVoice',
 }

@@ -44,6 +44,11 @@ public enum TtsProvider
     /// Chatterbox TTS provider.
     /// </summary>
     Chatterbox,
+
+    /// <summary>
+    /// Qwen3 TTS provider.
+    /// </summary>
+    Qwen3,
     
     /// <summary>
     /// NanoGPT TTS provider.
