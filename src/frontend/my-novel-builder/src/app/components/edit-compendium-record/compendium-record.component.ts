@@ -17,7 +17,10 @@ import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 import { CodeEditorComponent } from '../code-editor/code-editor.component';
-import { EditImageComponent } from '../edit-image/edit-image.component';
+import {
+  EditImageComponent,
+  EditImageComponentData,
+} from '../edit-image/edit-image.component';
 import { HttpClient } from '@angular/common/http';
 import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
 import { TooltipModule } from 'primeng/tooltip';
@@ -48,6 +51,9 @@ import {
   styleUrl: './compendium-record.component.scss',
 })
 export class CompendiumRecordComponent {
+  private readonly portraitImageSize = { width: 832, height: 1248 };
+  private readonly landscapeImageSize = { width: 1248, height: 832 };
+
   @Input() record!: CompendiumRecordDto;
   @Input() compendiumId!: string;
   @Output() updateRecord = new EventEmitter<CompendiumRecordDto>();
@@ -202,6 +208,8 @@ export class CompendiumRecordComponent {
   }
 
   private generateImage() {
+    const imageDimensions = this.getImageDimensionsForRecordType();
+
     this.dialogRef = this.dialogService.open(GenerateImageComponent, {
       header: 'Generate Image',
       width: '50vw',
@@ -215,6 +223,8 @@ export class CompendiumRecordComponent {
         enablePromptGeneration: true,
         compendiumId: this.compendiumId,
         compendiumRecordId: this.record.id,
+        width: imageDimensions.width,
+        height: imageDimensions.height,
       },
     });
 
@@ -255,8 +265,10 @@ export class CompendiumRecordComponent {
           closeOnEscape: true,
           modal: true,
           dismissableMask: true,
-          data: {
+          data: <EditImageComponentData>{
             image: file,
+            width: this.getImageDimensionsForRecordType().width,
+            height: this.getImageDimensionsForRecordType().height,
           },
         });
 
@@ -281,5 +293,16 @@ export class CompendiumRecordComponent {
       this.record.media = record.media;
       this.updateRecord.emit(this.record);
     });
+  }
+
+  private getImageDimensionsForRecordType(): {
+    width: number;
+    height: number;
+  } {
+    if (this.record.type === CompendiumRecordType.Place) {
+      return this.landscapeImageSize;
+    }
+
+    return this.portraitImageSize;
   }
 }

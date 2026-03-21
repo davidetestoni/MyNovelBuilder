@@ -41,6 +41,8 @@ export interface GenerateImageComponentData {
   enablePromptGeneration?: boolean;
   compendiumId?: string;
   compendiumRecordId?: string;
+  width?: number;
+  height?: number;
 }
 
 @Component({
@@ -58,6 +60,8 @@ export interface GenerateImageComponentData {
   styleUrl: './generate-image.component.scss',
 })
 export class GenerateImageComponent implements OnInit, OnDestroy {
+  private readonly defaultWidth = 832;
+  private readonly defaultHeight = 1248;
   private readonly storageContext = 'generate';
   private generationTimerId: ReturnType<typeof setInterval> | null = null;
   private generationStartedAt: number | null = null;
@@ -158,8 +162,8 @@ export class GenerateImageComponent implements OnInit, OnDestroy {
       .generateImage({
         modelId: model,
         prompt: prompt,
-        width: 832,
-        height: 1248,
+        width: this.data.width ?? this.defaultWidth,
+        height: this.data.height ?? this.defaultHeight,
       })
       .subscribe({
         next: (event: HttpEvent<Blob>) => {

@@ -17,6 +17,12 @@ import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { ModelSelectComponent } from '../model-select/model-select.component';
 
+export interface EditImageComponentData {
+  image?: File;
+  width?: number;
+  height?: number;
+}
+
 @Component({
   selector: 'app-edit-image',
   standalone: true,
@@ -63,6 +69,7 @@ export class EditImageComponent implements OnDestroy {
   height = 0;
 
   constructor() {
+    const data = (this.config.data ?? {}) as EditImageComponentData;
     const prompt =
       this.localStorageService.getNestedStringForKey(
         LocalStorageKey.LastImagePromptByContext,
@@ -77,19 +84,24 @@ export class EditImageComponent implements OnDestroy {
       this.formGroup.markAsDirty();
     }
 
-    if (this.config.data?.image) {
-      this.originalImage = this.config.data.image;
+    this.width = data.width ?? 0;
+    this.height = data.height ?? 0;
+
+    if (data.image) {
+      this.originalImage = data.image;
       const objectURL = URL.createObjectURL(this.originalImage!);
       this.originalImagePreview =
         this.sanitizer.bypassSecurityTrustUrl(objectURL);
 
-      // We need to get width and height from the image
-      const img = new Image();
-      img.onload = () => {
-        this.width = img.width;
-        this.height = img.height;
-      };
-      img.src = objectURL;
+      if (this.width === 0 || this.height === 0) {
+        // Fall back to the original image dimensions when no target size is provided.
+        const img = new Image();
+        img.onload = () => {
+          this.width = img.width;
+          this.height = img.height;
+        };
+        img.src = objectURL;
+      }
     }
   }
 
