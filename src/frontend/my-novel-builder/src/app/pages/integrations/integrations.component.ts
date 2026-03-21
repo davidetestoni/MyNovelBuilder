@@ -356,7 +356,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
 
   private getSelectedModel(selectedModelId?: string): TtsModelDto | undefined {
     const modelId = selectedModelId ?? this.integrationsForm.value.ttsModelId ?? '';
-    return this.availableTtsModels.find((model) => model.modelId === modelId);
+    return (
+      this.availableTtsModels.find((model) => model.modelId === modelId) ??
+      this.availableTtsModels[0]
+    );
   }
 
   private isValidModelId(modelId?: string | null): modelId is string {
