@@ -49,6 +49,11 @@ public enum TtsProvider
     /// Qwen3 TTS provider.
     /// </summary>
     Qwen3,
+
+    /// <summary>
+    /// OmniVoice TTS provider.
+    /// </summary>
+    OmniVoice,
     
     /// <summary>
     /// NanoGPT TTS provider.
