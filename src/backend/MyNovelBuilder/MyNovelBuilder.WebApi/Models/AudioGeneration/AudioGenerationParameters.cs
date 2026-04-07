@@ -1,4 +1,6 @@
 using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using MyNovelBuilder.WebApi.Enums;
 
 namespace MyNovelBuilder.WebApi.Models.AudioGeneration;
@@ -29,12 +31,25 @@ public class AudioGenerationParameters
     public required string VoiceId { get; set; }
 
     /// <summary>
+    /// Whether text emphasis with speech tags is enabled for this generation.
+    /// </summary>
+    public bool EnableTextEmphasis { get; set; }
+
+    /// <summary>
     /// Generates a hash based on the parameters to uniquely identify the generated audio.
     /// </summary>
     public string GetHash()
     {
-        var input = $"{Provider}:{ModelId}:{VoiceId}:{Text}";
-        var hashBytes = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(input));
+        var payload = new
+        {
+            Provider,
+            ModelId,
+            VoiceId,
+            EnableTextEmphasis,
+            Text
+        };
+        var input = JsonSerializer.Serialize(payload);
+        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
         return Convert.ToBase64String(hashBytes);
     }
 }

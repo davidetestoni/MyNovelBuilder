@@ -14,6 +14,7 @@ export interface IntegrationsConfigDto {
   imageGenerationProvider: ImageGenerationProvider;
   ttsModelId: string;
   ttsVoiceId: string;
+  ttsEnableTextEmphasis: boolean;
 }
 
 export interface UpdateIntegrationsConfigDto {
@@ -28,4 +29,5 @@ export interface UpdateIntegrationsConfigDto {
   imageGenerationProvider?: ImageGenerationProvider | null;
   ttsModelId?: string | null;
   ttsVoiceId?: string | null;
+  ttsEnableTextEmphasis?: boolean | null;
 }

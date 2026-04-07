@@ -5,6 +5,7 @@ export const mockedAvailableModels: TtsModelDto[] = [
   {
     modelId: 'model-1',
     name: 'Model 1',
+    supportsTextEmphasis: false,
     voices: [
       {
         voiceId: '1',
@@ -23,6 +24,7 @@ export const mockedAvailableModels: TtsModelDto[] = [
   {
     modelId: 'model-2',
     name: 'Model 2',
+    supportsTextEmphasis: false,
     voices: [
       {
         voiceId: '3',

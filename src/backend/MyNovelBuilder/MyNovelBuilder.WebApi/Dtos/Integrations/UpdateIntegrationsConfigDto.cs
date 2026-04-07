@@ -62,6 +62,11 @@ public class UpdateIntegrationsConfigDto
     /// The TTS voice ID to use for text-to-speech generation.
     /// </summary>
     public string? TtsVoiceId { get; init; }
+
+    /// <summary>
+    /// Whether text emphasis with speech tags should be enabled for TTS generation.
+    /// </summary>
+    public bool? TtsEnableTextEmphasis { get; init; }
 }
 
 internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIntegrationsConfigDto>

@@ -32,7 +32,8 @@ public class IntegrationsControllerIntegrationTests(
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TtsProvider = TtsProvider.PocketTts,
             TtsModelId = "test-model-id",
-            TtsVoiceId = "test-voice-id"
+            TtsVoiceId = "test-voice-id",
+            TtsEnableTextEmphasis = true
         };
         await IntegrationsService.UpdateConfigAsync(config);
 
@@ -50,6 +51,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(TtsProvider.PocketTts, dto.TtsProvider);
         Assert.Equal(config.TtsModelId, dto.TtsModelId);
         Assert.Equal(config.TtsVoiceId, dto.TtsVoiceId);
+        Assert.True(dto.TtsEnableTextEmphasis);
     }
 
     [Fact]
@@ -63,7 +65,8 @@ public class IntegrationsControllerIntegrationTests(
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TtsProvider = TtsProvider.PocketTts,
             TtsModelId = "test-model-id",
-            TtsVoiceId = "test-voice-id"
+            TtsVoiceId = "test-voice-id",
+            TtsEnableTextEmphasis = false
         };
         await IntegrationsService.UpdateConfigAsync(config);
         var updateDto = new UpdateIntegrationsConfigDto
@@ -73,7 +76,8 @@ public class IntegrationsControllerIntegrationTests(
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TtsProvider = TtsProvider.Kokoro,
             TtsModelId = "new-model",
-            TtsVoiceId = "new-voice"
+            TtsVoiceId = "new-voice",
+            TtsEnableTextEmphasis = true
         };
 
         // Act
@@ -90,6 +94,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(updateDto.TtsProvider, updatedConfig.TtsProvider);
         Assert.Equal(updateDto.TtsModelId, updatedConfig.TtsModelId);
         Assert.Equal(updateDto.TtsVoiceId, updatedConfig.TtsVoiceId);
+        Assert.Equal(updateDto.TtsEnableTextEmphasis, updatedConfig.TtsEnableTextEmphasis);
     }
 
     public Task DisposeAsync()

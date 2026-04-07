@@ -53,6 +53,10 @@ public class NanoGptTtsService : ITtsService
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
+    /// <inheritdoc />
+    public bool SupportsTextEmphasis(string? modelId) =>
+        string.Equals(modelId, _elevenLabsV3Model, StringComparison.OrdinalIgnoreCase);
+
     /// <summary></summary>
     public NanoGptTtsService(
         HttpClient httpClient,

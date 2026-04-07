@@ -112,7 +112,8 @@ public class GenerateAudioController : ControllerBase
             Text = dto.Message,
             Provider = effectiveProvider,
             ModelId = effectiveModelId,
-            VoiceId = effectiveVoiceId
+            VoiceId = effectiveVoiceId,
+            EnableTextEmphasis = config.TtsEnableTextEmphasis
         };
         
         _logger.LogInformation("Generating audio for text: {Text}", dto.Message);
@@ -125,17 +126,20 @@ public class GenerateAudioController : ControllerBase
             return File(cachedAudioBytes, "audio/wav", "audio.wav");
         }
         
-        // Pass a factory so TTS services that do not emphasize text can stay no-op
-        // without forcing resolution of the configured text-generation service.
-        var emphasizedText = await ttsService.EmphasizeTextAsync(
-            ttsRequest,
-            GetTextGenerationServiceAsync,
-            cancellationToken);
-        ttsRequest.Message = emphasizedText.Trim();
-        
-        if (!string.Equals(ttsRequest.Message, dto.Message, StringComparison.Ordinal))
+        if (config.TtsEnableTextEmphasis && ttsService.SupportsTextEmphasis(effectiveModelId))
         {
-            _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
+            // Pass a factory so TTS services that do not emphasize text can stay no-op
+            // without forcing resolution of the configured text-generation service.
+            var emphasizedText = await ttsService.EmphasizeTextAsync(
+                ttsRequest,
+                GetTextGenerationServiceAsync,
+                cancellationToken);
+            ttsRequest.Message = emphasizedText.Trim();
+            
+            if (!string.Equals(ttsRequest.Message, dto.Message, StringComparison.Ordinal))
+            {
+                _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
+            }
         }
         
         var ttsResponse = await ttsService.GenerateAudioAsync(ttsRequest, cancellationToken);
@@ -178,7 +182,8 @@ public class GenerateAudioController : ControllerBase
             Text = dto.Message,
             Provider = effectiveProvider,
             ModelId = effectiveModelId,
-            VoiceId = effectiveVoiceId
+            VoiceId = effectiveVoiceId,
+            EnableTextEmphasis = config.TtsEnableTextEmphasis
         };
         
         _logger.LogInformation("Generating audio stream for text: {Text}", dto.Message);
@@ -191,17 +196,20 @@ public class GenerateAudioController : ControllerBase
             return File(new MemoryStream(cachedAudioBytes), "audio/wav", "audio.wav");
         }
         
-        // Pass a factory so TTS services that do not emphasize text can stay no-op
-        // without forcing resolution of the configured text-generation service.
-        var emphasizedText = await ttsService.EmphasizeTextAsync(
-            ttsRequest,
-            GetTextGenerationServiceAsync,
-            cancellationToken);
-        ttsRequest.Message = emphasizedText.Trim();
-        
-        if (!string.Equals(ttsRequest.Message, dto.Message, StringComparison.Ordinal))
+        if (config.TtsEnableTextEmphasis && ttsService.SupportsTextEmphasis(effectiveModelId))
         {
-            _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
+            // Pass a factory so TTS services that do not emphasize text can stay no-op
+            // without forcing resolution of the configured text-generation service.
+            var emphasizedText = await ttsService.EmphasizeTextAsync(
+                ttsRequest,
+                GetTextGenerationServiceAsync,
+                cancellationToken);
+            ttsRequest.Message = emphasizedText.Trim();
+            
+            if (!string.Equals(ttsRequest.Message, dto.Message, StringComparison.Ordinal))
+            {
+                _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
+            }
         }
         
         Stream audioStream;
@@ -253,8 +261,13 @@ public class GenerateAudioController : ControllerBase
         var ttsService = await GetTtsServiceAsync(provider, cancellationToken);
         
         var models = await ttsService.GetModelsAsync(cancellationToken);
+        var modelsWithFeatures = models.Select(model =>
+        {
+            model.SupportsTextEmphasis = ttsService.SupportsTextEmphasis(model.ModelId);
+            return model;
+        });
         
-        return Ok(models);
+        return Ok(modelsWithFeatures);
     }
 
     /// <summary>

@@ -86,6 +86,19 @@
       }
     }
 
+    .tts-emphasis-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tts-emphasis-toggle-label {
+      display: inline;
+      margin-bottom: 0;
+      line-height: 1.2;
+      cursor: pointer;
+    }
+
     .manage-custom-voices-btn {
       text-decoration: none;
       color: inherit;

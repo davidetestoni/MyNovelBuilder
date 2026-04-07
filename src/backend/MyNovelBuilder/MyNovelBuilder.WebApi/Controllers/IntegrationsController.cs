@@ -47,6 +47,7 @@ public class IntegrationsController : ControllerBase
             ImageGenerationProvider = config.ImageGenerationProvider,
             TtsModelId = config.TtsModelId,
             TtsVoiceId = config.TtsVoiceId,
+            TtsEnableTextEmphasis = config.TtsEnableTextEmphasis,
         };
     }
 
@@ -118,6 +119,11 @@ public class IntegrationsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(dto.TtsVoiceId))
         {
             config.TtsVoiceId = dto.TtsVoiceId;
+        }
+
+        if (dto.TtsEnableTextEmphasis.HasValue)
+        {
+            config.TtsEnableTextEmphasis = dto.TtsEnableTextEmphasis.Value;
         }
         
         await _integrationsService.UpdateConfigAsync(config, cancellationToken);

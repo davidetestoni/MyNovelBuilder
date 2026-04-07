@@ -61,4 +61,9 @@ public class IntegrationsConfig
     /// The TTS voice ID to use for text-to-speech generation.
     /// </summary>
     public string TtsVoiceId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether text should be emphasized with speech tags before TTS generation.
+    /// </summary>
+    public bool TtsEnableTextEmphasis { get; set; }
 }

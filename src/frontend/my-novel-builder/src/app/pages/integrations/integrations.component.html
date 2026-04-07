@@ -219,6 +219,21 @@
         </div>
       }
 
+      @if (supportsSelectedTtsModelTextEmphasis) {
+        <div class="form-group">
+          <div class="tts-emphasis-toggle">
+            <p-checkbox
+              inputId="ttsEnableTextEmphasis"
+              formControlName="ttsEnableTextEmphasis"
+              [binary]="true"
+            />
+            <label class="tts-emphasis-toggle-label" for="ttsEnableTextEmphasis">
+              Emphasize text with speech tags
+            </label>
+          </div>
+        </div>
+      }
+
       @if (ttsVoiceOptions.length > 0) {
         <div class="form-group">
           <label for="ttsVoiceId">Select TTS Voice:</label>

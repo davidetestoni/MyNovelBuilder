@@ -78,6 +78,9 @@ public class OmniVoiceTtsService : ITtsService
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
+    /// <inheritdoc />
+    public bool SupportsTextEmphasis(string? modelId) => true;
+
     /// <summary></summary>
     public OmniVoiceTtsService(
         HttpClient httpClient,

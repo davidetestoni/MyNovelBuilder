@@ -62,4 +62,9 @@ public class IntegrationsConfigDto
     /// The TTS voice ID to use for text-to-speech generation.
     /// </summary>
     public required string TtsVoiceId { get; init; } 
+
+    /// <summary>
+    /// Whether text emphasis with speech tags is enabled for TTS generation.
+    /// </summary>
+    public required bool TtsEnableTextEmphasis { get; init; }
 }

@@ -15,4 +15,5 @@ export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   imageGenerationProvider: ImageGenerationProvider.DeApi,
   ttsModelId: 'model-1',
   ttsVoiceId: 'voice-1',
+  ttsEnableTextEmphasis: false,
 };

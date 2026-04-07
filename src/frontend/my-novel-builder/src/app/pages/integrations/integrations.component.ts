@@ -16,6 +16,7 @@ import { ButtonModule } from 'primeng/button';
 import { PasswordModule } from 'primeng/password';
 import { TtsProvider } from '../../types/enums/tts-provider';
 import { SelectModule } from 'primeng/select';
+import { CheckboxModule } from 'primeng/checkbox';
 import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
 import { ImageGenerationProvider } from '../../types/enums/image-generation-provider';
 import { GenerateAudioService } from '../../services/generate-audio.service';
@@ -32,6 +33,7 @@ import { WritingLanguage } from '../../types/enums/writing-language';
     ButtonModule,
     PasswordModule,
     SelectModule,
+    CheckboxModule,
   ],
   templateUrl: './integrations.component.html',
   styleUrl: './integrations.component.scss',
@@ -57,6 +59,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     nanoGptApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
+    ttsEnableTextEmphasis: new FormControl<boolean>(false),
     imageGenerationProvider: new FormControl<ImageGenerationProvider>(
       ImageGenerationProvider.DeApi,
     ),
@@ -134,6 +137,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.integrationsForm.patchValue({
           textGenerationProvider: config.textGenerationProvider,
           ttsProvider: config.ttsProvider,
+          ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
           imageGenerationProvider: config.imageGenerationProvider,
         }, { emitEvent: false });
 
@@ -173,6 +177,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     })) ?? [];
   }
 
+  protected get supportsSelectedTtsModelTextEmphasis(): boolean {
+    return this.getSelectedModel()?.supportsTextEmphasis ?? false;
+  }
+
   private loadTtsModels(
     provider: TtsProvider,
     selectedModelId?: string,
@@ -199,6 +207,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           this.integrationsForm.value.ttsModelId ?? undefined,
           selectedVoiceId,
         );
+        this.syncTtsEmphasisToggle();
       },
       error: (error) => {
         console.error('Error loading TTS voices:', error);
@@ -207,6 +216,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           {
             ttsModelId: '',
             ttsVoiceId: '',
+            ttsEnableTextEmphasis: false,
           },
           { emitEvent: false },
         );
@@ -342,6 +352,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       },
       { emitEvent: false },
     );
+
+    this.syncTtsEmphasisToggle(selectedModelId);
   }
 
   private resolveModelIdForVoice(selectedVoiceId?: string): string | undefined {
@@ -360,6 +372,20 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       this.availableTtsModels.find((model) => model.modelId === modelId) ??
       this.availableTtsModels[0]
     );
+  }
+
+  private syncTtsEmphasisToggle(selectedModelId?: string): void {
+    const supportsTextEmphasis =
+      this.getSelectedModel(selectedModelId)?.supportsTextEmphasis ?? false;
+
+    if (!supportsTextEmphasis && this.integrationsForm.value.ttsEnableTextEmphasis) {
+      this.integrationsForm.patchValue(
+        {
+          ttsEnableTextEmphasis: false,
+        },
+        { emitEvent: false },
+      );
+    }
   }
 
   private isValidModelId(modelId?: string | null): modelId is string {
@@ -405,6 +431,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
+      ttsEnableTextEmphasis:
+        this.supportsSelectedTtsModelTextEmphasis
+          ? (this.integrationsForm.value.ttsEnableTextEmphasis ?? false)
+          : false,
       imageGenerationProvider:
         this.integrationsForm.value.imageGenerationProvider,
     };

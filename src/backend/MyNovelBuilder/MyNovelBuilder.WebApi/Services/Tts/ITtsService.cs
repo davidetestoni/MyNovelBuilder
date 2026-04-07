@@ -17,6 +17,11 @@ public interface ITtsService
     AudioFormat OutputAudioFormat { get; }
 
     /// <summary>
+    /// Indicates whether the specified model supports text emphasis tags.
+    /// </summary>
+    bool SupportsTextEmphasis(string? modelId) => false;
+
+    /// <summary>
     /// Emphasize the given text for this TTS service.
     /// Services that do not support emphasis should return the original text unchanged.
     /// </summary>
