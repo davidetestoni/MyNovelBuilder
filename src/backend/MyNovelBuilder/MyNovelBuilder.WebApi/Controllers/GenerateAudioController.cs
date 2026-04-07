@@ -271,6 +271,51 @@ public class GenerateAudioController : ControllerBase
     }
 
     /// <summary>
+    /// Get available TTS providers with feature support metadata.
+    /// </summary>
+    [HttpGet("tts/providers")]
+    public ActionResult<IEnumerable<TtsProviderDto>> GetProviders()
+    {
+        var providers = Enum.GetValues<TtsProvider>()
+            .Select(provider => new TtsProviderDto
+            {
+                Provider = provider,
+                SupportsVoiceDesign =
+                    _serviceProvider.GetKeyedService<ITtsService>(provider)?.SupportsVoiceDesign() ?? false
+            });
+
+        return Ok(providers);
+    }
+
+    /// <summary>
+    /// Generate a voice design WAV sample using the selected or configured TTS provider.
+    /// </summary>
+    [HttpPost("tts/voice-design")]
+    public async Task<ActionResult> VoiceDesignAsync(
+        VoiceDesignRequestDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var effectiveProvider = dto.Provider;
+        var ttsService = await GetTtsServiceAsync(effectiveProvider, cancellationToken);
+
+        try
+        {
+            var wavBytes = await ttsService.VoiceDesignAsync(
+                dto.Prompt,
+                dto.Language,
+                dto.VoiceDescription,
+                cancellationToken);
+            return File(wavBytes, "audio/wav", "voice-design.wav");
+        }
+        catch (NotSupportedException)
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                $"Voice design is not supported by the selected TTS provider: {effectiveProvider}");
+        }
+    }
+
+    /// <summary>
     /// Get the NanoGPT USD balance.
     /// </summary>
     [HttpGet("balance-usd")]

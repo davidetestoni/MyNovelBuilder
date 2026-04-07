@@ -22,6 +22,11 @@ public interface ITtsService
     bool SupportsTextEmphasis(string? modelId) => false;
 
     /// <summary>
+    /// Indicates whether this TTS service supports voice design.
+    /// </summary>
+    bool SupportsVoiceDesign() => false;
+
+    /// <summary>
     /// Emphasize the given text for this TTS service.
     /// Services that do not support emphasis should return the original text unchanged.
     /// </summary>
@@ -31,6 +36,19 @@ public interface ITtsService
         CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Message);
+    }
+
+    /// <summary>
+    /// Generate a WAV sample from a voice design prompt and voice description.
+    /// Services that do not support voice design should throw <see cref="NotSupportedException" />.
+    /// </summary>
+    Task<byte[]> VoiceDesignAsync(
+        string prompt,
+        WritingLanguage language,
+        string voiceDescription,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException("Voice design is not supported by this TTS service.");
     }
     
     /// <summary>

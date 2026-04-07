@@ -3,6 +3,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { TtsRequestDto } from '../types/dtos/generate/tts-request.dto';
 import { TtsModelDto } from '../types/dtos/generate/tts-model.dto';
+import { TtsProviderDto } from '../types/dtos/generate/tts-provider.dto';
+import { VoiceDesignRequestDto } from '../types/dtos/generate/voice-design-request.dto';
 import { TtsProvider } from '../types/enums/tts-provider';
 import { mockedAvailableModels } from './mocks/mock-generate-audio.data';
 import { mockObservable } from './mocks/mock-utils';
@@ -30,6 +32,19 @@ export class MockGenerateAudioService extends GenerateAudioService {
 
   getAvailableModels(_ttsProvider: TtsProvider | null): Observable<TtsModelDto[]> {
     return mockObservable(mockedAvailableModels);
+  }
+
+  getAvailableProviders(): Observable<TtsProviderDto[]> {
+    return mockObservable([
+      {
+        provider: TtsProvider.OmniVoice,
+        supportsVoiceDesign: true,
+      },
+    ]);
+  }
+
+  voiceDesign(_request: VoiceDesignRequestDto): Observable<Blob> {
+    return mockObservable(new Blob(['mock-audio-data'], { type: 'audio/wav' }));
   }
 
   getBalanceUsd(_provider: TtsProvider): Observable<number | null> {

@@ -81,6 +81,9 @@ public class OmniVoiceTtsService : ITtsService
     /// <inheritdoc />
     public bool SupportsTextEmphasis(string? modelId) => true;
 
+    /// <inheritdoc />
+    public bool SupportsVoiceDesign() => true;
+
     /// <summary></summary>
     public OmniVoiceTtsService(
         HttpClient httpClient,
@@ -116,6 +119,27 @@ public class OmniVoiceTtsService : ITtsService
                 }
             ],
             cancellationToken: cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<byte[]> VoiceDesignAsync(
+        string prompt,
+        WritingLanguage language,
+        string voiceDescription,
+        CancellationToken cancellationToken = default)
+    {
+        using var formData = new MultipartFormDataContent();
+        formData.Add(new StringContent(NormalizeText(prompt)), "prompt");
+        formData.Add(new StringContent(MapToOmniVoiceLanguageCode(language)), "language");
+        formData.Add(new StringContent(voiceDescription.Trim()), "voice_description");
+
+        using var response = await _httpClient.PostAsync(
+            "voice-design",
+            formData,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 
     private static string NormalizeText(string input)
