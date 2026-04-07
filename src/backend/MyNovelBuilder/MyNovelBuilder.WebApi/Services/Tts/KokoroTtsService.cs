@@ -83,9 +83,6 @@ public class KokoroTtsService : ITtsService
     ];
     
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
-
-    /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
     
     /// <summary></summary>

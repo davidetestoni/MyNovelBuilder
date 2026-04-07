@@ -5,9 +5,7 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.AudioGeneration;
-using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Models.Tts;
-using MyNovelBuilder.WebApi.Prompts;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
@@ -90,30 +88,6 @@ public class GenerateAudioController : ControllerBase
         return textGenerationService;
     }
     
-    private async Task<string> GetEmphasizedTextAsync(
-        string inputText,
-        CancellationToken cancellationToken = default)
-    {
-        var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
-        return await textGenerationService
-            .GenerateAsync(
-                "anthropic/claude-sonnet-4", // TODO: Make configurable
-                [
-                    new PromptMessage
-                    {
-                        Role = PromptMessageRole.System,
-                        Message = SystemPrompts.EmphasizeText
-                    },
-                    new PromptMessage
-                    {
-                        Role = PromptMessageRole.User,
-                        Message = $"Here's the text that needs to be enriched:\n{inputText}"
-                    }
-                ],
-                cancellationToken: cancellationToken
-            );
-    }
-    
     /// <summary>
     /// Generate audio from text.
     /// </summary>
@@ -151,12 +125,16 @@ public class GenerateAudioController : ControllerBase
             return File(cachedAudioBytes, "audio/wav", "audio.wav");
         }
         
-        // Emphasis
-        if (ttsService.SupportsEmphasisTags(effectiveModelId, effectiveVoiceId))
+        // Pass a factory so TTS services that do not emphasize text can stay no-op
+        // without forcing resolution of the configured text-generation service.
+        var emphasizedText = await ttsService.EmphasizeTextAsync(
+            ttsRequest,
+            GetTextGenerationServiceAsync,
+            cancellationToken);
+        ttsRequest.Message = emphasizedText.Trim();
+        
+        if (!string.Equals(ttsRequest.Message, dto.Message, StringComparison.Ordinal))
         {
-            var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
-            ttsRequest.Message = emphasizedText.Trim();
-            
             _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
         }
         
@@ -213,12 +191,16 @@ public class GenerateAudioController : ControllerBase
             return File(new MemoryStream(cachedAudioBytes), "audio/wav", "audio.wav");
         }
         
-        // Emphasis
-        if (ttsService.SupportsEmphasisTags(effectiveModelId, effectiveVoiceId))
+        // Pass a factory so TTS services that do not emphasize text can stay no-op
+        // without forcing resolution of the configured text-generation service.
+        var emphasizedText = await ttsService.EmphasizeTextAsync(
+            ttsRequest,
+            GetTextGenerationServiceAsync,
+            cancellationToken);
+        ttsRequest.Message = emphasizedText.Trim();
+        
+        if (!string.Equals(ttsRequest.Message, dto.Message, StringComparison.Ordinal))
         {
-            var emphasizedText = await GetEmphasizedTextAsync(ttsRequest.Message, cancellationToken);
-            ttsRequest.Message = emphasizedText.Trim();
-            
             _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
         }
         

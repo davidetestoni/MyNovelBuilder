@@ -1,6 +1,8 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Models.Tts;
+using MyNovelBuilder.WebApi.Services.TextGeneration;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
@@ -10,14 +12,21 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public interface ITtsService
 {
     /// <summary>
-    /// Indicates if the TTS service supports emphasis tags in the text for the given voice/model.
-    /// </summary>
-    bool SupportsEmphasisTags(string? modelId, string voiceId);
-    
-    /// <summary>
     /// The audio format of the generated output.
     /// </summary>
     AudioFormat OutputAudioFormat { get; }
+
+    /// <summary>
+    /// Emphasize the given text for this TTS service.
+    /// Services that do not support emphasis should return the original text unchanged.
+    /// </summary>
+    Task<string> EmphasizeTextAsync(
+        TtsRequest request,
+        Func<CancellationToken, ValueTask<ITextGenerationService>> textGenerationServiceFactory,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(request.Message);
+    }
     
     /// <summary>
     /// Generate audio bytes from the given text.

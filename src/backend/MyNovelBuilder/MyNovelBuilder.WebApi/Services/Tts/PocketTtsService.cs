@@ -23,9 +23,6 @@ public class PocketTtsService : ITtsService
             Language = WritingLanguage.English
         }).ToArray();
 
-    /// <inheritdoc/>
-    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
-    
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
     

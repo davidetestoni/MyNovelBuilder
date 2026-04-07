@@ -20,9 +20,6 @@ public class VibeVoiceTtsService : ITtsService
     // TODO: Read this from config
     private const string _host = "localhost:8000";
     
-    /// <inheritdoc/>
-    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
-    
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 

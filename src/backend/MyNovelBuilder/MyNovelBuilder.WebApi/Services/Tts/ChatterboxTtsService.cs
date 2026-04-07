@@ -28,9 +28,6 @@ public class ChatterboxTtsService : ITtsService
     private const string _defaultLanguageCode = "en";
 
     /// <inheritdoc />
-    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
-
-    /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
     /// <summary></summary>

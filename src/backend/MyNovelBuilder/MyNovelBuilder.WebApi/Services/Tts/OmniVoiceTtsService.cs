@@ -7,8 +7,10 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Models.Tts;
 using MyNovelBuilder.WebApi.Options;
+using MyNovelBuilder.WebApi.Services.TextGeneration;
 using NAudio.Wave;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
@@ -27,9 +29,51 @@ public class OmniVoiceTtsService : ITtsService
     private const string _defaultLanguageCode = "en";
     private const string _defaultModelId = "k2-fsa/OmniVoice";
     private const string _defaultModelName = "OmniVoice";
-
-    /// <inheritdoc />
-    public bool SupportsEmphasisTags(string? modelId, string voiceId) => false;
+    // TODO: Make the emphasis model configurable.
+    private const string _emphasisModel = "anthropic/claude-sonnet-4";
+    // TODO: Make the emphasis prompt user-configurable.
+    private const string _emphasisPrompt =
+        """
+        You are an audio labeling specialist for OmniVoice.
+        You will be given a text that needs to be enriched with the most fitting emphasis tags in the appropriate places. The goal is to insert tags where it makes sense in the text without altering the existing text in any other way.
+        You MUST reply with ONLY the enriched text (nothing else).
+        
+        You may ONLY use these exact tags:
+        [laughter]
+        [sigh]
+        [confirmation-en]
+        [question-en]
+        [question-ah]
+        [question-oh]
+        [question-ei]
+        [question-yi]
+        [surprise-ah]
+        [surprise-oh]
+        [surprise-wa]
+        [surprise-yo]
+        [dissatisfaction-hnn]
+        
+        Rules:
+        Do not invent any other tags.
+        Do not rewrite, paraphrase, translate, summarize, or reorder the text.
+        Do not overdo it. Add tags sparingly and only where they clearly improve performance.
+        Preserve all original words, punctuation, spacing, and line breaks except where a tag is inserted.
+        If no tag is clearly appropriate, return the text unchanged.
+        
+        Prefer:
+        [laughter] for amusement or light mockery.
+        [sigh] for weariness, relief, resignation, or sadness.
+        [confirmation-en] for affirmative responses or clear agreement.
+        [question-*] only where the line should sound interrogative.
+        [surprise-*] only for short bursts of surprise or sudden realization.
+        [dissatisfaction-hnn] for mild displeasure, doubt, or disapproval.
+        
+        Here's an example of a base text:
+        Are you really leaving already? Oh, I didn't expect that. Well, if that's your choice, then fine.
+        
+        and its enriched version:
+        [question-en] Are you really leaving already? [surprise-oh] Oh, I didn't expect that. [dissatisfaction-hnn] Well, if that's your choice, then fine.
+        """;
 
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
@@ -45,6 +89,30 @@ public class OmniVoiceTtsService : ITtsService
         _voicesFolder = Path.Combine(storageOptions.Value.DataFolder, "voices");
         _httpClient.BaseAddress = new Uri("http://localhost:8000");
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> EmphasizeTextAsync(
+        TtsRequest request,
+        Func<CancellationToken, ValueTask<ITextGenerationService>> textGenerationServiceFactory,
+        CancellationToken cancellationToken = default)
+    {
+        var textGenerationService = await textGenerationServiceFactory(cancellationToken);
+        return await textGenerationService.GenerateAsync(
+            _emphasisModel,
+            [
+                new PromptMessage
+                {
+                    Role = PromptMessageRole.System,
+                    Message = _emphasisPrompt
+                },
+                new PromptMessage
+                {
+                    Role = PromptMessageRole.User,
+                    Message = $"Here's the text that needs to be enriched:\n{request.Message}"
+                }
+            ],
+            cancellationToken: cancellationToken);
     }
 
     private static string NormalizeText(string input)
