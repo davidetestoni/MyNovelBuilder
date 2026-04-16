@@ -81,6 +81,21 @@ export class LocalStorageService {
   }
 
   /**
+   * Gets a string array from a map-like object stored in localStorage
+   * @param storageKey The key for the localStorage item
+   * @param mapKey The key within the stored map object
+   * @returns The parsed string array or an empty array if not found/invalid
+   */
+  getNestedStringArrayForKey(storageKey: string, mapKey: string): string[] {
+    const value = this.getNestedObjectForKey<unknown>(storageKey, mapKey);
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.filter((item): item is string => typeof item === 'string');
+  }
+
+  /**
    * Sets a typed value in a map-like object stored in localStorage
    * @param storageKey The key for the localStorage item
    * @param mapKey The key within the stored map object
@@ -90,6 +105,31 @@ export class LocalStorageService {
     const map = this.getObjectForKey<Record<string, string>>(storageKey) ?? {};
     map[mapKey] = JSON.stringify(value);
     this.setObjectForKey(storageKey, map);
+  }
+
+  /**
+   * Pushes a string value to the front of a nested recent-items list
+   * @param storageKey The key for the localStorage item
+   * @param mapKey The key within the stored map object
+   * @param value The value to insert
+   * @param maxItems The maximum number of items to keep
+   */
+  pushNestedRecentStringForKey(
+    storageKey: string,
+    mapKey: string,
+    value: string,
+    maxItems = 5,
+  ): void {
+    if (!value.trim()) {
+      return;
+    }
+
+    const items = this.getNestedStringArrayForKey(storageKey, mapKey).filter(
+      (item) => item !== value,
+    );
+    items.unshift(value);
+
+    this.setNestedObjectForKey(storageKey, mapKey, items.slice(0, maxItems));
   }
 
   /**

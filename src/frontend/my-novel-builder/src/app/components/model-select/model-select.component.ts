@@ -47,6 +47,7 @@ export class ModelSelectComponent
   @Input() disabled = false;
   @Input() filter = true;
   @Input() appendTo: string | null = 'body';
+  @Input() storageContext: string | null = null;
 
   private readonly generateTextService = inject(GenerateTextService);
   private readonly generateImageService = inject(GenerateImageService);
@@ -108,6 +109,7 @@ export class ModelSelectComponent
 
   onValueChange(value: string | null): void {
     this.value = value;
+    this.saveTextModelForContext(value);
     this.onChange(value);
     this.onTouched();
   }
@@ -157,9 +159,11 @@ export class ModelSelectComponent
       return true;
     });
 
-    this.setTextOptions(
-      this.generateTextService.sortModels(filteredModels.map((model) => model.id)),
+    const sortedModels = this.generateTextService.sortModels(
+      filteredModels.map((model) => model.id),
     );
+
+    this.setTextOptions(this.sortTextModelsForContext(sortedModels));
   }
 
   private setImageOptions(models: ImageGenerationModelInfoDto[]): void {
@@ -184,6 +188,24 @@ export class ModelSelectComponent
 
     if (this.value && this.options.some((option) => option.value === this.value)) {
       return;
+    }
+
+    if (
+      (this.capability === 'text' ||
+        this.capability === 'vision' ||
+        this.capability === 'structuredOutput') &&
+      this.storageContext
+    ) {
+      const recentModels = this.getRecentTextModelsForContext();
+      const storedModel = recentModels.find((model) =>
+        this.options.some((option) => option.value === model),
+      );
+
+      if (storedModel) {
+        this.value = storedModel;
+        this.onChange(this.value);
+        return;
+      }
     }
 
     if (this.capability === 'imageGeneration' || this.capability === 'imageEdit') {
@@ -212,6 +234,49 @@ export class ModelSelectComponent
   private isValidOption(value: string | null): boolean {
     return (
       value !== null && this.options.some((option) => option.value === value)
+    );
+  }
+
+  private sortTextModelsForContext(models: string[]): string[] {
+    const recentModels = this.getRecentTextModelsForContext().filter((model) =>
+      models.includes(model),
+    );
+
+    if (recentModels.length === 0) {
+      return models;
+    }
+
+    const remainingModels = models.filter((model) => !recentModels.includes(model));
+    return [...recentModels, ...remainingModels];
+  }
+
+  private getRecentTextModelsForContext(): string[] {
+    if (!this.storageContext) {
+      return [];
+    }
+
+    return this.localStorageService.getNestedStringArrayForKey(
+      LocalStorageKey.RecentTextModelsByContext,
+      this.storageContext,
+    );
+  }
+
+  private saveTextModelForContext(value: string | null): void {
+    if (
+      value === null ||
+      !this.storageContext ||
+      (this.capability !== 'text' &&
+        this.capability !== 'vision' &&
+        this.capability !== 'structuredOutput')
+    ) {
+      return;
+    }
+
+    this.localStorageService.pushNestedRecentStringForKey(
+      LocalStorageKey.RecentTextModelsByContext,
+      this.storageContext,
+      value,
+      5,
     );
   }
 }

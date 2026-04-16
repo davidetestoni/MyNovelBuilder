@@ -34,6 +34,7 @@ export class PromptsComponent implements OnInit, OnDestroy {
     PromptType.DescribeImage,
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
+    PromptType.SuggestStoryDevelopments,
     PromptType.TranslateNovel,
     PromptType.PrepareImmersiveTts,
   ];

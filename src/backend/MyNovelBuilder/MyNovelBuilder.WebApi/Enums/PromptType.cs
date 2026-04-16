@@ -64,4 +64,9 @@ public enum PromptType
     /// A prompt for preparing immersive multi-speaker TTS chunks for prose playback.
     /// </summary>
     PrepareImmersiveTts = 11,
+
+    /// <summary>
+    /// A prompt for suggesting story developments at the current cursor position.
+    /// </summary>
+    SuggestStoryDevelopments = 12,
 }

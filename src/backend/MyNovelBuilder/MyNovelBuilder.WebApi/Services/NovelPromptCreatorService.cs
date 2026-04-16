@@ -58,6 +58,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             PromptType.SendChatMessage => typeof(SendChatMessageContextInfoDto),
             PromptType.PrepareImmersiveTts => typeof(PrepareImmersiveTtsContextInfoDto),
             PromptType.CreateStoryEvents => typeof(CreateStoryEventsContextInfoDto),
+            PromptType.SuggestStoryDevelopments => typeof(SuggestStoryDevelopmentsContextInfoDto),
             PromptType.TranslateNovel => typeof(TranslateNovelContextInfoDto),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "This prompt type is not valid for novel prompt generation.")
@@ -92,6 +93,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             SendChatMessageContextInfoDto m => ProcessPrompt(m, prompt, novel, prose, records),
             PrepareImmersiveTtsContextInfoDto i => ProcessPrompt(i, prompt, novel, prose, records),
             CreateStoryEventsContextInfoDto s => ProcessPrompt(s, prompt, novel, prose, records),
+            SuggestStoryDevelopmentsContextInfoDto s => ProcessPrompt(s, prompt, novel, prose, records),
             TranslateNovelContextInfoDto t => ProcessPrompt(t, prompt, novel, prose, records),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
                 "The prompt context is invalid.")
@@ -167,6 +169,15 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                     }).ToString(),
                 CreateStoryEventsContextInfoDto s => new CreateStoryEventsPromptBuilder(message.Message)
                     .ReplacePlaceholders(new NovelPromptBuilderContext<CreateStoryEventsContextInfoDto>
+                    {
+                        Client = s,
+                        Novel = novel,
+                        Prose = prose,
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
+                    }).ToString(),
+                SuggestStoryDevelopmentsContextInfoDto s => new SuggestStoryDevelopmentsPromptBuilder(message.Message)
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<SuggestStoryDevelopmentsContextInfoDto>
                     {
                         Client = s,
                         Novel = novel,

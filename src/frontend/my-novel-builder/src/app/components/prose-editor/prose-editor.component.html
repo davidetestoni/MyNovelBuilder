@@ -194,6 +194,16 @@
         <i class="icon icon-ai"> </i>
         <span>Generate</span>
       </div>
+      @if (lastSelection != null && lastSelection.range.length === 0) {
+        <div
+          pTooltip="Suggestions"
+          tooltipPosition="bottom"
+          class="tooltip-control icon-only"
+          (mousedown)="openGenerateStorySuggestionsDialog()"
+        >
+          <i class="pi pi-lightbulb"> </i>
+        </div>
+      }
       @if (lastSelection != null && lastSelection.range.length > 0) {
         <div
           pTooltip="Replace"

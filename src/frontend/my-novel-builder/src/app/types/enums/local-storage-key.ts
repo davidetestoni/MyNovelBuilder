@@ -5,6 +5,7 @@ export enum LocalStorageKey {
     LastImageModel = 'lastImageModel',
     LastImagePromptByContext = 'lastImagePromptByContext',
     LastImageModelByContext = 'lastImageModelByContext',
+    RecentTextModelsByContext = 'recentTextModelsByContext',
     MediaFolderRowsPerPage = 'mediaFolderRowsPerPage',
     VoiceDesignDraft = 'voiceDesignDraft',
 }

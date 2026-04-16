@@ -18,6 +18,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 [JsonDerivedType(typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto), typeDiscriminator: "createCompendiumRecordImageGenerationPrompt")]
 [JsonDerivedType(typeof(PrepareImmersiveTtsContextInfoDto), typeDiscriminator: "prepareImmersiveTts")]
 [JsonDerivedType(typeof(CreateStoryEventsContextInfoDto), typeDiscriminator: "createStoryEvents")]
+[JsonDerivedType(typeof(SuggestStoryDevelopmentsContextInfoDto), typeDiscriminator: "suggestStoryDevelopments")]
 [JsonDerivedType(typeof(TranslateNovelContextInfoDto), typeDiscriminator: "translateNovel")]
 public abstract class TextGenerationContextInfoDto
 {
@@ -372,6 +373,50 @@ public class CreateStoryEventsContextInfoDto : NovelTextGenerationContextInfoDto
     {
         SchemaName = "story_events",
         JsonSchema = _storyEventsJsonSchema,
+        Strict = true
+    };
+}
+
+/// <summary>
+/// DTO for the context information for suggesting story developments.
+/// </summary>
+public class SuggestStoryDevelopmentsContextInfoDto : NovelTextGenerationContextInfoDto
+{
+    private const string _storySuggestionsJsonSchema = """
+                                                       {
+                                                         "type": "array",
+                                                         "items": {
+                                                           "type": "object",
+                                                           "properties": {
+                                                             "title": { "type": "string" },
+                                                             "description": { "type": "string" }
+                                                           },
+                                                           "required": ["title", "description"],
+                                                           "additionalProperties": false
+                                                         }
+                                                       }
+                                                       """;
+
+    /// <summary>
+    /// The index of the chapter.
+    /// </summary>
+    public int ChapterIndex { get; set; }
+
+    /// <summary>
+    /// The index of the section.
+    /// </summary>
+    public int SectionIndex { get; set; }
+
+    /// <summary>
+    /// The text offset of the current cursor location.
+    /// </summary>
+    public int TextOffset { get; set; }
+
+    /// <inheritdoc />
+    public override StructuredOutputOptions? GetStructuredOutputOptions() => new()
+    {
+        SchemaName = "story_development_suggestions",
+        JsonSchema = _storySuggestionsJsonSchema,
         Strict = true
     };
 }

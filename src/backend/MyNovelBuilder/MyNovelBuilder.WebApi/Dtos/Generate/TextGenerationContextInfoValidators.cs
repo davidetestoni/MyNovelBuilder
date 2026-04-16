@@ -19,6 +19,7 @@ internal class TextGenerationContextInfoDtoValidator : AbstractValidator<TextGen
             v.Add(new CreateCompendiumRecordImageGenerationPromptContextInfoDtoValidator());
             v.Add(new PrepareImmersiveTtsContextInfoDtoValidator());
             v.Add(new CreateStoryEventsContextInfoDtoValidator());
+            v.Add(new SuggestStoryDevelopmentsContextInfoDtoValidator());
             v.Add(new TranslateNovelContextInfoDtoValidator());
         });
     }
@@ -154,6 +155,18 @@ internal class PrepareImmersiveTtsContextInfoDtoValidator : AbstractValidator<Pr
         RuleFor(x => x.SectionIndex).GreaterThanOrEqualTo(0);
         RuleFor(x => x.Provider).IsInEnum();
         RuleFor(x => x.TtsModelId).NotEmpty().MaximumLength(200);
+    }
+}
+
+internal class SuggestStoryDevelopmentsContextInfoDtoValidator
+    : AbstractValidator<SuggestStoryDevelopmentsContextInfoDto>
+{
+    public SuggestStoryDevelopmentsContextInfoDtoValidator()
+    {
+        RuleFor(x => x.NovelId).NotEmpty();
+        RuleFor(x => x.ChapterIndex).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.SectionIndex).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.TextOffset).GreaterThanOrEqualTo(0);
     }
 }
 

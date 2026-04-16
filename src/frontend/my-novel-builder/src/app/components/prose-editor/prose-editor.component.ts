@@ -64,6 +64,16 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { ImmersiveTtsRequestDto } from '../../types/dtos/generate/immersive-tts-request.dto';
 import { IntegrationsService } from '../../services/integrations.service';
+import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
+import {
+  RecordOverridesEditorComponent,
+  RecordOverridesEditorComponentData,
+} from '../record-overrides-editor/record-overrides-editor.component';
+import {
+  GenerateStorySuggestionsDialogComponent,
+  GenerateStorySuggestionsDialogData,
+  GenerateStorySuggestionsDialogResult,
+} from '../generate-story-suggestions-dialog/generate-story-suggestions-dialog.component';
 
 interface LastSelection {
   editor: Quill;
@@ -73,11 +83,11 @@ interface LastSelection {
   sectionIndex: number;
 }
 
-import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
-import {
-  RecordOverridesEditorComponent,
-  RecordOverridesEditorComponentData,
-} from '../record-overrides-editor/record-overrides-editor.component';
+interface GenerateTextDialogPrefill {
+  initialPromptId?: string;
+  initialModel?: string;
+  initialInstructions?: string;
+}
 
 @Component({
   selector: 'app-prose-editor',
@@ -644,7 +654,7 @@ export class ProseEditorComponent implements OnDestroy {
     });
   }
 
-  openGenerateTextDialog() {
+  openGenerateTextDialog(prefill: GenerateTextDialogPrefill = {}) {
     const selection = this.requireLastSelection();
     if (!selection) {
       return;
@@ -683,6 +693,9 @@ export class ProseEditorComponent implements OnDestroy {
           instructions: null,
         },
         instructionsRequired: true, // This should be defined by the prompt
+        initialPromptId: prefill.initialPromptId,
+        initialModel: prefill.initialModel,
+        initialInstructions: prefill.initialInstructions,
       },
     });
 
@@ -710,16 +723,20 @@ export class ProseEditorComponent implements OnDestroy {
     });
 
     this.dialogRef?.onClose.subscribe(async (result: string | 'back' | undefined) => {
+      const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
+
       if (result === 'back') {
-        this.openGenerateTextDialog();
+        this.openGenerateTextDialog({
+          initialPromptId: request.promptId,
+          initialModel: request.model,
+          initialInstructions: contextInfo.instructions ?? undefined,
+        });
       } else if (result) {
         const selection = this.lastSelection;
         if (!selection) {
           this.toastr.error('Selection is no longer available.');
           return;
         }
-
-        const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
 
         // Append the generated text at the end of the range in the Quill editor.
         await this.insertGeneratedMarkdown(
@@ -737,6 +754,63 @@ export class ProseEditorComponent implements OnDestroy {
         this.saveProse();
       }
     });
+  }
+
+  openGenerateStorySuggestionsDialog() {
+    const selection = this.requireLastSelection();
+    if (!selection) {
+      return;
+    }
+
+    if (selection.range.length > 0) {
+      this.toastr.error('Story suggestions are only available with no text selected.');
+      return;
+    }
+
+    const prompts = this.prompts.filter(
+      (p) => p.type === PromptType.SuggestStoryDevelopments,
+    );
+
+    if (prompts.length === 0) {
+      this.toastr.error('No story suggestion prompts available');
+      return;
+    }
+
+    this.saveProse();
+
+    this.dialogRef = this.dialogService.open(
+      GenerateStorySuggestionsDialogComponent,
+      {
+        header: 'Story Suggestions',
+        width: '50vw',
+        contentStyle: { overflow: 'auto' },
+        baseZIndex: 10000,
+        modal: true,
+        closable: true,
+        closeOnEscape: true,
+        dismissableMask: true,
+        data: <GenerateStorySuggestionsDialogData>{
+          prompts,
+          novelId: this.novelId,
+          chapterIndex: selection.chapterIndex,
+          sectionIndex: selection.sectionIndex,
+          textOffset: selection.range.index,
+        },
+      },
+    );
+
+    this.dialogRef?.onClose.subscribe(
+      (result: GenerateStorySuggestionsDialogResult | undefined) => {
+        if (!result) {
+          return;
+        }
+
+        this.openGenerateTextDialog({
+          initialModel: result.model,
+          initialInstructions: result.instructions,
+        });
+      },
+    );
   }
 
   openReplaceTextDialog() {

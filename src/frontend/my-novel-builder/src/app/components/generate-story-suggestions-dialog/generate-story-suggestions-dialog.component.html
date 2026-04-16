@@ -1,0 +1,76 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="promptId" class="form-field-label">Prompt *</label>
+        <app-prompt-select
+          id="promptId"
+          formControlName="promptId"
+          [prompts]="data.prompts"
+          [promptType]="promptType"
+          [storagePromptType]="promptType"
+          (optionsChanged)="onPromptOptionsChanged($event)"
+          placeholder="Select a prompt"
+          width="100%"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="model" class="form-field-label">Model *</label>
+        <app-model-select
+          id="model"
+          formControlName="model"
+          capability="structuredOutput"
+          storageContext="suggestStoryDevelopments"
+          placeholder="Select a model"
+          width="100%"
+        />
+        <small class="model-help-text">
+          Only models that support structured outputs are shown.
+        </small>
+      </div>
+
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <p-button
+            label="Generate"
+            variant="text"
+            (click)="generate()"
+            [disabled]="formGroup.invalid || isGenerating || promptCount === 0"
+          />
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+@if (isGenerating) {
+  <div class="generation-status">Generating story suggestions...</div>
+}
+
+@if (generationError) {
+  <div class="generation-error">{{ generationError }}</div>
+  @if (rawOutput) {
+    <pre class="generation-raw-output">{{ rawOutput }}</pre>
+  }
+}
+
+@if (generatedSuggestions.length > 0) {
+  <div class="generated-results">
+    <div class="generated-results-title">Choose a suggestion</div>
+    <div class="story-suggestion-grid">
+      @for (suggestion of generatedSuggestions; track suggestion.title + $index) {
+        <button
+          type="button"
+          class="story-suggestion-card"
+          (click)="selectSuggestion(suggestion)"
+        >
+          <div class="story-suggestion-title">{{ suggestion.title }}</div>
+          <div class="story-suggestion-description">
+            {{ suggestion.description }}
+          </div>
+        </button>
+      }
+    </div>
+  </div>
+}

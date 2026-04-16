@@ -30,6 +30,10 @@ export interface GenerateTextComponentData {
   contextInfo: TextGenerationContextInfoDto;
   instructionsRequired: boolean;
   showInstructions?: boolean;
+  initialPromptId?: string;
+  initialModel?: string;
+  initialInstructions?: string;
+  storageContext?: string;
 }
 
 @Component({
@@ -55,6 +59,7 @@ export class GenerateTextComponent {
   data!: GenerateTextComponentData;
   instructionsRequired = false;
   showInstructions = false;
+  storageContext = '';
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
   readonly localStorageService: LocalStorageService =
@@ -72,6 +77,8 @@ export class GenerateTextComponent {
     if (this.data.prompts.length === 0) {
       throw new Error('No prompts provided');
     }
+
+    this.storageContext = this.data.storageContext ?? this.data.prompts[0].type;
 
     // Get the most recent instructions for the prompt type
     const promptType = this.data.prompts[0].type;
@@ -111,6 +118,20 @@ export class GenerateTextComponent {
     }
 
     this.formGroup.get('instructions')!.updateValueAndValidity();
+
+    if (this.data.initialPromptId) {
+      this.formGroup.patchValue({ promptId: this.data.initialPromptId });
+    }
+
+    if (this.data.initialModel) {
+      this.formGroup.patchValue({ model: this.data.initialModel });
+    }
+
+    if (this.data.initialInstructions !== undefined) {
+      this.formGroup.patchValue({
+        instructions: this.data.initialInstructions,
+      });
+    }
   }
 
   accept(): void {
@@ -118,6 +139,8 @@ export class GenerateTextComponent {
     if (request === null) {
       return;
     }
+
+    this.saveRecentModelForContext();
 
     // Save the instructions for the prompt type
     const promptType = this.data.prompts[0].type;
@@ -149,6 +172,8 @@ export class GenerateTextComponent {
     if (request === null) {
       return;
     }
+
+    this.saveRecentModelForContext();
 
     this.dialogService.open(GenerateTextPreviewComponent, {
       header: 'Prompt Preview',
@@ -193,5 +218,20 @@ export class GenerateTextComponent {
   getPromptName(promptId: string): string {
     const prompt = this.data.prompts.find((p) => p.id === promptId);
     return prompt ? prompt.name : '';
+  }
+
+  private saveRecentModelForContext(): void {
+    const model = this.formGroup.get('model')!.value;
+
+    if (!this.storageContext || model === null || model.trim() === '') {
+      return;
+    }
+
+    this.localStorageService.pushNestedRecentStringForKey(
+      LocalStorageKey.RecentTextModelsByContext,
+      this.storageContext,
+      model,
+      5,
+    );
   }
 }

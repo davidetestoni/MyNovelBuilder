@@ -49,6 +49,7 @@ export class PromptComponent {
     PromptType.DescribeImage,
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
+    PromptType.SuggestStoryDevelopments,
     PromptType.TranslateNovel,
     PromptType.PrepareImmersiveTts,
   ];
@@ -219,6 +220,29 @@ export class PromptComponent {
         description: 'Information from relevant compendium records.',
       },
     ],
+    [PromptType.SuggestStoryDevelopments]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content leading up to the current cursor position.',
+      },
+      {
+        keyword: '{{currentChapterTitle}}',
+        description: 'The title of the chapter containing the current cursor.',
+      },
+      {
+        keyword: '{{currentChapterEvents}}',
+        description:
+          'A JSON array of the current chapter story events, if any are defined.',
+      },
+      {
+        keyword: '{{sectionSummary}}',
+        description: 'The summary of the current section, if one exists.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
     [PromptType.TranslateNovel]: [
       {
         keyword: '{{targetLanguage}}',
@@ -329,6 +353,7 @@ export class PromptComponent {
       PromptType.EditCompendiumRecord,
       PromptType.SendChatMessage,
       PromptType.CreateStoryEvents,
+      PromptType.SuggestStoryDevelopments,
       PromptType.TranslateNovel,
       PromptType.PrepareImmersiveTts,
     ].includes(promptType);
