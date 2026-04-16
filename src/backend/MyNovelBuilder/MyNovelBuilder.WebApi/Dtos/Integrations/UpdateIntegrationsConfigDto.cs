@@ -1,6 +1,5 @@
 using FluentValidation;
 using MyNovelBuilder.WebApi.Enums;
-
 namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 
 /// <summary>
@@ -42,6 +41,11 @@ public class UpdateIntegrationsConfigDto
     /// The Text Generation provider to use to generate text.
     /// </summary>
     public TextGenerationProvider? TextGenerationProvider { get; init; }
+
+    /// <summary>
+    /// The default text generation model ID.
+    /// </summary>
+    public string? TextGenerationModelId { get; init; }
     
     /// <summary>
     /// The Text-to-Speech provider to use to generate speech.
@@ -67,6 +71,16 @@ public class UpdateIntegrationsConfigDto
     /// Whether text emphasis with speech tags should be enabled for TTS generation.
     /// </summary>
     public bool? TtsEnableTextEmphasis { get; init; }
+
+    /// <summary>
+    /// Whether immersive multi-speaker TTS playback should be enabled when available.
+    /// </summary>
+    public bool? TtsEnableImmersive { get; init; }
+
+    /// <summary>
+    /// Global pause in milliseconds between immersive TTS chunks.
+    /// </summary>
+    public int? TtsImmersivePauseMs { get; init; }
 }
 
 internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIntegrationsConfigDto>
@@ -79,6 +93,7 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.UnrealSpeechApiKey).MaximumLength(500);
         RuleFor(x => x.DeApiApiKey).MaximumLength(500);
         RuleFor(x => x.NanoGptApiKey).MaximumLength(500);
+        RuleFor(x => x.TextGenerationModelId).MaximumLength(200);
         RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.TtsVoiceId).MaximumLength(200);
 
@@ -91,5 +106,10 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.ImageGenerationProvider)
             .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
             .WithMessage("Image generation provider is invalid.");
+
+        RuleFor(x => x.TtsImmersivePauseMs)
+            .GreaterThanOrEqualTo(0)
+            .LessThanOrEqualTo(10_000)
+            .When(x => x.TtsImmersivePauseMs.HasValue);
     }
 }

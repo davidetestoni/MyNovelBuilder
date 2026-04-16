@@ -1,4 +1,5 @@
 import { CompendiumRecordType } from '../../enums/compendium-record-type';
+import { CharacterVoiceAssignmentDto } from './character-voice-assignment.dto';
 import { CompendiumRecordMediaDto } from './compendium-record-media.dto';
 
 export interface CompendiumRecordDto {
@@ -13,4 +14,5 @@ export interface CompendiumRecordDto {
   media: CompendiumRecordMediaDto[];
   compendiumId: string;
   alwaysIncluded: boolean;
+  characterVoiceAssignments: CharacterVoiceAssignmentDto[];
 }

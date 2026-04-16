@@ -13,6 +13,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
+import { SelectModule } from 'primeng/select';
 import { ConfirmationService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
@@ -30,6 +31,14 @@ import {
   ImageSourceSelectorComponent,
   ImageSourceSelectorComponentData,
 } from '../image-source-selector/image-source-selector.component';
+import { GenerateAudioService } from '../../services/generate-audio.service';
+import { IntegrationsService } from '../../services/integrations.service';
+import { TtsProvider } from '../../types/enums/tts-provider';
+import { TtsModelDto } from '../../types/dtos/generate/tts-model.dto';
+import { CharacterVoiceAssignmentDto } from '../../types/dtos/compendium-record/character-voice-assignment.dto';
+import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
+import { WritingLanguage } from '../../types/enums/writing-language';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-compendium-record',
@@ -41,6 +50,7 @@ import {
     TextareaModule,
     ButtonModule,
     CheckboxModule,
+    SelectModule,
     ConfirmDialogModule,
     TooltipModule,
     AliasSuggestionsComponent,
@@ -63,7 +73,19 @@ export class CompendiumRecordComponent {
   private confirmationService = inject(ConfirmationService);
   private http = inject(HttpClient);
   private toastr = inject(ToastrService);
+  private generateAudioService = inject(GenerateAudioService);
+  private integrationsService = inject(IntegrationsService);
   private dialogRef: DynamicDialogRef | null = null;
+  protected readonly TtsProvider = TtsProvider;
+
+  protected selectedVoiceProvider: TtsProvider | null = null;
+  protected availableVoiceModels: TtsModelDto[] = [];
+  protected selectedVoiceModelId = '';
+  protected selectedVoiceId = '';
+  protected isLoadingVoiceModels = false;
+  protected isPreviewingVoice = false;
+  protected previewingVoiceKey: string | null = null;
+  private previewPlayer: StreamingWavPlayer | null = null;
 
   recordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -75,6 +97,59 @@ export class CompendiumRecordComponent {
   ];
 
   CompendiumRecordType = CompendiumRecordType;
+
+  get voiceProviderOptions(): { label: string; value: TtsProvider }[] {
+    return Object.values(TtsProvider).map((provider) => ({
+      label: this.formatTtsProviderLabel(provider),
+      value: provider,
+    }));
+  }
+
+  get voiceModelOptions(): { label: string; value: string }[] {
+    return this.availableVoiceModels.map((model) => ({
+      label: model.name,
+      value: model.modelId,
+    }));
+  }
+
+  get voiceOptions(): { label: string; value: string }[] {
+    return (
+      this.availableVoiceModels
+        .find((model) => model.modelId === this.selectedVoiceModelId)
+        ?.voices.map((voice) => ({
+          label: voice.name,
+          value: voice.voiceId,
+        })) ?? []
+    );
+  }
+
+  ngOnInit(): void {
+    this.record.characterVoiceAssignments ??= [];
+
+    if (this.record.type !== CompendiumRecordType.Character) {
+      return;
+    }
+
+    this.integrationsService.getIntegrationsConfig().subscribe({
+      next: (config) => {
+        const matchingAssignment = this.record.characterVoiceAssignments.find(
+          (assignment) =>
+            assignment.provider === config.ttsProvider &&
+            assignment.modelId === config.ttsModelId,
+        );
+
+        this.selectedVoiceProvider = config.ttsProvider;
+        this.loadVoiceModels(
+          config.ttsProvider,
+          matchingAssignment?.modelId ?? config.ttsModelId,
+          matchingAssignment?.voiceId,
+        );
+      },
+      error: (error) => {
+        console.error('Error loading integrations config:', error);
+      },
+    });
+  }
 
   addAlias(alias: string): void {
     const currentAliasesValue = this.record.aliases || '';
@@ -91,6 +166,8 @@ export class CompendiumRecordComponent {
   }
 
   ngOnDestroy(): void {
+    this.previewPlayer?.stop();
+
     if (this.dialogRef) {
       this.dialogRef.close();
     }
@@ -98,6 +175,153 @@ export class CompendiumRecordComponent {
 
   onBlur(): void {
     this.updateRecord.emit(this.record);
+  }
+
+  protected onVoiceProviderChange(): void {
+    if (!this.selectedVoiceProvider) {
+      this.availableVoiceModels = [];
+      this.selectedVoiceModelId = '';
+      this.selectedVoiceId = '';
+      return;
+    }
+
+    const currentAssignment = this.record.characterVoiceAssignments.find(
+      (assignment) => assignment.provider === this.selectedVoiceProvider,
+    );
+
+    this.loadVoiceModels(
+      this.selectedVoiceProvider,
+      currentAssignment?.modelId,
+      currentAssignment?.voiceId,
+    );
+  }
+
+  protected onVoiceModelChange(): void {
+    const selectedModel = this.availableVoiceModels.find(
+      (model) => model.modelId === this.selectedVoiceModelId,
+    );
+    this.selectedVoiceId = selectedModel?.voices[0]?.voiceId ?? '';
+  }
+
+  protected saveCharacterVoiceAssignment(): void {
+    if (
+      this.record.type !== CompendiumRecordType.Character ||
+      !this.selectedVoiceProvider ||
+      !this.selectedVoiceModelId ||
+      !this.selectedVoiceId
+    ) {
+      return;
+    }
+
+    const selectedVoiceName =
+      this.availableVoiceModels
+        .find((model) => model.modelId === this.selectedVoiceModelId)
+        ?.voices.find((voice) => voice.voiceId === this.selectedVoiceId)?.name ??
+      null;
+
+    const nextAssignment: CharacterVoiceAssignmentDto = {
+      provider: this.selectedVoiceProvider,
+      modelId: this.selectedVoiceModelId,
+      voiceId: this.selectedVoiceId,
+      voiceName: selectedVoiceName,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.record.characterVoiceAssignments = [
+      ...this.record.characterVoiceAssignments.filter(
+        (assignment) =>
+          !(
+            assignment.provider === nextAssignment.provider &&
+            assignment.modelId === nextAssignment.modelId
+          ),
+      ),
+      nextAssignment,
+    ].sort((a, b) =>
+      `${a.provider}:${a.modelId}`.localeCompare(`${b.provider}:${b.modelId}`),
+    );
+
+    this.onBlur();
+  }
+
+  protected async previewSelectedVoice(): Promise<void> {
+    if (
+      !this.selectedVoiceProvider ||
+      !this.selectedVoiceModelId ||
+      !this.selectedVoiceId
+    ) {
+      this.toastr.error('Please select a TTS voice first.');
+      return;
+    }
+
+    const language = this.getVoiceLanguage(
+      this.availableVoiceModels,
+      this.selectedVoiceModelId,
+      this.selectedVoiceId,
+    );
+
+    await this.previewVoice(
+      this.selectedVoiceProvider,
+      this.selectedVoiceModelId,
+      this.selectedVoiceId,
+      language,
+    );
+  }
+
+  protected async previewCharacterVoiceAssignment(
+    assignment: CharacterVoiceAssignmentDto,
+  ): Promise<void> {
+    const language = await this.resolveVoiceLanguage(
+      assignment.provider,
+      assignment.modelId,
+      assignment.voiceId,
+    );
+
+    await this.previewVoice(
+      assignment.provider,
+      assignment.modelId,
+      assignment.voiceId,
+      language,
+    );
+  }
+
+  protected isPreviewingAssignment(
+    assignment: CharacterVoiceAssignmentDto,
+  ): boolean {
+    return (
+      this.isPreviewingVoice &&
+      this.previewingVoiceKey ===
+        this.getVoicePreviewKey(
+          assignment.provider,
+          assignment.modelId,
+          assignment.voiceId,
+        )
+    );
+  }
+
+  protected get isPreviewingSelectedVoice(): boolean {
+    return (
+      this.isPreviewingVoice &&
+      this.previewingVoiceKey ===
+        this.getVoicePreviewKey(
+          this.selectedVoiceProvider,
+          this.selectedVoiceModelId,
+          this.selectedVoiceId,
+        )
+    );
+  }
+
+  protected removeCharacterVoiceAssignment(
+    assignment: CharacterVoiceAssignmentDto,
+  ): void {
+    this.record.characterVoiceAssignments =
+      this.record.characterVoiceAssignments.filter(
+        (item) =>
+          !(
+            item.provider === assignment.provider &&
+            item.modelId === assignment.modelId
+          ),
+      );
+    this.onBlur();
   }
 
   setCurrentImage(imageId: string): void {
@@ -247,6 +471,171 @@ export class CompendiumRecordComponent {
           });
       }
     });
+  }
+
+  private loadVoiceModels(
+    provider: TtsProvider,
+    preferredModelId?: string,
+    preferredVoiceId?: string,
+  ): void {
+    this.isLoadingVoiceModels = true;
+
+    this.generateAudioService.getAvailableModels(provider).subscribe({
+      next: (models) => {
+        this.availableVoiceModels = models;
+        this.selectedVoiceModelId =
+          (preferredModelId &&
+            models.some((model) => model.modelId === preferredModelId) &&
+            preferredModelId) ||
+          models[0]?.modelId ||
+          '';
+
+        const selectedModel = models.find(
+          (model) => model.modelId === this.selectedVoiceModelId,
+        );
+        this.selectedVoiceId =
+          (preferredVoiceId &&
+            selectedModel?.voices.some(
+              (voice) => voice.voiceId === preferredVoiceId,
+            ) &&
+            preferredVoiceId) ||
+          selectedModel?.voices[0]?.voiceId ||
+          '';
+        this.isLoadingVoiceModels = false;
+      },
+      error: (error) => {
+        console.error('Error loading TTS models for character voices:', error);
+        this.availableVoiceModels = [];
+        this.selectedVoiceModelId = '';
+        this.selectedVoiceId = '';
+        this.isLoadingVoiceModels = false;
+      },
+    });
+  }
+
+  protected formatTtsProviderLabel(provider: TtsProvider): string {
+    return provider
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .replace('Api', 'API')
+      .replace('Gpt', 'GPT');
+  }
+
+  private async previewVoice(
+    provider: TtsProvider,
+    modelId: string,
+    voiceId: string,
+    language: WritingLanguage,
+  ): Promise<void> {
+    if (this.isPreviewingVoice) {
+      return;
+    }
+
+    const timerLabel = `Character voice preview (${provider}:${modelId}:${voiceId})`;
+
+    this.isPreviewingVoice = true;
+    this.previewingVoiceKey = this.getVoicePreviewKey(provider, modelId, voiceId);
+    this.previewPlayer?.stop();
+    this.previewPlayer = new StreamingWavPlayer();
+
+    try {
+      console.time(timerLabel);
+
+      const response = await this.generateAudioService.textToSpeechStreamResponse({
+        message: this.getPreviewSampleText(language),
+        modelId,
+        voiceId,
+        provider,
+      });
+
+      const stream = response.body;
+      if (!stream) {
+        this.toastr.error('No audio stream was returned.');
+        return;
+      }
+
+      const reader = stream.getReader();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        if (value) {
+          this.previewPlayer.addChunk(value);
+        }
+      }
+    } catch (error) {
+      console.error('Character voice preview streaming error:', error);
+      this.toastr.error(
+        'Could not preview voice. Please verify your TTS configuration.',
+      );
+    } finally {
+      console.timeEnd(timerLabel);
+      this.isPreviewingVoice = false;
+      this.previewingVoiceKey = null;
+    }
+  }
+
+  private async resolveVoiceLanguage(
+    provider: TtsProvider,
+    modelId: string,
+    voiceId: string,
+  ): Promise<WritingLanguage> {
+    if (this.selectedVoiceProvider === provider) {
+      return this.getVoiceLanguage(this.availableVoiceModels, modelId, voiceId);
+    }
+
+    try {
+      const models = await firstValueFrom(
+        this.generateAudioService.getAvailableModels(provider),
+      );
+
+      return this.getVoiceLanguage(models, modelId, voiceId);
+    } catch (error) {
+      console.error('Error loading TTS models for character voice preview:', error);
+      return WritingLanguage.English;
+    }
+  }
+
+  private getVoiceLanguage(
+    models: TtsModelDto[],
+    modelId: string,
+    voiceId: string,
+  ): WritingLanguage {
+    return (
+      models
+        .find((model) => model.modelId === modelId)
+        ?.voices.find((voice) => voice.voiceId === voiceId)?.language ??
+      WritingLanguage.English
+    );
+  }
+
+  private getVoicePreviewKey(
+    provider: TtsProvider | null,
+    modelId: string,
+    voiceId: string,
+  ): string {
+    return `${provider ?? ''}:${modelId}:${voiceId}`;
+  }
+
+  private getPreviewSampleText(language: WritingLanguage): string {
+    switch (language) {
+      case WritingLanguage.Italian:
+        return "Ciao, questo è un breve esempio per ascoltare l'anteprima della voce selezionata.";
+      case WritingLanguage.French:
+        return 'Bonjour, ceci est un court exemple pour prévisualiser la voix sélectionnée.';
+      case WritingLanguage.Spanish:
+        return 'Hola, este es un ejemplo rápido para previsualizar la voz seleccionada.';
+      case WritingLanguage.German:
+        return 'Hallo, dies ist ein kurzes Beispiel, um die ausgewählte Stimme vorzuhören.';
+      case WritingLanguage.Russian:
+        return 'Привет, это короткий пример для предварительного прослушивания выбранного голоса.';
+      case WritingLanguage.English:
+      default:
+        return 'Hello, this is a quick sample to preview the selected voice.';
+    }
   }
 
   editImage(media: CompendiumRecordMediaDto) {

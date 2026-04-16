@@ -154,3 +154,47 @@ quill-editor {
     display: none !important;
   }
 }
+
+@keyframes tts-toast-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tts-loading-toast {
+  min-width: 220px !important;
+  min-height: 52px !important;
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+  background: $grey6 !important;
+  background-image: none !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28) !important;
+  display: flex !important;
+  align-items: center !important;
+
+  &::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.24);
+    border-top-color: $grey16;
+    border-radius: 50%;
+    animation: tts-toast-spin 0.8s linear infinite;
+    flex: 0 0 auto;
+  }
+
+  .toast-title {
+    display: none !important;
+  }
+
+  .toast-message {
+    color: $grey16 !important;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+}

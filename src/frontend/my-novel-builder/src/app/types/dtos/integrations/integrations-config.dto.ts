@@ -1,6 +1,6 @@
 import { TextGenerationProvider } from '../../enums/text-generation-provider';
-import { TtsProvider } from '../../enums/tts-provider';
 import { ImageGenerationProvider } from '../../enums/image-generation-provider';
+import { TtsProvider } from '../../enums/tts-provider';
 
 export interface IntegrationsConfigDto {
   hasOpenRouterApiKey: boolean;
@@ -10,11 +10,14 @@ export interface IntegrationsConfigDto {
   hasDeApiApiKey: boolean;
   hasNanoGptApiKey: boolean;
   textGenerationProvider: TextGenerationProvider;
+  textGenerationModelId: string;
   ttsProvider: TtsProvider;
   imageGenerationProvider: ImageGenerationProvider;
   ttsModelId: string;
   ttsVoiceId: string;
   ttsEnableTextEmphasis: boolean;
+  ttsEnableImmersive: boolean;
+  ttsImmersivePauseMs: number;
 }
 
 export interface UpdateIntegrationsConfigDto {
@@ -25,9 +28,12 @@ export interface UpdateIntegrationsConfigDto {
   deApiApiKey?: string | null;
   nanoGptApiKey?: string | null;
   textGenerationProvider?: TextGenerationProvider | null;
+  textGenerationModelId?: string | null;
   ttsProvider?: TtsProvider | null;
   imageGenerationProvider?: ImageGenerationProvider | null;
   ttsModelId?: string | null;
   ttsVoiceId?: string | null;
   ttsEnableTextEmphasis?: boolean | null;
+  ttsEnableImmersive?: boolean | null;
+  ttsImmersivePauseMs?: number | null;
 }

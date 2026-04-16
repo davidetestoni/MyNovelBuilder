@@ -132,8 +132,10 @@ public class ChatterboxTtsService : ITtsService
 
         var combinedPcm = fullPcmStream.ToArray();
         using var wavStream = new MemoryStream();
-        await using var writer = new WaveFileWriter(wavStream, new WaveFormat(_sampleRate, 16, 1));
-        await writer.WriteAsync(combinedPcm, cancellationToken);
+        await using (var writer = new WaveFileWriter(wavStream, new WaveFormat(_sampleRate, 16, 1)))
+        {
+            await writer.WriteAsync(combinedPcm, cancellationToken);
+        }
 
         return wavStream.ToArray();
     }

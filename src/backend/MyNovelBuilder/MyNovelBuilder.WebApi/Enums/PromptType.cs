@@ -59,4 +59,9 @@ public enum PromptType
     /// A prompt for describing an image without compendium context.
     /// </summary>
     DescribeImage = 10,
+
+    /// <summary>
+    /// A prompt for preparing immersive multi-speaker TTS chunks for prose playback.
+    /// </summary>
+    PrepareImmersiveTts = 11,
 }

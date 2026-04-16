@@ -1,4 +1,5 @@
 import { CompendiumRecordType } from '../../enums/compendium-record-type';
+import { CharacterVoiceAssignmentDto } from './character-voice-assignment.dto';
 
 export interface UpdateCompendiumRecordDto {
   id: string;
@@ -7,4 +8,5 @@ export interface UpdateCompendiumRecordDto {
   type: CompendiumRecordType;
   context: string;
   alwaysIncluded: boolean;
+  characterVoiceAssignments: CharacterVoiceAssignmentDto[];
 }

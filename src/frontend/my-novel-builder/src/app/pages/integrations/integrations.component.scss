@@ -75,6 +75,17 @@
       margin-bottom: 8px;
     }
 
+    .field-help {
+      margin: -2px 0 8px;
+      color: $grey13;
+      font-size: 0.85rem;
+      line-height: 1.35;
+    }
+
+    .field-help-toggle {
+      margin-top: 10px;
+    }
+
     .tts-voice-controls {
       display: flex;
       gap: 12px;
@@ -97,6 +108,25 @@
       margin-bottom: 0;
       line-height: 1.2;
       cursor: pointer;
+    }
+
+    .pause-input-group {
+      display: inline-flex;
+      width: auto;
+      max-width: fit-content;
+      vertical-align: top;
+    }
+
+    .pause-input-group input {
+      width: 8rem;
+      flex: 0 0 auto;
+    }
+
+    .pause-input-group p-inputgroup-addon,
+    .pause-input-group .p-inputgroup-addon {
+      background: $grey2 !important;
+      background-color: $grey2 !important;
+      color: $grey13 !important;
     }
 
     .manage-custom-voices-btn {

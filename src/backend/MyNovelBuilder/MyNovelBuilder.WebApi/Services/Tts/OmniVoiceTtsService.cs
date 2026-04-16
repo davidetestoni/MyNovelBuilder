@@ -29,8 +29,7 @@ public class OmniVoiceTtsService : ITtsService
     private const string _defaultLanguageCode = "en";
     private const string _defaultModelId = "k2-fsa/OmniVoice";
     private const string _defaultModelName = "OmniVoice";
-    // TODO: Make the emphasis model configurable.
-    private const string _emphasisModel = "anthropic/claude-sonnet-4";
+    private const string _fallbackEmphasisModel = "anthropic/claude-sonnet-4";
     // TODO: Make the emphasis prompt user-configurable.
     private const string _emphasisPrompt =
         """
@@ -105,7 +104,7 @@ public class OmniVoiceTtsService : ITtsService
     {
         var textGenerationService = await textGenerationServiceFactory(cancellationToken);
         return await textGenerationService.GenerateAsync(
-            _emphasisModel,
+            request.TextGenerationModelId ?? _fallbackEmphasisModel,
             [
                 new PromptMessage
                 {
@@ -202,8 +201,10 @@ public class OmniVoiceTtsService : ITtsService
 
         var combinedPcm = fullPcmStream.ToArray();
         using var wavStream = new MemoryStream();
-        await using var writer = new WaveFileWriter(wavStream, new WaveFormat(_sampleRate, 16, 1));
-        await writer.WriteAsync(combinedPcm, cancellationToken);
+        await using (var writer = new WaveFileWriter(wavStream, new WaveFormat(_sampleRate, 16, 1)))
+        {
+            await writer.WriteAsync(combinedPcm, cancellationToken);
+        }
 
         return wavStream.ToArray();
     }

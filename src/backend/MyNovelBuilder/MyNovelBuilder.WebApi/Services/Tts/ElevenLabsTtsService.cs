@@ -21,8 +21,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class ElevenLabsTtsService : ITtsService
 {
     private readonly IIntegrationsService _integrationsService;
-    // TODO: Make the emphasis model configurable.
-    private const string _emphasisModel = "anthropic/claude-sonnet-4";
+    private const string _fallbackEmphasisModel = "anthropic/claude-sonnet-4";
     // TODO: Make the emphasis prompt user-configurable.
     private const string _emphasisPrompt =
         """
@@ -66,7 +65,7 @@ public class ElevenLabsTtsService : ITtsService
     {
         var textGenerationService = await textGenerationServiceFactory(cancellationToken);
         return await textGenerationService.GenerateAsync(
-            _emphasisModel,
+            request.TextGenerationModelId ?? _fallbackEmphasisModel,
             [
                 new PromptMessage
                 {
@@ -108,10 +107,11 @@ public class ElevenLabsTtsService : ITtsService
             cancellationToken: cancellationToken);
         
         using var finalAudio = new MemoryStream();
-        await using var writer = new NAudio.Wave.WaveFileWriter(finalAudio,
-            new NAudio.Wave.WaveFormat(24000, 16, 1));
-
-        await writer.WriteAsync(voiceClip.ClipData.ToArray(), cancellationToken);
+        await using (var writer = new NAudio.Wave.WaveFileWriter(finalAudio,
+                         new NAudio.Wave.WaveFormat(24000, 16, 1)))
+        {
+            await writer.WriteAsync(voiceClip.ClipData.ToArray(), cancellationToken);
+        }
 
         return finalAudio.ToArray();
     }

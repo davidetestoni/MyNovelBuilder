@@ -10,4 +10,5 @@ export enum PromptType {
   CreateCompendiumRecordImageGenerationPrompt = 'createCompendiumRecordImageGenerationPrompt',
   CreateStoryEvents = 'createStoryEvents',
   TranslateNovel = 'translateNovel',
+  PrepareImmersiveTts = 'prepareImmersiveTts',
 }

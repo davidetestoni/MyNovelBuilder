@@ -11,9 +11,12 @@ export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   hasDeApiApiKey: false,
   hasNanoGptApiKey: false,
   textGenerationProvider: TextGenerationProvider.OpenRouter,
+  textGenerationModelId: 'openrouter/auto',
   ttsProvider: TtsProvider.Custom,
   imageGenerationProvider: ImageGenerationProvider.DeApi,
   ttsModelId: 'model-1',
   ttsVoiceId: 'voice-1',
   ttsEnableTextEmphasis: false,
+  ttsEnableImmersive: false,
+  ttsImmersivePauseMs: 150,
 };

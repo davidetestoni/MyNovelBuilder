@@ -123,6 +123,7 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
         context: this.data.generatedText,
         compendiumId: this.formGroup.get('compendiumId')!.value!,
         alwaysIncluded: false,
+        characterVoiceAssignments: [],
       })
       .subscribe(() => {
         this.toastr.success(`Record ${name} created successfully`);

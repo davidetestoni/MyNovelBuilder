@@ -72,4 +72,15 @@ export const mockedPrompts: PromptDto[] = [
       { id: 1, role: PromptMessageRole.User, message: loremIpsum({ count: 3, units: 'sentences' }) },
     ],
   },
+  {
+    id: indexToGuid(7),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'The Immersive TTS Prompt',
+    type: PromptType.PrepareImmersiveTts,
+    messages: [
+      { id: 0, role: PromptMessageRole.System, message: loremIpsum({ count: 3, units: 'sentences' }) },
+      { id: 1, role: PromptMessageRole.User, message: loremIpsum({ count: 3, units: 'sentences' }) },
+    ],
+  },
 ];

@@ -1,5 +1,4 @@
 using MyNovelBuilder.WebApi.Enums;
-
 namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 
 /// <summary>
@@ -44,6 +43,11 @@ public class IntegrationsConfigDto
     public required TextGenerationProvider TextGenerationProvider { get; init; }
 
     /// <summary>
+    /// The default text generation model ID.
+    /// </summary>
+    public required string TextGenerationModelId { get; init; }
+
+    /// <summary>
     /// The configured Text-to-Speech provider.
     /// </summary>
     public required TtsProvider TtsProvider { get; init; }
@@ -67,4 +71,14 @@ public class IntegrationsConfigDto
     /// Whether text emphasis with speech tags is enabled for TTS generation.
     /// </summary>
     public required bool TtsEnableTextEmphasis { get; init; }
+
+    /// <summary>
+    /// Whether immersive multi-speaker TTS playback is enabled.
+    /// </summary>
+    public required bool TtsEnableImmersive { get; init; }
+
+    /// <summary>
+    /// Global pause in milliseconds between immersive TTS chunks.
+    /// </summary>
+    public required int TtsImmersivePauseMs { get; init; }
 }

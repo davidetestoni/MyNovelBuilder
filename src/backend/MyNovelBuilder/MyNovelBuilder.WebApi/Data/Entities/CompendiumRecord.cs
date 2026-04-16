@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 namespace MyNovelBuilder.WebApi.Data.Entities;
 
@@ -54,4 +55,9 @@ public class CompendiumRecord : TimestampedEntity
     /// Whether the record should always be included in the prompts.
     /// </summary>
     public bool AlwaysIncluded { get; set; }
+
+    /// <summary>
+    /// The character voice assignments remembered per TTS provider/model combination.
+    /// </summary>
+    public IEnumerable<CharacterVoiceAssignment> CharacterVoiceAssignments { get; set; } = [];
 }

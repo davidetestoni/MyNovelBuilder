@@ -1,4 +1,6 @@
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
@@ -295,7 +297,97 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         }
 
         config.ResponseMimeType = "application/json";
-        config.ResponseJsonSchema = structuredOutputOptions.JsonSchema;
+        var normalizedJsonSchema = NormalizeJsonSchemaForGoogle(structuredOutputOptions.JsonSchema);
+        config.ResponseJsonSchema =
+            Google.GenAI.Types.Schema.FromJson(normalizedJsonSchema)
+            ?? throw new ApiException(
+                ErrorCodes.BadRequest,
+                "The configured structured-output schema is invalid JSON.");
         return config;
+    }
+
+    private static string NormalizeJsonSchemaForGoogle(string jsonSchema)
+    {
+        JsonNode? rootNode;
+        try
+        {
+            rootNode = JsonNode.Parse(jsonSchema);
+        }
+        catch (JsonException ex)
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                $"The configured structured-output schema is invalid JSON: {ex.Message}");
+        }
+
+        if (rootNode is null)
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                "The configured structured-output schema is empty.");
+        }
+
+        NormalizeJsonSchemaNode(rootNode);
+        return rootNode.ToJsonString();
+    }
+
+    private static void NormalizeJsonSchemaNode(JsonNode node)
+    {
+        switch (node)
+        {
+            case JsonObject jsonObject:
+                NormalizeNullableTypeArray(jsonObject);
+                foreach (var property in jsonObject.ToList())
+                {
+                    if (property.Value is not null)
+                    {
+                        NormalizeJsonSchemaNode(property.Value);
+                    }
+                }
+                break;
+
+            case JsonArray jsonArray:
+                foreach (var item in jsonArray)
+                {
+                    if (item is not null)
+                    {
+                        NormalizeJsonSchemaNode(item);
+                    }
+                }
+                break;
+        }
+    }
+
+    private static void NormalizeNullableTypeArray(JsonObject jsonObject)
+    {
+        if (jsonObject["type"] is not JsonArray typeArray)
+        {
+            return;
+        }
+
+        var typeValues = typeArray
+            .Select(item => item?.GetValue<string>())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .ToList();
+
+        if (!typeValues.Contains("null", StringComparer.Ordinal))
+        {
+            return;
+        }
+
+        var nonNullTypes = typeValues
+            .Where(value => !string.Equals(value, "null", StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (nonNullTypes.Count != 1)
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                $"Google GenAI does not support nullable union schema types: [{string.Join(", ", typeValues)}].");
+        }
+
+        jsonObject["type"] = nonNullTypes[0];
+        jsonObject["nullable"] = true;
     }
 }

@@ -73,6 +73,10 @@ namespace MyNovelBuilder.WebApi.Migrations
                     b.Property<bool>("AlwaysIncluded")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("CharacterVoiceAssignments")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("CompendiumId")
                         .HasColumnType("TEXT");
 

@@ -2,6 +2,7 @@
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
 using MyNovelBuilder.WebApi.Dtos.Novel;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 namespace MyNovelBuilder.WebApi.Helpers;
 
@@ -19,5 +20,8 @@ public class MappingConfig : IRegister
         
         config.NewConfig<CompendiumRecord, CompendiumRecordDto>()
             .Map(dest => dest.CompendiumId, src => src.Compendium.Id);
+
+        config.NewConfig<CharacterVoiceAssignment, CharacterVoiceAssignmentDto>();
+        config.NewConfig<CharacterVoiceAssignmentDto, CharacterVoiceAssignment>();
     }
 }

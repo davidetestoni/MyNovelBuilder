@@ -106,6 +106,7 @@ export class CreateCompendiumRecordComponent {
         context: this.formGroup.get('context')!.value!,
         compendiumId: this.config.data.compendiumId,
         alwaysIncluded: this.formGroup.get('alwaysIncluded')!.value!,
+        characterVoiceAssignments: [],
       })
       .subscribe((record) => {
         if (this.imageFile !== null) {

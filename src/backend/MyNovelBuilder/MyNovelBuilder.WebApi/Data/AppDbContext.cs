@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Prompts;
+using MyNovelBuilder.WebApi.Models.Tts;
 
 namespace MyNovelBuilder.WebApi.Data;
 
@@ -52,9 +53,15 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Ignore<CharacterVoiceAssignment>();
+
         modelBuilder.Entity<Prompt>().Property(p => p.Messages)
             .HasConversion(new JsonValueConverter<IEnumerable<PromptMessage>>())
             .Metadata.SetValueComparer(new JsonValueComparer<IEnumerable<PromptMessage>>());
+
+        modelBuilder.Entity<CompendiumRecord>().Property(p => p.CharacterVoiceAssignments)
+            .HasConversion(new JsonValueConverter<IEnumerable<CharacterVoiceAssignment>>())
+            .Metadata.SetValueComparer(new JsonValueComparer<IEnumerable<CharacterVoiceAssignment>>());
         
         // Use UTC for DateTime
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())

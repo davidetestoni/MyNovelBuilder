@@ -27,6 +27,26 @@
         />
       </div>
 
+      @if (textGenerationModelOptions.length > 0) {
+        <div class="form-group">
+          <label for="textGenerationModelId"
+            >Default Text Generation Model:</label
+          >
+          <p class="field-help">
+            Used as the default structured-output model for immersive TTS and
+            for TTS text emphasis.
+          </p>
+          <p-select
+            id="textGenerationModelId"
+            [options]="textGenerationModelOptions"
+            formControlName="textGenerationModelId"
+            placeholder="Select a text generation model"
+            [style]="{ width: '100%' }"
+            [filter]="true"
+          />
+        </div>
+      }
+
       @if (
         integrationsForm.value.textGenerationProvider ===
         TextGenerationProvider.OpenRouter
@@ -231,8 +251,47 @@
               Emphasize text with speech tags
             </label>
           </div>
+          <p class="field-help field-help-toggle">
+            Uses the default text generation model to add speech-oriented
+            emphasis markup before TTS synthesis.
+          </p>
         </div>
       }
+
+      <div class="form-group">
+        <div class="tts-emphasis-toggle">
+          <p-checkbox
+            inputId="ttsEnableImmersive"
+            formControlName="ttsEnableImmersive"
+            [binary]="true"
+          />
+          <label class="tts-emphasis-toggle-label" for="ttsEnableImmersive">
+            Enable immersive multi-speaker TTS
+          </label>
+        </div>
+        <p class="field-help field-help-toggle">
+          When enabled, prose playback will use narrator and character voices
+          when an immersive TTS prompt is configured.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="ttsImmersivePauseMs">Immersive chunk pause:</label>
+        <p class="field-help">
+          Applied between narrator and character chunks.
+        </p>
+        <p-inputgroup class="pause-input-group">
+          <input
+            id="ttsImmersivePauseMs"
+            pInputText
+            type="number"
+            min="0"
+            max="10000"
+            formControlName="ttsImmersivePauseMs"
+          />
+          <p-inputgroup-addon>ms</p-inputgroup-addon>
+        </p-inputgroup>
+      </div>
 
       @if (ttsVoiceOptions.length > 0) {
         <div class="form-group">

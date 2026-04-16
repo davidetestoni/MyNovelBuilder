@@ -63,6 +63,131 @@
           language="compendium"
         ></app-code-editor>
       </div>
+      @if (record.type === CompendiumRecordType.Character) {
+        <div class="compendium-record-character-voices">
+          <label class="label">
+            <span>Character Voices</span>
+          </label>
+
+          <div class="compendium-record-character-voices-editor">
+            <div class="voice-editor-field voice-editor-field-provider">
+              <p-select
+                [options]="voiceProviderOptions"
+                [(ngModel)]="selectedVoiceProvider"
+                placeholder="Select TTS provider"
+                [style]="{ width: '100%' }"
+                (ngModelChange)="onVoiceProviderChange()"
+              />
+            </div>
+
+            <div class="voice-editor-field voice-editor-field-model">
+              <p-select
+                [options]="voiceModelOptions"
+                [(ngModel)]="selectedVoiceModelId"
+                placeholder="Select TTS model"
+                [style]="{ width: '100%' }"
+                [filter]="true"
+                [disabled]="voiceModelOptions.length === 0 || isLoadingVoiceModels"
+                (ngModelChange)="onVoiceModelChange()"
+              />
+            </div>
+
+            <div class="voice-editor-field voice-editor-field-voice">
+              <div class="voice-selector-with-action">
+                <p-select
+                  [options]="voiceOptions"
+                  [(ngModel)]="selectedVoiceId"
+                  placeholder="Select voice"
+                  [style]="{ width: '100%' }"
+                  [filter]="true"
+                  [disabled]="voiceOptions.length === 0 || isLoadingVoiceModels"
+                />
+
+                <p-button
+                  label="Preview"
+                  variant="outlined"
+                  icon="pi pi-play"
+                  [loading]="isPreviewingSelectedVoice"
+                  [disabled]="
+                    !selectedVoiceProvider ||
+                    !selectedVoiceModelId ||
+                    !selectedVoiceId ||
+                    isLoadingVoiceModels ||
+                    isPreviewingVoice
+                  "
+                  (onClick)="previewSelectedVoice()"
+                />
+              </div>
+            </div>
+
+            <p-button
+              class="voice-save-button"
+              label="Assign Voice"
+              [disabled]="
+                !selectedVoiceProvider ||
+                !selectedVoiceModelId ||
+                !selectedVoiceId ||
+                isLoadingVoiceModels
+              "
+              (click)="saveCharacterVoiceAssignment()"
+            />
+          </div>
+
+          @if (record.characterVoiceAssignments.length > 0) {
+            <div class="compendium-record-character-voice-list">
+              @for (
+                assignment of record.characterVoiceAssignments;
+                track assignment.provider + '-' + assignment.modelId
+              ) {
+                <div class="compendium-record-character-voice-item">
+                  <div class="compendium-record-character-voice-item-details">
+                    <div class="character-voice-detail">
+                      <span class="character-voice-detail-label">Provider</span>
+                      <strong>{{
+                        formatTtsProviderLabel(assignment.provider)
+                      }}</strong>
+                    </div>
+                    <div class="character-voice-detail">
+                      <span class="character-voice-detail-label">Model</span>
+                      <span>{{ assignment.modelId }}</span>
+                    </div>
+                    <div class="character-voice-detail">
+                      <span class="character-voice-detail-label">Voice</span>
+                      <span>{{ assignment.voiceName || assignment.voiceId }}</span>
+                    </div>
+                  </div>
+                  <div class="compendium-record-character-voice-item-actions">
+                    <p-button
+                      icon="pi pi-play"
+                      [text]="true"
+                      [rounded]="true"
+                      [loading]="isPreviewingAssignment(assignment)"
+                      pTooltip="Preview voice assignment"
+                      tooltipPosition="top"
+                      [disabled]="isPreviewingVoice"
+                      (onClick)="previewCharacterVoiceAssignment(assignment)"
+                    />
+                    <p-button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      [text]="true"
+                      [rounded]="true"
+                      pTooltip="Remove voice assignment"
+                      tooltipPosition="top"
+                      (click)="removeCharacterVoiceAssignment(assignment)"
+                    />
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <small>
+              Assign a voice per provider/model pair so immersive TTS can switch
+              speakers naturally.
+            </small>
+          }
+        </div>
+      }
       <div class="compendium-record-media-container">
         <div class="label">
           <span>Media</span>

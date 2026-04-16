@@ -113,6 +113,9 @@ builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IMediaFolderService, MediaFolderService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<INovelExportService, NovelExportService>();
+builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationServiceResolver>();
+builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
+builder.Services.AddScoped<IImmersiveTtsService, ImmersiveTtsService>();
 builder.Services.AddSingleton<IAudioRepository, FileSystemWaveAudioRepository>();
 builder.Services.AddSingleton<ITokenizerService, TokenizerService>();
 

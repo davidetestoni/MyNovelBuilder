@@ -50,6 +50,7 @@ export class PromptComponent {
     PromptType.CreateCompendiumRecordImageGenerationPrompt,
     PromptType.CreateStoryEvents,
     PromptType.TranslateNovel,
+    PromptType.PrepareImmersiveTts,
   ];
 
   promptMessageRoles: PromptMessageRole[] = [
@@ -237,6 +238,37 @@ export class PromptComponent {
         description: 'Information from relevant compendium records.',
       },
     ],
+    [PromptType.PrepareImmersiveTts]: [
+      {
+        keyword: '{{chapterTitle}}',
+        description: 'The current chapter title.',
+      },
+      {
+        keyword: '{{sectionSummary}}',
+        description: 'The summary of the current section.',
+      },
+      {
+        keyword: '{{sectionText}}',
+        description: 'The plain-text content of the current section.',
+      },
+      {
+        keyword: '{{storySoFar}}',
+        description: 'The story content leading up to the current section.',
+      },
+      {
+        keyword: '{{wholeChapter}}',
+        description: 'The plain-text content of the whole current chapter.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Relevant compendium records for speaker attribution.',
+      },
+      {
+        keyword: '{{speakerOptions}}',
+        description:
+          'The narrator plus the characters that have voice assignments for the active provider and model.',
+      },
+    ],
   };
 
   novelKeywords = [
@@ -298,6 +330,7 @@ export class PromptComponent {
       PromptType.SendChatMessage,
       PromptType.CreateStoryEvents,
       PromptType.TranslateNovel,
+      PromptType.PrepareImmersiveTts,
     ].includes(promptType);
   }
 }

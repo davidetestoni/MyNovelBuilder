@@ -22,8 +22,7 @@ public class NanoGptTtsService : ITtsService
     private static readonly TimeSpan _pollDelay = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _pollTimeout = TimeSpan.FromMinutes(5);
     private const string _elevenLabsV3Model = "Elevenlabs-V3";
-    // TODO: Make the emphasis model configurable.
-    private const string _emphasisModel = "anthropic/claude-sonnet-4";
+    private const string _fallbackEmphasisModel = "anthropic/claude-sonnet-4";
     // TODO: Make the emphasis prompt user-configurable.
     private const string _emphasisPrompt =
         """
@@ -82,7 +81,7 @@ public class NanoGptTtsService : ITtsService
 
         var textGenerationService = await textGenerationServiceFactory(cancellationToken);
         return await textGenerationService.GenerateAsync(
-            _emphasisModel,
+            request.TextGenerationModelId ?? _fallbackEmphasisModel,
             [
                 new PromptMessage
                 {

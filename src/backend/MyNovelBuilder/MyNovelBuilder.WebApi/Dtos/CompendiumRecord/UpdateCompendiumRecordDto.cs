@@ -37,6 +37,11 @@ public class UpdateCompendiumRecordDto
     /// Whether the record should always be included in the prompts.
     /// </summary>
     public bool AlwaysIncluded { get; set; }
+
+    /// <summary>
+    /// Character-specific voice assignments remembered per provider/model pair.
+    /// </summary>
+    public IEnumerable<CharacterVoiceAssignmentDto> CharacterVoiceAssignments { get; set; } = Array.Empty<CharacterVoiceAssignmentDto>();
 }
 
 internal class UpdateCompendiumRecordDtoValidator : AbstractValidator<UpdateCompendiumRecordDto>
@@ -47,5 +52,6 @@ internal class UpdateCompendiumRecordDtoValidator : AbstractValidator<UpdateComp
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Aliases).MaximumLength(500);
         RuleFor(x => x.Type).IsInEnum();
+        RuleForEach(x => x.CharacterVoiceAssignments).SetValidator(new CharacterVoiceAssignmentDtoValidator());
     }
 }

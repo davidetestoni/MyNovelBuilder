@@ -8,6 +8,11 @@ namespace MyNovelBuilder.WebApi.Models.Integrations;
 public class IntegrationsConfig
 {
     /// <summary>
+    /// The default text generation model ID to use for new or incomplete integrations config.
+    /// </summary>
+    public const string DefaultTextGenerationModelId = "openrouter/auto";
+
+    /// <summary>
     /// The OpenRouter API key.
     /// </summary>
     public string? OpenRouterApiKey { get; set; }
@@ -43,6 +48,11 @@ public class IntegrationsConfig
     public TextGenerationProvider TextGenerationProvider { get; set; } = TextGenerationProvider.OpenRouter;
 
     /// <summary>
+    /// The default text generation model ID to use where a model is required but not explicitly selected.
+    /// </summary>
+    public string TextGenerationModelId { get; set; } = DefaultTextGenerationModelId;
+
+    /// <summary>
     /// The Text-to-Speech provider to use to generate speech.
     /// </summary>
     public TtsProvider TtsProvider { get; set; } = TtsProvider.ElevenLabs;
@@ -66,4 +76,14 @@ public class IntegrationsConfig
     /// Whether text should be emphasized with speech tags before TTS generation.
     /// </summary>
     public bool TtsEnableTextEmphasis { get; set; }
+
+    /// <summary>
+    /// Whether immersive multi-speaker TTS playback should be used when available.
+    /// </summary>
+    public bool TtsEnableImmersive { get; set; }
+
+    /// <summary>
+    /// Global pause in milliseconds between immersive TTS chunks.
+    /// </summary>
+    public int TtsImmersivePauseMs { get; set; } = 150;
 }

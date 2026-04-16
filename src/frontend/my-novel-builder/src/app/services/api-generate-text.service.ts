@@ -15,6 +15,7 @@ import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-req
 import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-text-response-chunk.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
+import { TextGenerationProvider } from '../types/enums/text-generation-provider';
 import { GenerateTextCompletion, GenerateTextService } from './generate-text.service';
 
 @Injectable()
@@ -100,7 +101,12 @@ export class ApiGenerateTextService extends GenerateTextService {
     });
   }
 
-  protected fetchAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
-    return this.http.get<TextGenerationModelInfoDto[]>(`${this.baseUrl}/generate/text/models`);
+  protected fetchAvailableModelInfos(
+    provider?: TextGenerationProvider | null,
+  ): Observable<TextGenerationModelInfoDto[]> {
+    const suffix = provider ? `?provider=${provider}` : '';
+    return this.http.get<TextGenerationModelInfoDto[]>(
+      `${this.baseUrl}/generate/text/models${suffix}`,
+    );
   }
 }

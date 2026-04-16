@@ -66,4 +66,9 @@ public class CompendiumRecordDto
     /// Whether the record should always be included in the prompts.
     /// </summary>
     public bool AlwaysIncluded { get; set; }
+
+    /// <summary>
+    /// Character-specific voice assignments remembered per provider/model pair.
+    /// </summary>
+    public IEnumerable<CharacterVoiceAssignmentDto> CharacterVoiceAssignments { get; set; } = Array.Empty<CharacterVoiceAssignmentDto>();
 }

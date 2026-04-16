@@ -11,6 +11,11 @@ namespace MyNovelBuilder.WebApi.Models.AudioGeneration;
 public class AudioGenerationParameters
 {
     /// <summary>
+    /// The text generation model used for auxiliary TTS preprocessing.
+    /// </summary>
+    public string? TextGenerationModelId { get; set; }
+
+    /// <summary>
     /// The text to be converted to audio.
     /// </summary>
     public required string Text { get; set; }
@@ -45,6 +50,7 @@ public class AudioGenerationParameters
             Provider,
             ModelId,
             VoiceId,
+            TextGenerationModelId,
             EnableTextEmphasis,
             Text
         };

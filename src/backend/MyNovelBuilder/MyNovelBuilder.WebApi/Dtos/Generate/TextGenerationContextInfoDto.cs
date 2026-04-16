@@ -16,6 +16,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 [JsonDerivedType(typeof(DescribeImageContextInfoDto), typeDiscriminator: "describeImage")]
 [JsonDerivedType(typeof(DescribeCompendiumImageContextInfoDto), typeDiscriminator: "describeCompendiumImage")]
 [JsonDerivedType(typeof(CreateCompendiumRecordImageGenerationPromptContextInfoDto), typeDiscriminator: "createCompendiumRecordImageGenerationPrompt")]
+[JsonDerivedType(typeof(PrepareImmersiveTtsContextInfoDto), typeDiscriminator: "prepareImmersiveTts")]
 [JsonDerivedType(typeof(CreateStoryEventsContextInfoDto), typeDiscriminator: "createStoryEvents")]
 [JsonDerivedType(typeof(TranslateNovelContextInfoDto), typeDiscriminator: "translateNovel")]
 public abstract class TextGenerationContextInfoDto
@@ -282,6 +283,62 @@ public class CreateCompendiumRecordImageGenerationPromptContextInfoDto : Compend
     /// Any additional instructions for the image generation prompt generation.
     /// </summary>
     public string? Instructions { get; set; }
+}
+
+/// <summary>
+/// DTO for the context information for preparing immersive TTS chunks.
+/// </summary>
+public class PrepareImmersiveTtsContextInfoDto : NovelTextGenerationContextInfoDto
+{
+    private const string _immersiveTtsJsonSchema = """
+                                                   {
+                                                     "type": "array",
+                                                     "items": {
+                                                       "type": "object",
+                                                       "properties": {
+                                                         "speakerKind": {
+                                                           "type": "string",
+                                                           "enum": ["narrator", "character"]
+                                                         },
+                                                         "speakerName": { "type": "string" },
+                                                         "characterRecordId": {
+                                                           "type": ["string", "null"]
+                                                         },
+                                                         "text": { "type": "string" }
+                                                       },
+                                                       "required": ["speakerKind", "speakerName", "characterRecordId", "text"],
+                                                       "additionalProperties": false
+                                                     }
+                                                   }
+                                                   """;
+
+    /// <summary>
+    /// The index of the chapter.
+    /// </summary>
+    public int ChapterIndex { get; set; }
+
+    /// <summary>
+    /// The index of the section to prepare.
+    /// </summary>
+    public int SectionIndex { get; set; }
+
+    /// <summary>
+    /// The active TTS provider used for character-voice resolution.
+    /// </summary>
+    public TtsProvider Provider { get; set; }
+
+    /// <summary>
+    /// The active TTS model used for character-voice resolution.
+    /// </summary>
+    public required string TtsModelId { get; set; }
+
+    /// <inheritdoc />
+    public override StructuredOutputOptions? GetStructuredOutputOptions() => new()
+    {
+        SchemaName = "immersive_tts_chunks",
+        JsonSchema = _immersiveTtsJsonSchema,
+        Strict = true
+    };
 }
 
 /// <summary>

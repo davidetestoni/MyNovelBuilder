@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,7 @@ public sealed class PcmWavStreamingStream : Stream
     private readonly Action? _onDispose;
     private readonly Queue<byte[]> _chunks = new();
     private readonly SemaphoreSlim _semaphore = new(0);
+    private ExceptionDispatchInfo? _producerException;
     private bool _headerWritten;
     private bool _isComplete;
     private byte[] _currentChunk = [];
@@ -56,6 +58,10 @@ public sealed class PcmWavStreamingStream : Stream
         try
         {
             await _producer(EnqueueAsync, _ct);
+        }
+        catch (Exception ex)
+        {
+            _producerException = ExceptionDispatchInfo.Capture(ex);
         }
         finally
         {
@@ -100,6 +106,11 @@ public sealed class PcmWavStreamingStream : Stream
     /// <returns>A task that resolves to the number of bytes read.</returns>
     public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
     {
+        if (!_headerWritten && _isComplete && _producerException is not null)
+        {
+            _producerException.Throw();
+        }
+
         if (!_headerWritten)
         {
             _headerWritten = true;
@@ -152,6 +163,10 @@ public sealed class PcmWavStreamingStream : Stream
             {
                 if (_isComplete)
                 {
+                    if (totalRead == 0 && _producerException is not null)
+                    {
+                        _producerException.Throw();
+                    }
                     break;
                 }
 
@@ -159,6 +174,10 @@ public sealed class PcmWavStreamingStream : Stream
 
                 if (_isComplete && _chunks.Count == 0)
                 {
+                    if (totalRead == 0 && _producerException is not null)
+                    {
+                        _producerException.Throw();
+                    }
                     break;
                 }
             }

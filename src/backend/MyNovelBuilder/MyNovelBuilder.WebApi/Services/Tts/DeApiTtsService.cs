@@ -199,8 +199,10 @@ public class DeApiTtsService : ITtsService
         }
         
         using var finalWavStream = new MemoryStream();
-        await using var wavWriter = new WaveFileWriter(finalWavStream, outputFormat);
-        await wavWriter.WriteAsync(fullPcmStream.ToArray(), cancellationToken);
+        await using (var wavWriter = new WaveFileWriter(finalWavStream, outputFormat))
+        {
+            await wavWriter.WriteAsync(fullPcmStream.ToArray(), cancellationToken);
+        }
         
         return finalWavStream.ToArray();
     }

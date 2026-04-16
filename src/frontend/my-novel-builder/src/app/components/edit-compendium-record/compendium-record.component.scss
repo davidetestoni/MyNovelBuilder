@@ -84,6 +84,121 @@
       }
     }
 
+    .compendium-record-character-voices {
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      .compendium-record-character-voices-editor {
+        display: flex;
+        align-items: stretch;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .voice-editor-field {
+        flex: 1 1 220px;
+        min-width: 0;
+      }
+
+      .voice-editor-field-provider {
+        flex: 0 1 180px;
+      }
+
+      .voice-editor-field-model {
+        flex: 0 1 200px;
+      }
+
+      .voice-editor-field-voice {
+        flex: 2 1 320px;
+      }
+
+      .voice-selector-with-action {
+        display: flex;
+        gap: 12px;
+        align-items: stretch;
+        flex-wrap: nowrap;
+        min-width: 0;
+
+        p-select {
+          flex: 1 1 0;
+          min-width: 0;
+        }
+
+        :deep(.p-select) {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        :deep(.p-select-label) {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .voice-save-button {
+        flex: 0 0 auto;
+        align-self: stretch;
+      }
+
+      .compendium-record-character-voice-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .compendium-record-character-voice-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 1px solid $grey5;
+        border-radius: 8px;
+        background: $grey2;
+      }
+
+      .compendium-record-character-voice-item-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: flex-start;
+      }
+
+      .character-voice-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 140px;
+      }
+
+      .character-voice-detail-label {
+        color: $grey13;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .compendium-record-character-voice-item-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      small {
+        display: block;
+        margin-top: 12px;
+        color: $grey13;
+      }
+    }
+
     .compendium-record-media-container {
       margin-top: 20px;
 
@@ -206,6 +321,23 @@
       display: flex;
       flex-direction: row;
       gap: 10px;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .compendium-record-container {
+    .compendium-record-editor {
+      .compendium-record-character-voices {
+        .compendium-record-character-voice-item {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .compendium-record-character-voice-item-actions {
+          align-self: flex-end;
+        }
+      }
     }
   }
 }

@@ -8,6 +8,7 @@ import {
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
+import { TextGenerationProvider } from '../types/enums/text-generation-provider';
 
 export interface GenerateTextCompletion {
   content: string;
@@ -24,8 +25,10 @@ export abstract class GenerateTextService {
     image: Blob,
     request: DescribeImageRequestDto | DescribeCompendiumImageRequestDto,
   ): Observable<string>;
-  getAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
-    return this.fetchAvailableModelInfos();
+  getAvailableModelInfos(
+    provider?: TextGenerationProvider | null,
+  ): Observable<TextGenerationModelInfoDto[]> {
+    return this.fetchAvailableModelInfos(provider);
   }
 
   protected saveRecentlyUsedModel(model: string): void {
@@ -65,5 +68,7 @@ export abstract class GenerateTextService {
     return models;
   }
 
-  protected abstract fetchAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]>;
+  protected abstract fetchAvailableModelInfos(
+    provider?: TextGenerationProvider | null,
+  ): Observable<TextGenerationModelInfoDto[]>;
 }

@@ -56,6 +56,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             PromptType.CreateCompendiumRecord => typeof(CreateCompendiumRecordContextInfoDto),
             PromptType.EditCompendiumRecord => typeof(EditCompendiumRecordContextInfoDto),
             PromptType.SendChatMessage => typeof(SendChatMessageContextInfoDto),
+            PromptType.PrepareImmersiveTts => typeof(PrepareImmersiveTtsContextInfoDto),
             PromptType.CreateStoryEvents => typeof(CreateStoryEventsContextInfoDto),
             PromptType.TranslateNovel => typeof(TranslateNovelContextInfoDto),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
@@ -89,6 +90,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
             CreateCompendiumRecordContextInfoDto c => ProcessPrompt(c, prompt, novel, prose, records),
             EditCompendiumRecordContextInfoDto e => ProcessPrompt(e, prompt, novel, prose, records),
             SendChatMessageContextInfoDto m => ProcessPrompt(m, prompt, novel, prose, records),
+            PrepareImmersiveTtsContextInfoDto i => ProcessPrompt(i, prompt, novel, prose, records),
             CreateStoryEventsContextInfoDto s => ProcessPrompt(s, prompt, novel, prose, records),
             TranslateNovelContextInfoDto t => ProcessPrompt(t, prompt, novel, prose, records),
             _ => throw new ApiException(ErrorCodes.InvalidPromptContext,
@@ -149,6 +151,15 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                     .ReplacePlaceholders(new NovelPromptBuilderContext<SendChatMessageContextInfoDto>
                     {
                         Client = s,
+                        Novel = novel,
+                        Prose = prose,
+                        CompendiumRecords = records,
+                        IncludedCompendiumRecordIds = includedCompendiumRecordIds
+                    }).ToString(),
+                PrepareImmersiveTtsContextInfoDto i => new PrepareImmersiveTtsPromptBuilder(message.Message)
+                    .ReplacePlaceholders(new NovelPromptBuilderContext<PrepareImmersiveTtsContextInfoDto>
+                    {
+                        Client = i,
                         Novel = novel,
                         Prose = prose,
                         CompendiumRecords = records,

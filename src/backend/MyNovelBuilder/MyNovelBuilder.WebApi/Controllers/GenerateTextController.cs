@@ -60,18 +60,20 @@ public class GenerateTextController : ControllerBase
     }
     
     private async ValueTask<ITextGenerationService> GetTextGenerationServiceAsync(
+        TextGenerationProvider? provider = null,
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var textGenerationService = _serviceProvider.GetKeyedService<ITextGenerationService>(config.TextGenerationProvider);
+        var effectiveProvider = provider ?? config.TextGenerationProvider;
+        var textGenerationService = _serviceProvider.GetKeyedService<ITextGenerationService>(effectiveProvider);
 
         if (textGenerationService is null)
         {
             _logger.LogError(
-                "Unsupported text generation provider: {Provider}", config.TextGenerationProvider);
+                "Unsupported text generation provider: {Provider}", effectiveProvider);
             
             throw new InvalidOperationException(
-                $"Unsupported text generation provider: {config.TextGenerationProvider}");
+                $"Unsupported text generation provider: {effectiveProvider}");
         }
 
         return textGenerationService;
@@ -84,7 +86,8 @@ public class GenerateTextController : ControllerBase
     public async Task GenerateStreamedTextAsync(GenerateTextRequestDto dto,
         CancellationToken cancellationToken = default)
     {
-        var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
+        var textGenerationService = await GetTextGenerationServiceAsync(
+            cancellationToken: cancellationToken);
         
         HttpContext.Response.Headers.Append("Content-Type", "text/event-stream");
 
@@ -228,7 +231,8 @@ public class GenerateTextController : ControllerBase
         await imageStream.CopyToAsync(ms, cancellationToken);
         var imageBytes = ms.ToArray();
         
-        var textGenerationService = await GetTextGenerationServiceAsync(cancellationToken);
+        var textGenerationService = await GetTextGenerationServiceAsync(
+            cancellationToken: cancellationToken);
         return await textGenerationService.DescribeImageAsync(
             model,
             messages,
@@ -242,14 +246,16 @@ public class GenerateTextController : ControllerBase
     /// </summary>
     [HttpGet("models")]
     public async Task<IEnumerable<TextGenerationModelInfoDto>> GetAvailableModelsAsync(
+        [FromQuery] TextGenerationProvider? provider,
         CancellationToken cancellationToken = default)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var effectiveProvider = provider ?? config.TextGenerationProvider;
         return await _hybridCache.GetOrCreateAsync(
-            $"textgen-{config.TextGenerationProvider}-models",
+            $"textgen-{effectiveProvider}-models",
             async token =>
             {
-                var textGenerationService = await GetTextGenerationServiceAsync(token);
+                var textGenerationService = await GetTextGenerationServiceAsync(effectiveProvider, token);
                 var models = await textGenerationService.GetAvailableModelsAsync(token);
         
                 return models.Select(m => new TextGenerationModelInfoDto
@@ -266,7 +272,7 @@ public class GenerateTextController : ControllerBase
                 Expiration = TimeSpan.FromHours(6),
                 LocalCacheExpiration = TimeSpan.FromHours(6)
             },
-            tags: ["textgen", config.TextGenerationProvider.ToString(), "models"],
+            tags: ["textgen", effectiveProvider.ToString(), "models"],
             cancellationToken: cancellationToken
         );
     }

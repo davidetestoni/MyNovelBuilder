@@ -98,10 +98,11 @@ public class VibeVoiceTtsService : ITtsService
         audioData.Seek(0, SeekOrigin.Begin);
         var audioBytes = audioData.ToArray();
         using var finalAudio = new MemoryStream();
-        await using var writer = new NAudio.Wave.WaveFileWriter(finalAudio, 
-            new NAudio.Wave.WaveFormat(24000, 16, 1));
-        
-        await writer.WriteAsync(audioBytes, ct);
+        await using (var writer = new NAudio.Wave.WaveFileWriter(finalAudio, 
+                         new NAudio.Wave.WaveFormat(24000, 16, 1)))
+        {
+            await writer.WriteAsync(audioBytes, ct);
+        }
         
         finalAudio.Seek(0, SeekOrigin.Begin);
         

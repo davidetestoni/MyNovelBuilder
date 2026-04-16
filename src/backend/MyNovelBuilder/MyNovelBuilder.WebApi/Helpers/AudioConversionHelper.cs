@@ -31,6 +31,52 @@ public static class AudioConversionHelper
     }
 
     /// <summary>
+    /// Detects whether the provided bytes look like a WAV stream.
+    /// </summary>
+    public static bool LooksLikeWav(byte[] audioBytes)
+    {
+        if (audioBytes.Length < 12)
+        {
+            return false;
+        }
+
+        return audioBytes[0] == (byte)'R'
+               && audioBytes[1] == (byte)'I'
+               && audioBytes[2] == (byte)'F'
+               && audioBytes[3] == (byte)'F'
+               && audioBytes[8] == (byte)'W'
+               && audioBytes[9] == (byte)'A'
+               && audioBytes[10] == (byte)'V'
+               && audioBytes[11] == (byte)'E';
+    }
+
+    /// <summary>
+    /// Validates whether the provided bytes can be parsed as a WAV stream.
+    /// </summary>
+    public static bool IsValidWav(byte[] audioBytes)
+    {
+        if (!LooksLikeWav(audioBytes))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var input = new MemoryStream(audioBytes);
+            using var reader = new WaveFileReader(input);
+            return reader.WaveFormat is not null;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+        catch (InvalidDataException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Determines whether the provided content type represents MP3 audio.
     /// </summary>
     public static bool IsMp3ContentType(string? contentType)
@@ -94,5 +140,76 @@ public static class AudioConversionHelper
                 await bufferedMp3.DisposeAsync();
             }
         }
+    }
+
+    /// <summary>
+    /// Converts WAV audio bytes into raw PCM bytes in the requested format.
+    /// </summary>
+    public static async Task<byte[]> ConvertWavToPcmBytesAsync(
+        byte[] wavBytes,
+        int sampleRate,
+        short channels,
+        short bitsPerSample,
+        CancellationToken cancellationToken = default)
+    {
+        await using var input = new MemoryStream(wavBytes);
+        await using var reader = new WaveFileReader(input);
+        ISampleProvider sampleProvider = reader.ToSampleProvider();
+
+        if (sampleProvider.WaveFormat.Channels == 2 && channels == 1)
+        {
+            sampleProvider = new StereoToMonoSampleProvider(sampleProvider)
+            {
+                LeftVolume = 0.5f,
+                RightVolume = 0.5f
+            };
+        }
+
+        if (sampleProvider.WaveFormat.SampleRate != sampleRate)
+        {
+            sampleProvider = new WdlResamplingSampleProvider(sampleProvider, sampleRate);
+        }
+
+        if (bitsPerSample != 16)
+        {
+            throw new NotSupportedException("Only 16-bit PCM output is currently supported.");
+        }
+
+        var pcm16Provider = new SampleToWaveProvider16(sampleProvider);
+        using var output = new MemoryStream();
+        var buffer = new byte[16 * 1024];
+
+        while (true)
+        {
+            var read = pcm16Provider.Read(buffer, 0, buffer.Length);
+            if (read == 0)
+            {
+                break;
+            }
+
+            await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+        }
+
+        return output.ToArray();
+    }
+
+    /// <summary>
+    /// Creates raw PCM silence for the requested format and duration.
+    /// </summary>
+    public static byte[] CreateSilencePcm(
+        int sampleRate,
+        short channels,
+        short bitsPerSample,
+        int durationMs)
+    {
+        if (durationMs <= 0)
+        {
+            return [];
+        }
+
+        var bytesPerSample = bitsPerSample / 8;
+        var totalFrames = (int)Math.Ceiling(sampleRate * (durationMs / 1000d));
+        var totalBytes = totalFrames * channels * bytesPerSample;
+        return new byte[totalBytes];
     }
 }

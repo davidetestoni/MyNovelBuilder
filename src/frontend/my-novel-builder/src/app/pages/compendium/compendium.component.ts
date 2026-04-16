@@ -186,6 +186,7 @@ export class CompendiumComponent implements OnInit {
         type: record.type,
         context: record.context,
         alwaysIncluded: record.alwaysIncluded,
+        characterVoiceAssignments: record.characterVoiceAssignments,
       })
       .subscribe((updatedRecord) => {
         if (this.currentRecord?.id === updatedRecord.id) {

@@ -3,6 +3,7 @@ using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Tts;
 using MyNovelBuilder.WebApi.Tests.Factories;
 using Xunit.Abstractions;
 
@@ -98,10 +99,21 @@ public class CompendiumRecordControllerIntegrationTests(
         var createDto = new CreateCompendiumRecordDto
         {
             Name = "New Record",
-            Type = CompendiumRecordType.Place,
+            Type = CompendiumRecordType.Character,
             CompendiumId = compendium.Id,
             Aliases = "Alias1, Alias2",
-            Context = "Some context"
+            Context = "Some context",
+            CharacterVoiceAssignments =
+            [
+                new CharacterVoiceAssignmentDto
+                {
+                    Provider = TtsProvider.ElevenLabs,
+                    ModelId = "eleven-flash-v2",
+                    VoiceId = "voice-123",
+                    VoiceName = "Alice",
+                    UpdatedAt = new DateTime(2026, 4, 12, 10, 0, 0, DateTimeKind.Utc)
+                }
+            ]
         };
         
         // Act
@@ -116,6 +128,15 @@ public class CompendiumRecordControllerIntegrationTests(
         Assert.Equal(createDto.CompendiumId, dto.CompendiumId);
         Assert.Equal(createDto.Aliases, dto.Aliases);
         Assert.Equal(createDto.Context, dto.Context);
+        var assignment = Assert.Single(dto.CharacterVoiceAssignments);
+        Assert.Equal("eleven-flash-v2", assignment.ModelId);
+        Assert.Equal("voice-123", assignment.VoiceId);
+
+        using var scope = Factory.Services.CreateScope();
+        var persistedUnitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var persistedRecord = await persistedUnitOfWork.CompendiumRecords.GetByIdAsync(dto.Id);
+        var persistedAssignment = Assert.Single(persistedRecord!.CharacterVoiceAssignments);
+        Assert.Equal("voice-123", persistedAssignment.VoiceId);
     }
     
     [Fact]
@@ -144,7 +165,18 @@ public class CompendiumRecordControllerIntegrationTests(
             Name = "Updated Record",
             Type = CompendiumRecordType.Object,
             Aliases = "New Alias",
-            Context = "Updated context"
+            Context = "Updated context",
+            CharacterVoiceAssignments =
+            [
+                new CharacterVoiceAssignmentDto
+                {
+                    Provider = TtsProvider.Kokoro,
+                    ModelId = "kokoro-v1",
+                    VoiceId = "kokoro-voice",
+                    VoiceName = "Kira",
+                    UpdatedAt = new DateTime(2026, 4, 12, 11, 0, 0, DateTimeKind.Utc)
+                }
+            ]
         };
         
         // Act
@@ -158,6 +190,16 @@ public class CompendiumRecordControllerIntegrationTests(
         Assert.Equal(updateDto.Type, dto.Type);
         Assert.Equal(updateDto.Aliases, dto.Aliases);
         Assert.Equal(updateDto.Context, dto.Context);
+        var assignment = Assert.Single(dto.CharacterVoiceAssignments);
+        Assert.Equal("kokoro-v1", assignment.ModelId);
+        Assert.Equal("kokoro-voice", assignment.VoiceId);
+
+        using var scope = Factory.Services.CreateScope();
+        var persistedUnitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var persistedRecord = await persistedUnitOfWork.CompendiumRecords.GetByIdAsync(record.Id);
+        var persistedAssignment = Assert.Single(persistedRecord!.CharacterVoiceAssignments);
+        Assert.Equal(TtsProvider.Kokoro, persistedAssignment.Provider);
+        Assert.Equal("kokoro-voice", persistedAssignment.VoiceId);
     }
     
     [Fact]

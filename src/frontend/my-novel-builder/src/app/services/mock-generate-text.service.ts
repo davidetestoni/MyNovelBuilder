@@ -8,6 +8,7 @@ import {
 import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-request.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
+import { TextGenerationProvider } from '../types/enums/text-generation-provider';
 import {
   mockedTextCompletionContent,
   mockedTextGenerationModelInfos,
@@ -53,7 +54,9 @@ export class MockGenerateTextService extends GenerateTextService {
     return mockObservable('A generated image description. This is mocked data from the frontend service.');
   }
 
-  protected fetchAvailableModelInfos(): Observable<TextGenerationModelInfoDto[]> {
+  protected fetchAvailableModelInfos(
+    _provider?: TextGenerationProvider | null,
+  ): Observable<TextGenerationModelInfoDto[]> {
     return mockObservable(mockedTextGenerationModelInfos);
   }
 }

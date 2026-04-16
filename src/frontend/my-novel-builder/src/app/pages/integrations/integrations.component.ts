@@ -17,12 +17,16 @@ import { PasswordModule } from 'primeng/password';
 import { TtsProvider } from '../../types/enums/tts-provider';
 import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
+import { InputGroup } from 'primeng/inputgroup';
+import { InputGroupAddon } from 'primeng/inputgroupaddon';
 import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
 import { ImageGenerationProvider } from '../../types/enums/image-generation-provider';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { TtsModelDto } from '../../types/dtos/generate/tts-model.dto';
 import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 import { WritingLanguage } from '../../types/enums/writing-language';
+import { GenerateTextService } from '../../services/generate-text.service';
+import { TextGenerationModelInfoDto } from '../../types/dtos/generate/text-generation-model-info.dto';
 
 @Component({
   selector: 'app-integrations',
@@ -34,6 +38,8 @@ import { WritingLanguage } from '../../types/enums/writing-language';
     PasswordModule,
     SelectModule,
     CheckboxModule,
+    InputGroup,
+    InputGroupAddon,
   ],
   templateUrl: './integrations.component.html',
   styleUrl: './integrations.component.scss',
@@ -45,12 +51,14 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
 
   private integrationsService = inject(IntegrationsService);
   private generateAudioService = inject(GenerateAudioService);
+  private generateTextService = inject(GenerateTextService);
   private toastrService = inject(ToastrService);
 
   integrationsForm = new FormGroup({
     textGenerationProvider: new FormControl<TextGenerationProvider>(
       TextGenerationProvider.OpenRouter,
     ),
+    textGenerationModelId: new FormControl<string>(''),
     openRouterApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     googleGenAiApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsProvider: new FormControl<TtsProvider>(TtsProvider.Custom),
@@ -60,6 +68,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
     ttsEnableTextEmphasis: new FormControl<boolean>(false),
+    ttsEnableImmersive: new FormControl<boolean>(false),
+    ttsImmersivePauseMs: new FormControl<number>(150),
     imageGenerationProvider: new FormControl<ImageGenerationProvider>(
       ImageGenerationProvider.DeApi,
     ),
@@ -88,6 +98,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   }));
 
   availableTtsModels: TtsModelDto[] = [];
+  availableTextGenerationModels: TextGenerationModelInfoDto[] = [];
 
   textGenerationProviderOptions = Object.values(TextGenerationProvider).map(
     (provider) => ({
@@ -114,6 +125,14 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
+    this.integrationsForm.controls.textGenerationProvider.valueChanges.subscribe(
+      (provider) => {
+        if (provider) {
+          this.loadTextGenerationModels(provider);
+        }
+      },
+    );
+
     this.integrationsForm.controls.ttsProvider.valueChanges.subscribe(
       (provider) => {
         if (provider) {
@@ -136,11 +155,18 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.hasNanoGptApiKey = config.hasNanoGptApiKey;
         this.integrationsForm.patchValue({
           textGenerationProvider: config.textGenerationProvider,
+          textGenerationModelId: config.textGenerationModelId,
           ttsProvider: config.ttsProvider,
           ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
+          ttsEnableImmersive: config.ttsEnableImmersive,
+          ttsImmersivePauseMs: config.ttsImmersivePauseMs,
           imageGenerationProvider: config.imageGenerationProvider,
         }, { emitEvent: false });
 
+        this.loadTextGenerationModels(
+          config.textGenerationProvider,
+          config.textGenerationModelId,
+        );
         this.loadTtsModels(
           config.ttsProvider,
           config.ttsModelId,
@@ -163,6 +189,15 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       label: model.name,
       value: model.modelId,
     }));
+  }
+
+  protected get textGenerationModelOptions(): { label: string; value: string }[] {
+    return this.generateTextService
+      .sortModels(this.availableTextGenerationModels.map((model) => model.id))
+      .map((modelId) => ({
+        label: modelId,
+        value: modelId,
+      }));
   }
 
   protected get ttsVoiceOptions(): {
@@ -217,6 +252,44 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
             ttsModelId: '',
             ttsVoiceId: '',
             ttsEnableTextEmphasis: false,
+          },
+          { emitEvent: false },
+        );
+      },
+    });
+  }
+
+  private loadTextGenerationModels(
+    provider: TextGenerationProvider,
+    selectedModelId?: string,
+  ): void {
+    this.generateTextService.getAvailableModelInfos(provider).subscribe({
+      next: (models) => {
+        this.availableTextGenerationModels = models.filter(
+          (model) => model.supportsStructuredOutputs,
+        );
+
+        const nextModelId =
+          selectedModelId ||
+          this.integrationsForm.value.textGenerationModelId ||
+          this.availableTextGenerationModels[0]?.id ||
+          '';
+
+        this.integrationsForm.patchValue(
+          {
+            textGenerationModelId: this.isValidTextGenerationModelId(nextModelId)
+              ? nextModelId
+              : '',
+          },
+          { emitEvent: false },
+        );
+      },
+      error: (error) => {
+        console.error('Error loading text generation models:', error);
+        this.availableTextGenerationModels = [];
+        this.integrationsForm.patchValue(
+          {
+            textGenerationModelId: '',
           },
           { emitEvent: false },
         );
@@ -392,6 +465,11 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     return !!modelId && this.availableTtsModels.some((model) => model.modelId === modelId);
   }
 
+  private isValidTextGenerationModelId(modelId?: string | null): modelId is string {
+    return !!modelId &&
+      this.availableTextGenerationModels.some((model) => model.id === modelId);
+  }
+
   private getPreviewSampleText(language: WritingLanguage): string {
     switch (language) {
       case WritingLanguage.Italian:
@@ -418,6 +496,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     const updateDto: UpdateIntegrationsConfigDto = {
       textGenerationProvider:
         this.integrationsForm.value.textGenerationProvider,
+      textGenerationModelId:
+        this.integrationsForm.value.textGenerationModelId || undefined,
       openRouterApiKey:
         this.integrationsForm.value.openRouterApiKey || undefined,
       googleGenAiApiKey:
@@ -435,6 +515,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.supportsSelectedTtsModelTextEmphasis
           ? (this.integrationsForm.value.ttsEnableTextEmphasis ?? false)
           : false,
+      ttsEnableImmersive:
+        this.integrationsForm.value.ttsEnableImmersive ?? false,
+      ttsImmersivePauseMs:
+        this.integrationsForm.value.ttsImmersivePauseMs ?? 150,
       imageGenerationProvider:
         this.integrationsForm.value.imageGenerationProvider,
     };

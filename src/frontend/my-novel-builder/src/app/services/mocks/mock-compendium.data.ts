@@ -51,6 +51,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     context: loremIpsum({ count: 3, units: 'sentences' }),
     contextTokenCount: 42,
     alwaysIncluded: false,
+    characterVoiceAssignments: [],
     media: [
       {
         id: indexToGuid(11),
@@ -77,6 +78,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     context: loremIpsum({ count: 3, units: 'sentences' }),
     contextTokenCount: 38,
     alwaysIncluded: false,
+    characterVoiceAssignments: [],
     media: [],
     compendiumId: mockedCompendia[0].id,
   },
@@ -90,6 +92,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     context: loremIpsum({ count: 3, units: 'sentences' }),
     contextTokenCount: 45,
     alwaysIncluded: false,
+    characterVoiceAssignments: [],
     media: [
       {
         id: indexToGuid(31),
@@ -116,6 +119,7 @@ export const mockedCompendiumRecords: CompendiumRecordDto[] = [
     context: loremIpsum({ count: 3, units: 'sentences' }),
     contextTokenCount: 40,
     alwaysIncluded: false,
+    characterVoiceAssignments: [],
     media: [
       {
         id: indexToGuid(41),

@@ -112,8 +112,10 @@ public class KokoroTtsService : ITtsService
         
         // The bytes aren't in wav format, so we need to encode them
         using var ms = new MemoryStream();
-        await using var writer = new WaveFileWriter(ms, KokoroPlayback.waveFormat);
-        await writer.WriteAsync(audioBytes, cancellationToken);
+        await using (var writer = new WaveFileWriter(ms, KokoroPlayback.waveFormat))
+        {
+            await writer.WriteAsync(audioBytes, cancellationToken);
+        }
 
         ms.Seek(0, SeekOrigin.Begin);
 

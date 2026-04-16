@@ -43,11 +43,14 @@ public class IntegrationsController : ControllerBase
             HasDeApiApiKey = !string.IsNullOrWhiteSpace(config.DeApiApiKey),
             HasNanoGptApiKey = !string.IsNullOrWhiteSpace(config.NanoGptApiKey),
             TextGenerationProvider = config.TextGenerationProvider,
+            TextGenerationModelId = config.TextGenerationModelId,
             TtsProvider = config.TtsProvider,
             ImageGenerationProvider = config.ImageGenerationProvider,
             TtsModelId = config.TtsModelId,
             TtsVoiceId = config.TtsVoiceId,
             TtsEnableTextEmphasis = config.TtsEnableTextEmphasis,
+            TtsEnableImmersive = config.TtsEnableImmersive,
+            TtsImmersivePauseMs = config.TtsImmersivePauseMs,
         };
     }
 
@@ -101,6 +104,11 @@ public class IntegrationsController : ControllerBase
             config.TextGenerationProvider = dto.TextGenerationProvider.Value;
         }
 
+        if (!string.IsNullOrWhiteSpace(dto.TextGenerationModelId))
+        {
+            config.TextGenerationModelId = dto.TextGenerationModelId;
+        }
+
         if (dto.TtsProvider.HasValue)
         {
             config.TtsProvider = dto.TtsProvider.Value;
@@ -124,6 +132,16 @@ public class IntegrationsController : ControllerBase
         if (dto.TtsEnableTextEmphasis.HasValue)
         {
             config.TtsEnableTextEmphasis = dto.TtsEnableTextEmphasis.Value;
+        }
+
+        if (dto.TtsEnableImmersive.HasValue)
+        {
+            config.TtsEnableImmersive = dto.TtsEnableImmersive.Value;
+        }
+
+        if (dto.TtsImmersivePauseMs.HasValue)
+        {
+            config.TtsImmersivePauseMs = dto.TtsImmersivePauseMs.Value;
         }
         
         await _integrationsService.UpdateConfigAsync(config, cancellationToken);
