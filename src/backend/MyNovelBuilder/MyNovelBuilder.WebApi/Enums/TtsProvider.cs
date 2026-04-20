@@ -59,4 +59,9 @@ public enum TtsProvider
     /// NanoGPT TTS provider.
     /// </summary>
     NanoGpt,
+
+    /// <summary>
+    /// OpenRouter TTS provider.
+    /// </summary>
+    OpenRouter,
 }

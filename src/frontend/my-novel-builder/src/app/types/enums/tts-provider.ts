@@ -5,6 +5,7 @@ export enum TtsProvider {
   ElevenLabs = 'elevenLabs',
   Kokoro = 'kokoro',
   NanoGpt = 'nanoGpt',
+  OpenRouter = 'openRouter',
   OmniVoice = 'omniVoice',
   PocketTts = 'pocketTts',
   Qwen3 = 'qwen3',

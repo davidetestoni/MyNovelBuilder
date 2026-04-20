@@ -226,6 +226,30 @@
         </div>
       }
 
+      @if (integrationsForm.value.ttsProvider === TtsProvider.OpenRouter) {
+        <h4>OpenRouter Configuration</h4>
+
+        @if (hasOpenRouterApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>An OpenRouter API key is currently configured.</span>
+          </div>
+        } @else {
+          <p>No OpenRouter API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="openRouterApiKeyTts">Enter New OpenRouter API Key:</label>
+          <p-password
+            id="openRouterApiKeyTts"
+            [formControl]="integrationsForm.controls.openRouterApiKey"
+            placeholder="sk-or-..."
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
       @if (ttsModelOptions.length > 0) {
         <div class="form-group">
           <label for="ttsModelId">Select TTS Model:</label>
