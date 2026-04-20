@@ -13,6 +13,36 @@ public class IntegrationsConfig
     public const string DefaultTextGenerationModelId = "openrouter/auto";
 
     /// <summary>
+    /// The default base URL for the custom TTS provider.
+    /// </summary>
+    public const string DefaultCustomTtsBaseUrl = "http://localhost:5000/";
+
+    /// <summary>
+    /// The default base URL for the Pocket TTS provider.
+    /// </summary>
+    public const string DefaultPocketTtsBaseUrl = "http://localhost:8000/";
+
+    /// <summary>
+    /// The default base URL for the VibeVoice provider.
+    /// </summary>
+    public const string DefaultVibeVoiceBaseUrl = "http://localhost:8000/";
+
+    /// <summary>
+    /// The default base URL for the Chatterbox provider.
+    /// </summary>
+    public const string DefaultChatterboxBaseUrl = "http://localhost:8000/";
+
+    /// <summary>
+    /// The default base URL for the Qwen3 provider.
+    /// </summary>
+    public const string DefaultQwen3BaseUrl = "http://localhost:8000/";
+
+    /// <summary>
+    /// The default base URL for the OmniVoice provider.
+    /// </summary>
+    public const string DefaultOmniVoiceBaseUrl = "http://localhost:8000/";
+
+    /// <summary>
     /// The OpenRouter API key.
     /// </summary>
     public string? OpenRouterApiKey { get; set; }
@@ -41,6 +71,36 @@ public class IntegrationsConfig
     /// The NanoGPT API key.
     /// </summary>
     public string? NanoGptApiKey { get; set; }
+
+    /// <summary>
+    /// The base URL for the custom TTS provider.
+    /// </summary>
+    public string CustomTtsBaseUrl { get; set; } = DefaultCustomTtsBaseUrl;
+
+    /// <summary>
+    /// The base URL for the Pocket TTS provider.
+    /// </summary>
+    public string PocketTtsBaseUrl { get; set; } = DefaultPocketTtsBaseUrl;
+
+    /// <summary>
+    /// The base URL for the VibeVoice provider.
+    /// </summary>
+    public string VibeVoiceBaseUrl { get; set; } = DefaultVibeVoiceBaseUrl;
+
+    /// <summary>
+    /// The base URL for the Chatterbox provider.
+    /// </summary>
+    public string ChatterboxBaseUrl { get; set; } = DefaultChatterboxBaseUrl;
+
+    /// <summary>
+    /// The base URL for the Qwen3 provider.
+    /// </summary>
+    public string Qwen3BaseUrl { get; set; } = DefaultQwen3BaseUrl;
+
+    /// <summary>
+    /// The base URL for the OmniVoice provider.
+    /// </summary>
+    public string OmniVoiceBaseUrl { get; set; } = DefaultOmniVoiceBaseUrl;
     
     /// <summary>
     /// The Text Generation provider to use to generate text.

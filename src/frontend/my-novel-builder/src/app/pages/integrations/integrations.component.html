@@ -250,6 +250,24 @@
         </div>
       }
 
+      @if (selectedTtsProviderBaseUrlControl; as ttsProviderBaseUrlControl) {
+        <div class="form-group">
+          <label for="ttsProviderBaseUrl"
+            >{{ selectedTtsProviderBaseUrlLabel }} Base URL:</label
+          >
+          <p class="field-help">
+            Override the endpoint used for this self-hosted TTS provider.
+            Clear the field and save to restore the default local URL.
+          </p>
+          <input
+            id="ttsProviderBaseUrl"
+            pInputText
+            [formControl]="ttsProviderBaseUrlControl"
+            [placeholder]="selectedTtsProviderBaseUrlPlaceholder"
+          />
+        </div>
+      }
+
       @if (ttsModelOptions.length > 0) {
         <div class="form-group">
           <label for="ttsModelId">Select TTS Model:</label>

@@ -7,6 +7,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Integrations;
 using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Models.Tts;
 using MyNovelBuilder.WebApi.Options;
@@ -22,6 +23,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class OmniVoiceTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly string _voicesFolder;
     private const int _maxChunkLength = 500;
@@ -87,12 +89,13 @@ public class OmniVoiceTtsService : ITtsService
     public OmniVoiceTtsService(
         HttpClient httpClient,
         IOptions<AppStorageOptions> storageOptions,
-        IServiceScopeFactory serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
         _serviceScopeFactory = serviceScopeFactory;
         _voicesFolder = Path.Combine(storageOptions.Value.DataFolder, "voices");
-        _httpClient.BaseAddress = new Uri("http://localhost:8000");
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
     }
 
@@ -133,7 +136,7 @@ public class OmniVoiceTtsService : ITtsService
         formData.Add(new StringContent(voiceDescription.Trim()), "voice_description");
 
         using var response = await _httpClient.PostAsync(
-            "voice-design",
+            await CreateRequestUriAsync("voice-design", cancellationToken),
             formData,
             cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -278,6 +281,7 @@ public class OmniVoiceTtsService : ITtsService
         string? referenceWavPath,
         CancellationToken cancellationToken)
     {
+        var requestUri = await CreateRequestUriAsync("tts", cancellationToken);
         using var formData = new MultipartFormDataContent();
         formData.Add(new StringContent(NormalizeText(chunk)), "text");
         formData.Add(new StringContent(languageCode), "language");
@@ -293,7 +297,7 @@ public class OmniVoiceTtsService : ITtsService
                 Path.GetFileName(referenceWavPath));
 
             var responseWithReference = await _httpClient.PostAsync(
-                "tts",
+                requestUri,
                 formData,
                 cancellationToken);
             responseWithReference.EnsureSuccessStatusCode();
@@ -301,11 +305,22 @@ public class OmniVoiceTtsService : ITtsService
         }
 
         var response = await _httpClient.PostAsync(
-            "tts",
+            requestUri,
             formData,
             cancellationToken);
         response.EnsureSuccessStatusCode();
         return response;
+    }
+
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    {
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
+            config.OmniVoiceBaseUrl,
+            IntegrationsConfig.DefaultOmniVoiceBaseUrl,
+            "OmniVoice");
+
+        return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
     }
 
     private string? GetReferenceWavPath(string? voiceId)

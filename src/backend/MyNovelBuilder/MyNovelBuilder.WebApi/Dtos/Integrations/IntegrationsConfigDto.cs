@@ -36,6 +36,36 @@ public class IntegrationsConfigDto
     /// Indicates whether a NanoGPT API key is configured.
     /// </summary>
     public required bool HasNanoGptApiKey { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the custom TTS provider.
+    /// </summary>
+    public required string CustomTtsBaseUrl { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the Pocket TTS provider.
+    /// </summary>
+    public required string PocketTtsBaseUrl { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the VibeVoice provider.
+    /// </summary>
+    public required string VibeVoiceBaseUrl { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the Chatterbox provider.
+    /// </summary>
+    public required string ChatterboxBaseUrl { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the Qwen3 provider.
+    /// </summary>
+    public required string Qwen3BaseUrl { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the OmniVoice provider.
+    /// </summary>
+    public required string OmniVoiceBaseUrl { get; init; }
     
     /// <summary>
     /// The configured Text Generation provider.

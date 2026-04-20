@@ -7,6 +7,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Integrations;
 using MyNovelBuilder.WebApi.Models.Tts;
 using MyNovelBuilder.WebApi.Options;
 using NAudio.Wave;
@@ -20,6 +21,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class Qwen3TtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly string _voicesFolder;
     private const int _maxChunkLength = 500;
@@ -36,12 +38,13 @@ public class Qwen3TtsService : ITtsService
     public Qwen3TtsService(
         HttpClient httpClient,
         IOptions<AppStorageOptions> storageOptions,
-        IServiceScopeFactory serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
         _serviceScopeFactory = serviceScopeFactory;
         _voicesFolder = Path.Combine(storageOptions.Value.DataFolder, "voices");
-        _httpClient.BaseAddress = new Uri("http://localhost:8000");
         _httpClient.Timeout = TimeSpan.FromMinutes(5);
     }
 
@@ -58,7 +61,7 @@ public class Qwen3TtsService : ITtsService
         formData.Add(new StringContent(voiceDescription.Trim()), "voice_description");
 
         using var response = await _httpClient.PostAsync(
-            "voice-design",
+            await CreateRequestUriAsync("voice-design", cancellationToken),
             formData,
             cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -128,8 +131,9 @@ public class Qwen3TtsService : ITtsService
                     "reference_wav",
                     Path.GetFileName(referenceWavPath));
 
+                var requestUri = await CreateRequestUriAsync("tts", cancellationToken);
                 using var response = await _httpClient.PostAsync(
-                    "tts",
+                    requestUri,
                     formData,
                     cancellationToken);
                 response.EnsureSuccessStatusCode();
@@ -139,8 +143,9 @@ public class Qwen3TtsService : ITtsService
             }
             else
             {
+                var requestUri = await CreateRequestUriAsync("tts", cancellationToken);
                 using var response = await _httpClient.PostAsync(
-                    "tts",
+                    requestUri,
                     formData,
                     cancellationToken);
                 response.EnsureSuccessStatusCode();
@@ -192,8 +197,9 @@ public class Qwen3TtsService : ITtsService
                             "reference_wav",
                             Path.GetFileName(referenceWavPath));
 
+                        var requestUri = await CreateRequestUriAsync("tts", ct);
                         using var response = await _httpClient.PostAsync(
-                            "tts",
+                            requestUri,
                             formData,
                             ct);
                         response.EnsureSuccessStatusCode();
@@ -203,8 +209,9 @@ public class Qwen3TtsService : ITtsService
                     }
                     else
                     {
+                        var requestUri = await CreateRequestUriAsync("tts", ct);
                         using var response = await _httpClient.PostAsync(
-                            "tts",
+                            requestUri,
                             formData,
                             ct);
                         response.EnsureSuccessStatusCode();
@@ -248,6 +255,17 @@ public class Qwen3TtsService : ITtsService
     /// <inheritdoc />
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
+
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    {
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
+            config.Qwen3BaseUrl,
+            IntegrationsConfig.DefaultQwen3BaseUrl,
+            "Qwen3");
+
+        return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
+    }
 
     private string? GetReferenceWavPath(string? voiceId)
     {

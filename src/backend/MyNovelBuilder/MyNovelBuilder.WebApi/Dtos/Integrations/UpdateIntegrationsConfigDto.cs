@@ -36,6 +36,36 @@ public class UpdateIntegrationsConfigDto
     /// The NanoGPT API key.
     /// </summary>
     public string? NanoGptApiKey { get; init; }
+
+    /// <summary>
+    /// The base URL for the custom TTS provider.
+    /// </summary>
+    public string? CustomTtsBaseUrl { get; init; }
+
+    /// <summary>
+    /// The base URL for the Pocket TTS provider.
+    /// </summary>
+    public string? PocketTtsBaseUrl { get; init; }
+
+    /// <summary>
+    /// The base URL for the VibeVoice provider.
+    /// </summary>
+    public string? VibeVoiceBaseUrl { get; init; }
+
+    /// <summary>
+    /// The base URL for the Chatterbox provider.
+    /// </summary>
+    public string? ChatterboxBaseUrl { get; init; }
+
+    /// <summary>
+    /// The base URL for the Qwen3 provider.
+    /// </summary>
+    public string? Qwen3BaseUrl { get; init; }
+
+    /// <summary>
+    /// The base URL for the OmniVoice provider.
+    /// </summary>
+    public string? OmniVoiceBaseUrl { get; init; }
     
     /// <summary>
     /// The Text Generation provider to use to generate text.
@@ -93,6 +123,18 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.UnrealSpeechApiKey).MaximumLength(500);
         RuleFor(x => x.DeApiApiKey).MaximumLength(500);
         RuleFor(x => x.NanoGptApiKey).MaximumLength(500);
+        RuleFor(x => x.CustomTtsBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
+            .WithMessage("Custom TTS base URL must be a valid absolute HTTP or HTTPS URL.");
+        RuleFor(x => x.PocketTtsBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
+            .WithMessage("Pocket TTS base URL must be a valid absolute HTTP or HTTPS URL.");
+        RuleFor(x => x.VibeVoiceBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
+            .WithMessage("VibeVoice base URL must be a valid absolute HTTP or HTTPS URL.");
+        RuleFor(x => x.ChatterboxBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
+            .WithMessage("Chatterbox base URL must be a valid absolute HTTP or HTTPS URL.");
+        RuleFor(x => x.Qwen3BaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
+            .WithMessage("Qwen3 base URL must be a valid absolute HTTP or HTTPS URL.");
+        RuleFor(x => x.OmniVoiceBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
+            .WithMessage("OmniVoice base URL must be a valid absolute HTTP or HTTPS URL.");
         RuleFor(x => x.TextGenerationModelId).MaximumLength(200);
         RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.TtsVoiceId).MaximumLength(200);
@@ -111,5 +153,16 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
             .GreaterThanOrEqualTo(0)
             .LessThanOrEqualTo(10_000)
             .When(x => x.TtsImmersivePauseMs.HasValue);
+    }
+
+    private static bool BeValidHttpBaseUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        return Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri)
+               && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 }

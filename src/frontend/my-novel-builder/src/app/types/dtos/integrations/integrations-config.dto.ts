@@ -9,6 +9,12 @@ export interface IntegrationsConfigDto {
   hasUnrealSpeechApiKey: boolean;
   hasDeApiApiKey: boolean;
   hasNanoGptApiKey: boolean;
+  customTtsBaseUrl: string;
+  pocketTtsBaseUrl: string;
+  vibeVoiceBaseUrl: string;
+  chatterboxBaseUrl: string;
+  qwen3BaseUrl: string;
+  omniVoiceBaseUrl: string;
   textGenerationProvider: TextGenerationProvider;
   textGenerationModelId: string;
   ttsProvider: TtsProvider;
@@ -27,6 +33,12 @@ export interface UpdateIntegrationsConfigDto {
   unrealSpeechApiKey?: string | null;
   deApiApiKey?: string | null;
   nanoGptApiKey?: string | null;
+  customTtsBaseUrl?: string | null;
+  pocketTtsBaseUrl?: string | null;
+  vibeVoiceBaseUrl?: string | null;
+  chatterboxBaseUrl?: string | null;
+  qwen3BaseUrl?: string | null;
+  omniVoiceBaseUrl?: string | null;
   textGenerationProvider?: TextGenerationProvider | null;
   textGenerationModelId?: string | null;
   ttsProvider?: TtsProvider | null;

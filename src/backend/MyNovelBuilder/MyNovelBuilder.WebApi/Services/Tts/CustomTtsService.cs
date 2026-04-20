@@ -2,6 +2,8 @@ using System.Text;
 using System.Text.Json;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Integrations;
 using MyNovelBuilder.WebApi.Models.Tts;
 
 using MyNovelBuilder.WebApi.Attributes;
@@ -15,6 +17,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class CustomTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
 
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
     {
@@ -26,10 +29,11 @@ public class CustomTtsService : ITtsService
     
     /// <summary></summary>
     public CustomTtsService(
-        HttpClient httpClient)
+        HttpClient httpClient,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
-        _httpClient.BaseAddress = new Uri("http://localhost:5000");
+        _integrationsService = integrationsService;
     }
 
     /// <inheritdoc />
@@ -43,8 +47,9 @@ public class CustomTtsService : ITtsService
             Message = request.Message,
             VoiceId = request.VoiceId
         }, _jsonSerializerOptions);
+        var requestUri = await CreateRequestUriAsync("generate/audio", cancellationToken);
         using var response = await _httpClient.PostAsync(
-            "generate/audio",
+            requestUri,
             new StringContent(jsonPayload, Encoding.UTF8, "application/json"),
             cancellationToken);
         
@@ -64,7 +69,9 @@ public class CustomTtsService : ITtsService
     /// <inheritdoc />
     public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
-        using var response = await _httpClient.GetAsync("tts/speakers", cancellationToken);
+        using var response = await _httpClient.GetAsync(
+            await CreateRequestUriAsync("tts/speakers", cancellationToken),
+            cancellationToken);
         
         response.EnsureSuccessStatusCode();
         
@@ -92,4 +99,15 @@ public class CustomTtsService : ITtsService
     /// <inheritdoc />
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
+
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    {
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
+            config.CustomTtsBaseUrl,
+            IntegrationsConfig.DefaultCustomTtsBaseUrl,
+            "Custom TTS");
+
+        return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
+    }
 }

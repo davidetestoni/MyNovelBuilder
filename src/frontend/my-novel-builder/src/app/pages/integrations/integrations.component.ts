@@ -65,6 +65,12 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     elevenLabsApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     unrealSpeechApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     nanoGptApiKey: new FormControl<string>('', Validators.maxLength(1000)),
+    customTtsBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    pocketTtsBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    vibeVoiceBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    chatterboxBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    qwen3BaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    omniVoiceBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
     ttsEnableTextEmphasis: new FormControl<boolean>(false),
@@ -157,6 +163,12 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           textGenerationProvider: config.textGenerationProvider,
           textGenerationModelId: config.textGenerationModelId,
           ttsProvider: config.ttsProvider,
+          customTtsBaseUrl: config.customTtsBaseUrl,
+          pocketTtsBaseUrl: config.pocketTtsBaseUrl,
+          vibeVoiceBaseUrl: config.vibeVoiceBaseUrl,
+          chatterboxBaseUrl: config.chatterboxBaseUrl,
+          qwen3BaseUrl: config.qwen3BaseUrl,
+          omniVoiceBaseUrl: config.omniVoiceBaseUrl,
           ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
           ttsEnableImmersive: config.ttsEnableImmersive,
           ttsImmersivePauseMs: config.ttsImmersivePauseMs,
@@ -214,6 +226,61 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
 
   protected get supportsSelectedTtsModelTextEmphasis(): boolean {
     return this.getSelectedModel()?.supportsTextEmphasis ?? false;
+  }
+
+  protected get selectedTtsProviderBaseUrlControl():
+    | FormControl<string | null>
+    | null {
+    switch (this.integrationsForm.value.ttsProvider) {
+      case TtsProvider.Custom:
+        return this.integrationsForm.controls.customTtsBaseUrl;
+      case TtsProvider.PocketTts:
+        return this.integrationsForm.controls.pocketTtsBaseUrl;
+      case TtsProvider.VibeVoice:
+        return this.integrationsForm.controls.vibeVoiceBaseUrl;
+      case TtsProvider.Chatterbox:
+        return this.integrationsForm.controls.chatterboxBaseUrl;
+      case TtsProvider.Qwen3:
+        return this.integrationsForm.controls.qwen3BaseUrl;
+      case TtsProvider.OmniVoice:
+        return this.integrationsForm.controls.omniVoiceBaseUrl;
+      default:
+        return null;
+    }
+  }
+
+  protected get selectedTtsProviderBaseUrlLabel(): string | null {
+    switch (this.integrationsForm.value.ttsProvider) {
+      case TtsProvider.Custom:
+        return 'Custom TTS';
+      case TtsProvider.PocketTts:
+        return 'Pocket TTS';
+      case TtsProvider.VibeVoice:
+        return 'VibeVoice';
+      case TtsProvider.Chatterbox:
+        return 'Chatterbox';
+      case TtsProvider.Qwen3:
+        return 'Qwen3';
+      case TtsProvider.OmniVoice:
+        return 'OmniVoice';
+      default:
+        return null;
+    }
+  }
+
+  protected get selectedTtsProviderBaseUrlPlaceholder(): string {
+    switch (this.integrationsForm.value.ttsProvider) {
+      case TtsProvider.Custom:
+        return 'http://localhost:5000/';
+      case TtsProvider.PocketTts:
+      case TtsProvider.VibeVoice:
+      case TtsProvider.Chatterbox:
+      case TtsProvider.Qwen3:
+      case TtsProvider.OmniVoice:
+        return 'http://localhost:8000/';
+      default:
+        return 'http://localhost:8000/';
+    }
   }
 
   private loadTtsModels(
@@ -508,6 +575,12 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.integrationsForm.value.unrealSpeechApiKey || undefined,
       nanoGptApiKey: this.integrationsForm.value.nanoGptApiKey || undefined,
       deApiApiKey: this.integrationsForm.value.deApiApiKey || undefined,
+      customTtsBaseUrl: this.integrationsForm.value.customTtsBaseUrl ?? undefined,
+      pocketTtsBaseUrl: this.integrationsForm.value.pocketTtsBaseUrl ?? undefined,
+      vibeVoiceBaseUrl: this.integrationsForm.value.vibeVoiceBaseUrl ?? undefined,
+      chatterboxBaseUrl: this.integrationsForm.value.chatterboxBaseUrl ?? undefined,
+      qwen3BaseUrl: this.integrationsForm.value.qwen3BaseUrl ?? undefined,
+      omniVoiceBaseUrl: this.integrationsForm.value.omniVoiceBaseUrl ?? undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
@@ -552,6 +625,13 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.toastrService.success(
           'Integrations configuration updated successfully.',
         );
+        if (this.integrationsForm.value.ttsProvider) {
+          this.loadTtsModels(
+            this.integrationsForm.value.ttsProvider,
+            this.integrationsForm.value.ttsModelId ?? undefined,
+            this.integrationsForm.value.ttsVoiceId ?? undefined,
+          );
+        }
         this.loadConfiguredBalances();
       },
       error: (error) => {

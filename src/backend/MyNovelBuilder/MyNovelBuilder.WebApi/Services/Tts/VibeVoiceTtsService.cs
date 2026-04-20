@@ -6,6 +6,7 @@ using MyNovelBuilder.WebApi.Models.Tts;
 
 using MyNovelBuilder.WebApi.Attributes;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Integrations;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
@@ -16,18 +17,18 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class VibeVoiceTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
-
-    // TODO: Read this from config
-    private const string _host = "localhost:8000";
+    private readonly IIntegrationsService _integrationsService;
     
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
     /// <summary></summary>
     public VibeVoiceTtsService(
-        HttpClient httpClient)
+        HttpClient httpClient,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
     }
     
     /// <inheritdoc/>
@@ -36,7 +37,7 @@ public class VibeVoiceTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         // The websocket accepts query parameters for text and voice
-        var uriBuilder = new UriBuilder($"ws://{_host}/stream");
+        var uriBuilder = new UriBuilder(await CreateStreamUriAsync(cancellationToken));
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
         query["voice"] = request.VoiceId;
@@ -114,7 +115,7 @@ public class VibeVoiceTtsService : ITtsService
         TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var uriBuilder = new UriBuilder($"ws://{_host}/stream");
+        var uriBuilder = new UriBuilder(await CreateStreamUriAsync(cancellationToken));
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
         query["voice"] = request.VoiceId;
@@ -181,7 +182,9 @@ public class VibeVoiceTtsService : ITtsService
     /// <inheritdoc/>
     public async Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync($"http://{_host}/config", cancellationToken);
+        var response = await _httpClient.GetAsync(
+            await CreateRequestUriAsync("config", cancellationToken),
+            cancellationToken);
         response.EnsureSuccessStatusCode();
 
         // The returned JSON is in the format:
@@ -211,4 +214,25 @@ public class VibeVoiceTtsService : ITtsService
     /// <inheritdoc />
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
+
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    {
+        var baseUri = await GetBaseUriAsync(cancellationToken);
+        return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
+    }
+
+    private async Task<Uri> CreateStreamUriAsync(CancellationToken cancellationToken)
+    {
+        var baseUri = await GetBaseUriAsync(cancellationToken);
+        return ProviderBaseUrlHelper.CreateWebSocketUri(baseUri, "stream");
+    }
+
+    private async Task<Uri> GetBaseUriAsync(CancellationToken cancellationToken)
+    {
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        return ProviderBaseUrlHelper.NormalizeHttpBaseUri(
+            config.VibeVoiceBaseUrl,
+            IntegrationsConfig.DefaultVibeVoiceBaseUrl,
+            "VibeVoice");
+    }
 }

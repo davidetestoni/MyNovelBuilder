@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Hybrid;
 using MyNovelBuilder.WebApi.Dtos.Integrations;
+using MyNovelBuilder.WebApi.Models.Integrations;
 using MyNovelBuilder.WebApi.Services;
 
 namespace MyNovelBuilder.WebApi.Controllers;
@@ -42,6 +43,12 @@ public class IntegrationsController : ControllerBase
             HasUnrealSpeechApiKey = !string.IsNullOrWhiteSpace(config.UnrealSpeechApiKey),
             HasDeApiApiKey = !string.IsNullOrWhiteSpace(config.DeApiApiKey),
             HasNanoGptApiKey = !string.IsNullOrWhiteSpace(config.NanoGptApiKey),
+            CustomTtsBaseUrl = config.CustomTtsBaseUrl,
+            PocketTtsBaseUrl = config.PocketTtsBaseUrl,
+            VibeVoiceBaseUrl = config.VibeVoiceBaseUrl,
+            ChatterboxBaseUrl = config.ChatterboxBaseUrl,
+            Qwen3BaseUrl = config.Qwen3BaseUrl,
+            OmniVoiceBaseUrl = config.OmniVoiceBaseUrl,
             TextGenerationProvider = config.TextGenerationProvider,
             TextGenerationModelId = config.TextGenerationModelId,
             TtsProvider = config.TtsProvider,
@@ -97,6 +104,54 @@ public class IntegrationsController : ControllerBase
         {
             config.NanoGptApiKey = dto.NanoGptApiKey;
             invalidatedTags.Add(Enums.TtsProvider.NanoGpt.ToString());
+        }
+
+        if (dto.CustomTtsBaseUrl is not null)
+        {
+            config.CustomTtsBaseUrl = ResolveBaseUrl(
+                dto.CustomTtsBaseUrl,
+                IntegrationsConfig.DefaultCustomTtsBaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.Custom.ToString());
+        }
+
+        if (dto.PocketTtsBaseUrl is not null)
+        {
+            config.PocketTtsBaseUrl = ResolveBaseUrl(
+                dto.PocketTtsBaseUrl,
+                IntegrationsConfig.DefaultPocketTtsBaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.PocketTts.ToString());
+        }
+
+        if (dto.VibeVoiceBaseUrl is not null)
+        {
+            config.VibeVoiceBaseUrl = ResolveBaseUrl(
+                dto.VibeVoiceBaseUrl,
+                IntegrationsConfig.DefaultVibeVoiceBaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.VibeVoice.ToString());
+        }
+
+        if (dto.ChatterboxBaseUrl is not null)
+        {
+            config.ChatterboxBaseUrl = ResolveBaseUrl(
+                dto.ChatterboxBaseUrl,
+                IntegrationsConfig.DefaultChatterboxBaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.Chatterbox.ToString());
+        }
+
+        if (dto.Qwen3BaseUrl is not null)
+        {
+            config.Qwen3BaseUrl = ResolveBaseUrl(
+                dto.Qwen3BaseUrl,
+                IntegrationsConfig.DefaultQwen3BaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.Qwen3.ToString());
+        }
+
+        if (dto.OmniVoiceBaseUrl is not null)
+        {
+            config.OmniVoiceBaseUrl = ResolveBaseUrl(
+                dto.OmniVoiceBaseUrl,
+                IntegrationsConfig.DefaultOmniVoiceBaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.OmniVoice.ToString());
         }
         
         if (dto.TextGenerationProvider.HasValue)
@@ -154,4 +209,9 @@ public class IntegrationsController : ControllerBase
         _logger.LogInformation("Integrations config updated");
         return NoContent();
     }
+
+    private static string ResolveBaseUrl(string configuredValue, string defaultValue) =>
+        string.IsNullOrWhiteSpace(configuredValue)
+            ? defaultValue
+            : configuredValue.Trim();
 }

@@ -1,5 +1,7 @@
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.Integrations;
 using MyNovelBuilder.WebApi.Models.Tts;
 
 using MyNovelBuilder.WebApi.Attributes;
@@ -13,6 +15,7 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 public class PocketTtsService : ITtsService
 {
     private readonly HttpClient _httpClient;
+    private readonly IIntegrationsService _integrationsService;
 
     private readonly TtsVoiceDto[] _voices = new List<string>(
             ["alba", "marius", "javert", "jean", "fantine", "cosette", "eponine", "azelma"])
@@ -28,9 +31,11 @@ public class PocketTtsService : ITtsService
     
     /// <summary></summary>
     public PocketTtsService(
-        HttpClient httpClient)
+        HttpClient httpClient,
+        IIntegrationsService integrationsService)
     {
         _httpClient = httpClient;
+        _integrationsService = integrationsService;
     }
     
     private static MultipartFormDataContent CreateRequestContent(
@@ -50,8 +55,10 @@ public class PocketTtsService : ITtsService
         TtsRequest request,
         CancellationToken cancellationToken = default)
     {
+        var requestUri = await CreateRequestUriAsync("tts", cancellationToken);
         using var response = await _httpClient.PostAsync(
-            "http://localhost:8000/tts", CreateRequestContent(
+            requestUri,
+            CreateRequestContent(
                 request.Message, request.VoiceId),
             cancellationToken);
         
@@ -65,7 +72,7 @@ public class PocketTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         using var httpRequest = new HttpRequestMessage();
-        httpRequest.RequestUri = new Uri("http://localhost:8000/tts");
+        httpRequest.RequestUri = await CreateRequestUriAsync("tts", cancellationToken);
         httpRequest.Method = HttpMethod.Post;
         httpRequest.Content = CreateRequestContent(
             request.Message, request.VoiceId);
@@ -92,4 +99,15 @@ public class PocketTtsService : ITtsService
     /// <inheritdoc />
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
+
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    {
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
+            config.PocketTtsBaseUrl,
+            IntegrationsConfig.DefaultPocketTtsBaseUrl,
+            "Pocket TTS");
+
+        return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
+    }
 }
