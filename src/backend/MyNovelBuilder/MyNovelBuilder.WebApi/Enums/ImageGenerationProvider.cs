@@ -19,4 +19,9 @@ public enum ImageGenerationProvider
     /// NanoGPT image generation provider.
     /// </summary>
     NanoGpt,
+
+    /// <summary>
+    /// OpenRouter image generation provider.
+    /// </summary>
+    OpenRouter,
 }
