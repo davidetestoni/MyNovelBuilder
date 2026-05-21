@@ -32,6 +32,9 @@ import { MockGenerateTextService } from './services/mock-generate-text.service';
 import { GenerateImageService } from './services/generate-image.service';
 import { ApiGenerateImageService } from './services/api-generate-image.service';
 import { MockGenerateImageService } from './services/mock-generate-image.service';
+import { GenerateVideoService } from './services/generate-video.service';
+import { ApiGenerateVideoService } from './services/api-generate-video.service';
+import { MockGenerateVideoService } from './services/mock-generate-video.service';
 import { GenerateAudioService } from './services/generate-audio.service';
 import { ApiGenerateAudioService } from './services/api-generate-audio.service';
 import { MockGenerateAudioService } from './services/mock-generate-audio.service';
@@ -101,6 +104,12 @@ export const appConfig: ApplicationConfig = {
       useClass: environment.mocked
         ? MockGenerateImageService
         : ApiGenerateImageService,
+    },
+    {
+      provide: GenerateVideoService,
+      useClass: environment.mocked
+        ? MockGenerateVideoService
+        : ApiGenerateVideoService,
     },
     {
       provide: GenerateAudioService,

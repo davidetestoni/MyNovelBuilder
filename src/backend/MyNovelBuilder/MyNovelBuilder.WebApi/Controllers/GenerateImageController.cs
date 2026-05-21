@@ -64,7 +64,7 @@ public class GenerateImageController : ControllerBase
         
         return File(image, "image/png", "image.png");
     }
-    
+
     /// <summary>
     /// Edit an existing image.
     /// </summary>
@@ -110,7 +110,8 @@ public class GenerateImageController : ControllerBase
                 {
                     ModelId = m.ModelId,
                     Name = m.Name,
-                    IsImageEditor = m.IsImageEditor,
+                    SupportsImageGeneration = m.SupportsImageGeneration,
+                    SupportsImageEditing = m.SupportsImageEditing,
                 });
             },
             new HybridCacheEntryOptions

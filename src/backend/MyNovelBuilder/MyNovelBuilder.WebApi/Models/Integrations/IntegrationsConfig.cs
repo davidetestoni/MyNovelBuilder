@@ -121,6 +121,11 @@ public class IntegrationsConfig
     /// The Image Generation provider to use to generate images.
     /// </summary>
     public ImageGenerationProvider ImageGenerationProvider { get; set; } = ImageGenerationProvider.DeApi;
+
+    /// <summary>
+    /// The Video Generation provider to use to generate videos.
+    /// </summary>
+    public VideoGenerationProvider VideoGenerationProvider { get; set; } = VideoGenerationProvider.DeApi;
     
     /// <summary>
     /// The TTS model ID to use for text-to-speech generation.

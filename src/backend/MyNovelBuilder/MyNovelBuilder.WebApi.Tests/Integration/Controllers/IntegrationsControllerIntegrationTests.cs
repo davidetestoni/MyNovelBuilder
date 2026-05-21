@@ -32,6 +32,7 @@ public class IntegrationsControllerIntegrationTests(
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/gpt-test",
             TtsProvider = TtsProvider.PocketTts,
+            VideoGenerationProvider = VideoGenerationProvider.DeApi,
             TtsModelId = "test-model-id",
             TtsVoiceId = "test-voice-id",
             TtsEnableTextEmphasis = true,
@@ -53,6 +54,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(TextGenerationProvider.OpenRouter, dto.TextGenerationProvider);
         Assert.Equal(config.TextGenerationModelId, dto.TextGenerationModelId);
         Assert.Equal(TtsProvider.PocketTts, dto.TtsProvider);
+        Assert.Equal(VideoGenerationProvider.DeApi, dto.VideoGenerationProvider);
         Assert.Equal(config.TtsModelId, dto.TtsModelId);
         Assert.Equal(config.TtsVoiceId, dto.TtsVoiceId);
         Assert.True(dto.TtsEnableTextEmphasis);
@@ -89,6 +91,7 @@ public class IntegrationsControllerIntegrationTests(
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/old-model",
             TtsProvider = TtsProvider.PocketTts,
+            VideoGenerationProvider = VideoGenerationProvider.DeApi,
             TtsModelId = "test-model-id",
             TtsVoiceId = "test-voice-id",
             TtsEnableTextEmphasis = false
@@ -101,6 +104,7 @@ public class IntegrationsControllerIntegrationTests(
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/new-model",
             TtsProvider = TtsProvider.Kokoro,
+            VideoGenerationProvider = VideoGenerationProvider.DeApi,
             TtsModelId = "new-model",
             TtsVoiceId = "new-voice",
             TtsEnableTextEmphasis = true,
@@ -121,6 +125,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(updateDto.TextGenerationProvider, updatedConfig.TextGenerationProvider);
         Assert.Equal(updateDto.TextGenerationModelId, updatedConfig.TextGenerationModelId);
         Assert.Equal(updateDto.TtsProvider, updatedConfig.TtsProvider);
+        Assert.Equal(updateDto.VideoGenerationProvider, updatedConfig.VideoGenerationProvider);
         Assert.Equal(updateDto.TtsModelId, updatedConfig.TtsModelId);
         Assert.Equal(updateDto.TtsVoiceId, updatedConfig.TtsVoiceId);
         Assert.Equal(updateDto.TtsEnableTextEmphasis, updatedConfig.TtsEnableTextEmphasis);

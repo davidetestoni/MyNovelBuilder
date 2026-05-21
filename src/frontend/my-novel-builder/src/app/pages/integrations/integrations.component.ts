@@ -21,6 +21,7 @@ import { InputGroup } from 'primeng/inputgroup';
 import { InputGroupAddon } from 'primeng/inputgroupaddon';
 import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
 import { ImageGenerationProvider } from '../../types/enums/image-generation-provider';
+import { VideoGenerationProvider } from '../../types/enums/video-generation-provider';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { TtsModelDto } from '../../types/dtos/generate/tts-model.dto';
 import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
@@ -48,6 +49,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   protected readonly TextGenerationProvider = TextGenerationProvider;
   protected readonly TtsProvider = TtsProvider;
   protected readonly ImageGenerationProvider = ImageGenerationProvider;
+  protected readonly VideoGenerationProvider = VideoGenerationProvider;
 
   private integrationsService = inject(IntegrationsService);
   private generateAudioService = inject(GenerateAudioService);
@@ -78,6 +80,9 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     ttsImmersivePauseMs: new FormControl<number>(150),
     imageGenerationProvider: new FormControl<ImageGenerationProvider>(
       ImageGenerationProvider.DeApi,
+    ),
+    videoGenerationProvider: new FormControl<VideoGenerationProvider>(
+      VideoGenerationProvider.DeApi,
     ),
     deApiApiKey: new FormControl<string>('', Validators.maxLength(1000)),
   });
@@ -130,6 +135,16 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     }),
   );
 
+  videoGenerationProviderOptions = Object.values(VideoGenerationProvider).map(
+    (provider) => ({
+      label: provider
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase())
+        .replace('Api', 'API'),
+      value: provider,
+    }),
+  );
+
   ngOnInit(): void {
     this.integrationsForm.controls.textGenerationProvider.valueChanges.subscribe(
       (provider) => {
@@ -173,6 +188,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           ttsEnableImmersive: config.ttsEnableImmersive,
           ttsImmersivePauseMs: config.ttsImmersivePauseMs,
           imageGenerationProvider: config.imageGenerationProvider,
+          videoGenerationProvider: config.videoGenerationProvider,
         }, { emitEvent: false });
 
         this.loadTextGenerationModels(
@@ -594,6 +610,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.integrationsForm.value.ttsImmersivePauseMs ?? 150,
       imageGenerationProvider:
         this.integrationsForm.value.imageGenerationProvider,
+      videoGenerationProvider:
+        this.integrationsForm.value.videoGenerationProvider,
     };
 
     this.integrationsService.updateIntegrationsConfig(updateDto).subscribe({

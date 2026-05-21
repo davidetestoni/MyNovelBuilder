@@ -119,31 +119,28 @@ public class NanoGptImageGenerationService : IImageGenerationService
             var modelName = modelObject["name"]?.GetValue<string>() ?? modelId;
             var capabilities = modelObject["capabilities"];
 
-            if (capabilities?["image_generation"]?.GetValue<bool>() == true)
+            var supportsImageGeneration =
+                capabilities?["image_generation"]?.GetValue<bool>() == true;
+            var supportsImageEditing =
+                capabilities?["image_to_image"]?.GetValue<bool>() == true;
+
+            if (!supportsImageGeneration && !supportsImageEditing)
             {
-                models.Add(new ImageGenerationModelInfo
-                {
-                    ModelId = modelId,
-                    Name = modelName,
-                    IsImageEditor = false,
-                });
+                continue;
             }
 
-            if (capabilities?["image_to_image"]?.GetValue<bool>() == true)
+            models.Add(new ImageGenerationModelInfo
             {
-                models.Add(new ImageGenerationModelInfo
-                {
-                    ModelId = modelId,
-                    Name = modelName,
-                    IsImageEditor = true,
-                });
-            }
+                ModelId = modelId,
+                Name = modelName,
+                SupportsImageGeneration = supportsImageGeneration,
+                SupportsImageEditing = supportsImageEditing,
+            });
         }
 
         return models
             .OrderBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(m => m.ModelId, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(m => m.IsImageEditor);
+            .ThenBy(m => m.ModelId, StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)

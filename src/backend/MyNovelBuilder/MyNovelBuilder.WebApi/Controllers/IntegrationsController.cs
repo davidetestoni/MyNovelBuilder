@@ -53,6 +53,7 @@ public class IntegrationsController : ControllerBase
             TextGenerationModelId = config.TextGenerationModelId,
             TtsProvider = config.TtsProvider,
             ImageGenerationProvider = config.ImageGenerationProvider,
+            VideoGenerationProvider = config.VideoGenerationProvider,
             TtsModelId = config.TtsModelId,
             TtsVoiceId = config.TtsVoiceId,
             TtsEnableTextEmphasis = config.TtsEnableTextEmphasis,
@@ -172,6 +173,11 @@ public class IntegrationsController : ControllerBase
         if (dto.ImageGenerationProvider.HasValue)
         {
             config.ImageGenerationProvider = dto.ImageGenerationProvider.Value;
+        }
+
+        if (dto.VideoGenerationProvider.HasValue)
+        {
+            config.VideoGenerationProvider = dto.VideoGenerationProvider.Value;
         }
 
         if (!string.IsNullOrWhiteSpace(dto.TtsModelId))

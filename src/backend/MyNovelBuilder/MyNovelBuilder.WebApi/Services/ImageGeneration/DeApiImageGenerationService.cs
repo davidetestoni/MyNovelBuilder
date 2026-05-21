@@ -1,12 +1,11 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using MyNovelBuilder.WebApi.Attributes;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.ImageGeneration;
-
-using MyNovelBuilder.WebApi.Attributes;
-using MyNovelBuilder.WebApi.Enums;
 
 namespace MyNovelBuilder.WebApi.Services.ImageGeneration;
 
@@ -14,36 +13,21 @@ namespace MyNovelBuilder.WebApi.Services.ImageGeneration;
 /// Service for generating images using DeAPI.
 /// </summary>
 [RegisterKeyedService(ImageGenerationProvider.DeApi, useHttpClient: true)]
-public class DeApiImageGenerationService : IImageGenerationService
+public class DeApiImageGenerationService : DeApiGenerationServiceBase, IImageGenerationService
 {
+    private const int DefaultImageSteps = 8;
+    private const int DefaultEditSteps = 20;
+
     private readonly ILogger<DeApiImageGenerationService> _logger;
-    private readonly HttpClient _httpClient;
-    private readonly IIntegrationsService _integrationsService;
 
     /// <summary></summary>
     public DeApiImageGenerationService(
         ILogger<DeApiImageGenerationService> logger,
         HttpClient httpClient,
         IIntegrationsService integrationsService)
+        : base(httpClient, integrationsService)
     {
         _logger = logger;
-        _httpClient = httpClient;
-        _integrationsService = integrationsService;
-        _httpClient.BaseAddress = new Uri("https://api.deapi.ai/api/v1/client/");
-    }
-
-    private async Task<string> GetApiKeyAsync(CancellationToken cancellationToken = default)
-    {
-        var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var apiKey = config.DeApiApiKey;
-
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            throw new ApiException(ErrorCodes.MissingOrInvalidServiceCredentials,
-                "DeAPI API key is not configured.");
-        }
-        
-        return apiKey;
     }
 
     /// <inheritdoc />
@@ -51,12 +35,12 @@ public class DeApiImageGenerationService : IImageGenerationService
         ImageGenerationRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var apiKey = await GetApiKeyAsync(cancellationToken);
+        var apiKey = await GetDeApiApiKeyAsync(cancellationToken);
 
         var httpRequest = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri(_httpClient.BaseAddress!, "txt2img"),
+            RequestUri = new Uri(HttpClient.BaseAddress!, "txt2img"),
             Content = new StringContent(
                 JsonSerializer.Serialize(new
                 {
@@ -64,13 +48,13 @@ public class DeApiImageGenerationService : IImageGenerationService
                     model = request.ModelId,
                     width = request.Width,
                     height = request.Height,
-                    steps = 8,
+                    steps = DefaultImageSteps,
                     seed = Random.Shared.NextInt64()
                 }), Encoding.UTF8, "application/json")
         };
         httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
         
-        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        using var response = await HttpClient.SendAsync(httpRequest, cancellationToken);
         var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         
         if (!response.IsSuccessStatusCode)
@@ -84,7 +68,7 @@ public class DeApiImageGenerationService : IImageGenerationService
         var responseObject = JsonNode.Parse(jsonResponse)!;
         var requestId = responseObject["data"]!["request_id"]!.GetValue<string>();
 
-        return await PollForResultAsync(requestId, apiKey, cancellationToken);
+        return await PollForResultAsync(requestId, apiKey, "image generation", _logger, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -93,26 +77,26 @@ public class DeApiImageGenerationService : IImageGenerationService
         ImageGenerationRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var apiKey = await GetApiKeyAsync(cancellationToken);
+        var apiKey = await GetDeApiApiKeyAsync(cancellationToken);
 
         var content = new MultipartFormDataContent();
         content.Add(new StringContent(request.Prompt), "prompt");
         content.Add(new StringContent(request.ModelId), "model");
         content.Add(new StringContent(request.Width.ToString()), "width");
         content.Add(new StringContent(request.Height.ToString()), "height");
-        content.Add(new StringContent("20"), "steps");
+        content.Add(new StringContent(DefaultEditSteps.ToString()), "steps");
         content.Add(new StringContent(Random.Shared.NextInt64().ToString()), "seed");
-        content.Add(new ByteArrayContent(imageBytes), "image", "input.png");
+        content.Add(CreateImageByteArrayContent(imageBytes), "image", "input.png");
         
         var httpRequest = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri(_httpClient.BaseAddress!, "img2img"),
+            RequestUri = new Uri(HttpClient.BaseAddress!, "img2img"),
             Content = content
         };
         httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
         
-        using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+        using var response = await HttpClient.SendAsync(httpRequest, cancellationToken);
         var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         
         if (!response.IsSuccessStatusCode)
@@ -126,81 +110,23 @@ public class DeApiImageGenerationService : IImageGenerationService
         var responseObject = JsonNode.Parse(jsonResponse)!;
         var requestId = responseObject["data"]!["request_id"]!.GetValue<string>();
 
-        return await PollForResultAsync(requestId, apiKey, cancellationToken);
-    }
-
-    private async Task<byte[]> PollForResultAsync(
-        string requestId,
-        string apiKey,
-        CancellationToken cancellationToken = default)
-    {
-        var timeout = TimeSpan.FromMinutes(5);
-        var startTime = DateTime.UtcNow;
-
-        // Polling
-        while (DateTime.UtcNow - startTime < timeout)
-        {
-            await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
-
-            var statusRequest = new HttpRequestMessage
-            {
-                Method = HttpMethod.Get,
-                RequestUri = new Uri(_httpClient.BaseAddress!, $"request-status/{requestId}")
-            };
-            statusRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
-
-            using var statusResponse = await _httpClient.SendAsync(statusRequest, cancellationToken);
-            var statusJson = await statusResponse.Content.ReadAsStringAsync(cancellationToken);
-
-            if (!statusResponse.IsSuccessStatusCode)
-            {
-                _logger.LogError("DeAPI generation status check failed. Status code: {StatusCode}, Response: {Response}",
-                    statusResponse.StatusCode, statusJson);
-
-                throw new ApiException(ErrorCodes.ExternalServiceError,
-                    "Failed to check generation status with DeAPI.");
-            }
-
-            var statusObject = JsonNode.Parse(statusJson)!;
-
-            // status can be "pending", "processing", "done" or "error"
-            var status = statusObject["data"]!["status"]!.GetValue<string>();
-
-            if (status == "done")
-            {
-                var imageUrl = statusObject["data"]!["result_url"]!.GetValue<string>();
-                return await _httpClient.GetByteArrayAsync(imageUrl, cancellationToken);
-            }
-
-            if (status == "error")
-            {
-                _logger.LogError("DeAPI generation failed. Request ID: {RequestId}, Status response: {StatusResponse}",
-                    requestId, statusJson);
-
-                throw new ApiException(ErrorCodes.ExternalServiceError,
-                    "Generation failed with DeAPI.");
-            }
-        }
-
-        _logger.LogError("DeAPI generation timed out. Request ID: {RequestId}", requestId);
-        throw new ApiException(ErrorCodes.ExternalServiceError,
-            "Generation with DeAPI timed out.");
+        return await PollForResultAsync(requestId, apiKey, "image editing", _logger, cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<IEnumerable<ImageGenerationModelInfo>> GetAvailableModelsAsync(
         CancellationToken cancellationToken = default)
     {
-        var apiKey = await GetApiKeyAsync(cancellationToken);
+        var apiKey = await GetDeApiApiKeyAsync(cancellationToken);
         
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri(_httpClient.BaseAddress!, "models")
+            RequestUri = new Uri(HttpClient.BaseAddress!, "models")
         };
         request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
         
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        using var response = await HttpClient.SendAsync(request, cancellationToken);
         var jsonResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         
         if (!response.IsSuccessStatusCode)
@@ -217,28 +143,26 @@ public class DeApiImageGenerationService : IImageGenerationService
         foreach (var m in responseObject["data"]!.AsArray())
         {
             var inferenceTypes = m!["inference_types"]?.AsArray().Select(t => t!.GetValue<string>()).ToList() ?? [];
-            
-            if (inferenceTypes.Contains("txt2img"))
+
+            var supportsImageGeneration = inferenceTypes.Contains("txt2img");
+            var supportsImageEditing = inferenceTypes.Contains("img2img");
+            if (!supportsImageGeneration && !supportsImageEditing)
             {
-                models.Add(new ImageGenerationModelInfo
-                {
-                    ModelId = m["slug"]!.GetValue<string>(),
-                    Name = m["name"]!.GetValue<string>(),
-                    IsImageEditor = false
-                });
+                continue;
             }
-            
-            if (inferenceTypes.Contains("img2img"))
+
+            models.Add(new ImageGenerationModelInfo
             {
-                models.Add(new ImageGenerationModelInfo
-                {
-                    ModelId = m["slug"]!.GetValue<string>(),
-                    Name = m["name"]!.GetValue<string>(),
-                    IsImageEditor = true
-                });
-            }
+                ModelId = m["slug"]!.GetValue<string>(),
+                Name = m["name"]!.GetValue<string>(),
+                SupportsImageGeneration = supportsImageGeneration,
+                SupportsImageEditing = supportsImageEditing,
+            });
         }
-        
-        return models;
+
+        return models
+            .OrderBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(m => m.ModelId, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 }

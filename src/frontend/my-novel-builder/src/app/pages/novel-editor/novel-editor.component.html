@@ -178,7 +178,14 @@
                   @if (!media.isVideo) {
                     <img src="{{ media.url }}" alt="{{ media.id }}" />
                   } @else {
-                    <video autoplay muted loop src="{{ media.url }}"></video>
+                    <video
+                      autoplay
+                      muted
+                      [muted]="true"
+                      loop
+                      playsinline
+                      src="{{ media.url }}"
+                    ></video>
                   }
                 </div>
               }
@@ -224,7 +231,9 @@
                 <video
                   autoplay
                   muted
+                  [muted]="true"
                   loop
+                  playsinline
                   src="{{ media.url }}"
                   (click)="zoomMedia(media)"
                 ></video>
@@ -276,7 +285,14 @@
           @if (!zoomedMedia.isVideo) {
             <img src="{{ zoomedMedia.url }}" alt="{{ zoomedMedia.id }}" />
           } @else {
-            <video autoplay muted loop src="{{ zoomedMedia.url }}"></video>
+            <video
+              autoplay
+              muted
+              [muted]="true"
+              loop
+              playsinline
+              src="{{ zoomedMedia.url }}"
+            ></video>
           }
         </div>
         @if (!zoomedMedia.isVideo && zoomedMediaPrompt) {

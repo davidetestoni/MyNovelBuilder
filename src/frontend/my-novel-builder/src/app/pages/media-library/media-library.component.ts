@@ -16,7 +16,7 @@ import {
   AddMediaFolderDialogComponent,
   AddMediaFolderDialogResult,
 } from '../../components/add-media-folder-dialog/add-media-folder-dialog.component';
-import { ImageGenerationStudioComponent } from '../../components/image-generation-studio/image-generation-studio.component';
+import { MediaGenerationStudioComponent } from '../../components/media-generation-studio/media-generation-studio.component';
 import { MediaFolderComponent } from '../../components/media-folder/media-folder.component';
 import { MediaLibraryService } from '../../services/media-library.service';
 import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto';
@@ -32,7 +32,7 @@ import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto'
     SelectModule,
     SelectButtonModule,
     ConfirmDialogModule,
-    ImageGenerationStudioComponent,
+    MediaGenerationStudioComponent,
     MediaFolderComponent,
   ],
   providers: [DialogService, ConfirmationService],
@@ -64,7 +64,7 @@ export class MediaLibraryComponent implements OnInit, OnDestroy {
     );
   }
 
-  get isImageGenerationStudioVisible(): boolean {
+  get isMediaGenerationStudioVisible(): boolean {
     return this.selectedLayout === 'studio';
   }
 

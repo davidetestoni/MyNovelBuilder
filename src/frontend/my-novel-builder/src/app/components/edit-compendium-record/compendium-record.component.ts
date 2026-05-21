@@ -6,9 +6,9 @@ import { TitleCasePipe } from '@angular/common';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import {
-  GenerateImageComponent,
-  GenerateImageComponentData,
-} from '../generate-image/generate-image.component';
+  GenerateMediaComponent,
+  GenerateMediaComponentData,
+} from '../generate-media/generate-media.component';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
@@ -27,6 +27,7 @@ import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/com
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastrService } from 'ngx-toastr';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import { createGeneratedMediaFile } from '../../utils/generated-media';
 import {
   ImageSourceSelectorComponent,
   ImageSourceSelectorComponentData,
@@ -374,7 +375,7 @@ export class CompendiumRecordComponent {
       closeOnEscape: true,
       data: <ImageSourceSelectorComponentData>{
         uploadLabel: 'Upload Image',
-        generateLabel: 'Generate Image',
+        generateLabel: 'Generate Media',
         clipboardLabel: 'Paste from Clipboard',
       },
     });
@@ -434,8 +435,8 @@ export class CompendiumRecordComponent {
   private generateImage() {
     const imageDimensions = this.getImageDimensionsForRecordType();
 
-    this.dialogRef = this.dialogService.open(GenerateImageComponent, {
-      header: 'Generate Image',
+    this.dialogRef = this.dialogService.open(GenerateMediaComponent, {
+      header: 'Generate Media',
       width: '50vw',
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
@@ -443,7 +444,7 @@ export class CompendiumRecordComponent {
       closeOnEscape: true,
       modal: true,
       dismissableMask: true,
-      data: <GenerateImageComponentData>{
+      data: <GenerateMediaComponentData>{
         enablePromptGeneration: true,
         compendiumId: this.compendiumId,
         compendiumRecordId: this.record.id,
@@ -452,12 +453,13 @@ export class CompendiumRecordComponent {
       },
     });
 
-    this.dialogRef?.onClose.subscribe((image: Blob) => {
-      if (image) {
+    this.dialogRef?.onClose.subscribe((media: Blob) => {
+      if (media) {
+        const file = createGeneratedMediaFile(media);
         this.compendiumService
           .uploadRecordMedia(
             this.record.id,
-            image,
+            file,
             this.record.media.length === 0,
           )
           .subscribe(() => {

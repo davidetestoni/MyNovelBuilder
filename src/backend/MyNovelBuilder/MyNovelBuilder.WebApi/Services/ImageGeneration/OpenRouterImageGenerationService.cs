@@ -78,33 +78,15 @@ public class OpenRouterImageGenerationService : IImageGenerationService
         var models = await GetAvailableModelMetadataAsync(apiKey, cancellationToken);
 
         return models
-            .SelectMany(model =>
+            .Select(model => new ImageGenerationModelInfo
             {
-                var entries = new List<ImageGenerationModelInfo>
-                {
-                    new()
-                    {
-                        ModelId = model.ModelId,
-                        Name = model.Name,
-                        IsImageEditor = false,
-                    }
-                };
-
-                if (model.SupportsImageInput)
-                {
-                    entries.Add(new ImageGenerationModelInfo
-                    {
-                        ModelId = model.ModelId,
-                        Name = model.Name,
-                        IsImageEditor = true,
-                    });
-                }
-
-                return entries;
+                ModelId = model.ModelId,
+                Name = model.Name,
+                SupportsImageGeneration = true,
+                SupportsImageEditing = model.SupportsImageInput,
             })
             .OrderBy(model => model.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(model => model.ModelId, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(model => model.IsImageEditor)
             .ToList();
     }
 

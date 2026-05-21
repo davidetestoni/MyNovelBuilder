@@ -59,13 +59,13 @@ public interface INovelService
     void DeleteCoverImage(Guid id);
 
     /// <summary>
-    /// Upload a prose image for a novel.
-    /// Returns the filename of the uploaded image.
+    /// Upload prose media for a novel.
+    /// Returns the filename of the uploaded media file.
     /// </summary>
     Task<string> UploadProseImageAsync(Guid id, IFormFile file, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Delete a prose image for a novel by file name.
+    /// Delete a prose media file for a novel by file name.
     /// </summary>
     Task DeleteProseImageAsync(Guid id, string fileName, CancellationToken cancellationToken = default);
 }

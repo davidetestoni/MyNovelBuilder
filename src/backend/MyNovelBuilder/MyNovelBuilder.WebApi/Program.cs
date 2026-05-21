@@ -20,6 +20,7 @@ using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.ImageGeneration;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
+using MyNovelBuilder.WebApi.Services.VideoGeneration;
 using Serilog;
 using Serilog.Events;
 
@@ -132,6 +133,9 @@ builder.Services.RegisterKeyedServicesFromAssembly<ITtsService>();
 
 // Image generation services
 builder.Services.RegisterKeyedServicesFromAssembly<IImageGenerationService>();
+
+// Video generation services
+builder.Services.RegisterKeyedServicesFromAssembly<IVideoGenerationService>();
 
 // Mapster configuration
 var config = new TypeAdapterConfig();

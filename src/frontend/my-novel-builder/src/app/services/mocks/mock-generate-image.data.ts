@@ -2,9 +2,11 @@ import { HttpEvent, HttpResponse } from '@angular/common/http';
 import { Observable, Subscriber } from 'rxjs';
 import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-generation-model-info.dto';
 
-export function mockedImageGenerationResponse(): Observable<HttpEvent<Blob>> {
+export function mockedImageGenerationResponse(
+  mimeType = 'image/png',
+): Observable<HttpEvent<Blob>> {
   return new Observable<HttpEvent<Blob>>((subscriber: Subscriber<HttpEvent<Blob>>) => {
-    const blob = new Blob(['mock-image-data'], { type: 'image/png' });
+    const blob = new Blob(['mock-image-data'], { type: mimeType });
     const response = new HttpResponse({
       body: blob,
       status: 200,
@@ -19,11 +21,13 @@ export const mockedImageModelInfos: ImageGenerationModelInfoDto[] = [
   {
     modelId: 'z-image/turbo',
     name: 'Z-Image Turbo',
-    isImageEditor: false,
+    supportsImageGeneration: true,
+    supportsImageEditing: false,
   },
   {
     modelId: 'z-image/hd',
     name: 'Z-Image HD',
-    isImageEditor: true,
+    supportsImageGeneration: true,
+    supportsImageEditing: true,
   },
 ];

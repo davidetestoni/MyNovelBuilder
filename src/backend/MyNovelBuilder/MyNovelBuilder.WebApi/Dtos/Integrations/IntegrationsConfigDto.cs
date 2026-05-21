@@ -86,6 +86,11 @@ public class IntegrationsConfigDto
     /// The configured Image Generation provider.
     /// </summary>
     public required ImageGenerationProvider ImageGenerationProvider { get; init; }
+
+    /// <summary>
+    /// The configured Video Generation provider.
+    /// </summary>
+    public required VideoGenerationProvider VideoGenerationProvider { get; init; }
     
     /// <summary>
     /// The TTS model ID to use for text-to-speech generation.

@@ -314,6 +314,38 @@ public class NovelControllerIntegrationTests(
     }
 
     [Fact]
+    public async Task UploadProseImage_WhenMp4_ReturnsOk_AndKeepsVideoExtension()
+    {
+        using var client = Factory.CreateClient();
+        var novel = new Novel
+        {
+            Title = "Novel for Prose Video",
+            Author = "Author",
+            Brief = "Brief"
+        };
+        UnitOfWork.Novels.Add(novel);
+        await UnitOfWork.SaveChangesAsync();
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]);
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("video/mp4");
+        content.Add(fileContent, "file", "prose.mp4");
+
+        var response = await client.PostAsync($"api/novel/{novel.Id}/prose-image", content);
+
+        Assert.True(response.IsSuccessStatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        var location = JsonSerializer.Deserialize<string>(json);
+        Assert.False(string.IsNullOrWhiteSpace(location));
+        Assert.EndsWith(".mp4", location, StringComparison.OrdinalIgnoreCase);
+
+        using var scope = Factory.Services.CreateScope();
+        var storageOptions = scope.ServiceProvider.GetRequiredService<IOptions<AppStorageOptions>>().Value;
+        var filePath = Path.Combine(storageOptions.StaticFilesRoot, "novels", novel.Id.ToString(), "prose-images", location!);
+        Assert.True(File.Exists(filePath));
+    }
+
+    [Fact]
     public async Task DeleteProseImage_ReturnsOk_AndDeletesFile()
     {
         // Arrange

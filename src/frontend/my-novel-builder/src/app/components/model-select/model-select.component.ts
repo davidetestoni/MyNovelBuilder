@@ -11,17 +11,21 @@ import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/f
 import { SelectModule } from 'primeng/select';
 import { GenerateTextService } from '../../services/generate-text.service';
 import { GenerateImageService } from '../../services/generate-image.service';
+import { GenerateVideoService } from '../../services/generate-video.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { ImageGenerationModelInfoDto } from '../../types/dtos/generate/image-generation-model-info.dto';
 import { TextGenerationModelInfoDto } from '../../types/dtos/generate/text-generation-model-info.dto';
+import { VideoGenerationModelInfoDto } from '../../types/dtos/generate/video-generation-model-info.dto';
 
 type ModelCapability =
   | 'text'
   | 'vision'
   | 'structuredOutput'
   | 'imageGeneration'
-  | 'imageEdit';
+  | 'imageEdit'
+  | 'textToVideo'
+  | 'imageToVideo';
 
 @Component({
   selector: 'app-model-select',
@@ -51,6 +55,7 @@ export class ModelSelectComponent
 
   private readonly generateTextService = inject(GenerateTextService);
   private readonly generateImageService = inject(GenerateImageService);
+  private readonly generateVideoService = inject(GenerateVideoService);
   private readonly localStorageService = inject(LocalStorageService);
 
   options: { label: string; value: string }[] = [];
@@ -134,6 +139,18 @@ export class ModelSelectComponent
       return;
     }
 
+    if (
+      this.capability === 'textToVideo' ||
+      this.capability === 'imageToVideo'
+    ) {
+      this.generateVideoService.getAvailableModels().subscribe({
+        next: (models) => this.setVideoOptions(models),
+        error: () => this.setTextOptions([]),
+        complete: () => (this.isLoading = false),
+      });
+      return;
+    }
+
     this.generateImageService.getAvailableModels().subscribe({
       next: (models) => this.setImageOptions(models),
       error: () => this.setTextOptions([]),
@@ -167,9 +184,35 @@ export class ModelSelectComponent
   }
 
   private setImageOptions(models: ImageGenerationModelInfoDto[]): void {
-    const onlyEditors = this.capability === 'imageEdit';
+    const filteredModels = models.filter((model) => {
+      switch (this.capability) {
+        case 'imageEdit':
+          return model.supportsImageEditing;
+        case 'imageGeneration':
+        default:
+          return model.supportsImageGeneration;
+      }
+    });
+
+    const deduplicatedModels = filteredModels.filter(
+      (model, index, allModels) =>
+        allModels.findIndex(
+          (candidate) => candidate.modelId === model.modelId,
+        ) === index,
+    );
+
+    this.options = deduplicatedModels.map((model) => ({
+      label: model.name,
+      value: model.modelId,
+    }));
+    this.applyDefaultValue();
+  }
+
+  private setVideoOptions(models: VideoGenerationModelInfoDto[]): void {
     const filteredModels = models.filter((model) =>
-      onlyEditors ? model.isImageEditor : !model.isImageEditor,
+      this.capability === 'imageToVideo'
+        ? model.supportsImageToVideo
+        : model.supportsTextToVideo,
     );
 
     this.options = filteredModels.map((model) => ({
@@ -208,15 +251,41 @@ export class ModelSelectComponent
       }
     }
 
-    if (this.capability === 'imageGeneration' || this.capability === 'imageEdit') {
+    if (
+      this.capability === 'imageGeneration' ||
+      this.capability === 'imageEdit'
+    ) {
       const storageContext =
-        this.capability === 'imageEdit' ? 'edit' : 'generate';
+        this.capability === 'imageEdit'
+          ? 'edit'
+          : 'generate';
       const storedModel =
         this.localStorageService.getNestedStringForKey(
           LocalStorageKey.LastImageModelByContext,
           storageContext,
         ) ??
         this.localStorageService.getStringForKey(LocalStorageKey.LastImageModel);
+      if (
+        storedModel !== null &&
+        this.options.some((option) => option.value === storedModel)
+      ) {
+        this.value = storedModel;
+        this.onChange(this.value);
+        return;
+      }
+    }
+
+    if (this.capability === 'textToVideo' || this.capability === 'imageToVideo') {
+      const storageContext =
+        this.capability === 'imageToVideo'
+          ? 'generate-image-to-video'
+          : 'generate-video';
+      const storedModel =
+        this.localStorageService.getNestedStringForKey(
+          LocalStorageKey.LastVideoModelByContext,
+          storageContext,
+        ) ?? this.localStorageService.getStringForKey(LocalStorageKey.LastVideoModel);
+
       if (
         storedModel !== null &&
         this.options.some((option) => option.value === storedModel)

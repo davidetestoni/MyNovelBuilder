@@ -213,22 +213,31 @@ public class NovelService : INovelService
     {
         var path = Path.Combine(_staticFilesRoot, "novels", id.ToString(), "prose-images");
         Directory.CreateDirectory(path);
-        
-        var filePath = Path.Combine(path, $"{Guid.NewGuid()}.png");
+
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream, cancellationToken);
-        var imageBytes = memoryStream.ToArray();
-        
+        var mediaBytes = memoryStream.ToArray();
+        var isVideo = file.ContentType.StartsWith("video/", StringComparison.OrdinalIgnoreCase);
+
+        if (isVideo)
+        {
+            var videoPath = Path.Combine(path, $"{Guid.NewGuid()}.mp4");
+            await File.WriteAllBytesAsync(videoPath, mediaBytes, cancellationToken);
+            return Path.GetFileName(videoPath);
+        }
+
+        var filePath = Path.Combine(path, $"{Guid.NewGuid()}.png");
+
         // Convert to PNG using ImageSharp.
         if (file.ContentType != "image/png")
         {
-            using var image = Image.Load(imageBytes);
+            using var image = Image.Load(mediaBytes);
             using var outputStream = new MemoryStream();
             await image.SaveAsPngAsync(outputStream, cancellationToken);
-            imageBytes = outputStream.ToArray();
+            mediaBytes = outputStream.ToArray();
         }
         
-        await File.WriteAllBytesAsync(filePath, imageBytes, cancellationToken);
+        await File.WriteAllBytesAsync(filePath, mediaBytes, cancellationToken);
         return Path.GetFileName(filePath);
     }
 

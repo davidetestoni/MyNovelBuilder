@@ -75,7 +75,7 @@
 
   <section
     class="media-panel"
-    [class.media-panel-two-column]="isImageGenerationStudioVisible && selectedFolder !== null"
+    [class.media-panel-two-column]="isMediaGenerationStudioVisible && selectedFolder !== null"
   >
     <div class="media-panel-content">
       <app-media-folder
@@ -84,9 +84,9 @@
       />
     </div>
 
-    @if (isImageGenerationStudioVisible && selectedFolder !== null) {
+    @if (isMediaGenerationStudioVisible && selectedFolder !== null) {
       <div class="media-panel-content media-panel-studio">
-        <app-image-generation-studio
+        <app-media-generation-studio
           [folder]="selectedFolder"
           (mediaSaved)="onStudioMediaSaved()"
         />

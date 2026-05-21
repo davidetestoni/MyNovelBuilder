@@ -211,9 +211,9 @@ public class MediaLibraryControllerIntegrationTests(
         await UnitOfWork.SaveChangesAsync();
 
         using var content = CreateUploadMediaFormData(
-            "portrait.jpg",
+            "portrait.bmp",
             [0x01, 0x02, 0x03],
-            "image/jpeg");
+            "image/bmp");
 
         var response = await client.PostAsync(
             $"api/media-library/folder/{mediaFolder.Id}/media",

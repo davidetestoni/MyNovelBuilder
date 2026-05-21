@@ -1,5 +1,6 @@
 import { TextGenerationProvider } from '../../enums/text-generation-provider';
 import { ImageGenerationProvider } from '../../enums/image-generation-provider';
+import { VideoGenerationProvider } from '../../enums/video-generation-provider';
 import { TtsProvider } from '../../enums/tts-provider';
 
 export interface IntegrationsConfigDto {
@@ -19,6 +20,7 @@ export interface IntegrationsConfigDto {
   textGenerationModelId: string;
   ttsProvider: TtsProvider;
   imageGenerationProvider: ImageGenerationProvider;
+  videoGenerationProvider: VideoGenerationProvider;
   ttsModelId: string;
   ttsVoiceId: string;
   ttsEnableTextEmphasis: boolean;
@@ -43,6 +45,7 @@ export interface UpdateIntegrationsConfigDto {
   textGenerationModelId?: string | null;
   ttsProvider?: TtsProvider | null;
   imageGenerationProvider?: ImageGenerationProvider | null;
+  videoGenerationProvider?: VideoGenerationProvider | null;
   ttsModelId?: string | null;
   ttsVoiceId?: string | null;
   ttsEnableTextEmphasis?: boolean | null;

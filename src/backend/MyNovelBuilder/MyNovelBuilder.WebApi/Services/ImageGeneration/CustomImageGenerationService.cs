@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Mapster;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.ImageGeneration;
 
 using MyNovelBuilder.WebApi.Attributes;

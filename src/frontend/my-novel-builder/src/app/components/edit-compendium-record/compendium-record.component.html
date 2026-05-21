@@ -206,7 +206,14 @@
                   (click)="setCurrentImage(media.id)"
                 />
               } @else {
-                <video autoplay muted loop src="{{ media.url }}"></video>
+                <video
+                  autoplay
+                  muted
+                  [muted]="true"
+                  loop
+                  playsinline
+                  src="{{ media.url }}"
+                ></video>
               }
 
               @if (!media.isVideo) {

@@ -86,6 +86,11 @@ public class UpdateIntegrationsConfigDto
     /// The Image Generation provider to use to generate images.
     /// </summary>
     public ImageGenerationProvider? ImageGenerationProvider { get; init; }
+
+    /// <summary>
+    /// The Video Generation provider to use to generate videos.
+    /// </summary>
+    public VideoGenerationProvider? VideoGenerationProvider { get; init; }
     
     /// <summary>
     /// The TTS model ID to use for text-to-speech generation.
@@ -148,6 +153,9 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.ImageGenerationProvider)
             .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
             .WithMessage("Image generation provider is invalid.");
+        RuleFor(x => x.VideoGenerationProvider)
+            .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
+            .WithMessage("Video generation provider is invalid.");
 
         RuleFor(x => x.TtsImmersivePauseMs)
             .GreaterThanOrEqualTo(0)

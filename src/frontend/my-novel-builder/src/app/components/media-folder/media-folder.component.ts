@@ -24,7 +24,7 @@ import {
   ImageSourceSelectorComponent,
   ImageSourceSelectorComponentData,
 } from '../image-source-selector/image-source-selector.component';
-import { GenerateImageComponent } from '../generate-image/generate-image.component';
+import { GenerateMediaComponent } from '../generate-media/generate-media.component';
 import {
   UploadMediaDialogComponent,
   UploadMediaDialogData,
@@ -38,6 +38,7 @@ import { MediaFolderDto } from '../../types/dtos/media-library/media-folder.dto'
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptType } from '../../types/enums/prompt-type';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import { createGeneratedMediaFile } from '../../utils/generated-media';
 
 interface MediaPreview extends MediaFileDto {
   url: string | null;
@@ -244,7 +245,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
       closeOnEscape: true,
       data: <ImageSourceSelectorComponentData>{
         uploadLabel: 'Upload File',
-        generateLabel: 'Generate Image',
+        generateLabel: 'Generate Media',
       },
     });
 
@@ -573,8 +574,8 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   }
 
   private openGenerateImageDialog(): void {
-    const dialogRef = this.dialogService.open(GenerateImageComponent, {
-      header: 'Generate Image',
+    const dialogRef = this.dialogService.open(GenerateMediaComponent, {
+      header: 'Generate Media',
       width: '50vw',
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
@@ -590,14 +591,12 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
 
     this.dialogRef = dialogRef;
 
-    dialogRef.onClose.subscribe((image: Blob | undefined) => {
-      if (!image) {
+    dialogRef.onClose.subscribe((media: Blob | undefined) => {
+      if (!media) {
         return;
       }
 
-      const file = new File([image], 'generated-image.png', {
-        type: image.type || 'image/png',
-      });
+      const file = createGeneratedMediaFile(media);
 
       this.openUploadMediaDialog({
         initialFile: file,

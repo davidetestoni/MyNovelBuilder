@@ -13,7 +13,7 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public class OpenRouterImageGenerationServiceTests
 {
     [Fact]
-    public async Task GetAvailableModelsAsync_DuplicatesModelsThatSupportImageEditing()
+    public async Task GetAvailableModelsAsync_MapsImageCapabilitiesPerModel()
     {
         var handler = new QueueingHttpMessageHandler(
         [
@@ -51,19 +51,15 @@ public class OpenRouterImageGenerationServiceTests
             {
                 Assert.Equal("black-forest-labs/flux.2-pro", model.ModelId);
                 Assert.Equal("Flux Pro", model.Name);
-                Assert.False(model.IsImageEditor);
+                Assert.True(model.SupportsImageGeneration);
+                Assert.False(model.SupportsImageEditing);
             },
             model =>
             {
                 Assert.Equal("google/gemini-2.5-flash-image", model.ModelId);
                 Assert.Equal("Gemini Image", model.Name);
-                Assert.False(model.IsImageEditor);
-            },
-            model =>
-            {
-                Assert.Equal("google/gemini-2.5-flash-image", model.ModelId);
-                Assert.Equal("Gemini Image", model.Name);
-                Assert.True(model.IsImageEditor);
+                Assert.True(model.SupportsImageGeneration);
+                Assert.True(model.SupportsImageEditing);
             });
     }
 

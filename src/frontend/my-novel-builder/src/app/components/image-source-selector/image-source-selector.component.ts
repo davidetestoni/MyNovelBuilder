@@ -29,7 +29,7 @@ export class ImageSourceSelectorComponent {
   get generateLabel(): string {
     return (
       (this.config.data as ImageSourceSelectorComponentData | undefined)
-        ?.generateLabel ?? 'Generate Image'
+        ?.generateLabel ?? 'Generate Media'
     );
   }
 

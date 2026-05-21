@@ -164,7 +164,7 @@ public class NovelController : ControllerBase
     }
 
     /// <summary>
-    /// Upload a new prose image for a novel.
+    /// Upload new prose media for a novel.
     /// </summary>
     [HttpPost("{id:guid}/prose-image")]
     public async Task<IActionResult> UploadProseImage(
@@ -177,7 +177,7 @@ public class NovelController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a prose image for a novel.
+    /// Delete prose media for a novel.
     /// </summary>
     [HttpDelete("{id:guid}/prose-image/{fileName}")]
     public async Task DeleteProseImage(

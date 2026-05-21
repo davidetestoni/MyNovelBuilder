@@ -56,9 +56,10 @@ import { NovelService } from '../../services/novel.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
-import { GenerateImageComponent } from '../generate-image/generate-image.component';
+import { GenerateMediaComponent } from '../generate-media/generate-media.component';
 import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import { createGeneratedMediaFile } from '../../utils/generated-media';
 import { marked } from 'marked';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
@@ -1073,8 +1074,8 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   generateProseImage(chapterIndex: number, sectionIndex: number) {
-    this.dialogRef = this.dialogService.open(GenerateImageComponent, {
-      header: 'Generate Image',
+    this.dialogRef = this.dialogService.open(GenerateMediaComponent, {
+      header: 'Generate Media',
       width: '50vw',
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
@@ -1084,11 +1085,9 @@ export class ProseEditorComponent implements OnDestroy {
       dismissableMask: true,
     });
 
-    this.dialogRef?.onClose.subscribe((image: Blob) => {
-      if (image) {
-        const file = new File([image], 'generated-image.png', {
-          type: 'image/png',
-        });
+    this.dialogRef?.onClose.subscribe((media: Blob) => {
+      if (media) {
+        const file = createGeneratedMediaFile(media);
         this.novelService
           .uploadProseImage(this.novelId, file)
           .subscribe((location: string) => {

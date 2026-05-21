@@ -8,6 +8,7 @@ import { UpdateCompendiumDto } from '../types/dtos/compendium/update-compendium.
 import { CreateCompendiumRecordDto } from '../types/dtos/compendium-record/create-compendium-record.dto';
 import { CompendiumRecordDto } from '../types/dtos/compendium-record/compendium-record.dto';
 import { UpdateCompendiumRecordDto } from '../types/dtos/compendium-record/update-compendium-record.dto';
+import { extensionForGeneratedMediaMimeType } from '../utils/generated-media';
 import { CompendiumService } from './compendium.service';
 
 @Injectable()
@@ -69,7 +70,13 @@ export class ApiCompendiumService extends CompendiumService {
 
   uploadRecordMedia(recordId: string, file: File | Blob, isCurrent: boolean): Observable<void> {
     const formData = new FormData();
-    formData.append('file', file);
+    const fileName =
+      file instanceof File
+        ? file.name
+        : `generated-media.${extensionForGeneratedMediaMimeType(
+            file.type || 'image/png',
+          )}`;
+    formData.append('file', file, fileName);
     formData.append('isCurrent', isCurrent.toString());
 
     return this.http.post<void>(`${this.baseUrl}/compendium-record/${recordId}/media`, formData);

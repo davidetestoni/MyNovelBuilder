@@ -1,5 +1,6 @@
 export interface ImageGenerationModelInfoDto {
   modelId: string;
   name: string;
-  isImageEditor: boolean;
+  supportsImageGeneration: boolean;
+  supportsImageEditing: boolean;
 }

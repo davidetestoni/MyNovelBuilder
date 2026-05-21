@@ -20,7 +20,7 @@ public class UploadMediaDto
 
 internal class UploadMediaDtoValidator : AbstractValidator<UploadMediaDto>
 {
-    private static readonly string[] AllowedExtensions = [".png", ".mp4"];
+    private static readonly string[] AllowedExtensions = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4"];
 
     public UploadMediaDtoValidator()
     {
@@ -28,7 +28,7 @@ internal class UploadMediaDtoValidator : AbstractValidator<UploadMediaDto>
             .NotEmpty()
             .MaximumLength(255)
             .Must(HaveAllowedExtension)
-            .WithMessage("The media file name must use one of these extensions: .png, .mp4.");
+            .WithMessage("The media file name must use one of these extensions: .png, .jpg, .jpeg, .webp, .gif, .mp4.");
         RuleFor(x => x.File).NotNull();
     }
 
