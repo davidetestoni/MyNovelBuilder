@@ -159,11 +159,11 @@
             >
               <div class="proposal-card-header">
                 <div class="proposal-heading">
-                  <span class="proposal-kind">{{ proposal.operation.kind }}</span>
+                  <span class="proposal-kind">{{ getOperationKindLabel(proposal.operation.kind) }}</span>
                   <h3>{{ proposal.operation.name || "Untitled proposal" }}</h3>
                 </div>
                 <div class="proposal-header-actions">
-                  <span class="proposal-status">{{ proposal.status }}</span>
+                  <span class="proposal-status">{{ getProposalStatusLabel(proposal.status) }}</span>
                   <button
                     type="button"
                     class="collapse-btn"
@@ -183,18 +183,6 @@
               <div class="proposal-body">
               <div class="proposal-grid">
                 <label>
-                  <span>Operation</span>
-                  <select
-                    [(ngModel)]="proposal.operation.kind"
-                    [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
-                  >
-                    @for (kind of operationKindOptions; track kind) {
-                      <option [ngValue]="kind">{{ kind }}</option>
-                    }
-                  </select>
-                </label>
-
-                <label>
                   <span>Name</span>
                   <input
                     type="text"
@@ -210,7 +198,7 @@
                       [(ngModel)]="proposal.operation.targetCompendiumId"
                       [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
                     >
-                      <option [ngValue]="null">No compendium</option>
+                      <option [ngValue]="null" disabled>Select compendium</option>
                       @for (compendium of compendia(); track compendium.id) {
                         <option [ngValue]="compendium.id">{{ compendium.name }}</option>
                       }
@@ -225,7 +213,7 @@
                       [(ngModel)]="proposal.operation.targetRecordId"
                       [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
                     >
-                      <option [ngValue]="null">No record</option>
+                      <option [ngValue]="null" disabled>Select record</option>
                       @for (record of allAvailableRecords(); track record.id) {
                         <option [ngValue]="record.id">{{ record.name }}</option>
                       }
@@ -241,7 +229,7 @@
                       [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
                     >
                       @for (type of recordTypeOptions; track type) {
-                        <option [ngValue]="type">{{ type }}</option>
+                        <option [ngValue]="type">{{ getRecordTypeLabel(type) }}</option>
                       }
                     </select>
                   </label>
@@ -288,14 +276,12 @@
                 </label>
               }
 
-              <label class="block-field">
-                <span>Rationale</span>
-                <textarea
-                  [(ngModel)]="proposal.rationale"
-                  [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
-                  rows="2"
-                ></textarea>
-              </label>
+              @if (proposal.rationale) {
+                <div class="proposal-rationale">
+                  <span>Rationale</span>
+                  <p>{{ proposal.rationale }}</p>
+                </div>
+              }
 
               @if (proposal.status === WorldBuildingProposalStatus.Pending) {
                 <div class="proposal-actions">
@@ -303,7 +289,12 @@
                     <i class="pi pi-times"></i>
                     <span>Reject</span>
                   </button>
-                  <button type="button" (click)="acceptProposal(proposal)">
+                  <button
+                    type="button"
+                    (click)="acceptProposal(proposal)"
+                    [disabled]="!canAcceptProposal(proposal)"
+                    [title]="getAcceptDisabledReason(proposal)"
+                  >
                     <i class="pi pi-check"></i>
                     <span>Accept</span>
                   </button>

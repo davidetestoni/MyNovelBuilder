@@ -107,7 +107,6 @@ export class WorldBuilderSessionComponent
   private shouldScrollToBottom = false;
 
   recordTypeOptions = Object.values(CompendiumRecordType);
-  operationKindOptions = Object.values(WorldBuildingOperationKind);
 
   chapters = computed(() => {
     const prose = this.prose();
@@ -124,6 +123,34 @@ export class WorldBuilderSessionComponent
   allAvailableRecords = computed(() => {
     return this.compendia().flatMap((compendium) => compendium.records);
   });
+
+  getOperationKindLabel(kind: WorldBuildingOperationKind): string {
+    switch (kind) {
+      case WorldBuildingOperationKind.CreateCompendium:
+        return 'Create compendium';
+      case WorldBuildingOperationKind.UpdateCompendium:
+        return 'Update compendium';
+      case WorldBuildingOperationKind.CreateCompendiumRecord:
+        return 'Create compendium record';
+      case WorldBuildingOperationKind.UpdateCompendiumRecord:
+        return 'Update compendium record';
+    }
+  }
+
+  getProposalStatusLabel(status: WorldBuildingProposalStatus): string {
+    switch (status) {
+      case WorldBuildingProposalStatus.Pending:
+        return 'Pending';
+      case WorldBuildingProposalStatus.Accepted:
+        return 'Accepted';
+      case WorldBuildingProposalStatus.Rejected:
+        return 'Rejected';
+    }
+  }
+
+  getRecordTypeLabel(type: CompendiumRecordType): string {
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
 
   ngOnInit(): void {
     this.novelService.getNovels().subscribe((novels) => {
@@ -328,6 +355,30 @@ export class WorldBuilderSessionComponent
     return proposal.status !== WorldBuildingProposalStatus.Pending;
   }
 
+  canAcceptProposal(proposal: WorldBuildingProposal): boolean {
+    return this.getAcceptDisabledReason(proposal) === null;
+  }
+
+  getAcceptDisabledReason(proposal: WorldBuildingProposal): string | null {
+    if (proposal.status !== WorldBuildingProposalStatus.Pending) {
+      return 'Only pending proposals can be accepted';
+    }
+
+    switch (proposal.operation.kind) {
+      case WorldBuildingOperationKind.UpdateCompendium:
+      case WorldBuildingOperationKind.CreateCompendiumRecord:
+        return proposal.operation.targetCompendiumId
+          ? null
+          : 'Select a target compendium before accepting';
+      case WorldBuildingOperationKind.UpdateCompendiumRecord:
+        return proposal.operation.targetRecordId
+          ? null
+          : 'Select a target record before accepting';
+      case WorldBuildingOperationKind.CreateCompendium:
+        return null;
+    }
+  }
+
   toggleProposal(proposal: WorldBuildingProposal): void {
     if (this.isProposalCollapsed(proposal)) {
       this.collapsedProposalIds.delete(proposal.id);
@@ -353,6 +404,13 @@ export class WorldBuilderSessionComponent
   }
 
   acceptProposal(proposal: WorldBuildingProposal): void {
+    const disabledReason = this.getAcceptDisabledReason(proposal);
+
+    if (disabledReason) {
+      this.toastr.warning(disabledReason);
+      return;
+    }
+
     this.worldBuildingSessionService
       .updateProposal(this.currentSessionId, proposal.id, {
         operation: proposal.operation,

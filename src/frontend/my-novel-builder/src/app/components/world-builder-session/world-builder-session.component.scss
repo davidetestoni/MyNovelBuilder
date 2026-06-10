@@ -270,6 +270,25 @@
       }
     }
 
+    .proposal-rationale {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      color: $grey13;
+      font-size: 0.9rem;
+
+      span {
+        color: $grey11;
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.45;
+      }
+    }
+
     .proposal-actions {
       display: flex;
       justify-content: flex-end;
