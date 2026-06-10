@@ -501,40 +501,92 @@ public class WorldBuildingAgentContextInfoDto : TextGenerationContextInfoDto
                                                             "proposals": {
                                                               "type": "array",
                                                               "items": {
-                                                                "type": "object",
-                                                                "properties": {
-                                                                  "operation": {
+                                                                "anyOf": [
+                                                                  {
                                                                     "type": "object",
                                                                     "properties": {
                                                                       "kind": {
                                                                         "type": "string",
-                                                                        "enum": ["createCompendium", "updateCompendium", "createCompendiumRecord", "updateCompendiumRecord"]
-                                                                      },
-                                                                      "targetCompendiumId": {
-                                                                        "type": ["string", "null"],
-                                                                        "description": "Existing compendium UUID required for updateCompendium and createCompendiumRecord. Use null for createCompendium."
-                                                                      },
-                                                                      "targetRecordId": {
-                                                                        "type": ["string", "null"],
-                                                                        "description": "Existing record UUID required for updateCompendiumRecord. Use the Record ID from the records context. Use null for other operations."
+                                                                        "enum": ["createCompendium"],
+                                                                        "description": "Create a new compendium. Use this before proposing records when no target compendium exists."
                                                                       },
                                                                       "name": { "type": "string" },
                                                                       "description": { "type": "string" },
+                                                                      "rationale": { "type": ["string", "null"] }
+                                                                    },
+                                                                    "required": ["kind", "name", "description", "rationale"],
+                                                                    "additionalProperties": false
+                                                                  },
+                                                                  {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                      "kind": {
+                                                                        "type": "string",
+                                                                        "enum": ["updateCompendium"],
+                                                                        "description": "Update an existing compendium."
+                                                                      },
+                                                                      "targetCompendiumId": {
+                                                                        "type": ["string", "null"],
+                                                                        "description": "Existing compendium UUID from the compendia context. Required for updateCompendium."
+                                                                      },
+                                                                      "name": { "type": "string" },
+                                                                      "description": { "type": "string" },
+                                                                      "rationale": { "type": ["string", "null"] }
+                                                                    },
+                                                                    "required": ["kind", "targetCompendiumId", "name", "description", "rationale"],
+                                                                    "additionalProperties": false
+                                                                  },
+                                                                  {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                      "kind": {
+                                                                        "type": "string",
+                                                                        "enum": ["createCompendiumRecord"],
+                                                                        "description": "Create a new record in an existing compendium."
+                                                                      },
+                                                                      "targetCompendiumId": {
+                                                                        "type": ["string", "null"],
+                                                                        "description": "Existing compendium UUID from the compendia context. Required for createCompendiumRecord."
+                                                                      },
+                                                                      "name": { "type": "string" },
                                                                       "aliases": { "type": "string" },
                                                                       "type": {
                                                                         "type": "string",
                                                                         "enum": ["character", "place", "object", "event", "concept", "other"]
                                                                       },
                                                                       "context": { "type": "string" },
-                                                                      "alwaysIncluded": { "type": "boolean" }
+                                                                      "alwaysIncluded": { "type": "boolean" },
+                                                                      "rationale": { "type": ["string", "null"] }
                                                                     },
-                                                                    "required": ["kind", "targetCompendiumId", "targetRecordId", "name", "description", "aliases", "type", "context", "alwaysIncluded"],
+                                                                    "required": ["kind", "targetCompendiumId", "name", "aliases", "type", "context", "alwaysIncluded", "rationale"],
                                                                     "additionalProperties": false
                                                                   },
-                                                                  "rationale": { "type": ["string", "null"] }
-                                                                },
-                                                                "required": ["operation", "rationale"],
-                                                                "additionalProperties": false
+                                                                  {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                      "kind": {
+                                                                        "type": "string",
+                                                                        "enum": ["updateCompendiumRecord"],
+                                                                        "description": "Update an existing record."
+                                                                      },
+                                                                      "targetRecordId": {
+                                                                        "type": ["string", "null"],
+                                                                        "description": "Existing record UUID from the records or compendia context. Required for updateCompendiumRecord."
+                                                                      },
+                                                                      "name": { "type": "string" },
+                                                                      "aliases": { "type": "string" },
+                                                                      "type": {
+                                                                        "type": "string",
+                                                                        "enum": ["character", "place", "object", "event", "concept", "other"]
+                                                                      },
+                                                                      "context": { "type": "string" },
+                                                                      "alwaysIncluded": { "type": "boolean" },
+                                                                      "rationale": { "type": ["string", "null"] }
+                                                                    },
+                                                                    "required": ["kind", "targetRecordId", "name", "aliases", "type", "context", "alwaysIncluded", "rationale"],
+                                                                    "additionalProperties": false
+                                                                  }
+                                                                ]
                                                               }
                                                             }
                                                           },

@@ -207,7 +207,7 @@ public class WorldBuildingSessionService : IWorldBuildingSessionService
 
         foreach (var proposalDto in agentResponse.Proposals)
         {
-            var operation = CreateOperation(proposalDto.Operation);
+            var operation = proposalDto.ToOperation();
             NormalizeOperation(operation, session.Context);
             session.Proposals.Add(new WorldBuildingProposal
             {
@@ -443,33 +443,6 @@ public class WorldBuildingSessionService : IWorldBuildingSessionService
         {
             throw new ApiException(ErrorCodes.BadRequest, "Only pending proposals can be changed.");
         }
-    }
-
-    private static WorldBuildingOperation CreateOperation(
-        WorldBuildingAgentOperationDto operation)
-    {
-        return new WorldBuildingOperation
-        {
-            Kind = operation.Kind,
-            TargetCompendiumId = ParseNullableGuid(operation.TargetCompendiumId),
-            TargetRecordId = ParseNullableGuid(operation.TargetRecordId),
-            Name = operation.Name,
-            Description = operation.Description,
-            Aliases = operation.Aliases,
-            Type = operation.Type,
-            Context = operation.Context,
-            AlwaysIncluded = operation.AlwaysIncluded
-        };
-    }
-
-    private static Guid? ParseNullableGuid(string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
-        return Guid.TryParse(value, out var id) ? id : null;
     }
 
     private static void NormalizeOperation(
