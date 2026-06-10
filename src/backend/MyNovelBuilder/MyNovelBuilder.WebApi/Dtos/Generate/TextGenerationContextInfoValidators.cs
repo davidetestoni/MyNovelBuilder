@@ -21,6 +21,7 @@ internal class TextGenerationContextInfoDtoValidator : AbstractValidator<TextGen
             v.Add(new CreateStoryEventsContextInfoDtoValidator());
             v.Add(new SuggestStoryDevelopmentsContextInfoDtoValidator());
             v.Add(new TranslateNovelContextInfoDtoValidator());
+            v.Add(new WorldBuildingAgentContextInfoDtoValidator());
         });
     }
 }
@@ -180,3 +181,25 @@ internal class TranslateNovelContextInfoDtoValidator : AbstractValidator<Transla
         RuleFor(x => x.Instructions).MaximumLength(5_000);
     }
 }
+
+internal class WorldBuildingAgentContextInfoDtoValidator : AbstractValidator<WorldBuildingAgentContextInfoDto>
+{
+    public WorldBuildingAgentContextInfoDtoValidator()
+    {
+        RuleFor(x => x.NovelId).NotEmpty().When(x => x.NovelId.HasValue);
+        RuleFor(x => x.ChapterIndex).GreaterThanOrEqualTo(0).When(x => x.ChapterIndex.HasValue);
+        RuleForEach(x => x.CompendiumIds).NotEmpty();
+        RuleForEach(x => x.CompendiumRecordIds).NotEmpty();
+        RuleFor(x => x.FreeformPremise).MaximumLength(50_000);
+        RuleFor(x => x.UserMessage).NotEmpty().MaximumLength(50_000);
+        RuleForEach(x => x.PreviousMessages).SetValidator(new ChatMessageDtoValidator());
+        RuleForEach(x => x.PreviousProposals).ChildRules(proposal =>
+        {
+            proposal.RuleFor(x => x.Status).NotEmpty().MaximumLength(50);
+            proposal.RuleFor(x => x.Kind).NotEmpty().MaximumLength(100);
+            proposal.RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+            proposal.RuleFor(x => x.Rationale).MaximumLength(2_000);
+        });
+    }
+}
+

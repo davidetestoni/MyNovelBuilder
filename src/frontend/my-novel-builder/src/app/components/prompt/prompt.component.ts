@@ -52,6 +52,7 @@ export class PromptComponent {
     PromptType.SuggestStoryDevelopments,
     PromptType.TranslateNovel,
     PromptType.PrepareImmersiveTts,
+    PromptType.WorldBuildingAgent,
   ];
 
   promptMessageRoles: PromptMessageRole[] = [
@@ -260,6 +261,41 @@ export class PromptComponent {
       {
         keyword: '{{records}}',
         description: 'Information from relevant compendium records.',
+      },
+    ],
+
+    [PromptType.WorldBuildingAgent]: [
+      {
+        keyword: '{{premise}}',
+        description: 'The freeform premise or constraints for the world.',
+      },
+      {
+        keyword: '{{novel}}',
+        description: 'Optional selected novel metadata.',
+      },
+      {
+        keyword: '{{prose}}',
+        description: 'Optional selected novel prose or chapter text.',
+      },
+      {
+        keyword: '{{compendia}}',
+        description: 'Selected compendia names, IDs, and descriptions.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Selected and always-included compendium records.',
+      },
+      {
+        keyword: '{{proposalHistory}}',
+        description: 'Previously accepted, rejected, and pending proposals.',
+      },
+      {
+        keyword: '{{chatHistory}}',
+        description: 'Previous messages in this world-building session.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: "The user's latest world-building request.",
       },
     ],
     [PromptType.PrepareImmersiveTts]: [

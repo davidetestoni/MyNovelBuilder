@@ -1,0 +1,356 @@
+<p-confirmDialog></p-confirmDialog>
+
+<div class="world-builder-wrapper">
+  <header class="session-header">
+    <div class="session-title">
+      <input
+        type="text"
+        [(ngModel)]="currentSession.name"
+        (blur)="updateSessionName(currentSession.name)"
+        (keyup.enter)="updateSessionName(currentSession.name)"
+        placeholder="New world"
+      />
+    </div>
+
+    <div class="context-actions">
+      <p-select
+        [(ngModel)]="currentSession.context.novelId"
+        [options]="novels()"
+        optionLabel="title"
+        optionValue="id"
+        placeholder="No Novel"
+        [showClear]="true"
+        (onChange)="updateNovel($event.value)"
+        size="small"
+        [style]="{ width: '170px' }"
+      />
+
+      <p-multiSelect
+        [(ngModel)]="currentSession.context.compendiumIds"
+        [options]="compendia()"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Compendia"
+        (onChange)="onCompendiaChange($event)"
+        [maxSelectedLabels]="1"
+        size="small"
+        [style]="{ width: '170px' }"
+      >
+        <ng-template #item let-comp>
+          <app-compendium-option-preview [compendium]="comp" />
+        </ng-template>
+      </p-multiSelect>
+
+      <p-multiSelect
+        [(ngModel)]="currentSession.context.compendiumRecordIds"
+        [options]="allAvailableRecords()"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Records"
+        (onChange)="onRecordsChange($event)"
+        [maxSelectedLabels]="1"
+        size="small"
+        [style]="{ width: '170px' }"
+      >
+        <ng-template #item let-record>
+          <app-record-option-preview
+            [name]="record.name"
+            [imageUrl]="record.imageUrl"
+          />
+        </ng-template>
+      </p-multiSelect>
+
+      @if (chapters().length > 0) {
+        <p-select
+          [(ngModel)]="currentSession.context.chapterIndex"
+          [options]="chapters()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="All Chapters"
+          [showClear]="true"
+          (onChange)="updateChapter($event.value)"
+          size="small"
+          [style]="{ width: '170px' }"
+        />
+      }
+
+      <app-model-select
+        [(ngModel)]="selectedModel"
+        capability="structuredOutput"
+        [storageContext]="PromptType.WorldBuildingAgent"
+        placeholder="Model"
+        width="180px"
+        size="small"
+      />
+
+      @if (promptCount !== 0) {
+        <app-prompt-select
+          [(ngModel)]="selectedPromptId"
+          [promptType]="PromptType.WorldBuildingAgent"
+          [storagePromptType]="PromptType.WorldBuildingAgent"
+          (optionsChanged)="onPromptOptionsChanged($event)"
+          placeholder="Prompt"
+          width="180px"
+          size="small"
+        />
+      }
+    </div>
+
+    <textarea
+      class="premise"
+      pInputTextarea
+      [(ngModel)]="currentSession.context.freeformPremise"
+      (blur)="updatePremise()"
+      rows="2"
+      placeholder="Premise or constraints..."
+    ></textarea>
+  </header>
+
+  <section class="messages" #messagesContainer>
+    @if (currentSession.messages.length === 0) {
+      <div class="empty-state">
+        <p>Start with a premise, then ask the agent to propose records.</p>
+      </div>
+    }
+
+    @for (message of currentSession.messages; track message.id) {
+      <div
+        class="message-container"
+        [class.user-message]="message.role === ChatMessageRole.User"
+        [class.assistant-message]="message.role === ChatMessageRole.Assistant"
+        [class.failed-message]="isFailedMessage(message.id)"
+      >
+        <div class="message-wrapper">
+          <div class="message-bubble">
+            <markdown [data]="message.textContent"></markdown>
+          </div>
+          <div class="message-actions">
+            @if (isFailedMessage(message.id) && message.role === ChatMessageRole.User) {
+              <button
+                class="action-btn retry"
+                (click)="retryMessage(message)"
+                [disabled]="isGenerating"
+              >
+                <i class="pi pi-refresh"></i>
+                <span>Retry</span>
+              </button>
+            }
+            <button class="action-btn" (click)="copyMessage(message.textContent)">
+              <i class="pi pi-copy"></i>
+            </button>
+            <button class="action-btn" (click)="editMessage(message)">
+              <i class="pi pi-pencil"></i>
+            </button>
+            <button class="action-btn delete" (click)="deleteMessage(message)">
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+          @if (isFailedMessage(message.id) && message.role === ChatMessageRole.User) {
+            <div class="failed-note">
+              The backend could not process this message.
+            </div>
+          }
+
+          @for (proposal of getProposalsForMessage(message.id); track proposal.id) {
+            <article
+              class="proposal-card"
+              [class.applied]="proposal.status !== WorldBuildingProposalStatus.Pending"
+              [class.collapsed]="isProposalCollapsed(proposal)"
+            >
+              <div class="proposal-card-header">
+                <div class="proposal-heading">
+                  <span class="proposal-kind">{{ proposal.operation.kind }}</span>
+                  <h3>{{ proposal.operation.name || "Untitled proposal" }}</h3>
+                </div>
+                <div class="proposal-header-actions">
+                  <span class="proposal-status">{{ proposal.status }}</span>
+                  <button
+                    type="button"
+                    class="collapse-btn"
+                    (click)="toggleProposal(proposal)"
+                    [attr.aria-label]="isProposalCollapsed(proposal) ? 'Expand proposal' : 'Collapse proposal'"
+                  >
+                    <i
+                      class="pi"
+                      [class.pi-chevron-down]="isProposalCollapsed(proposal)"
+                      [class.pi-chevron-up]="!isProposalCollapsed(proposal)"
+                    ></i>
+                  </button>
+                </div>
+              </div>
+
+              @if (!isProposalCollapsed(proposal)) {
+              <div class="proposal-body">
+              <div class="proposal-grid">
+                <label>
+                  <span>Operation</span>
+                  <select
+                    [(ngModel)]="proposal.operation.kind"
+                    [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                  >
+                    @for (kind of operationKindOptions; track kind) {
+                      <option [ngValue]="kind">{{ kind }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label>
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    [(ngModel)]="proposal.operation.name"
+                    [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                  />
+                </label>
+
+                @if (proposal.operation.kind === WorldBuildingOperationKind.UpdateCompendium || proposal.operation.kind === WorldBuildingOperationKind.CreateCompendiumRecord) {
+                  <label>
+                    <span>Compendium</span>
+                    <select
+                      [(ngModel)]="proposal.operation.targetCompendiumId"
+                      [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                    >
+                      <option [ngValue]="null">No compendium</option>
+                      @for (compendium of compendia(); track compendium.id) {
+                        <option [ngValue]="compendium.id">{{ compendium.name }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+
+                @if (proposal.operation.kind === WorldBuildingOperationKind.UpdateCompendiumRecord) {
+                  <label>
+                    <span>Record</span>
+                    <select
+                      [(ngModel)]="proposal.operation.targetRecordId"
+                      [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                    >
+                      <option [ngValue]="null">No record</option>
+                      @for (record of allAvailableRecords(); track record.id) {
+                        <option [ngValue]="record.id">{{ record.name }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+
+                @if (isRecordOperation(proposal)) {
+                  <label>
+                    <span>Type</span>
+                    <select
+                      [(ngModel)]="proposal.operation.type"
+                      [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                    >
+                      @for (type of recordTypeOptions; track type) {
+                        <option [ngValue]="type">{{ type }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Aliases</span>
+                    <input
+                      type="text"
+                      [(ngModel)]="proposal.operation.aliases"
+                      [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                    />
+                  </label>
+                }
+              </div>
+
+              @if (isCompendiumOperation(proposal)) {
+                <label class="block-field">
+                  <span>Description</span>
+                  <textarea
+                    [(ngModel)]="proposal.operation.description"
+                    [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                    rows="3"
+                  ></textarea>
+                </label>
+              }
+
+              @if (isRecordOperation(proposal)) {
+                <label class="block-field">
+                  <span>Context</span>
+                  <textarea
+                    [(ngModel)]="proposal.operation.context"
+                    [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                    rows="5"
+                  ></textarea>
+                </label>
+
+                <label class="checkbox-field">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="proposal.operation.alwaysIncluded"
+                    [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                  />
+                  <span>Always include in prompts</span>
+                </label>
+              }
+
+              <label class="block-field">
+                <span>Rationale</span>
+                <textarea
+                  [(ngModel)]="proposal.rationale"
+                  [disabled]="proposal.status !== WorldBuildingProposalStatus.Pending"
+                  rows="2"
+                ></textarea>
+              </label>
+
+              @if (proposal.status === WorldBuildingProposalStatus.Pending) {
+                <div class="proposal-actions">
+                  <button type="button" class="secondary" (click)="rejectProposal(proposal)">
+                    <i class="pi pi-times"></i>
+                    <span>Reject</span>
+                  </button>
+                  <button type="button" (click)="acceptProposal(proposal)">
+                    <i class="pi pi-check"></i>
+                    <span>Accept</span>
+                  </button>
+                </div>
+              } @else if (proposal.appliedEntityId) {
+                <div class="applied-note">
+                  Applied to {{ proposal.appliedEntityId }}
+                </div>
+              }
+              </div>
+              }
+            </article>
+          }
+        </div>
+      </div>
+    }
+  </section>
+
+  @if (promptCount === 0) {
+    <footer class="input-footer error">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>Create a World Building Agent prompt in the Prompts page.</span>
+    </footer>
+  } @else {
+    <footer class="input-footer">
+      <div class="input-wrapper" [class.disabled]="isGenerating">
+        <textarea
+          pInputTextarea
+          placeholder="Ask for records, refinements, contradictions, or new setting ideas..."
+          rows="1"
+          [(ngModel)]="userInput"
+          (keydown.enter)="$event.preventDefault(); sendMessage()"
+          [disabled]="isGenerating"
+          [autoResize]="true"
+        ></textarea>
+        <button
+          class="send-btn"
+          (click)="sendMessage()"
+          [disabled]="isGenerating || !userInput.trim()"
+        >
+          @if (isGenerating) {
+            <i class="pi pi-spin pi-spinner"></i>
+          } @else {
+            <i class="pi pi-send"></i>
+          }
+        </button>
+      </div>
+    </footer>
+  }
+</div>

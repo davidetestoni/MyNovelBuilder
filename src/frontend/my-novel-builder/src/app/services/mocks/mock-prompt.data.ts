@@ -94,4 +94,20 @@ export const mockedPrompts: PromptDto[] = [
       { id: 1, role: PromptMessageRole.User, message: loremIpsum({ count: 3, units: 'sentences' }) },
     ],
   },
+
+  {
+    id: indexToGuid(9),
+    createdAt: '2021-01-01T00:00:00Z',
+    updatedAt: '2021-01-01T00:00:00Z',
+    name: 'Mock World Builder Prompt',
+    type: PromptType.WorldBuildingAgent,
+    messages: [
+      {
+        id: 0,
+        role: PromptMessageRole.System,
+        message:
+          'Use {{premise}}, {{novel}}, {{prose}}, {{compendia}}, {{records}}, {{proposalHistory}}, {{chatHistory}}, and {{instructions}} to propose concrete world-building records.',
+      },
+    ],
+  },
 ];

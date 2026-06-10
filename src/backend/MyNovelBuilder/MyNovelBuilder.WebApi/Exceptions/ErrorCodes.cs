@@ -61,6 +61,16 @@ public static class ErrorCodes
     public const string ChatNotFound = "chat_not_found";
     
     /// <summary>
+    /// The world-building session was not found.
+    /// </summary>
+    public const string WorldBuildingSessionNotFound = "world_building_session_not_found";
+    
+    /// <summary>
+    /// The world-building proposal was not found.
+    /// </summary>
+    public const string WorldBuildingProposalNotFound = "world_building_proposal_not_found";
+    
+    /// <summary>
     /// The cover image is invalid.
     /// </summary>
     public const string InvalidCoverImage = "invalid_cover_image";

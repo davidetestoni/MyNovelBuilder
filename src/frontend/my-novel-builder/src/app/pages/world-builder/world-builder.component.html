@@ -1,0 +1,60 @@
+<p-confirmDialog></p-confirmDialog>
+
+<div class="world-builder-container">
+  @if (sessions === null) {
+    <p>Loading...</p>
+  } @else {
+    <aside class="sessions-sidebar">
+      <div class="sessions-list">
+        <div class="add-session-card" (click)="openCreateSessionDialog()">
+          <i class="icon icon-plus"></i>
+          <span>New World</span>
+        </div>
+
+        @for (session of sessions; track session.id) {
+          <div
+            class="session-item"
+            [class.selected]="session.id === currentSessionId"
+            (click)="selectSession(session.id)"
+          >
+            <div class="session-item-image">
+              <div class="no-image">
+                <i class="icon icon-world"></i>
+              </div>
+            </div>
+            <div class="session-item-content">
+              <div class="session-item-name">
+                {{ session.name ?? "New world" }}
+              </div>
+              <div class="session-item-date">
+                {{ getLastUpdated(session) }}
+              </div>
+            </div>
+            <button
+              class="delete-btn"
+              (click)="$event.stopPropagation(); deleteSession(session.id)"
+              pTooltip="Delete session"
+              tooltipPosition="top"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        }
+      </div>
+    </aside>
+
+    <main class="session-content-area">
+      @if (currentSession !== null && currentSessionId !== null) {
+        <app-world-builder-session
+          [currentSessionId]="currentSessionId"
+          [currentSession]="currentSession"
+          (sessionUpdated)="updateLocalSessionMetadata($event)"
+        />
+      } @else {
+        <div class="empty-state">
+          <p>Select or create a world-building session.</p>
+        </div>
+      }
+    </main>
+  }
+</div>

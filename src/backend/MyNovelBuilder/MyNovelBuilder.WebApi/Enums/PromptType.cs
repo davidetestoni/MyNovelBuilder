@@ -69,4 +69,9 @@ public enum PromptType
     /// A prompt for suggesting story developments at the current cursor position.
     /// </summary>
     SuggestStoryDevelopments = 12,
+
+    /// <summary>
+    /// A prompt for the world-building agent.
+    /// </summary>
+    WorldBuildingAgent = 13,
 }

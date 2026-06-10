@@ -44,6 +44,9 @@ import { MockVoiceService } from './services/mock-voice.service';
 import { MediaLibraryService } from './services/media-library.service';
 import { ApiMediaLibraryService } from './services/api-media-library.service';
 import { MockMediaLibraryService } from './services/mock-media-library.service';
+import { WorldBuildingSessionService } from './services/world-building-session.service';
+import { ApiWorldBuildingSessionService } from './services/api-world-building-session.service';
+import { MockWorldBuildingSessionService } from './services/mock-world-building-session.service';
 
 const primeNgTheme = definePreset(Nora, {
   semantic: {
@@ -86,6 +89,12 @@ export const appConfig: ApplicationConfig = {
     {
       provide: ChatService,
       useClass: environment.mocked ? MockChatService : ApiChatService,
+    },
+    {
+      provide: WorldBuildingSessionService,
+      useClass: environment.mocked
+        ? MockWorldBuildingSessionService
+        : ApiWorldBuildingSessionService,
     },
     {
       provide: IntegrationsService,

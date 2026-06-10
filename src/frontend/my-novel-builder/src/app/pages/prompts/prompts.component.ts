@@ -37,6 +37,7 @@ export class PromptsComponent implements OnInit, OnDestroy {
     PromptType.SuggestStoryDevelopments,
     PromptType.TranslateNovel,
     PromptType.PrepareImmersiveTts,
+    PromptType.WorldBuildingAgent,
   ];
   selectedPromptType: PromptType | null = null;
   promptTypeOptions = this.promptTypes.map((type) => ({

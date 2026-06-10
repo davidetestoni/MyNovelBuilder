@@ -31,6 +31,23 @@ export const routes: Routes = [
       import('./pages/chats/chats.component').then((m) => m.ChatsComponent),
     data: mainLayoutData,
   },
+
+  {
+    path: 'world-builder',
+    loadComponent: () =>
+      import('./pages/world-builder/world-builder.component').then(
+        (m) => m.WorldBuilderComponent,
+      ),
+    data: mainLayoutData,
+  },
+  {
+    path: 'world-builder/:id',
+    loadComponent: () =>
+      import('./pages/world-builder/world-builder.component').then(
+        (m) => m.WorldBuilderComponent,
+      ),
+    data: mainLayoutData,
+  },
   {
     path: 'compendia',
     loadComponent: () =>

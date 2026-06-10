@@ -12,4 +12,5 @@ export enum PromptType {
   SuggestStoryDevelopments = 'suggestStoryDevelopments',
   TranslateNovel = 'translateNovel',
   PrepareImmersiveTts = 'prepareImmersiveTts',
+  WorldBuildingAgent = 'worldBuildingAgent',
 }

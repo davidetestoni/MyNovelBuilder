@@ -113,6 +113,7 @@ builder.Services.AddScoped<IPromptService, PromptService>();
 builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IMediaFolderService, MediaFolderService>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IWorldBuildingSessionService, WorldBuildingSessionService>();
 builder.Services.AddScoped<INovelExportService, NovelExportService>();
 builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationServiceResolver>();
 builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
@@ -124,6 +125,7 @@ builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
 builder.Services.AddSingleton<INovelPromptCreatorService, NovelPromptCreatorService>();
 builder.Services.AddSingleton<ICompendiumPromptCreatorService, CompendiumPromptCreatorService>();
 builder.Services.AddSingleton<IGenericPromptCreatorService, GenericPromptCreatorService>();
+builder.Services.AddSingleton<IWorldBuildingPromptCreatorService, WorldBuildingPromptCreatorService>();
 
 // Text generation services
 builder.Services.RegisterKeyedServicesFromAssembly<ITextGenerationService>();

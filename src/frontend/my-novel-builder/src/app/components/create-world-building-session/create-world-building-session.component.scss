@@ -1,0 +1,55 @@
+@use "../../../styles/colors" as *;
+
+.create-world-building-session {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    color: $grey16;
+    font-size: 0.9rem;
+    font-weight: 500;
+
+    input,
+    textarea {
+      width: 100%;
+      background-color: $grey2;
+      border: 1px solid $grey5;
+      border-radius: 5px;
+      color: $grey19;
+      padding: 0.65rem;
+      font: inherit;
+    }
+  }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid $grey6;
+      border-radius: 5px;
+      background-color: $grey18;
+      color: $grey0;
+      padding: 0.55rem 0.8rem;
+      cursor: pointer;
+
+      &.secondary {
+        background-color: transparent;
+        color: $grey16;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
+  }
+}

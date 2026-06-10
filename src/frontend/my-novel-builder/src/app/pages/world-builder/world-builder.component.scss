@@ -1,0 +1,153 @@
+@use "../../../styles/variables" as *;
+@use "../../../styles/colors" as *;
+
+.world-builder-container {
+  display: flex;
+  flex-direction: row;
+  height: calc(100dvh - $mainLayoutHeaderHeight);
+  background-color: $grey0;
+
+  .sessions-sidebar {
+    width: 300px;
+    height: 100%;
+    background-color: $grey2;
+    border-right: 1px solid $grey4;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+
+    .sessions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 1rem;
+      margin-top: auto;
+    }
+
+    .add-session-card {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      height: 50px;
+      color: $grey13;
+      border: 2px dashed $grey13;
+      border-radius: 5px;
+      cursor: pointer;
+      user-select: none;
+      margin-bottom: 0.5rem;
+
+      i {
+        width: 20px;
+        height: 20px;
+        filter: $grey13filter;
+      }
+    }
+
+    .session-item {
+      display: flex;
+      align-items: center;
+      border-radius: 0.5rem;
+      background-color: $grey3;
+      cursor: pointer;
+      padding: 0.5rem;
+      position: relative;
+
+      .session-item-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 5px;
+        overflow: hidden;
+        flex-shrink: 0;
+
+        .no-image {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          height: 100%;
+          background-color: $grey5;
+
+          i {
+            width: 24px;
+            height: 24px;
+            filter: $grey13filter;
+          }
+        }
+      }
+
+      .session-item-content {
+        display: flex;
+        flex-direction: column;
+        margin-left: 0.8rem;
+        flex-grow: 1;
+        overflow: hidden;
+
+        .session-item-name {
+          font-size: 0.9rem;
+          font-weight: 500;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          color: $grey19;
+        }
+
+        .session-item-date {
+          font-size: 0.75rem;
+          color: $grey11;
+          margin-top: 2px;
+        }
+      }
+
+      .delete-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: $grey11;
+        display: none;
+        padding: 0.5rem;
+        border-radius: 50%;
+        margin-left: 0.5rem;
+
+        &:hover {
+          color: $invalid;
+          background-color: $grey4;
+        }
+      }
+
+      &:hover,
+      &.selected {
+        background-color: $grey5;
+
+        .delete-btn {
+          display: block;
+        }
+      }
+
+      &.selected {
+        border: 1px solid $grey6;
+      }
+    }
+  }
+
+  .session-content-area {
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+
+    app-world-builder-session {
+      width: 100%;
+      height: 100%;
+    }
+
+    .empty-state {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      color: $grey11;
+      font-size: 1.1rem;
+    }
+  }
+}

@@ -20,6 +20,7 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 [JsonDerivedType(typeof(CreateStoryEventsContextInfoDto), typeDiscriminator: "createStoryEvents")]
 [JsonDerivedType(typeof(SuggestStoryDevelopmentsContextInfoDto), typeDiscriminator: "suggestStoryDevelopments")]
 [JsonDerivedType(typeof(TranslateNovelContextInfoDto), typeDiscriminator: "translateNovel")]
+[JsonDerivedType(typeof(WorldBuildingAgentContextInfoDto), typeDiscriminator: "worldBuildingAgent")]
 public abstract class TextGenerationContextInfoDto
 {
     /// <summary>
@@ -486,3 +487,134 @@ public class TranslateNovelContextInfoDto : NovelTextGenerationContextInfoDto
         Strict = true
     };
 }
+
+/// <summary>
+/// DTO for the context information for the world-building agent.
+/// </summary>
+public class WorldBuildingAgentContextInfoDto : TextGenerationContextInfoDto
+{
+    private const string _worldBuildingAgentJsonSchema = """
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "assistantMessage": { "type": "string" },
+                                                            "proposals": {
+                                                              "type": "array",
+                                                              "items": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                  "operation": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                      "kind": {
+                                                                        "type": "string",
+                                                                        "enum": ["createCompendium", "updateCompendium", "createCompendiumRecord", "updateCompendiumRecord"]
+                                                                      },
+                                                                      "targetCompendiumId": {
+                                                                        "type": ["string", "null"],
+                                                                        "description": "Existing compendium UUID required for updateCompendium and createCompendiumRecord. Use null for createCompendium."
+                                                                      },
+                                                                      "targetRecordId": {
+                                                                        "type": ["string", "null"],
+                                                                        "description": "Existing record UUID required for updateCompendiumRecord. Use the Record ID from the records context. Use null for other operations."
+                                                                      },
+                                                                      "name": { "type": "string" },
+                                                                      "description": { "type": "string" },
+                                                                      "aliases": { "type": "string" },
+                                                                      "type": {
+                                                                        "type": "string",
+                                                                        "enum": ["character", "place", "object", "event", "concept", "other"]
+                                                                      },
+                                                                      "context": { "type": "string" },
+                                                                      "alwaysIncluded": { "type": "boolean" }
+                                                                    },
+                                                                    "required": ["kind", "targetCompendiumId", "targetRecordId", "name", "description", "aliases", "type", "context", "alwaysIncluded"],
+                                                                    "additionalProperties": false
+                                                                  },
+                                                                  "rationale": { "type": ["string", "null"] }
+                                                                },
+                                                                "required": ["operation", "rationale"],
+                                                                "additionalProperties": false
+                                                              }
+                                                            }
+                                                          },
+                                                          "required": ["assistantMessage", "proposals"],
+                                                          "additionalProperties": false
+                                                        }
+                                                        """;
+
+    /// <summary>
+    /// Optional novel used as context.
+    /// </summary>
+    public Guid? NovelId { get; set; }
+
+    /// <summary>
+    /// Optional chapter used as context.
+    /// </summary>
+    public int? ChapterIndex { get; set; }
+
+    /// <summary>
+    /// Included compendia.
+    /// </summary>
+    public IEnumerable<Guid> CompendiumIds { get; set; } = [];
+
+    /// <summary>
+    /// Included records.
+    /// </summary>
+    public IEnumerable<Guid> CompendiumRecordIds { get; set; } = [];
+
+    /// <summary>
+    /// Freeform premise.
+    /// </summary>
+    public string? FreeformPremise { get; set; }
+
+    /// <summary>
+    /// User message.
+    /// </summary>
+    public string UserMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Previous messages.
+    /// </summary>
+    public IEnumerable<ChatMessageDto> PreviousMessages { get; set; } = [];
+
+    /// <summary>
+    /// Previous proposal summaries.
+    /// </summary>
+    public IEnumerable<WorldBuildingProposalSummaryDto> PreviousProposals { get; set; } = [];
+
+    /// <inheritdoc />
+    public override StructuredOutputOptions? GetStructuredOutputOptions() => new()
+    {
+        SchemaName = "world_building_agent_response",
+        JsonSchema = _worldBuildingAgentJsonSchema,
+        Strict = true
+    };
+}
+
+/// <summary>
+/// Compact proposal summary used in prompt context.
+/// </summary>
+public class WorldBuildingProposalSummaryDto
+{
+    /// <summary>
+    /// Proposal status.
+    /// </summary>
+    public required string Status { get; set; }
+
+    /// <summary>
+    /// Proposal operation kind.
+    /// </summary>
+    public required string Kind { get; set; }
+
+    /// <summary>
+    /// Proposal target name.
+    /// </summary>
+    public required string Name { get; set; }
+
+    /// <summary>
+    /// Rationale for the proposal.
+    /// </summary>
+    public string? Rationale { get; set; }
+}
+
