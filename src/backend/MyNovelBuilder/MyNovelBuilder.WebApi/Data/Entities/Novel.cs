@@ -42,6 +42,11 @@ public class Novel : TimestampedEntity
     /// The novel's writing language.
     /// </summary>
     public WritingLanguage Language { get; init; } = WritingLanguage.English;
+
+    /// <summary>
+    /// Whether RPG mode is enabled for the prose editor.
+    /// </summary>
+    public bool RpgMode { get; init; }
     
     /// <summary>
     /// The main character of the novel, if any.

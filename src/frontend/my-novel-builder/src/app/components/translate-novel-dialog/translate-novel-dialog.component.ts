@@ -261,6 +261,7 @@ export class TranslateNovelDialogComponent {
           tense: this.data.novel.tense,
           pov: this.data.novel.pov,
           language: targetLanguage,
+          rpgMode: this.data.novel.rpgMode,
           mainCharacterId: this.data.novel.mainCharacterId,
         }),
       );
@@ -274,6 +275,7 @@ export class TranslateNovelDialogComponent {
           tense: createdNovel.tense,
           pov: createdNovel.pov,
           language: createdNovel.language,
+          rpgMode: this.data.novel.rpgMode,
           mainCharacterId: this.data.novel.mainCharacterId,
           compendiumIds: this.data.novel.compendiumIds,
         }),

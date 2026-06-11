@@ -111,7 +111,8 @@ public class NovelControllerIntegrationTests(
             Brief = "New Brief",
             Tense = WritingTense.Past,
             Pov = WritingPov.FirstPerson,
-            Language = WritingLanguage.English
+            Language = WritingLanguage.English,
+            RpgMode = false
         };
 
         // Act
@@ -148,6 +149,7 @@ public class NovelControllerIntegrationTests(
             Tense = WritingTense.Present,
             Pov = WritingPov.FirstPerson,
             Language = WritingLanguage.English,
+            RpgMode = false,
             CompendiumIds = []
         };
 

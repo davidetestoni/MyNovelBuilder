@@ -54,7 +54,7 @@
                         fontFamily: 'Source Serif 4, sans-serif',
                         letterSpacing: '0.05rem',
                       }"
-                      (onEditorCreated)="editorInit($event)"
+                      (onEditorCreated)="editorInit($event, chapterIndex, sectionIndex)"
                       (onEditorChanged)="
                         editorChange($event, chapterIndex, sectionIndex)
                       "
@@ -182,6 +182,73 @@
       </div>
     }
   </div>
+  @if (rpgMode) {
+    <div class="rpg-input-line">
+      <app-prompt-select
+        [(ngModel)]="selectedRpgPromptId"
+        [prompts]="prompts"
+        [promptType]="PromptType.GenerateText"
+        [storagePromptType]="PromptType.GenerateText"
+        (optionsChanged)="onRpgPromptOptionsChanged($event)"
+        placeholder="Select Prompt"
+        width="180px"
+        size="small"
+        [disabled]="isRpgGenerating"
+      />
+      <app-model-select
+        [(ngModel)]="selectedRpgModel"
+        capability="text"
+        storageContext="rpg-mode"
+        placeholder="Select Model"
+        width="220px"
+        size="small"
+        [disabled]="isRpgGenerating"
+      />
+      <div class="rpg-action-toggle" aria-label="RPG action mode">
+        <button
+          type="button"
+          [class.active]="rpgAction === 'do'"
+          (click)="setRpgAction('do')"
+          [disabled]="isRpgInputDisabled()"
+        >
+          Do
+        </button>
+        <button
+          type="button"
+          [class.active]="rpgAction === 'say'"
+          (click)="setRpgAction('say')"
+          [disabled]="isRpgInputDisabled()"
+        >
+          Say
+        </button>
+      </div>
+      <div class="rpg-input-wrapper" [class.disabled]="isRpgInputDisabled()">
+        <textarea
+          pInputTextarea
+          [(ngModel)]="rpgInput"
+          [placeholder]="getRpgInputPlaceholder()"
+          rows="1"
+          [autoResize]="true"
+          [disabled]="isRpgInputDisabled()"
+          (keydown.enter)="$event.preventDefault(); sendRpgPrompt()"
+        ></textarea>
+        <button
+          type="button"
+          class="rpg-send-btn"
+          pTooltip="Send"
+          tooltipPosition="top"
+          (click)="sendRpgPrompt()"
+          [disabled]="isRpgSendDisabled()"
+        >
+          @if (isRpgGenerating) {
+            <i class="pi pi-spin pi-spinner"></i>
+          } @else {
+            <i class="pi pi-send"></i>
+          }
+        </button>
+      </div>
+    </div>
+  }
   @if (showEditorControls) {
     <div
       class="tooltip-controls"

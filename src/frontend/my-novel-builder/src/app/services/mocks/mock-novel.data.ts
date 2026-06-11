@@ -19,6 +19,7 @@ export const mockedNovels: NovelDto[] = Array(10)
     tense: WritingTense.Present,
     pov: WritingPov.FirstPerson,
     language: WritingLanguage.English,
+    rpgMode: false,
     mainCharacterId: null,
     compendiumIds: [indexToGuid((index % 3) + 1)],
   }));

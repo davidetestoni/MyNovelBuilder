@@ -42,6 +42,11 @@ public class UpdateNovelDto
     /// The novel's writing language.
     /// </summary>
     public WritingLanguage Language { get; set; } = WritingLanguage.English;
+
+    /// <summary>
+    /// Whether RPG mode is enabled for the prose editor.
+    /// </summary>
+    public required bool RpgMode { get; set; }
     
     /// <summary>
     /// The id of the main character of the novel, if any.

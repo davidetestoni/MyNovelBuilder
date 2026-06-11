@@ -10,6 +10,7 @@ export interface UpdateNovelDto {
   tense: WritingTense;
   pov: WritingPov;
   language: WritingLanguage;
+  rpgMode: boolean;
   mainCharacterId: string | null;
   compendiumIds: string[];
 }

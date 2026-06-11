@@ -13,6 +13,7 @@ export interface NovelDto {
   tense: WritingTense;
   pov: WritingPov;
   language: WritingLanguage;
+  rpgMode: boolean;
   mainCharacterId: string | null;
   compendiumIds: string[];
 }

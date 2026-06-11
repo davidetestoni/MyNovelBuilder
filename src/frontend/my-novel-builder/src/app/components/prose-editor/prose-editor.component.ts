@@ -17,6 +17,7 @@ import {
 } from 'ngx-quill';
 import { environment } from '../../../environment';
 import { FormsModule } from '@angular/forms';
+import { TextareaModule } from 'primeng/textarea';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
@@ -75,6 +76,8 @@ import {
   GenerateStorySuggestionsDialogData,
   GenerateStorySuggestionsDialogResult,
 } from '../generate-story-suggestions-dialog/generate-story-suggestions-dialog.component';
+import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
+import { ModelSelectComponent } from '../model-select/model-select.component';
 
 interface LastSelection {
   editor: Quill;
@@ -90,6 +93,15 @@ interface GenerateTextDialogPrefill {
   initialInstructions?: string;
 }
 
+interface RpgAppendTarget {
+  editor: Quill | null;
+  chapterIndex: number;
+  sectionIndex: number;
+  section: Section;
+  textOffset: number;
+  editorOffset: number;
+}
+
 @Component({
   selector: 'app-prose-editor',
   standalone: true,
@@ -102,6 +114,9 @@ interface GenerateTextDialogPrefill {
     ToastrModule,
     TooltipModule,
     ConfirmDialogModule,
+    TextareaModule,
+    PromptSelectComponent,
+    ModelSelectComponent,
   ],
   providers: [DialogService, ConfirmationService],
 })
@@ -109,6 +124,7 @@ export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
   @Input() prose!: Prose;
   @Input() selectedChapterIndex: number | null = null;
+  @Input() rpgMode = false;
   @Input() prompts!: PromptDto[];
   @Input() compendia: CompendiumDto[] | null = null;
   @Output() proseChange: EventEmitter<Prose> = new EventEmitter<Prose>();
@@ -129,6 +145,14 @@ export class ProseEditorComponent implements OnDestroy {
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
   private readonly averageReadingWpm = 238;
+  private readonly sectionEditors = new Map<string, Quill>();
+  PromptType = PromptType;
+  rpgAction: 'do' | 'say' = 'do';
+  rpgInput = '';
+  selectedRpgPromptId: string | null = null;
+  selectedRpgModel: string | null = null;
+  rpgPromptCount = -1;
+  isRpgGenerating = false;
   private ttsEnableImmersive = false;
   private ttsLoadingToastId: number | undefined;
 
@@ -254,6 +278,168 @@ export class ProseEditorComponent implements OnDestroy {
     this.proseChange.emit(this.prose);
   }
 
+  setRpgAction(action: 'do' | 'say'): void {
+    this.rpgAction = action;
+  }
+
+  onRpgPromptOptionsChanged(count: number): void {
+    this.rpgPromptCount = count;
+  }
+
+  isRpgInputDisabled(): boolean {
+    return this.isRpgGenerating || this.isViewingNonLastChapter();
+  }
+
+  getRpgInputPlaceholder(): string {
+    return this.isViewingNonLastChapter()
+      ? 'Go to the last chapter for RPG mode'
+      : 'Guide the next beat...';
+  }
+
+  isRpgSendDisabled(): boolean {
+    return (
+      this.isRpgInputDisabled() ||
+      this.rpgPromptCount === 0 ||
+      !this.rpgInput.trim() ||
+      !this.selectedRpgPromptId ||
+      !this.selectedRpgModel
+    );
+  }
+
+  private isViewingNonLastChapter(): boolean {
+    return (
+      this.selectedChapterIndex !== null &&
+      this.selectedChapterIndex !== this.prose.chapters.length - 1
+    );
+  }
+
+  sendRpgPrompt(): void {
+    if (this.isRpgSendDisabled()) {
+      return;
+    }
+
+    const target = this.getRpgAppendTarget();
+    if (!target || !this.selectedRpgPromptId || !this.selectedRpgModel) {
+      return;
+    }
+
+    const rpgInput = this.rpgInput.trim();
+    this.rpgInput = '';
+    this.isRpgGenerating = true;
+    this.saveProse();
+
+    const request: GenerateTextRequestDto = {
+      model: this.selectedRpgModel,
+      promptId: this.selectedRpgPromptId,
+      contextInfo: <GenerateTextContextInfoDto>{
+        $type: NovelTextGenerationType.GenerateText,
+        novelId: this.novelId,
+        chapterIndex: target.chapterIndex,
+        sectionIndex: target.sectionIndex,
+        textOffset: target.textOffset,
+        instructions: `${this.rpgAction === 'do' ? 'Do' : 'Say'}: ${rpgInput}`,
+      },
+    };
+
+    this.generateTextService.generateText(request).subscribe({
+      next: async (event: HttpEvent<string>) => {
+        if (event.type !== HttpEventType.Response) {
+          return;
+        }
+
+        const response = event as HttpResponse<string>;
+        const responseChunks = this.parseResponseChunks(response.body);
+        const generatedText = responseChunks.map((item) => item.content).join('');
+
+        if (!generatedText.trim()) {
+          this.toastr.error('No RPG response was generated.');
+          this.isRpgGenerating = false;
+          return;
+        }
+
+        if (target.editor) {
+          await this.insertGeneratedMarkdown(
+            target.editor,
+            target.editorOffset,
+            generatedText,
+          );
+          target.section.text = target.editor.getSemanticHTML();
+        } else {
+          target.section.text = await this.appendMarkdownToHtml(
+            target.section.text,
+            generatedText,
+          );
+        }
+
+        this.isRpgGenerating = false;
+        this.saveProse();
+      },
+      error: (error) => {
+        console.error('Error generating RPG text:', error);
+        this.rpgInput = rpgInput;
+        this.isRpgGenerating = false;
+        this.toastr.error('Failed to generate RPG response.');
+      },
+    });
+  }
+
+  private getRpgAppendTarget(): RpgAppendTarget | null {
+    const targetIndexes = this.getLastSectionIndexes();
+    if (!targetIndexes) {
+      this.toastr.error('Add a section before using RPG mode.');
+      return null;
+    }
+
+    const { chapterIndex, sectionIndex } = targetIndexes;
+    const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
+    const editor = this.sectionEditors.get(
+      this.getSectionEditorKey(chapterIndex, sectionIndex),
+    ) ?? null;
+
+    if (editor) {
+      section.text = editor.getSemanticHTML();
+    }
+
+    const editorOffset = editor ? Math.max(0, editor.getLength() - 1) : 0;
+    const textOffset = editor
+      ? editor.getText(0, editorOffset).length
+      : this.getRawText(section.text).length;
+
+    return {
+      editor,
+      chapterIndex,
+      sectionIndex,
+      section,
+      textOffset,
+      editorOffset,
+    };
+  }
+
+  private getLastSectionIndexes(): { chapterIndex: number; sectionIndex: number } | null {
+    if (this.prose.chapters.length === 0) {
+      return null;
+    }
+
+    const chapterIndex = this.prose.chapters.length - 1;
+    const chapter = this.prose.chapters[chapterIndex];
+    if (chapter.sections.length === 0) {
+      return null;
+    }
+
+    return {
+      chapterIndex,
+      sectionIndex: chapter.sections.length - 1,
+    };
+  }
+
+  private async appendMarkdownToHtml(
+    currentHtml: string,
+    markdown: string,
+  ): Promise<string> {
+    const generatedHtml = await this.convertMarkdownToHtml(markdown);
+    return `${currentHtml}${generatedHtml}`;
+  }
+
   getChapterWordCount(chapter: Prose['chapters'][number]): number {
     const text = chapter.sections
       .map((section) => this.stripHtml(section.text))
@@ -307,7 +493,9 @@ export class ProseEditorComponent implements OnDestroy {
     }
   }
 
-  editorInit(quill: Quill) {
+  editorInit(quill: Quill, chapterIndex: number, sectionIndex: number) {
+    this.sectionEditors.set(this.getSectionEditorKey(chapterIndex, sectionIndex), quill);
+
     // This clears the background and text color when pasting text
     quill.clipboard.addMatcher(
       Node.ELEMENT_NODE,
@@ -383,6 +571,10 @@ export class ProseEditorComponent implements OnDestroy {
       sectionIndex: sectionIndex,
       text: range.length > 0 ? event.editor.getText(range) : '',
     };
+  }
+
+  private getSectionEditorKey(chapterIndex: number, sectionIndex: number): string {
+    return `${chapterIndex}:${sectionIndex}`;
   }
 
   private getRawText(html: string): string {

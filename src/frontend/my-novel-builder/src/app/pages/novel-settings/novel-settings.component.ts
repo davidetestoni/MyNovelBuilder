@@ -17,6 +17,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { CheckboxModule } from 'primeng/checkbox';
 import { MenuModule } from 'primeng/menu';
 import { ConfirmationService, MenuItem } from 'primeng/api';
 import { firstValueFrom } from 'rxjs';
@@ -49,6 +50,7 @@ import { RecordOptionPreviewComponent } from '../../components/record-option-pre
     SelectModule,
     FileUploadModule,
     MultiSelectModule,
+    CheckboxModule,
     MenuModule,
     ConfirmDialogModule,
     ToastrModule,
@@ -152,6 +154,7 @@ export class NovelSettingsComponent implements OnDestroy {
         tense: this.novel.tense,
         pov: this.novel.pov,
         language: this.novel.language,
+        rpgMode: this.novel.rpgMode,
         mainCharacterId: this.novel.mainCharacterId,
         compendiumIds: this.novel.compendiumIds,
       })

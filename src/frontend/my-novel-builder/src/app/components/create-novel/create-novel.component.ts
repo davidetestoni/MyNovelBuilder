@@ -87,6 +87,7 @@ export class CreateNovelComponent {
         tense,
         pov,
         language,
+        rpgMode: false,
         mainCharacterId: null,
       })
       .subscribe((novel) => {

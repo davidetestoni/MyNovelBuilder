@@ -9,5 +9,6 @@ export interface CreateNovelDto {
   tense: WritingTense;
   pov: WritingPov;
   language: WritingLanguage;
+  rpgMode: boolean;
   mainCharacterId: string | null;
 }

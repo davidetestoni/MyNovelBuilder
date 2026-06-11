@@ -137,6 +137,23 @@
             </div>
           </div>
 
+          <div class="novel-mode-row">
+            <div class="novel-rpg-mode">
+              <label class="label" for="rpgMode">
+                <span>RPG mode</span>
+              </label>
+              <div class="novel-rpg-mode-control">
+                <p-checkbox
+                  id="rpgMode"
+                  [(ngModel)]="novel.rpgMode"
+                  [binary]="true"
+                  (onChange)="onBlur()"
+                />
+                <span>Show RPG controls in the prose editor</span>
+              </div>
+            </div>
+          </div>
+
           <div class="novel-reference-row">
             <div class="novel-compendia">
               <label class="label">

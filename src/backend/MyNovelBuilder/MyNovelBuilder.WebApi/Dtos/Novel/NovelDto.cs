@@ -57,6 +57,11 @@ public class NovelDto
     /// The novel's writing language.
     /// </summary>
     public required WritingLanguage Language { get; set; }
+
+    /// <summary>
+    /// Whether RPG mode is enabled for the prose editor.
+    /// </summary>
+    public required bool RpgMode { get; set; }
     
     /// <summary>
     /// The id of the main character of the novel, if any.

@@ -81,6 +81,7 @@
     .novel-tense,
     .novel-pov,
     .novel-language,
+    .novel-rpg-mode,
     .novel-mc,
     .novel-compendia {
       min-width: 0;
@@ -126,6 +127,19 @@
       .clipboard-image-button {
         margin-top: 0.5rem;
       }
+    }
+
+    .novel-mode-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1rem;
+    }
+
+    .novel-rpg-mode-control {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      color: $grey13;
     }
 
     .novel-reference-row {
