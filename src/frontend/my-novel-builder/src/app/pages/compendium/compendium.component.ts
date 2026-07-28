@@ -225,8 +225,7 @@ export class CompendiumComponent implements OnInit {
         this.compendiumService
           .deleteCompendium(this.compendium!.id)
           .subscribe(() => {
-            // Redirect to the compendia page
-            window.location.href = '/compendia';
+            void this.router.navigate(['/compendia']);
           });
       },
     });
