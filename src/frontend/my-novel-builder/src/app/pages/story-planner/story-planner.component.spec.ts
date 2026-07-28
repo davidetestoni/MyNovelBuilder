@@ -14,6 +14,7 @@ describe('StoryPlannerComponent workflows', () => {
   let novelService: jasmine.SpyObj<NovelService>;
   let router: jasmine.SpyObj<Router>;
   let toastrService: jasmine.SpyObj<ToastrService>;
+  let confirmationService: jasmine.SpyObj<ConfirmationService>;
 
   const novel = (): NovelDto =>
     ({
@@ -85,10 +86,10 @@ describe('StoryPlannerComponent workflows', () => {
       'success',
       'clear',
     ]);
-    const confirmationService =
-      jasmine.createSpyObj<ConfirmationService>('ConfirmationService', [
-        'confirm',
-      ]);
+    confirmationService = jasmine.createSpyObj<ConfirmationService>(
+      'ConfirmationService',
+      ['confirm'],
+    );
 
     novelService.getNovel.and.returnValue(of(novel()));
     novelService.getNovelProse.and.returnValue(of(prose()));
@@ -358,5 +359,109 @@ describe('StoryPlannerComponent workflows', () => {
       'novel-id',
       loadedProse,
     );
+  });
+
+  it('deletes a section only after confirmation and clears its selection', () => {
+    component.ngOnInit();
+    const targetSection = component.prose!.chapters[0].sections[0];
+    selectSection(targetSection);
+
+    component.removeSection(0, 0);
+
+    expect(confirmationService.confirm).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({
+        message:
+          'Are you sure you want to delete this section? This action cannot be undone.',
+        header: 'Confirm Section Deletion',
+        icon: 'pi pi-exclamation-triangle',
+        acceptButtonStyleClass: 'p-button-danger',
+        accept: jasmine.any(Function),
+      }),
+    );
+    expect(component.prose!.chapters[0].sections).toEqual([targetSection]);
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+
+    confirmationService.confirm.calls.mostRecent().args[0].accept!();
+
+    expect(component.prose!.chapters[0].sections).toEqual([]);
+    expect(component.isSectionSelected(targetSection)).toBeFalse();
+    expect(novelService.updateNovelProse).toHaveBeenCalledOnceWith(
+      'novel-id',
+      component.prose!,
+    );
+  });
+
+  it('uses the empty-chapter confirmation before deleting and persisting', () => {
+    component.ngOnInit();
+
+    component.removeChapter(1);
+
+    expect(confirmationService.confirm).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({
+        message:
+          'Are you sure you want to delete this empty chapter? This action cannot be undone.',
+        header: 'Confirm Chapter Deletion',
+        accept: jasmine.any(Function),
+      }),
+    );
+    expect(component.prose!.chapters).toHaveSize(2);
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+
+    confirmationService.confirm.calls.mostRecent().args[0].accept!();
+
+    expect(component.prose!.chapters.map((chapter) => chapter.title)).toEqual([
+      'Chapter 1',
+    ]);
+    expect(novelService.updateNovelProse).toHaveBeenCalledOnceWith(
+      'novel-id',
+      component.prose!,
+    );
+  });
+
+  it('warns about a populated chapter and clears its section selections', () => {
+    component.ngOnInit();
+    const targetSection = component.prose!.chapters[0].sections[0];
+    selectSection(targetSection);
+
+    component.removeChapter(0);
+
+    expect(confirmationService.confirm).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({
+        message:
+          'WARNING: This chapter contains 1 section. Deleting it will permanently remove all of them.',
+        header: 'Delete Chapter With Existing Sections',
+        accept: jasmine.any(Function),
+      }),
+    );
+
+    confirmationService.confirm.calls.mostRecent().args[0].accept!();
+
+    expect(component.prose!.chapters.map((chapter) => chapter.title)).toEqual([
+      'Chapter 2',
+    ]);
+    expect(component.isSectionSelected(targetSection)).toBeFalse();
+    expect(novelService.updateNovelProse).toHaveBeenCalledOnceWith(
+      'novel-id',
+      component.prose!,
+    );
+  });
+
+  it('pluralizes the populated-chapter warning for multiple sections', () => {
+    const loadedProse = prose();
+    loadedProse.chapters[0].sections = [section('First'), section('Second')];
+    novelService.getNovelProse.and.returnValue(of(loadedProse));
+    component.ngOnInit();
+
+    component.removeChapter(0);
+
+    expect(confirmationService.confirm).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({
+        message:
+          'WARNING: This chapter contains 2 sections. Deleting it will permanently remove all of them.',
+        header: 'Delete Chapter With Existing Sections',
+      }),
+    );
+    expect(loadedProse.chapters).toHaveSize(2);
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
   });
 });
