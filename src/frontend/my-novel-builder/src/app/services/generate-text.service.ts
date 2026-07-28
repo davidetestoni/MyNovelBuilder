@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   DescribeCompendiumImageRequestDto,
@@ -8,6 +8,7 @@ import { GenerateTextRequestDto } from '../types/dtos/generate/generate-text-req
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 import { TextGenerationProvider } from '../types/enums/text-generation-provider';
+import { LocalStorageService } from './local-storage.service';
 
 export interface GenerateTextCompletion {
   content: string;
@@ -22,6 +23,9 @@ export interface GenerateTextStreamUpdate {
 
 @Injectable()
 export abstract class GenerateTextService {
+  private readonly localStorageService = inject(LocalStorageService);
+  private readonly recentlyUsedModelsKey = 'recentlyUsedModels';
+
   abstract generateText(
     request: GenerateTextRequestDto,
   ): Observable<GenerateTextStreamUpdate>;
@@ -49,16 +53,21 @@ export abstract class GenerateTextService {
       recentlyUsedModels.pop();
     }
 
-    localStorage.setItem('recentlyUsedModels', JSON.stringify(recentlyUsedModels));
+    this.localStorageService.setObjectForKey(
+      this.recentlyUsedModelsKey,
+      recentlyUsedModels,
+    );
   }
 
   getRecentlyUsedModels(): string[] {
-    const models = localStorage.getItem('recentlyUsedModels');
-    if (!models) {
+    const models = this.localStorageService.getObjectForKey<unknown>(
+      this.recentlyUsedModelsKey,
+    );
+    if (!Array.isArray(models)) {
       return [];
     }
 
-    return JSON.parse(models);
+    return models.filter((model): model is string => typeof model === 'string');
   }
 
   sortModels(models: string[]): string[] {

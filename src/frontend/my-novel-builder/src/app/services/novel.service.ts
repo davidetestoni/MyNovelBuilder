@@ -1,11 +1,12 @@
 import { HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { NovelDto } from '../types/dtos/novel/novel.dto';
 import { CreateNovelDto } from '../types/dtos/novel/create-novel.dto';
 import { UpdateNovelDto } from '../types/dtos/novel/update-novel.dto';
 import { Prose } from '../types/dtos/novel/prose';
 import { CompendiumRecordMediaDto } from '../types/dtos/compendium-record/compendium-record-media.dto';
+import { LocalStorageService } from './local-storage.service';
 
 export type NovelExportFormat = 'markdown' | 'html' | 'pdf';
 
@@ -15,7 +16,8 @@ interface FloatedMedia {
 
 @Injectable()
 export abstract class NovelService {
-  private floatedMediaKey = 'floatedImages';
+  private readonly localStorageService = inject(LocalStorageService);
+  private readonly floatedMediaKey = 'floatedImages';
 
   abstract getNovels(): Observable<NovelDto[]>;
   abstract getNovel(novelId: string): Observable<NovelDto>;
@@ -33,17 +35,31 @@ export abstract class NovelService {
   ): Observable<HttpResponse<Blob>>;
 
   private getFloatedMedia(): FloatedMedia {
-    const floatedMedia = localStorage.getItem(this.floatedMediaKey);
-    return floatedMedia ? JSON.parse(floatedMedia) : {};
+    const floatedMedia = this.localStorageService.getObjectForKey<unknown>(
+      this.floatedMediaKey,
+    );
+    if (
+      typeof floatedMedia !== 'object' ||
+      floatedMedia === null ||
+      Array.isArray(floatedMedia)
+    ) {
+      return {};
+    }
+
+    return floatedMedia as FloatedMedia;
   }
 
   private setFloatedMedia(floatedMedia: FloatedMedia): void {
-    localStorage.setItem(this.floatedMediaKey, JSON.stringify(floatedMedia));
+    this.localStorageService.setObjectForKey(
+      this.floatedMediaKey,
+      floatedMedia,
+    );
   }
 
   getFloatedMediaForNovel(novelId: string): CompendiumRecordMediaDto[] {
     const floatedMedia = this.getFloatedMedia();
-    return floatedMedia[novelId] || [];
+    const media = floatedMedia[novelId];
+    return Array.isArray(media) ? media : [];
   }
 
   setFloatedMediaForNovel(

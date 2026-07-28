@@ -29,7 +29,7 @@ export class LocalStorageService {
    */
   getObjectForKey<T>(key: string): T | null {
     const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : null;
+    return item === null ? null : this.parseJson<T>(item);
   }
 
   /**
@@ -48,7 +48,7 @@ export class LocalStorageService {
    * @returns The value from the map or null if not found
    */
   getNestedStringForKey(storageKey: string, mapKey: string): string | null {
-    const map = this.getObjectForKey<Record<string, string>>(storageKey);
+    const map = this.getStringMapForKey(storageKey);
     return map?.[mapKey] ?? null;
   }
 
@@ -63,7 +63,7 @@ export class LocalStorageService {
     mapKey: string,
     value: string,
   ): void {
-    const map = this.getObjectForKey<Record<string, string>>(storageKey) ?? {};
+    const map = this.getStringMapForKey(storageKey) ?? {};
     map[mapKey] = value;
     this.setObjectForKey(storageKey, map);
   }
@@ -75,9 +75,8 @@ export class LocalStorageService {
    * @returns The parsed value from the map or null if not found
    */
   getNestedObjectForKey<T>(storageKey: string, mapKey: string): T | null {
-    const map = this.getObjectForKey<Record<string, string>>(storageKey);
-    if (!map?.[mapKey]) return null;
-    return JSON.parse(map[mapKey]) as T;
+    const value = this.getStringMapForKey(storageKey)?.[mapKey];
+    return value === undefined ? null : this.parseJson<T>(value);
   }
 
   /**
@@ -102,7 +101,7 @@ export class LocalStorageService {
    * @param value The value to stringify and store
    */
   setNestedObjectForKey<T>(storageKey: string, mapKey: string, value: T): void {
-    const map = this.getObjectForKey<Record<string, string>>(storageKey) ?? {};
+    const map = this.getStringMapForKey(storageKey) ?? {};
     map[mapKey] = JSON.stringify(value);
     this.setObjectForKey(storageKey, map);
   }
@@ -138,7 +137,7 @@ export class LocalStorageService {
    * @param mapKey The key to remove from the stored map object
    */
   removeNestedKey(storageKey: string, mapKey: string): void {
-    const map = this.getObjectForKey<Record<string, string>>(storageKey);
+    const map = this.getStringMapForKey(storageKey);
     if (map && mapKey in map) {
       delete map[mapKey];
       this.setObjectForKey(storageKey, map);
@@ -152,7 +151,7 @@ export class LocalStorageService {
    * @returns boolean indicating if the nested key exists
    */
   hasNestedKey(storageKey: string, mapKey: string): boolean {
-    const map = this.getObjectForKey<Record<string, string>>(storageKey);
+    const map = this.getStringMapForKey(storageKey);
     return map !== null && mapKey in map;
   }
 
@@ -178,5 +177,30 @@ export class LocalStorageService {
    */
   clear(): void {
     localStorage.clear();
+  }
+
+  private getStringMapForKey(key: string): Record<string, string> | null {
+    const value = this.getObjectForKey<unknown>(key);
+    if (!this.isRecord(value)) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      Object.entries(value).filter(
+        (entry): entry is [string, string] => typeof entry[1] === 'string',
+      ),
+    );
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  private parseJson<T>(value: string): T | null {
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      return null;
+    }
   }
 }
