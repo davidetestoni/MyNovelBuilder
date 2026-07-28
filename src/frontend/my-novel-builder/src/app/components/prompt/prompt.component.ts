@@ -351,10 +351,16 @@ export class PromptComponent {
   }
 
   addMessage(role: PromptMessageRole): void {
+    const nextMessageId =
+      this.prompt.messages.reduce(
+        (highestId, message) => Math.max(highestId, message.id),
+        -1,
+      ) + 1;
+
     this.prompt.messages = [
       ...this.prompt.messages,
       {
-        id: this.prompt.messages.length,
+        id: nextMessageId,
         role,
         message: '',
       },
