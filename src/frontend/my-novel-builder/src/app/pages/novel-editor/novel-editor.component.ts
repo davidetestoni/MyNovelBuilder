@@ -573,7 +573,8 @@ export class NovelEditorComponent {
     for (const chapter of chapters) {
       if (
         Number.isInteger(chapter.chapterIndex) &&
-        prose.chapters[chapter.chapterIndex]
+        prose.chapters[chapter.chapterIndex] &&
+        chapter.storyEvents.length > 0
       ) {
         updates.set(chapter.chapterIndex, chapter.storyEvents);
       }

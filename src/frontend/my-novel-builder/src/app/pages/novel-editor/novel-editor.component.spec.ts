@@ -426,4 +426,77 @@ describe('NovelEditorComponent workflows', () => {
     expect(novelService.updateNovelProse).not.toHaveBeenCalled();
     expect(component.prose()).toBe(initialProse);
   });
+
+  it('appends generated story events without mutating existing chapters', () => {
+    const existingEvent = storyEvent('Existing');
+    const generatedEvent = storyEvent('Generated');
+    const initialProse = createProse();
+    initialProse.chapters[0].storyEvents = [existingEvent];
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.addGeneratedStoryEvents([
+      {
+        chapterIndex: 0,
+        storyEvents: [generatedEvent],
+      },
+    ]);
+
+    const updatedProse =
+      novelService.updateNovelProse.calls.mostRecent().args[1];
+    expect(updatedProse.chapters[0].storyEvents).toEqual([
+      existingEvent,
+      generatedEvent,
+    ]);
+    expect(updatedProse.chapters[0]).not.toBe(initialProse.chapters[0]);
+    expect(updatedProse.chapters[1]).toBe(initialProse.chapters[1]);
+    expect(initialProse.chapters[0].storyEvents).toEqual([existingEvent]);
+  });
+
+  it('applies valid generated events while ignoring invalid chapters', () => {
+    const generatedEvent = storyEvent('Generated');
+    component = createComponent();
+    component.ngOnInit();
+
+    component.addGeneratedStoryEvents([
+      { chapterIndex: -1, storyEvents: [storyEvent('Negative')] },
+      { chapterIndex: 0.5, storyEvents: [storyEvent('Fractional')] },
+      { chapterIndex: 99, storyEvents: [storyEvent('Out of range')] },
+      { chapterIndex: 1, storyEvents: [generatedEvent] },
+    ]);
+
+    const updatedProse =
+      novelService.updateNovelProse.calls.mostRecent().args[1];
+    expect(updatedProse.chapters[0].storyEvents).toEqual([]);
+    expect(updatedProse.chapters[1].storyEvents).toEqual([generatedEvent]);
+  });
+
+  it('ignores generated-event batches without a valid chapter', () => {
+    component = createComponent();
+    component.ngOnInit();
+
+    component.addGeneratedStoryEvents([]);
+    component.addGeneratedStoryEvents([
+      { chapterIndex: -1, storyEvents: [storyEvent('Negative')] },
+      { chapterIndex: 99, storyEvents: [storyEvent('Out of range')] },
+    ]);
+
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+  });
+
+  it('does not persist generated-event batches with no events', () => {
+    const initialProse = createProse();
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.addGeneratedStoryEvents([
+      { chapterIndex: 0, storyEvents: [] },
+      { chapterIndex: 1, storyEvents: [] },
+    ]);
+
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+    expect(component.prose()).toBe(initialProse);
+  });
 });
