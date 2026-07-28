@@ -1,9 +1,11 @@
-import { SimpleChange } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ElementRef, SimpleChange } from '@angular/core';
+import { fakeAsync, flushMicrotasks, TestBed } from '@angular/core/testing';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmationService } from 'primeng/api';
-import { DialogService } from 'primeng/dynamicdialog';
-import { of, throwError } from 'rxjs';
+import type { Confirmation } from 'primeng/api';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { of, Subject, throwError } from 'rxjs';
+import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message.component';
 import { CompendiumService } from '../../services/compendium.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { NovelService } from '../../services/novel.service';
@@ -16,12 +18,15 @@ import {
   WorldBuildingProposal,
   WorldBuildingProposalStatus,
   WorldBuildingSession,
+  WorldBuildingMessage,
 } from '../../types/dtos/world-building/world-building-session';
 import { ChatMessageRole } from '../../types/enums/chat-message-role';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
+import { LocalStorageKey } from '../../types/enums/local-storage-key';
+import { PromptType } from '../../types/enums/prompt-type';
 import { WorldBuilderSessionComponent } from './world-builder-session.component';
 
-describe('WorldBuilderSessionComponent context and proposals', () => {
+describe('WorldBuilderSessionComponent workflows', () => {
   let component: WorldBuilderSessionComponent;
   let novelService: jasmine.SpyObj<NovelService>;
   let compendiumService: jasmine.SpyObj<CompendiumService>;
@@ -150,6 +155,8 @@ describe('WorldBuilderSessionComponent context and proposals', () => {
         'updateProposal',
         'acceptProposal',
         'rejectProposal',
+        'sendMessage',
+        'deleteMessage',
       ],
     );
     localStorageService = jasmine.createSpyObj<LocalStorageService>(
@@ -176,6 +183,8 @@ describe('WorldBuilderSessionComponent context and proposals', () => {
     sessionService.updateProposal.and.callFake(() => of(session()));
     sessionService.acceptProposal.and.callFake(() => of(session()));
     sessionService.rejectProposal.and.callFake(() => of(session()));
+    sessionService.sendMessage.and.callFake(() => of(session()));
+    sessionService.deleteMessage.and.callFake(() => of(session()));
 
     TestBed.configureTestingModule({
       providers: [
@@ -591,5 +600,353 @@ describe('WorldBuilderSessionComponent context and proposals', () => {
     expect(component.getTargetRecordName(null)).toBe('No record');
     expect(component.getTargetRecordName('hero')).toBe('Hero');
     expect(component.getTargetRecordName('missing')).toBe('missing');
+  });
+
+  it('does not send blank, incomplete, or concurrent messages', () => {
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = 'prompt-id';
+    component.userInput = '   ';
+    component.sendMessage();
+
+    component.userInput = 'Message';
+    component.selectedModel = null;
+    component.sendMessage();
+
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = null;
+    component.sendMessage();
+
+    component.selectedPromptId = 'prompt-id';
+    component.isGenerating = true;
+    component.sendMessage();
+
+    expect(sessionService.sendMessage).not.toHaveBeenCalled();
+    expect(component.currentSession.messages).toHaveSize(1);
+    expect(component.userInput).toBe('Message');
+  });
+
+  it('appends and sends a trimmed local user message', () => {
+    const response = new Subject<WorldBuildingSession>();
+    sessionService.sendMessage.and.returnValue(response);
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = 'prompt-id';
+    component.userInput = '  Describe the city  ';
+
+    component.sendMessage();
+
+    const localMessage = component.currentSession.messages[1];
+    expect(localMessage).toEqual({
+      id: jasmine.any(String),
+      sentAt: jasmine.any(String),
+      role: ChatMessageRole.User,
+      textContent: 'Describe the city',
+    });
+    expect(component.userInput).toBe('');
+    expect(component.isGenerating).toBeTrue();
+    expect(localStorageService.setNestedStringForKey).toHaveBeenCalledOnceWith(
+      LocalStorageKey.RecentPrompts,
+      PromptType.WorldBuildingAgent,
+      'prompt-id',
+    );
+    expect(sessionService.sendMessage).toHaveBeenCalledOnceWith('session-id', {
+      model: 'model-id',
+      promptId: 'prompt-id',
+      message: 'Describe the city',
+    });
+  });
+
+  it('replaces local state with the completed message response', () => {
+    const response = new Subject<WorldBuildingSession>();
+    const updated = session();
+    updated.messages.push({
+      id: 'response',
+      sentAt: '2026-01-03T00:00:00Z',
+      role: ChatMessageRole.Assistant,
+      textContent: 'The city is ancient.',
+    });
+    sessionService.sendMessage.and.returnValue(response);
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = 'prompt-id';
+    component.userInput = 'Describe it';
+    spyOn(component.sessionUpdated, 'emit');
+
+    component.sendMessage();
+    const localMessageId = component.currentSession.messages[1].id;
+    component.failedMessageIds.add(localMessageId);
+    response.next(updated);
+
+    expect(component.currentSession).toBe(updated);
+    expect(component.isGenerating).toBeFalse();
+    expect(component.isFailedMessage(localMessageId)).toBeFalse();
+    expect(component.sessionUpdated.emit).toHaveBeenCalledOnceWith(updated);
+  });
+
+  it('retains and marks a local message when sending fails', () => {
+    const response = new Subject<WorldBuildingSession>();
+    sessionService.sendMessage.and.returnValue(response);
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = 'prompt-id';
+    component.userInput = 'Describe it';
+
+    component.sendMessage();
+    const localMessage = component.currentSession.messages[1];
+    response.error(new Error('request failed'));
+
+    expect(component.currentSession.messages).toContain(localMessage);
+    expect(component.isGenerating).toBeFalse();
+    expect(component.isFailedMessage(localMessage.id)).toBeTrue();
+    expect(toastrService.error).toHaveBeenCalledOnceWith(
+      'Message failed. You can retry it.',
+    );
+  });
+
+  it('retries a failed user message without duplicating it', () => {
+    const response = new Subject<WorldBuildingSession>();
+    const failedMessage: WorldBuildingMessage = {
+      id: 'failed-message',
+      sentAt: '2026-01-03T00:00:00Z',
+      role: ChatMessageRole.User,
+      textContent: 'Try again',
+    };
+    component.currentSession.messages.push(failedMessage);
+    component.failedMessageIds.add(failedMessage.id);
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = 'prompt-id';
+    sessionService.sendMessage.and.returnValue(response);
+
+    component.retryMessage(failedMessage);
+
+    expect(component.currentSession.messages).toHaveSize(2);
+    expect(component.isFailedMessage(failedMessage.id)).toBeFalse();
+    expect(sessionService.sendMessage).toHaveBeenCalledOnceWith('session-id', {
+      model: 'model-id',
+      promptId: 'prompt-id',
+      message: 'Try again',
+    });
+
+    response.error(new Error('request failed again'));
+    expect(component.isFailedMessage(failedMessage.id)).toBeTrue();
+  });
+
+  it('does not retry assistant, concurrent, or incompletely configured messages', () => {
+    const assistant = component.currentSession.messages[0];
+    const user: WorldBuildingMessage = {
+      id: 'user-message',
+      sentAt: '2026-01-03T00:00:00Z',
+      role: ChatMessageRole.User,
+      textContent: 'Retry me',
+    };
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = 'prompt-id';
+
+    component.retryMessage(assistant);
+    component.isGenerating = true;
+    component.retryMessage(user);
+    component.isGenerating = false;
+    component.selectedModel = null;
+    component.retryMessage(user);
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = null;
+    component.retryMessage(user);
+
+    expect(sessionService.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('edits a message through the dialog and persists the changed text', () => {
+    const message = component.currentSession.messages[0];
+    const dialogClosed = new Subject<string | undefined>();
+    const dialogRef = {
+      onClose: dialogClosed.asObservable(),
+      close: jasmine.createSpy('close'),
+    } as unknown as DynamicDialogRef;
+    dialogService.open.and.returnValue(dialogRef);
+    spyOn(component.sessionUpdated, 'emit');
+
+    component.editMessage(message);
+
+    expect(dialogService.open).toHaveBeenCalledOnceWith(
+      EditChatMessageComponent,
+      {
+        header: 'Edit Message',
+        width: '50vw',
+        data: { text: 'Suggestions' },
+        modal: true,
+        closable: true,
+        dismissableMask: true,
+      },
+    );
+
+    dialogClosed.next('Edited suggestions');
+
+    expect(message.textContent).toBe('Edited suggestions');
+    expect(sessionService.updateSession).toHaveBeenCalledOnceWith(
+      'session-id',
+      jasmine.objectContaining({
+        messages: component.currentSession.messages,
+      }),
+    );
+    expect(component.sessionUpdated.emit).toHaveBeenCalledOnceWith(
+      component.currentSession,
+    );
+  });
+
+  it('ignores cancelled and unchanged message edits', () => {
+    const message = component.currentSession.messages[0];
+    const dialogClosed = new Subject<string | undefined>();
+    dialogService.open.and.returnValue({
+      onClose: dialogClosed.asObservable(),
+      close: jasmine.createSpy('close'),
+    } as unknown as DynamicDialogRef);
+
+    component.editMessage(message);
+    dialogClosed.next(undefined);
+    dialogClosed.next('Suggestions');
+
+    expect(message.textContent).toBe('Suggestions');
+    expect(sessionService.updateSession).not.toHaveBeenCalled();
+  });
+
+  it('deletes a persisted assistant message only after confirmation', () => {
+    const message = component.currentSession.messages[0];
+    const updated = session();
+    updated.messages = [];
+    sessionService.deleteMessage.and.returnValue(of(updated));
+    spyOn(component.sessionUpdated, 'emit');
+
+    component.deleteMessage(message);
+
+    expect(sessionService.deleteMessage).not.toHaveBeenCalled();
+    const confirmation = confirmationService.confirm.calls.mostRecent()
+      .args[0] as Confirmation;
+    expect(confirmation).toEqual(
+      jasmine.objectContaining({
+        message: 'Delete this assistant message and its proposals?',
+        header: 'Confirm Delete',
+        acceptButtonStyleClass: 'p-button-danger',
+      }),
+    );
+
+    confirmation.accept?.();
+
+    expect(sessionService.deleteMessage).toHaveBeenCalledOnceWith(
+      'session-id',
+      'assistant-message',
+    );
+    expect(component.currentSession).toBe(updated);
+    expect(component.sessionUpdated.emit).toHaveBeenCalledOnceWith(updated);
+  });
+
+  it('uses the simpler confirmation copy for a persisted user message', () => {
+    const message: WorldBuildingMessage = {
+      id: 'user-message',
+      sentAt: '2026-01-03T00:00:00Z',
+      role: ChatMessageRole.User,
+      textContent: 'Question',
+    };
+
+    component.deleteMessage(message);
+
+    const confirmation = confirmationService.confirm.calls.mostRecent()
+      .args[0] as Confirmation;
+    expect(confirmation.message).toBe('Delete this message?');
+    expect(sessionService.deleteMessage).not.toHaveBeenCalled();
+  });
+
+  it('removes a failed local message without calling the backend', () => {
+    const failedMessage: WorldBuildingMessage = {
+      id: 'failed-message',
+      sentAt: '2026-01-03T00:00:00Z',
+      role: ChatMessageRole.User,
+      textContent: 'Failed question',
+    };
+    component.currentSession.messages.push(failedMessage);
+    component.failedMessageIds.add(failedMessage.id);
+    spyOn(component.sessionUpdated, 'emit');
+
+    component.deleteMessage(failedMessage);
+    const confirmation = confirmationService.confirm.calls.mostRecent()
+      .args[0] as Confirmation;
+    confirmation.accept?.();
+
+    expect(component.currentSession.messages).not.toContain(failedMessage);
+    expect(component.isFailedMessage(failedMessage.id)).toBeFalse();
+    expect(sessionService.deleteMessage).not.toHaveBeenCalled();
+    expect(component.sessionUpdated.emit).toHaveBeenCalledOnceWith(
+      component.currentSession,
+    );
+  });
+
+  it('copies message text and reports success', fakeAsync(() => {
+    const clipboard = jasmine.createSpyObj<Clipboard>('Clipboard', [
+      'writeText',
+    ]);
+    clipboard.writeText.and.resolveTo();
+    spyOnProperty(navigator, 'clipboard', 'get').and.returnValue(clipboard);
+
+    component.copyMessage('Copied text');
+    flushMicrotasks();
+
+    expect(clipboard.writeText).toHaveBeenCalledOnceWith('Copied text');
+    expect(toastrService.success).toHaveBeenCalledOnceWith(
+      'Message copied to clipboard',
+    );
+  }));
+
+  it('tracks the number of available prompt options', () => {
+    component.onPromptOptionsChanged(4);
+
+    expect(component.promptCount).toBe(4);
+  });
+
+  it('scrolls to the latest message after session changes', () => {
+    const container = {
+      scrollTop: 0,
+      scrollHeight: 320,
+    };
+    (
+      component as unknown as {
+        messagesContainer: ElementRef<typeof container>;
+      }
+    ).messagesContainer = new ElementRef(container);
+    component.ngOnChanges({
+      currentSession: new SimpleChange(null, component.currentSession, true),
+    });
+
+    component.ngAfterViewChecked();
+
+    expect(container.scrollTop).toBe(320);
+  });
+
+  it('stops retrying scroll when the message container is unavailable', () => {
+    component.ngOnChanges({
+      currentSession: new SimpleChange(null, component.currentSession, true),
+    });
+
+    component.ngAfterViewChecked();
+
+    const container = {
+      scrollTop: 0,
+      scrollHeight: 320,
+    };
+    (
+      component as unknown as {
+        messagesContainer: ElementRef<typeof container>;
+      }
+    ).messagesContainer = new ElementRef(container);
+    component.ngAfterViewChecked();
+    expect(container.scrollTop).toBe(0);
+  });
+
+  it('closes an open message-edit dialog when destroyed', () => {
+    const dialogRef = {
+      onClose: new Subject<string | undefined>(),
+      close: jasmine.createSpy('close'),
+    } as unknown as DynamicDialogRef;
+    dialogService.open.and.returnValue(dialogRef);
+
+    component.editMessage(component.currentSession.messages[0]);
+    component.ngOnDestroy();
+
+    expect(dialogRef.close).toHaveBeenCalledTimes(1);
   });
 });
