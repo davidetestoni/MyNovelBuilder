@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { finalize } from 'rxjs';
 import { GenerateTextService } from '../../services/generate-text.service';
 import { GenerateImageService } from '../../services/generate-image.service';
 import { GenerateVideoService } from '../../services/generate-video.service';
@@ -131,11 +132,13 @@ export class ModelSelectComponent
       this.capability === 'vision' ||
       this.capability === 'structuredOutput'
     ) {
-      this.generateTextService.getAvailableModelInfos().subscribe({
-        next: (models) => this.setTextOptionsFromInfos(models),
-        error: () => this.setTextOptions([]),
-        complete: () => (this.isLoading = false),
-      });
+      this.generateTextService
+        .getAvailableModelInfos()
+        .pipe(finalize(() => (this.isLoading = false)))
+        .subscribe({
+          next: (models) => this.setTextOptionsFromInfos(models),
+          error: () => this.setTextOptions([]),
+        });
       return;
     }
 
@@ -143,19 +146,23 @@ export class ModelSelectComponent
       this.capability === 'textToVideo' ||
       this.capability === 'imageToVideo'
     ) {
-      this.generateVideoService.getAvailableModels().subscribe({
-        next: (models) => this.setVideoOptions(models),
-        error: () => this.setTextOptions([]),
-        complete: () => (this.isLoading = false),
-      });
+      this.generateVideoService
+        .getAvailableModels()
+        .pipe(finalize(() => (this.isLoading = false)))
+        .subscribe({
+          next: (models) => this.setVideoOptions(models),
+          error: () => this.setTextOptions([]),
+        });
       return;
     }
 
-    this.generateImageService.getAvailableModels().subscribe({
-      next: (models) => this.setImageOptions(models),
-      error: () => this.setTextOptions([]),
-      complete: () => (this.isLoading = false),
-    });
+    this.generateImageService
+      .getAvailableModels()
+      .pipe(finalize(() => (this.isLoading = false)))
+      .subscribe({
+        next: (models) => this.setImageOptions(models),
+        error: () => this.setTextOptions([]),
+      });
   }
 
   private setTextOptions(models: string[]): void {
