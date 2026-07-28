@@ -1,3 +1,4 @@
+import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import { TestBed } from '@angular/core/testing';
 import { ConfirmationService } from 'primeng/api';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
@@ -44,6 +45,34 @@ describe('StoryPlannerComponent workflows', () => {
       },
     ],
   });
+
+  const sectionDropEvent = (
+    sourceSections: Section[],
+    targetSections: Section[],
+    previousIndex: number,
+    currentIndex: number,
+  ): CdkDragDrop<Section[]> => {
+    const previousContainer = { data: sourceSections };
+    const container =
+      sourceSections === targetSections
+        ? previousContainer
+        : { data: targetSections };
+
+    return {
+      previousContainer,
+      container,
+      previousIndex,
+      currentIndex,
+    } as unknown as CdkDragDrop<Section[]>;
+  };
+
+  const selectSection = (targetSection: Section): void => {
+    const input = document.createElement('input');
+    input.checked = true;
+    component.toggleSectionSelection(targetSection, {
+      target: input,
+    } as unknown as Event);
+  };
 
   beforeEach(() => {
     novelService = jasmine.createSpyObj<NovelService>('NovelService', [
@@ -203,5 +232,131 @@ describe('StoryPlannerComponent workflows', () => {
     expect(
       component.getSectionPreview(section(' ', '<p> &nbsp; </p>')),
     ).toBe('No summary or text yet.');
+  });
+
+  it('reorders chapters and persists the change', () => {
+    component.ngOnInit();
+
+    component.onChapterDrop({
+      previousIndex: 0,
+      currentIndex: 1,
+    } as CdkDragDrop<Prose['chapters']>);
+
+    expect(component.prose?.chapters.map((chapter) => chapter.title)).toEqual([
+      'Chapter 2',
+      'Chapter 1',
+    ]);
+    expect(novelService.updateNovelProse).toHaveBeenCalledOnceWith(
+      'novel-id',
+      component.prose!,
+    );
+  });
+
+  it('does not persist an unchanged chapter position', () => {
+    component.ngOnInit();
+
+    component.onChapterDrop({
+      previousIndex: 1,
+      currentIndex: 1,
+    } as CdkDragDrop<Prose['chapters']>);
+
+    expect(component.prose?.chapters.map((chapter) => chapter.title)).toEqual([
+      'Chapter 1',
+      'Chapter 2',
+    ]);
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+  });
+
+  it('reorders sections within a chapter and persists the change', () => {
+    const first = section('First');
+    const second = section('Second');
+    const third = section('Third');
+    const loadedProse = prose();
+    loadedProse.chapters[0].sections = [first, second, third];
+    novelService.getNovelProse.and.returnValue(of(loadedProse));
+    component.ngOnInit();
+
+    component.onSectionDrop(
+      sectionDropEvent(
+        loadedProse.chapters[0].sections,
+        loadedProse.chapters[0].sections,
+        2,
+        0,
+      ),
+    );
+
+    expect(loadedProse.chapters[0].sections).toEqual([third, first, second]);
+    expect(novelService.updateNovelProse).toHaveBeenCalledOnceWith(
+      'novel-id',
+      loadedProse,
+    );
+  });
+
+  it('does not persist an unchanged section position', () => {
+    component.ngOnInit();
+    const sections = component.prose!.chapters[0].sections;
+
+    component.onSectionDrop(sectionDropEvent(sections, sections, 0, 0));
+
+    expect(sections).toEqual([
+      jasmine.objectContaining({ summary: 'Section summary' }),
+    ]);
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+  });
+
+  it('moves one section between chapters and clears its selection', () => {
+    component.ngOnInit();
+    const sourceSections = component.prose!.chapters[0].sections;
+    const targetSections = component.prose!.chapters[1].sections;
+    const movedSection = sourceSections[0];
+    selectSection(movedSection);
+
+    component.onSectionDrop(
+      sectionDropEvent(sourceSections, targetSections, 0, 0),
+    );
+
+    expect(sourceSections).toEqual([]);
+    expect(targetSections).toEqual([movedSection]);
+    expect(component.isSectionSelected(movedSection)).toBeFalse();
+    expect(novelService.updateNovelProse).toHaveBeenCalledOnceWith(
+      'novel-id',
+      component.prose!,
+    );
+  });
+
+  it('moves selected sections as a group in source order', () => {
+    const first = section('First');
+    const unselected = section('Unselected');
+    const third = section('Third');
+    const existingTarget = section('Existing target');
+    const loadedProse = prose();
+    loadedProse.chapters[0].sections = [first, unselected, third];
+    loadedProse.chapters[1].sections = [existingTarget];
+    novelService.getNovelProse.and.returnValue(of(loadedProse));
+    component.ngOnInit();
+    selectSection(first);
+    selectSection(third);
+
+    component.onSectionDrop(
+      sectionDropEvent(
+        loadedProse.chapters[0].sections,
+        loadedProse.chapters[1].sections,
+        0,
+        1,
+      ),
+    );
+
+    expect(loadedProse.chapters[0].sections).toEqual([unselected]);
+    expect(loadedProse.chapters[1].sections).toEqual([
+      existingTarget,
+      first,
+      third,
+    ]);
+    expect(component.isSectionSelected(first)).toBeFalse();
+    expect(component.isSectionSelected(third)).toBeFalse();
+    expect(novelService.updateNovelProse).toHaveBeenCalledOnceWith(
+      'novel-id',
+      loadedProse,
+    );
   });
 });
