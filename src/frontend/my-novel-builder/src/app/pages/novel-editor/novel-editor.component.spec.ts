@@ -12,7 +12,7 @@ import { PromptService } from '../../services/prompt.service';
 import type { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import type { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
 import type { NovelDto } from '../../types/dtos/novel/novel.dto';
-import type { Prose } from '../../types/dtos/novel/prose';
+import type { Prose, StoryEvent } from '../../types/dtos/novel/prose';
 import { NovelEditorComponent } from './novel-editor.component';
 
 describe('NovelEditorComponent workflows', () => {
@@ -45,6 +45,12 @@ describe('NovelEditorComponent workflows', () => {
       title: 'Novel',
       compendiumIds: ['included-compendium'],
     }) as NovelDto;
+
+  const storyEvent = (title: string): StoryEvent => ({
+    title,
+    date: '2026-01-01',
+    description: `${title} description`,
+  });
 
   const compendium = (id: string): CompendiumDto => ({
     id,
@@ -230,5 +236,194 @@ describe('NovelEditorComponent workflows', () => {
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  });
+
+  it('creates a story event without mutating the loaded prose', () => {
+    const initialProse = createProse();
+    const createdEvent = storyEvent('Created');
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.createStoryEvent({
+      chapterIndex: 0,
+      storyEvent: createdEvent,
+    });
+
+    const updatedProse =
+      novelService.updateNovelProse.calls.mostRecent().args[1];
+    expect(updatedProse.chapters[0].storyEvents).toEqual([createdEvent]);
+    expect(updatedProse.chapters[0]).not.toBe(initialProse.chapters[0]);
+    expect(updatedProse.chapters[1]).toBe(initialProse.chapters[1]);
+    expect(initialProse.chapters[0].storyEvents).toEqual([]);
+  });
+
+  it('updates a story event without mutating the loaded prose', () => {
+    const initialEvent = storyEvent('Original');
+    const replacementEvent = storyEvent('Replacement');
+    const initialProse = createProse();
+    initialProse.chapters[0].storyEvents = [initialEvent];
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.updateStoryEvent({
+      chapterIndex: 0,
+      storyEventIndex: 0,
+      storyEvent: replacementEvent,
+    });
+
+    const updatedProse =
+      novelService.updateNovelProse.calls.mostRecent().args[1];
+    expect(updatedProse.chapters[0].storyEvents).toEqual([
+      replacementEvent,
+    ]);
+    expect(updatedProse.chapters[0].storyEvents).not.toBe(
+      initialProse.chapters[0].storyEvents,
+    );
+    expect(initialProse.chapters[0].storyEvents).toEqual([initialEvent]);
+  });
+
+  it('removes a story event without mutating the loaded prose', () => {
+    const retainedEvent = storyEvent('Retained');
+    const removedEvent = storyEvent('Removed');
+    const initialProse = createProse();
+    initialProse.chapters[0].storyEvents = [retainedEvent, removedEvent];
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.removeStoryEvent({
+      chapterIndex: 0,
+      storyEventIndex: 1,
+    });
+
+    const updatedProse =
+      novelService.updateNovelProse.calls.mostRecent().args[1];
+    expect(updatedProse.chapters[0].storyEvents).toEqual([retainedEvent]);
+    expect(initialProse.chapters[0].storyEvents).toEqual([
+      retainedEvent,
+      removedEvent,
+    ]);
+  });
+
+  it('ignores invalid story-event mutations', () => {
+    component = createComponent();
+    component.ngOnInit();
+
+    component.createStoryEvent({
+      chapterIndex: 99,
+      storyEvent: storyEvent('Created'),
+    });
+    component.updateStoryEvent({
+      chapterIndex: 0,
+      storyEventIndex: 99,
+      storyEvent: storyEvent('Updated'),
+    });
+    component.removeStoryEvent({
+      chapterIndex: 0,
+      storyEventIndex: 99,
+    });
+
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+  });
+
+  it('reorders story events within one chapter immutably', () => {
+    const firstEvent = storyEvent('First');
+    const secondEvent = storyEvent('Second');
+    const thirdEvent = storyEvent('Third');
+    const initialProse = createProse();
+    initialProse.chapters[0].storyEvents = [
+      firstEvent,
+      secondEvent,
+      thirdEvent,
+    ];
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.reorderStoryEvents({
+      previousChapterIndex: 0,
+      currentChapterIndex: 0,
+      previousIndex: 0,
+      currentIndex: 2,
+    });
+
+    const updatedProse =
+      novelService.updateNovelProse.calls.mostRecent().args[1];
+    expect(updatedProse.chapters[0].storyEvents).toEqual([
+      secondEvent,
+      thirdEvent,
+      firstEvent,
+    ]);
+    expect(initialProse.chapters[0].storyEvents).toEqual([
+      firstEvent,
+      secondEvent,
+      thirdEvent,
+    ]);
+  });
+
+  it('moves story events between chapters immutably', () => {
+    const firstEvent = storyEvent('First');
+    const movedEvent = storyEvent('Moved');
+    const destinationEvent = storyEvent('Destination');
+    const initialProse = createProse();
+    initialProse.chapters[0].storyEvents = [firstEvent, movedEvent];
+    initialProse.chapters[1].storyEvents = [destinationEvent];
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.reorderStoryEvents({
+      previousChapterIndex: 0,
+      currentChapterIndex: 1,
+      previousIndex: 1,
+      currentIndex: 1,
+    });
+
+    const updatedProse =
+      novelService.updateNovelProse.calls.mostRecent().args[1];
+    expect(updatedProse.chapters[0].storyEvents).toEqual([firstEvent]);
+    expect(updatedProse.chapters[1].storyEvents).toEqual([
+      destinationEvent,
+      movedEvent,
+    ]);
+    expect(initialProse.chapters[0].storyEvents).toEqual([
+      firstEvent,
+      movedEvent,
+    ]);
+    expect(initialProse.chapters[1].storyEvents).toEqual([
+      destinationEvent,
+    ]);
+  });
+
+  it('ignores invalid and unchanged story-event reorders', () => {
+    const initialProse = createProse();
+    initialProse.chapters[0].storyEvents = [storyEvent('First')];
+    novelService.getNovelProse.and.returnValue(of(initialProse));
+    component = createComponent();
+    component.ngOnInit();
+
+    component.reorderStoryEvents({
+      previousChapterIndex: 0,
+      currentChapterIndex: 0,
+      previousIndex: 0,
+      currentIndex: 0,
+    });
+    component.reorderStoryEvents({
+      previousChapterIndex: 99,
+      currentChapterIndex: 0,
+      previousIndex: 0,
+      currentIndex: 0,
+    });
+    component.reorderStoryEvents({
+      previousChapterIndex: 0,
+      currentChapterIndex: 1,
+      previousIndex: 0,
+      currentIndex: 99,
+    });
+
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+    expect(component.prose()).toBe(initialProse);
   });
 });
