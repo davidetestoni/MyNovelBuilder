@@ -1,50 +1,39 @@
-import {
-  HttpDownloadProgressEvent,
-  HttpEvent,
-  HttpEventType,
-  HttpResponse,
-} from '@angular/common/http';
-import { Observable, Subscriber } from 'rxjs';
-import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
+import { Observable } from 'rxjs';
 import { TextGenerationModelInfoDto } from '../../types/dtos/generate/text-generation-model-info.dto';
+import type { GenerateTextStreamUpdate } from '../generate-text.service';
 
 export function mockedTextGenerationResponse(
   generatedText: string,
-): Observable<HttpEvent<string>> {
-  return new Observable<HttpEvent<string>>(
-    (subscriber: Subscriber<HttpEvent<string>>) => {
-      setTimeout(() => {
+): Observable<GenerateTextStreamUpdate> {
+  return new Observable<GenerateTextStreamUpdate>(
+    (subscriber) => {
+      let intervalId: ReturnType<typeof setInterval> | null = null;
+      const timeoutId = setTimeout(() => {
         let index = 0;
-        let partialText = '';
+        let content = '';
 
-        const intervalId = setInterval(() => {
+        intervalId = setInterval(() => {
           if (index < generatedText.length) {
-            const char = generatedText.charAt(index);
-            const chunk: GenerateTextResponseChunkDto = { content: char };
-
-            partialText += JSON.stringify(chunk) + '\n';
-
-            subscriber.next(<HttpDownloadProgressEvent>{
-              type: HttpEventType.DownloadProgress,
-              loaded: index + 1,
-              total: generatedText.length,
-              partialText,
-            });
-
+            content += generatedText.charAt(index);
+            subscriber.next({ content, isComplete: false });
             index++;
           } else {
-            clearInterval(intervalId);
-
-            const finalResponse = new HttpResponse({
-              body: partialText,
-              status: 200,
-              statusText: 'OK',
-            });
-            subscriber.next(finalResponse);
+            if (intervalId !== null) {
+              clearInterval(intervalId);
+            }
+            intervalId = null;
+            subscriber.next({ content, isComplete: true });
             subscriber.complete();
           }
         }, 50);
       }, 500);
+
+      return () => {
+        clearTimeout(timeoutId);
+        if (intervalId !== null) {
+          clearInterval(intervalId);
+        }
+      };
     },
   );
 }

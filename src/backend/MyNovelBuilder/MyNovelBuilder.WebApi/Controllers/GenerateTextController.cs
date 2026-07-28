@@ -89,7 +89,7 @@ public class GenerateTextController : ControllerBase
         var textGenerationService = await GetTextGenerationServiceAsync(
             cancellationToken: cancellationToken);
         
-        HttpContext.Response.Headers.Append("Content-Type", "text/event-stream");
+        HttpContext.Response.ContentType = "application/x-ndjson";
 
         var processedPrompt = dto.ContextInfo switch
         {

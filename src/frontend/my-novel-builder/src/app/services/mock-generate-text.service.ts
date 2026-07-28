@@ -1,4 +1,3 @@
-import { HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -15,11 +14,17 @@ import {
   mockedTextGenerationResponse,
 } from './mocks/mock-generate-text.data';
 import { mockObservable } from './mocks/mock-utils';
-import { GenerateTextCompletion, GenerateTextService } from './generate-text.service';
+import {
+  GenerateTextCompletion,
+  GenerateTextService,
+  GenerateTextStreamUpdate,
+} from './generate-text.service';
 
 @Injectable()
 export class MockGenerateTextService extends GenerateTextService {
-  generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>> {
+  generateText(
+    request: GenerateTextRequestDto,
+  ): Observable<GenerateTextStreamUpdate> {
     this.saveRecentlyUsedModel(request.model);
     return mockedTextGenerationResponse(
       'The lantern cast a *soft amber glow* across the room, and the letter contained **one unmistakable warning**.',

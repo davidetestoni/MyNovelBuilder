@@ -1,13 +1,6 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
-import {
-  HttpEvent,
-  HttpEventType,
-  HttpDownloadProgressEvent,
-  HttpResponse,
-} from '@angular/common/http';
 import { GenerateTextService } from '../../services/generate-text.service';
-import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
 
@@ -58,35 +51,12 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
     this.startGenerationTimer();
 
     this.generateTextService.generateText(this.data.request).subscribe({
-      next: (event: HttpEvent<string>) => {
-        if (event.type === HttpEventType.DownloadProgress) {
-          const response = (event as HttpDownloadProgressEvent)
-            .partialText as string;
-          if (response === undefined) {
-            return;
-          }
-          const responseChunks = response
-            .split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
+      next: (update) => {
+        if (update.content.length > 0) {
+          this.generatedText = update.content;
+        }
 
-            this.generatedText = message;
-          }
-        } else if (event.type === HttpEventType.Response) {
-          const response = event as HttpResponse<string>;
-          const responseChunks = response
-            .body!.split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
-
-            this.generatedText = message;
-          }
-
+        if (update.isComplete) {
           this.isGenerating = false;
           this.stopGenerationTimer();
         }

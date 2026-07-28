@@ -1,11 +1,12 @@
 import {
   HttpClient,
+  HttpDownloadProgressEvent,
   HttpEvent,
   HttpEventType,
   HttpResponse,
 } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { Observable, filter, map } from 'rxjs';
+import { defer, Observable, filter, map } from 'rxjs';
 import { environment } from '../../environment';
 import {
   DescribeCompendiumImageRequestDto,
@@ -16,7 +17,12 @@ import { GenerateTextResponseChunkDto } from '../types/dtos/generate/generate-te
 import { TextGenerationModelInfoDto } from '../types/dtos/generate/text-generation-model-info.dto';
 import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { TextGenerationProvider } from '../types/enums/text-generation-provider';
-import { GenerateTextCompletion, GenerateTextService } from './generate-text.service';
+import { NdjsonStreamDecoder } from '../utils/ndjson-stream-decoder';
+import {
+  GenerateTextCompletion,
+  GenerateTextService,
+  GenerateTextStreamUpdate,
+} from './generate-text.service';
 
 @Injectable()
 export class ApiGenerateTextService extends GenerateTextService {
@@ -24,35 +30,57 @@ export class ApiGenerateTextService extends GenerateTextService {
 
   private baseUrl = environment.api.baseUrl;
 
-  generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>> {
+  generateText(
+    request: GenerateTextRequestDto,
+  ): Observable<GenerateTextStreamUpdate> {
     this.saveRecentlyUsedModel(request.model);
 
-    return this.http.post(`${this.baseUrl}/generate/text/streamed`, request, {
-      observe: 'events',
-      reportProgress: true,
-      responseType: 'text' as const,
+    return defer(() => {
+      const decoder =
+        new NdjsonStreamDecoder<GenerateTextResponseChunkDto>();
+      let content = '';
+
+      return this.requestTextStream(request).pipe(
+        filter(
+          (event) =>
+            event.type === HttpEventType.DownloadProgress ||
+            event.type === HttpEventType.Response,
+        ),
+        map((event): GenerateTextStreamUpdate | null => {
+          const isComplete = event.type === HttpEventType.Response;
+          const responseText = isComplete
+            ? ((event as HttpResponse<string>).body ?? decoder.rawResponse)
+            : ((event as HttpDownloadProgressEvent).partialText ??
+              decoder.rawResponse);
+          const chunks = decoder.pushCumulative(responseText, isComplete);
+
+          if (chunks.length === 0 && !isComplete) {
+            return null;
+          }
+
+          content += chunks.map((chunk) => chunk.content).join('');
+          return { content, isComplete };
+        }),
+        filter(
+          (update): update is GenerateTextStreamUpdate => update !== null,
+        ),
+      );
     });
   }
 
   generateTextCompletion(request: GenerateTextRequestDto): Observable<GenerateTextCompletion> {
     this.saveRecentlyUsedModel(request.model);
 
-    return this.http
-      .post(`${this.baseUrl}/generate/text/streamed`, request, {
-        observe: 'events',
-        reportProgress: true,
-        responseType: 'text' as const,
-      })
+    return this.requestTextStream(request)
       .pipe(
         filter((event) => event.type === HttpEventType.Response),
         map((event) => {
           const response = event as HttpResponse<string>;
           const rawResponse = response.body ?? '';
           try {
-            const responseChunks = rawResponse
-              .split('\n')
-              .filter((item) => item.length > 0)
-              .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
+            const decoder =
+              new NdjsonStreamDecoder<GenerateTextResponseChunkDto>();
+            const responseChunks = decoder.pushCumulative(rawResponse, true);
             const content = responseChunks.map((item) => item.content).join('');
             return { content, rawResponse, parseError: null };
           } catch (error) {
@@ -64,6 +92,16 @@ export class ApiGenerateTextService extends GenerateTextService {
           }
         }),
       );
+  }
+
+  private requestTextStream(
+    request: GenerateTextRequestDto,
+  ): Observable<HttpEvent<string>> {
+    return this.http.post(`${this.baseUrl}/generate/text/streamed`, request, {
+      observe: 'events',
+      reportProgress: true,
+      responseType: 'text' as const,
+    });
   }
 
   getGenerationPreview(request: GenerateTextRequestDto): Observable<TextGenerationPreviewDto> {

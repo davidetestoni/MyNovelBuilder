@@ -37,11 +37,6 @@ import { GenerateTextService } from '../../services/generate-text.service';
 import { TextareaModule } from 'primeng/textarea';
 import { MarkdownComponent } from 'ngx-markdown';
 import {
-  HttpDownloadProgressEvent,
-  HttpEventType,
-  HttpResponse,
-} from '@angular/common/http';
-import {
   GenerateTextRequestDto,
   SendChatMessageContextInfoDto,
   NovelTextGenerationType,
@@ -49,7 +44,6 @@ import {
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import { v4 as uuidv4 } from 'uuid';
-import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
@@ -413,38 +407,16 @@ export class ChatComponent
     };
 
     this.generateTextService.generateText(request).subscribe({
-      next: (event) => {
-        if (event.type === HttpEventType.DownloadProgress) {
-          const response = (event as HttpDownloadProgressEvent)
-            .partialText as string;
-          if (response === undefined) {
-            return;
-          }
+      next: (update) => {
+        if (update.content.length > 0) {
+          assistantMessage.textContent = update.content;
+          this.shouldScrollToBottom = true;
+        }
 
-          const responseChunks = response
-            .split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
-            assistantMessage.textContent = message;
-            this.shouldScrollToBottom = true;
-          }
-        } else if (event.type === HttpEventType.Response) {
-          const response = event as HttpResponse<string>;
-          const responseChunks = response
-            .body!.split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
-            assistantMessage.textContent = message;
-            this.isGenerating = false;
-            this.saveChat();
-            this.shouldScrollToBottom = true;
-          }
+        if (update.isComplete) {
+          this.isGenerating = false;
+          this.saveChat();
+          this.shouldScrollToBottom = true;
         }
       },
       error: (err) => {

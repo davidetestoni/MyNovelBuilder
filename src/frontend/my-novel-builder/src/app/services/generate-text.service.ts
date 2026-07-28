@@ -1,4 +1,3 @@
-import { HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
@@ -16,9 +15,16 @@ export interface GenerateTextCompletion {
   parseError: string | null;
 }
 
+export interface GenerateTextStreamUpdate {
+  content: string;
+  isComplete: boolean;
+}
+
 @Injectable()
 export abstract class GenerateTextService {
-  abstract generateText(request: GenerateTextRequestDto): Observable<HttpEvent<string>>;
+  abstract generateText(
+    request: GenerateTextRequestDto,
+  ): Observable<GenerateTextStreamUpdate>;
   abstract generateTextCompletion(request: GenerateTextRequestDto): Observable<GenerateTextCompletion>;
   abstract getGenerationPreview(request: GenerateTextRequestDto): Observable<TextGenerationPreviewDto>;
   abstract describeImage(

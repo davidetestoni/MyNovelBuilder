@@ -23,13 +23,6 @@ import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import {
-  HttpDownloadProgressEvent,
-  HttpEvent,
-  HttpEventType,
-  HttpResponse,
-} from '@angular/common/http';
-import { GenerateTextResponseChunkDto } from '../../types/dtos/generate/generate-text-response-chunk.dto';
-import {
   GenerateTextComponent,
   GenerateTextComponentData,
 } from '../generate-text/generate-text.component';
@@ -342,14 +335,12 @@ export class ProseEditorComponent implements OnDestroy {
     };
 
     this.generateTextService.generateText(request).subscribe({
-      next: async (event: HttpEvent<string>) => {
-        if (event.type !== HttpEventType.Response) {
+      next: async (update) => {
+        if (!update.isComplete) {
           return;
         }
 
-        const response = event as HttpResponse<string>;
-        const responseChunks = this.parseResponseChunks(response.body);
-        const generatedText = responseChunks.map((item) => item.content).join('');
+        const generatedText = update.content;
 
         if (!generatedText.trim()) {
           this.toastr.error('No RPG response was generated.');
@@ -474,17 +465,6 @@ export class ProseEditorComponent implements OnDestroy {
 
     this.toastr.error('Please select text before using this action.');
     return null;
-  }
-
-  private parseResponseChunks(response: string | null | undefined) {
-    if (!response) {
-      return [] as GenerateTextResponseChunkDto[];
-    }
-
-    return response
-      .split('\n')
-      .filter((item) => item.length > 0)
-      .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
   }
 
   preventReturnKey(event: KeyboardEvent) {
@@ -816,32 +796,14 @@ export class ProseEditorComponent implements OnDestroy {
       '[Summarizing...]';
 
     this.generateTextService.generateText(request).subscribe({
-      next: (event: HttpEvent<string>) => {
-        if (event.type === HttpEventType.DownloadProgress) {
-          const response = (event as HttpDownloadProgressEvent)
-            .partialText as string;
-          const responseChunks = response
-            .split('\n')
-            .filter((item) => item.length > 0)
-            .map((item) => JSON.parse(item) as GenerateTextResponseChunkDto);
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
+      next: (update) => {
+        if (update.content.length > 0) {
+          this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
+            update.content;
+        }
 
-            this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
-              message;
-          }
-        } else if (event.type === HttpEventType.Response) {
-          const response = event as HttpResponse<string>;
-          const responseChunks = this.parseResponseChunks(response.body);
-
-          if (responseChunks.length > 0) {
-            const message = responseChunks.map((item) => item.content).join('');
-
-            this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
-              message;
-
-            this.saveProse();
-          }
+        if (update.isComplete) {
+          this.saveProse();
         }
       },
     });
