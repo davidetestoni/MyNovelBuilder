@@ -25,6 +25,7 @@ import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestion
 import { DescribeImageComponent } from '../describe-image/describe-image.component';
 import { TooltipModule } from 'primeng/tooltip';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import { finalize, map, of, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-create-compendium-record',
@@ -55,6 +56,7 @@ export class CreateCompendiumRecordComponent {
 
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
+  isCreating = false;
   readonly compendiumService: CompendiumService = inject(CompendiumService);
 
   formGroup = new FormGroup({
@@ -98,28 +100,43 @@ export class CreateCompendiumRecordComponent {
   }
 
   createRecord(): void {
+    if (this.formGroup.invalid || this.isCreating) {
+      return;
+    }
+
+    const imageFile = this.imageFile;
+    this.isCreating = true;
+
     this.compendiumService
       .createRecord({
         name: this.formGroup.get('name')!.value!,
         aliases: this.formGroup.get('aliases')?.value ?? '',
         type: this.formGroup.get('type')!.value!,
-        context: this.formGroup.get('context')!.value!,
+        context: this.formGroup.get('context')?.value ?? '',
         compendiumId: this.config.data.compendiumId,
-        alwaysIncluded: this.formGroup.get('alwaysIncluded')!.value!,
+        alwaysIncluded: this.formGroup.get('alwaysIncluded')?.value ?? false,
         characterVoiceAssignments: [],
       })
-      .subscribe((record) => {
-        if (this.imageFile !== null) {
-          this.compendiumService
-            .uploadRecordMedia(record.id, this.imageFile, true)
-            .subscribe(() => {
-              this.toastr.success('Record created successfully');
-              this.dialogRef.close(record);
-            });
-        } else {
+      .pipe(
+        switchMap((record) =>
+          imageFile === null
+            ? of(record)
+            : this.compendiumService
+                .uploadRecordMedia(record.id, imageFile, true)
+                .pipe(map(() => record)),
+        ),
+        finalize(() => {
+          this.isCreating = false;
+        }),
+      )
+      .subscribe({
+        next: (record) => {
           this.toastr.success('Record created successfully');
           this.dialogRef.close(record);
-        }
+        },
+        error: () => {
+          this.toastr.error('Failed to create record.');
+        },
       });
   }
 

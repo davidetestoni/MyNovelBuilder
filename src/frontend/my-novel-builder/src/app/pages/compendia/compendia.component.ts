@@ -66,7 +66,7 @@ export class CompendiaComponent implements OnInit, OnDestroy {
 
   getCompendia(): void {
     this.compendiumService.getCompendia().subscribe((compendia) => {
-      this.compendia = compendia.sort((a, b) => {
+      this.compendia = [...compendia].sort((a, b) => {
         const aUpdatedAt = moment(a.updatedAt);
         const bUpdatedAt = moment(b.updatedAt);
 

@@ -14,6 +14,7 @@ import { DynamicDialogRef } from 'primeng/dynamicdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-create-compendium',
@@ -33,6 +34,7 @@ export class CreateCompendiumComponent {
   private dialogRef = inject(DynamicDialogRef);
   private toastr = inject(ToastrService);
 
+  isCreating = false;
   readonly compendiumService: CompendiumService = inject(CompendiumService);
 
   formGroup = new FormGroup({
@@ -41,16 +43,29 @@ export class CreateCompendiumComponent {
   });
 
   createCompendium(): void {
-    if (this.formGroup.invalid) return;
+    if (this.formGroup.invalid || this.isCreating) {
+      return;
+    }
 
+    this.isCreating = true;
     this.compendiumService
       .createCompendium({
         name: this.formGroup.get('name')!.value!,
         description: this.formGroup.get('description')?.value ?? '',
       })
-      .subscribe(() => {
-        this.toastr.success('Compendium created successfully.');
-        this.dialogRef.close(true);
+      .pipe(
+        finalize(() => {
+          this.isCreating = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.toastr.success('Compendium created successfully.');
+          this.dialogRef.close(true);
+        },
+        error: () => {
+          this.toastr.error('Failed to create compendium.');
+        },
       });
   }
 

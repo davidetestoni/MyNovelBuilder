@@ -115,7 +115,9 @@
           <p-button
             label="Create"
             (click)="createRecord()"
-            [disabled]="formGroup.invalid || formGroup.pristine"
+            [disabled]="
+              formGroup.invalid || formGroup.pristine || isCreating
+            "
           />
         </div>
       </div>
