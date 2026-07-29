@@ -21,6 +21,7 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/compendium-option-preview.component';
+import { finalize, switchMap, tap } from 'rxjs';
 
 export interface GenerateCompendiumRecordComponentData {
   generatedText: string;
@@ -55,6 +56,8 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
   readonly toastr: ToastrService = inject(ToastrService);
 
   compendia: CompendiumDto[] = [];
+  isLoadingCompendia = false;
+  isCreating = false;
 
   recordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -97,37 +100,73 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
   ngOnInit(): void {
     this.formGroup.get('context')!.setValue(this.data.generatedText);
 
-    this.novelService.getNovel(this.data.novelId).subscribe((novel) => {
-      this.compendiumService.getCompendia().subscribe((compendia) => {
-        this.compendia = compendia.filter((compendium) =>
-          novel.compendiumIds.includes(compendium.id),
-        );
+    this.isLoadingCompendia = true;
+    this.novelService
+      .getNovel(this.data.novelId)
+      .pipe(
+        switchMap((novel) =>
+          this.compendiumService.getCompendia().pipe(
+            tap((compendia) => {
+              this.compendia = compendia.filter((compendium) =>
+                novel.compendiumIds.includes(compendium.id),
+              );
 
-        if (this.compendia.length > 0) {
-          this.formGroup.get('compendiumId')!.setValue(this.compendia[0].id);
-        }
+              if (this.compendia.length > 0) {
+                this.formGroup
+                  .get('compendiumId')!
+                  .setValue(this.compendia[0].id);
+              }
+            }),
+          ),
+        ),
+        finalize(() => (this.isLoadingCompendia = false)),
+      )
+      .subscribe({
+        error: () => {
+          this.compendia = [];
+          this.formGroup.get('compendiumId')!.setValue('');
+          this.toastr.error('Failed to load the novel compendia.');
+        },
       });
-    });
   }
 
   accept(): void {
-    if (this.formGroup.invalid) return;
+    if (
+      this.formGroup.invalid ||
+      this.isLoadingCompendia ||
+      this.isCreating
+    ) {
+      return;
+    }
 
-    const name = this.formGroup.get('name')!.value!;
+    const nameControl = this.formGroup.get('name')!;
+    const name = nameControl.value?.trim() ?? '';
+    if (!name) {
+      nameControl.setErrors({ required: true });
+      return;
+    }
+
+    this.isCreating = true;
 
     this.compendiumService
       .createRecord({
         name: name,
-        aliases: this.formGroup.get('aliases')!.value!,
+        aliases: this.formGroup.get('aliases')!.value?.trim() ?? '',
         type: this.formGroup.get('type')!.value!,
-        context: this.data.generatedText,
+        context: this.formGroup.get('context')!.value ?? '',
         compendiumId: this.formGroup.get('compendiumId')!.value!,
         alwaysIncluded: false,
         characterVoiceAssignments: [],
       })
-      .subscribe(() => {
-        this.toastr.success(`Record ${name} created successfully`);
-        this.dialogRef.close(true);
+      .pipe(finalize(() => (this.isCreating = false)))
+      .subscribe({
+        next: () => {
+          this.toastr.success(`Record ${name} created successfully`);
+          this.dialogRef.close(true);
+        },
+        error: () => {
+          this.toastr.error(`Failed to create record ${name}`);
+        },
       });
   }
 

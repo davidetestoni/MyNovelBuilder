@@ -37,9 +37,13 @@ import { IntegrationsService } from '../../services/integrations.service';
 import { TtsProvider } from '../../types/enums/tts-provider';
 import { TtsModelDto } from '../../types/dtos/generate/tts-model.dto';
 import { CharacterVoiceAssignmentDto } from '../../types/dtos/compendium-record/character-voice-assignment.dto';
-import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 import { WritingLanguage } from '../../types/enums/writing-language';
-import { firstValueFrom } from 'rxjs';
+import { finalize, firstValueFrom } from 'rxjs';
+import {
+  STREAMING_WAV_PLAYER_FACTORY,
+  StreamingWavPlayerFactory,
+  StreamingWavPlayerHandle,
+} from '../../utils/streaming-wav-player.factory';
 
 @Component({
   selector: 'app-compendium-record',
@@ -76,7 +80,13 @@ export class CompendiumRecordComponent {
   private toastr = inject(ToastrService);
   private generateAudioService = inject(GenerateAudioService);
   private integrationsService = inject(IntegrationsService);
+  private createStreamingWavPlayer: StreamingWavPlayerFactory = inject(
+    STREAMING_WAV_PLAYER_FACTORY,
+  );
   private dialogRef: DynamicDialogRef | null = null;
+  private voiceModelsRequestId = 0;
+  private isUploadingMedia = false;
+  private isDestroyed = false;
   protected readonly TtsProvider = TtsProvider;
 
   protected selectedVoiceProvider: TtsProvider | null = null;
@@ -86,7 +96,7 @@ export class CompendiumRecordComponent {
   protected isLoadingVoiceModels = false;
   protected isPreviewingVoice = false;
   protected previewingVoiceKey: string | null = null;
-  private previewPlayer: StreamingWavPlayer | null = null;
+  private previewPlayer: StreamingWavPlayerHandle | null = null;
 
   recordTypes: CompendiumRecordType[] = [
     CompendiumRecordType.Character,
@@ -167,6 +177,8 @@ export class CompendiumRecordComponent {
   }
 
   ngOnDestroy(): void {
+    this.isDestroyed = true;
+    this.voiceModelsRequestId++;
     this.previewPlayer?.stop();
 
     if (this.dialogRef) {
@@ -326,12 +338,24 @@ export class CompendiumRecordComponent {
   }
 
   setCurrentImage(imageId: string): void {
-    this.record.media.forEach((image) => {
+    const targetRecord = this.record;
+    const previousCurrentImageIds = targetRecord.media
+      .filter((image) => image.isCurrent)
+      .map((image) => image.id);
+
+    targetRecord.media.forEach((image) => {
       image.isCurrent = image.id === imageId;
     });
     this.compendiumService
-      .setCurrentRecordImage(this.record.id, imageId)
-      .subscribe();
+      .setCurrentRecordImage(targetRecord.id, imageId)
+      .subscribe({
+        error: () => {
+          targetRecord.media.forEach((image) => {
+            image.isCurrent = previousCurrentImageIds.includes(image.id);
+          });
+          this.toastr.error('Failed to set the current record image.');
+        },
+      });
   }
 
   removeMedia(mediaId: string): void {
@@ -342,12 +366,19 @@ export class CompendiumRecordComponent {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        this.record.media = this.record.media.filter(
-          (media) => media.id !== mediaId,
-        );
+        const targetRecord = this.record;
         this.compendiumService
-          .deleteRecordMedia(this.record.id, mediaId)
-          .subscribe();
+          .deleteRecordMedia(targetRecord.id, mediaId)
+          .subscribe({
+            next: () => {
+              targetRecord.media = targetRecord.media.filter(
+                (media) => media.id !== mediaId,
+              );
+            },
+            error: () => {
+              this.toastr.error('Failed to delete the record media.');
+            },
+          });
       },
     });
   }
@@ -400,16 +431,8 @@ export class CompendiumRecordComponent {
     fileInput.onchange = () => {
       if (fileInput.files && fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        this.compendiumService
-          .uploadRecordMedia(
-            this.record.id,
-            file,
-            this.record.media.length === 0,
-          )
-          .subscribe(() => {
-            this.refreshRecordMedia();
-            fileInput.remove();
-          });
+        fileInput.remove();
+        this.uploadMedia(file, this.record.media.length === 0);
       }
     };
     fileInput.click();
@@ -418,11 +441,7 @@ export class CompendiumRecordComponent {
   private async addClipboardImage(): Promise<void> {
     try {
       const file = await readImageFileFromClipboard();
-      this.compendiumService
-        .uploadRecordMedia(this.record.id, file, this.record.media.length === 0)
-        .subscribe(() => {
-          this.refreshRecordMedia();
-        });
+      this.uploadMedia(file, this.record.media.length === 0);
     } catch (error) {
       this.toastr.error(
         error instanceof Error
@@ -456,21 +475,7 @@ export class CompendiumRecordComponent {
     this.dialogRef?.onClose.subscribe((media: Blob) => {
       if (media) {
         const file = createGeneratedMediaFile(media);
-        this.compendiumService
-          .uploadRecordMedia(
-            this.record.id,
-            file,
-            this.record.media.length === 0,
-          )
-          .subscribe(() => {
-            // Get the record and update the media
-            this.compendiumService
-              .getRecord(this.record.id)
-              .subscribe((record) => {
-                this.record.media = record.media;
-                this.updateRecord.emit(this.record);
-              });
-          });
+        this.uploadMedia(file, this.record.media.length === 0);
       }
     });
   }
@@ -480,10 +485,15 @@ export class CompendiumRecordComponent {
     preferredModelId?: string,
     preferredVoiceId?: string,
   ): void {
+    const requestId = ++this.voiceModelsRequestId;
     this.isLoadingVoiceModels = true;
 
     this.generateAudioService.getAvailableModels(provider).subscribe({
       next: (models) => {
+        if (requestId !== this.voiceModelsRequestId || this.isDestroyed) {
+          return;
+        }
+
         this.availableVoiceModels = models;
         this.selectedVoiceModelId =
           (preferredModelId &&
@@ -506,6 +516,10 @@ export class CompendiumRecordComponent {
         this.isLoadingVoiceModels = false;
       },
       error: (error) => {
+        if (requestId !== this.voiceModelsRequestId || this.isDestroyed) {
+          return;
+        }
+
         console.error('Error loading TTS models for character voices:', error);
         this.availableVoiceModels = [];
         this.selectedVoiceModelId = '';
@@ -538,7 +552,7 @@ export class CompendiumRecordComponent {
     this.isPreviewingVoice = true;
     this.previewingVoiceKey = this.getVoicePreviewKey(provider, modelId, voiceId);
     this.previewPlayer?.stop();
-    this.previewPlayer = new StreamingWavPlayer();
+    this.previewPlayer = this.createStreamingWavPlayer();
 
     try {
       console.time(timerLabel);
@@ -564,7 +578,7 @@ export class CompendiumRecordComponent {
           break;
         }
 
-        if (value) {
+        if (value && !this.isDestroyed) {
           this.previewPlayer.addChunk(value);
         }
       }
@@ -675,14 +689,47 @@ export class CompendiumRecordComponent {
       },
       error: (err) => {
         console.error('Failed to download image', err);
+        this.toastr.error('Failed to load the image for editing.');
       },
     });
   }
 
+  private uploadMedia(file: File | Blob, isCurrent: boolean): void {
+    if (this.isUploadingMedia) {
+      return;
+    }
+
+    const recordId = this.record.id;
+    this.isUploadingMedia = true;
+    this.compendiumService
+      .uploadRecordMedia(recordId, file, isCurrent)
+      .pipe(finalize(() => (this.isUploadingMedia = false)))
+      .subscribe({
+        next: () => {
+          if (!this.isDestroyed && this.record.id === recordId) {
+            this.refreshRecordMedia();
+          }
+        },
+        error: () => {
+          this.toastr.error('Failed to upload the record media.');
+        },
+      });
+  }
+
   private refreshRecordMedia(): void {
-    this.compendiumService.getRecord(this.record.id).subscribe((record) => {
-      this.record.media = record.media;
-      this.updateRecord.emit(this.record);
+    const recordId = this.record.id;
+    this.compendiumService.getRecord(recordId).subscribe({
+      next: (record) => {
+        if (this.isDestroyed || this.record.id !== recordId) {
+          return;
+        }
+
+        this.record.media = record.media;
+        this.updateRecord.emit(this.record);
+      },
+      error: () => {
+        this.toastr.error('Failed to refresh the record media.');
+      },
     });
   }
 

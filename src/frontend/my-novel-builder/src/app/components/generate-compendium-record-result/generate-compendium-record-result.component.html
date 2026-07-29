@@ -109,7 +109,8 @@
         <p-button
           label="Create Record"
           (click)="accept()"
-          [disabled]="formGroup.invalid"
+          [disabled]="formGroup.invalid || isLoadingCompendia || isCreating"
+          [loading]="isCreating"
         />
       </div>
     </form>

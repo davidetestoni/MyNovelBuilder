@@ -63,6 +63,7 @@ export class RecordOverridesEditorComponent implements OnInit {
   chapterIndex!: number;
   sectionIndex!: number;
   private recordContexts = new Map<string, string>();
+  private suggestedKeywordsRequestId = 0;
 
   ngOnInit(): void {
     const data = this.config.data as RecordOverridesEditorComponentData;
@@ -72,7 +73,7 @@ export class RecordOverridesEditorComponent implements OnInit {
       isExpanded: false,
       previousDescription: '',
     }));
-    this.availableRecords = data.availableRecords;
+    this.availableRecords = data.availableRecords || [];
     this.prose = data.prose;
     this.chapterIndex = data.chapterIndex;
     this.sectionIndex = data.sectionIndex;
@@ -125,6 +126,8 @@ export class RecordOverridesEditorComponent implements OnInit {
   }
 
   fetchSuggestedKeywords(recordId: string): void {
+    const requestId = ++this.suggestedKeywordsRequestId;
+
     if (!recordId) {
       this.suggestedKeywords = [];
       this.filteredKeywords = [];
@@ -134,13 +137,26 @@ export class RecordOverridesEditorComponent implements OnInit {
     const cachedContext = this.recordContexts.get(recordId);
     if (cachedContext !== undefined) {
       this.suggestedKeywords = this.parseKeywords(cachedContext);
+      this.filteredKeywords = [];
       return;
     }
 
-    this.compendiumService.getRecord(recordId).subscribe((record) => {
-      this.recordContexts.set(recordId, record.context);
-      this.suggestedKeywords = this.parseKeywords(record.context);
-      this.refreshPreviousDescriptions();
+    this.compendiumService.getRecord(recordId).subscribe({
+      next: (record) => {
+        this.recordContexts.set(recordId, record.context);
+        if (requestId === this.suggestedKeywordsRequestId) {
+          this.suggestedKeywords = this.parseKeywords(record.context);
+          this.filteredKeywords = [];
+        }
+        this.refreshPreviousDescriptions();
+      },
+      error: () => {
+        if (requestId === this.suggestedKeywordsRequestId) {
+          this.suggestedKeywords = [];
+          this.filteredKeywords = [];
+          this.toastr.error('Failed to load record context.');
+        }
+      },
     });
   }
 
