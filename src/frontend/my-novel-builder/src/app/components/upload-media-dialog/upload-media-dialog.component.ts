@@ -41,7 +41,11 @@ export class UploadMediaDialogComponent {
   });
 
   onFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
     const file = input.files?.[0] ?? null;
     this.selectedFile = file;
 

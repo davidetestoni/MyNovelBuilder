@@ -22,7 +22,7 @@ import { ToastrService } from 'ngx-toastr';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { filter, map, take } from 'rxjs/operators';
 import { GenerateImageService } from '../../services/generate-image.service';
 import { LocalStorageService } from '../../services/local-storage.service';
@@ -70,6 +70,7 @@ interface GeneratedStudioAsset {
 export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
   private generationTimerId: ReturnType<typeof setInterval> | null = null;
   private generationStartedAt: number | null = null;
+  private generationSubscription: Subscription | null = null;
   private readonly generateImageService = inject(GenerateImageService);
   private readonly generateVideoService = inject(GenerateVideoService);
   private readonly localStorageService = inject(LocalStorageService);
@@ -127,6 +128,7 @@ export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
     this.restoreStoredPromptForCurrentMode();
 
     this.formGroup.controls.mode.valueChanges.subscribe((mode) => {
+      this.cancelGeneration();
       this.clearGeneratedAssets();
       this.restoreStoredPromptForCurrentMode();
 
@@ -202,6 +204,7 @@ export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
       !changes['folder'].firstChange &&
       this.folder?.id !== this.previousFolderId
     ) {
+      this.cancelGeneration();
       this.clearGeneratedAssets();
     }
 
@@ -211,12 +214,16 @@ export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.stopGenerationTimer();
+    this.cancelGeneration();
     this.clearGeneratedAssets();
     this.clearSourceImage();
   }
 
   generateMedia(): void {
+    if (this.isGenerating) {
+      return;
+    }
+
     if (this.folder === null) {
       this.toastrService.error('Select a media folder first.');
       return;
@@ -254,7 +261,9 @@ export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
 
     const requestCount = this.selectedMode === 'image' ? batchSize : 1;
 
-    forkJoin(Array.from({ length: requestCount }, () => this.generateAssetBlob(request))).subscribe({
+    const subscription = forkJoin(
+      Array.from({ length: requestCount }, () => this.generateAssetBlob(request)),
+    ).subscribe({
       next: (blobs) => {
         this.generatedAssets = blobs.map((blob, index) =>
           this.createGeneratedAsset(blob, index),
@@ -265,12 +274,15 @@ export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
         this.toastrService.error('Media generation failed.');
         this.isGenerating = false;
         this.stopGenerationTimer();
+        this.generationSubscription = null;
       },
       complete: () => {
         this.isGenerating = false;
         this.stopGenerationTimer();
+        this.generationSubscription = null;
       },
     });
+    this.generationSubscription = subscription.closed ? null : subscription;
   }
 
   saveGeneratedImage(asset: GeneratedStudioAsset, index: number): void {
@@ -296,6 +308,7 @@ export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
       },
       error: () => {
         asset.isSaving = false;
+        this.toastrService.error('Media upload failed.');
       },
     });
   }
@@ -416,6 +429,19 @@ export class MediaGenerationStudioComponent implements OnChanges, OnDestroy {
     }
 
     this.generatedAssets = [];
+  }
+
+  private cancelGeneration(): void {
+    this.generationSubscription?.unsubscribe();
+    this.generationSubscription = null;
+
+    if (this.isGenerating) {
+      this.isGenerating = false;
+      this.stopGenerationTimer();
+    }
+
+    this.generationElapsedSeconds = 0;
+    this.lastGenerationDurationSeconds = null;
   }
 
   private startGenerationTimer(): void {

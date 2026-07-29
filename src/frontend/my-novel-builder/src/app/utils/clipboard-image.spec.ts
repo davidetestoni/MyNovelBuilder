@@ -4,7 +4,10 @@ import {
 } from './clipboard-image';
 
 describe('clipboard image utilities', () => {
-  const originalClipboard = navigator.clipboard;
+  const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
+    navigator,
+    'clipboard',
+  );
 
   const setClipboard = (clipboard: Partial<Clipboard>): void => {
     Object.defineProperty(navigator, 'clipboard', {
@@ -14,10 +17,16 @@ describe('clipboard image utilities', () => {
   };
 
   afterEach(() => {
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: originalClipboard,
-    });
+    if (originalClipboardDescriptor === undefined) {
+      delete (navigator as { clipboard?: Clipboard }).clipboard;
+      return;
+    }
+
+    Object.defineProperty(
+      navigator,
+      'clipboard',
+      originalClipboardDescriptor,
+    );
   });
 
   it('returns null for missing clipboard data or non-image items', () => {
