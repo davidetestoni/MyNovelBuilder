@@ -40,7 +40,7 @@ export class ImageSourceSelectorComponent {
     );
   }
 
-  select(source: 'upload' | 'generate' | 'clipboard') {
+  select(source: 'upload' | 'generate' | 'clipboard'): void {
     this.dialogRef.close(source);
   }
 }

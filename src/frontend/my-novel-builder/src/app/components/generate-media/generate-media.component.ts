@@ -17,6 +17,7 @@ import {
 } from 'primeng/dynamicdialog';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
+import { finalize } from 'rxjs/operators';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { PromptService } from '../../services/prompt.service';
 import { GenerateImageService } from '../../services/generate-image.service';
@@ -217,6 +218,10 @@ export class GenerateMediaComponent implements OnInit, OnDestroy {
   }
 
   generateMedia(): void {
+    if (this.isGenerating) {
+      return;
+    }
+
     if (this.formGroup.invalid) {
       this.toastrService.error('Please fill out all fields');
       return;
@@ -266,6 +271,7 @@ export class GenerateMediaComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Media generation failed', err);
+        this.toastrService.error('Media generation failed.');
         this.isGenerating = false;
         this.stopGenerationTimer();
       },
@@ -539,26 +545,27 @@ export class GenerateMediaComponent implements OnInit, OnDestroy {
   private getPromptGenerationPrompts(): void {
     this.isLoadingPromptGenerationPrompts = true;
 
-    this.promptService.getPrompts().subscribe({
-      next: (prompts) => {
-        this.promptGenerationPrompts = prompts.filter(
-          (p) =>
-            p.type === PromptType.CreateCompendiumRecordImageGenerationPrompt,
-        );
-
-        if (this.promptGenerationPrompts.length === 0) {
-          this.toastrService.warning(
-            'No prompts are available for image prompt generation',
+    this.promptService
+      .getPrompts()
+      .pipe(finalize(() => (this.isLoadingPromptGenerationPrompts = false)))
+      .subscribe({
+        next: (prompts) => {
+          this.promptGenerationPrompts = prompts.filter(
+            (p) =>
+              p.type ===
+              PromptType.CreateCompendiumRecordImageGenerationPrompt,
           );
-        }
-      },
-      error: () => {
-        this.toastrService.error('Failed to load prompt-generation prompts');
-      },
-      complete: () => {
-        this.isLoadingPromptGenerationPrompts = false;
-      },
-    });
+
+          if (this.promptGenerationPrompts.length === 0) {
+            this.toastrService.warning(
+              'No prompts are available for image prompt generation',
+            );
+          }
+        },
+        error: () => {
+          this.toastrService.error('Failed to load prompt-generation prompts');
+        },
+      });
   }
 
   private startGenerationTimer(): void {

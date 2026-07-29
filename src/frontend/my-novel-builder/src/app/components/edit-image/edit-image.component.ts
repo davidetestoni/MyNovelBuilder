@@ -41,6 +41,8 @@ export class EditImageComponent implements OnDestroy {
   private readonly storageContext = 'edit';
   private generationTimerId: ReturnType<typeof setInterval> | null = null;
   private generationStartedAt: number | null = null;
+  private originalImagePreviewObjectUrl: string | null = null;
+  private imagePreviewObjectUrl: string | null = null;
 
   dialogRef = inject(DynamicDialogRef);
   config = inject(DynamicDialogConfig);
@@ -89,7 +91,8 @@ export class EditImageComponent implements OnDestroy {
 
     if (data.image) {
       this.originalImage = data.image;
-      const objectURL = URL.createObjectURL(this.originalImage!);
+      const objectURL = URL.createObjectURL(this.originalImage);
+      this.originalImagePreviewObjectUrl = objectURL;
       this.originalImagePreview =
         this.sanitizer.bypassSecurityTrustUrl(objectURL);
 
@@ -107,9 +110,14 @@ export class EditImageComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.stopGenerationTimer();
+    this.revokePreviewUrls();
   }
 
   editImage(): void {
+    if (this.isGenerating) {
+      return;
+    }
+
     if (this.formGroup.invalid || !this.originalImage) {
       this.toastrService.error('Please fill out all fields');
       return;
@@ -144,7 +152,12 @@ export class EditImageComponent implements OnDestroy {
             this.imageBlob = event.body;
 
             if (event.body !== null) {
+              if (this.imagePreviewObjectUrl !== null) {
+                URL.revokeObjectURL(this.imagePreviewObjectUrl);
+              }
+
               const objectURL = URL.createObjectURL(event.body);
+              this.imagePreviewObjectUrl = objectURL;
               this.imagePreview =
                 this.sanitizer.bypassSecurityTrustUrl(objectURL);
             }
@@ -152,6 +165,7 @@ export class EditImageComponent implements OnDestroy {
         },
         error: (err) => {
           console.error('Image editing failed', err);
+          this.toastrService.error('Image editing failed');
           this.isGenerating = false;
           this.stopGenerationTimer();
         },
@@ -211,6 +225,18 @@ export class EditImageComponent implements OnDestroy {
       );
       this.generationElapsedSeconds = this.lastGenerationDurationSeconds;
       this.generationStartedAt = null;
+    }
+  }
+
+  private revokePreviewUrls(): void {
+    if (this.originalImagePreviewObjectUrl !== null) {
+      URL.revokeObjectURL(this.originalImagePreviewObjectUrl);
+      this.originalImagePreviewObjectUrl = null;
+    }
+
+    if (this.imagePreviewObjectUrl !== null) {
+      URL.revokeObjectURL(this.imagePreviewObjectUrl);
+      this.imagePreviewObjectUrl = null;
     }
   }
 }

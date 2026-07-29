@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -42,7 +42,9 @@ export interface DescribeImageComponentData {
   templateUrl: './describe-image.component.html',
   styleUrl: './describe-image.component.scss',
 })
-export class DescribeImageComponent {
+export class DescribeImageComponent implements OnDestroy {
+  private readonly imagePreviewObjectUrl: string;
+
   PromptType = PromptType;
 
   config = inject(DynamicDialogConfig);
@@ -69,8 +71,10 @@ export class DescribeImageComponent {
   constructor() {
     this.data = this.config.data as DescribeImageComponentData;
 
-    const objectURL = URL.createObjectURL(this.data.image);
-    this.imagePreview = this.sanitizer.bypassSecurityTrustUrl(objectURL);
+    this.imagePreviewObjectUrl = URL.createObjectURL(this.data.image);
+    this.imagePreview = this.sanitizer.bypassSecurityTrustUrl(
+      this.imagePreviewObjectUrl,
+    );
 
     const instructions = this.localStorageService.getNestedStringForKey(
       LocalStorageKey.RecentInstructions,
@@ -95,7 +99,15 @@ export class DescribeImageComponent {
     return this.data.promptType ?? PromptType.DescribeImage;
   }
 
+  ngOnDestroy(): void {
+    URL.revokeObjectURL(this.imagePreviewObjectUrl);
+  }
+
   describeImage(): void {
+    if (this.isGenerating) {
+      return;
+    }
+
     if (this.formGroup.invalid) {
       this.toastrService.error('Please fill out all required fields');
       return;
