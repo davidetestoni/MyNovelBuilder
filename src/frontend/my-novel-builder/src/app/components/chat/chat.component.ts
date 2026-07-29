@@ -12,10 +12,10 @@ import {
   ViewChild,
   ElementRef,
   AfterViewChecked,
-  OnInit,
 } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { Subscription } from 'rxjs';
 import { ChatService } from '../../services/chat.service';
 import { Chat, ChatMessage } from '../../types/dtos/chats/chat';
 import { NovelService } from '../../services/novel.service';
@@ -74,7 +74,7 @@ import { RecordOptionPreviewComponent } from '../record-option-preview/record-op
   providers: [ConfirmationService, DialogService],
 })
 export class ChatComponent
-  implements OnChanges, OnDestroy, AfterViewChecked, OnInit
+  implements OnChanges, OnDestroy, AfterViewChecked
 {
   @Input() currentChatId!: string;
   @Input() currentChat!: Chat;
@@ -91,6 +91,8 @@ export class ChatComponent
   private localStorageService = inject(LocalStorageService);
 
   private dialogRef: DynamicDialogRef | null = null;
+  private contextSubscriptions = new Subscription();
+  private generationSubscription: Subscription | null = null;
   private shouldScrollToBottom = false;
 
   ChatMessageRole = ChatMessageRole;
@@ -123,11 +125,9 @@ export class ChatComponent
     return this.compendia()?.flatMap((c) => c.records) ?? [];
   });
 
-  ngOnInit(): void {
-  }
-
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['currentChat'] && this.currentChat) {
+      this.cancelGeneration();
       this.loadNovelContext();
       this.shouldScrollToBottom = true;
     }
@@ -139,7 +139,7 @@ export class ChatComponent
     }
   }
 
-  sendMessage() {
+  sendMessage(): void {
     if (
       !this.userInput.trim() ||
       this.isGenerating ||
@@ -184,6 +184,8 @@ export class ChatComponent
   }
 
   ngOnDestroy(): void {
+    this.cancelGeneration();
+    this.contextSubscriptions.unsubscribe();
     if (this.dialogRef) {
       this.dialogRef.close();
     }
@@ -192,35 +194,47 @@ export class ChatComponent
   loadNovelContext(): void {
     const novelId = this.currentChat.context.novelId;
     this.novelNotFound.set(false);
+    this.novel.set(null);
+    this.prose.set(null);
+    this.compendia.set(null);
+    this.contextSubscriptions.unsubscribe();
+    this.contextSubscriptions = new Subscription();
 
-    this.novelService.getNovel(novelId).subscribe({
-      next: (novel) => {
-        this.novel.set(novel);
-        this.loadCompendia(novel);
-      },
-      error: () => {
-        this.novelNotFound.set(true);
-      },
-    });
+    this.contextSubscriptions.add(
+      this.novelService.getNovel(novelId).subscribe({
+        next: (novel) => {
+          this.novel.set(novel);
+          this.loadCompendia(novel);
+        },
+        error: () => {
+          this.novelNotFound.set(true);
+        },
+      }),
+    );
 
-    this.novelService.getNovelProse(novelId).subscribe({
-      next: (prose) => {
-        this.prose.set(prose);
-      },
-      error: () => {
-        // Handle error if needed
-      },
-    });
+    this.contextSubscriptions.add(
+      this.novelService.getNovelProse(novelId).subscribe({
+        next: (prose) => {
+          this.prose.set(prose);
+        },
+        error: () => undefined,
+      }),
+    );
   }
 
   loadCompendia(novel: NovelDto): void {
-    this.compendiumService.getCompendia().subscribe((compendia) => {
-      this.compendia.set(
-        compendia.filter((compendium) =>
-          novel.compendiumIds.includes(compendium.id),
-        ),
-      );
-    });
+    this.contextSubscriptions.add(
+      this.compendiumService.getCompendia().subscribe({
+        next: (compendia) => {
+          this.compendia.set(
+            compendia.filter((compendium) =>
+              novel.compendiumIds.includes(compendium.id),
+            ),
+          );
+        },
+        error: () => undefined,
+      }),
+    );
   }
 
   updateChatName(name: string): void {
@@ -321,9 +335,14 @@ export class ChatComponent
   }
 
   copyMessage(textContent: string): void {
-    navigator.clipboard.writeText(textContent).then(() => {
-      this.toastr.success('Message copied to clipboard');
-    });
+    navigator.clipboard.writeText(textContent).then(
+      () => {
+        this.toastr.success('Message copied to clipboard');
+      },
+      () => {
+        this.toastr.error('Could not copy message to clipboard');
+      },
+    );
   }
 
   canResend(message: ChatMessage): boolean {
@@ -346,7 +365,11 @@ export class ChatComponent
   }
 
   resendMessage(message: ChatMessage): void {
-    if (!this.canResend(message)) {
+    if (
+      !this.canResend(message) ||
+      !this.selectedModel ||
+      !this.selectedPromptId
+    ) {
       return;
     }
 
@@ -406,30 +429,55 @@ export class ChatComponent
       contextInfo: contextInfo,
     };
 
-    this.generateTextService.generateText(request).subscribe({
-      next: (update) => {
-        if (update.content.length > 0) {
-          assistantMessage.textContent = update.content;
-          this.shouldScrollToBottom = true;
-        }
+    this.generationSubscription?.unsubscribe();
+    const generationSubscription = this.generateTextService
+      .generateText(request)
+      .subscribe({
+        next: (update) => {
+          if (update.content.length > 0) {
+            assistantMessage.textContent = update.content;
+            this.shouldScrollToBottom = true;
+          }
 
-        if (update.isComplete) {
+          if (update.isComplete) {
+            this.finishGeneration();
+          }
+        },
+        error: (err) => {
+          console.error('Error generating text:', err);
+          this.generationSubscription = null;
           this.isGenerating = false;
+          // Remove the empty assistant message if it failed
+          if (!assistantMessage.textContent) {
+            this.currentChat.messages = this.currentChat.messages.filter(
+              (m) => m.id !== assistantMessage.id,
+            );
+          }
           this.saveChat();
-          this.shouldScrollToBottom = true;
-        }
-      },
-      error: (err) => {
-        console.error('Error generating text:', err);
-        this.isGenerating = false;
-        // Remove the empty assistant message if it failed
-        if (!assistantMessage.textContent) {
-          this.currentChat.messages = this.currentChat.messages.filter(
-            (m) => m.id !== assistantMessage.id,
-          );
-        }
-      },
-    });
+        },
+        complete: () => {
+          if (this.isGenerating) {
+            this.finishGeneration();
+          }
+        },
+      });
+    this.generationSubscription = generationSubscription.closed
+      ? null
+      : generationSubscription;
+  }
+
+  private finishGeneration(): void {
+    this.generationSubscription?.unsubscribe();
+    this.generationSubscription = null;
+    this.isGenerating = false;
+    this.saveChat();
+    this.shouldScrollToBottom = true;
+  }
+
+  private cancelGeneration(): void {
+    this.generationSubscription?.unsubscribe();
+    this.generationSubscription = null;
+    this.isGenerating = false;
   }
 
   private saveChat(): void {

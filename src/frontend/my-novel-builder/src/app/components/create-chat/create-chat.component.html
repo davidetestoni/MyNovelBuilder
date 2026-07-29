@@ -19,7 +19,8 @@
         <p-button
           label="Create"
           type="submit"
-          [disabled]="formGroup.invalid"
+          [disabled]="formGroup.invalid || isCreating"
+          [loading]="isCreating"
         ></p-button>
       </div>
     </form>

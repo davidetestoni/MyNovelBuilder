@@ -13,6 +13,7 @@ import { DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
 import { Select } from 'primeng/select';
 import { ToastrService } from 'ngx-toastr';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-create-chat',
@@ -28,28 +29,46 @@ export class CreateChatComponent implements OnInit {
   private toastr = inject(ToastrService);
 
   novels: NovelDto[] | null = null;
+  isCreating = false;
 
   formGroup = new FormGroup({
     novel: new FormControl<NovelDto | null>(null, [Validators.required]),
   });
 
   ngOnInit(): void {
-    this.novelService.getNovels().subscribe((novels) => {
-      this.novels = novels;
+    this.novelService.getNovels().subscribe({
+      next: (novels) => {
+        this.novels = novels;
+      },
+      error: () => {
+        this.novels = [];
+        this.toastr.error('Could not load novels.');
+      },
     });
   }
 
   createChat(): void {
-    if (this.formGroup.valid) {
-      const selectedNovel = this.formGroup.get('novel')?.value;
-      if (selectedNovel) {
-        this.chatService
-          .createChat({ novelId: selectedNovel.id })
-          .subscribe((chat) => {
-            this.toastr.success('Chat created successfully.');
-            this.dialogRef.close(chat);
-          });
-      }
+    if (this.formGroup.invalid || this.isCreating) {
+      return;
     }
+
+    const selectedNovel = this.formGroup.controls.novel.value;
+    if (!selectedNovel) {
+      return;
+    }
+
+    this.isCreating = true;
+    this.chatService
+      .createChat({ novelId: selectedNovel.id })
+      .pipe(finalize(() => (this.isCreating = false)))
+      .subscribe({
+        next: (chat) => {
+          this.toastr.success('Chat created successfully.');
+          this.dialogRef.close(chat);
+        },
+        error: () => {
+          this.toastr.error('Could not create chat.');
+        },
+      });
   }
 }
