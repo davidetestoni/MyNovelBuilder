@@ -24,10 +24,13 @@ import { ImageGenerationProvider } from '../../types/enums/image-generation-prov
 import { VideoGenerationProvider } from '../../types/enums/video-generation-provider';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { TtsModelDto } from '../../types/dtos/generate/tts-model.dto';
-import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
 import { WritingLanguage } from '../../types/enums/writing-language';
 import { GenerateTextService } from '../../services/generate-text.service';
 import { TextGenerationModelInfoDto } from '../../types/dtos/generate/text-generation-model-info.dto';
+import {
+  STREAMING_WAV_PLAYER_FACTORY,
+  StreamingWavPlayerHandle,
+} from '../../utils/streaming-wav-player.factory';
 
 @Component({
   selector: 'app-integrations',
@@ -55,6 +58,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   private generateAudioService = inject(GenerateAudioService);
   private generateTextService = inject(GenerateTextService);
   private toastrService = inject(ToastrService);
+  private createStreamingWavPlayer = inject(STREAMING_WAV_PLAYER_FACTORY);
 
   integrationsForm = new FormGroup({
     textGenerationProvider: new FormControl<TextGenerationProvider>(
@@ -97,7 +101,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   isLoadingDeApiBalance: boolean = false;
   isLoadingNanoGptBalance: boolean = false;
   isPreviewingTtsVoice: boolean = false;
-  private previewPlayer: StreamingWavPlayer | null = null;
+  private previewPlayer: StreamingWavPlayerHandle | null = null;
 
   ttsProviderOptions = Object.values(TtsProvider).map((provider) => ({
     // camelCase to spaced Pascal Case for display
@@ -440,7 +444,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
 
     this.isPreviewingTtsVoice = true;
     this.previewPlayer?.stop();
-    this.previewPlayer = new StreamingWavPlayer();
+    this.previewPlayer = this.createStreamingWavPlayer();
 
     try {
       console.time(timerLabel);
