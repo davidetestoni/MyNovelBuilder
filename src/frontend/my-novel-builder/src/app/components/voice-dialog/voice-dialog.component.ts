@@ -17,7 +17,10 @@ import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { TtsProvider } from '../../types/enums/tts-provider';
 import { VoiceGender } from '../../types/enums/voice-gender';
 import { WritingLanguage } from '../../types/enums/writing-language';
-import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
+import {
+  STREAMING_WAV_PLAYER_FACTORY,
+  StreamingWavPlayerHandle,
+} from '../../utils/streaming-wav-player.factory';
 
 export interface VoiceDialogData {
   mode: 'create' | 'edit';
@@ -53,7 +56,8 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
   private generateAudioService = inject(GenerateAudioService);
   private localStorageService = inject(LocalStorageService);
   private toastr = inject(ToastrService);
-  private previewPlayer: StreamingWavPlayer | null = null;
+  private createStreamingWavPlayer = inject(STREAMING_WAV_PLAYER_FACTORY);
+  private previewPlayer: StreamingWavPlayerHandle | null = null;
 
   protected readonly data = (this.config.data || { mode: 'create' }) as VoiceDialogData;
   protected selectedFileName = '';
@@ -211,7 +215,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
 
     this.isPreviewingDesignedVoice = true;
     this.previewPlayer?.stop();
-    this.previewPlayer = new StreamingWavPlayer();
+    this.previewPlayer = this.createStreamingWavPlayer();
 
     try {
       const stream = this.generatedVoiceSample.stream();

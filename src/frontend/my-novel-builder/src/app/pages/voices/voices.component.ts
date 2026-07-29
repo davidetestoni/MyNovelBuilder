@@ -9,7 +9,10 @@ import { VoiceDialogComponent } from '../../components/voice-dialog/voice-dialog
 import { VoiceService } from '../../services/voice.service';
 import { VoiceDto } from '../../types/dtos/voice/voice.dto';
 import { VoiceGender } from '../../types/enums/voice-gender';
-import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
+import {
+  STREAMING_WAV_PLAYER_FACTORY,
+  StreamingWavPlayerHandle,
+} from '../../utils/streaming-wav-player.factory';
 
 @Component({
   selector: 'app-voices',
@@ -27,7 +30,8 @@ export class VoicesComponent implements OnInit, OnDestroy {
   private toastrService = inject(ToastrService);
   private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
-  private previewPlayer: StreamingWavPlayer | null = null;
+  private createStreamingWavPlayer = inject(STREAMING_WAV_PLAYER_FACTORY);
+  private previewPlayer: StreamingWavPlayerHandle | null = null;
   private dialogRef: DynamicDialogRef | null = null;
 
   ngOnInit(): void {
@@ -58,7 +62,7 @@ export class VoicesComponent implements OnInit, OnDestroy {
 
     this.previewingVoiceId = voiceId;
     this.previewPlayer?.stop();
-    this.previewPlayer = new StreamingWavPlayer();
+    this.previewPlayer = this.createStreamingWavPlayer();
 
     try {
       const response = await this.voiceService.getVoicePreviewStreamResponse(
@@ -91,7 +95,7 @@ export class VoicesComponent implements OnInit, OnDestroy {
       this.previewingVoiceId = null;
     }
   }
-  
+
   openCreateVoiceDialog(): void {
     this.dialogRef = this.dialogService.open(VoiceDialogComponent, {
       header: 'Create Voice',
@@ -111,7 +115,7 @@ export class VoicesComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   openEditVoiceDialog(voice: VoiceDto, event: Event): void {
     event.stopPropagation();
     event.preventDefault();
@@ -134,7 +138,7 @@ export class VoicesComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   deleteVoice(voice: VoiceDto, event: Event): void {
     event.stopPropagation();
     event.preventDefault();
