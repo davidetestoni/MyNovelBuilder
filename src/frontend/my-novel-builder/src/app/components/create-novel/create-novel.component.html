@@ -64,7 +64,9 @@
           <p-button
             label="Create"
             (click)="createNovel()"
-            [disabled]="formGroup.invalid || formGroup.pristine"
+            [disabled]="
+              formGroup.invalid || formGroup.pristine || isCreating
+            "
           />
         </div>
       </div>

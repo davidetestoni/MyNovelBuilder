@@ -17,6 +17,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
+import { finalize, of, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-create-novel',
@@ -39,6 +40,7 @@ export class CreateNovelComponent {
 
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
+  isCreating = false;
   readonly novelService: NovelService = inject(NovelService);
 
   formGroup = new FormGroup({
@@ -64,6 +66,10 @@ export class CreateNovelComponent {
   });
 
   createNovel(): void {
+    if (this.formGroup.invalid || this.isCreating) {
+      return;
+    }
+
     const tenseValue: string = this.formGroup.get('tense')!.value!;
     const tense: WritingTense = Object.values(WritingTense).find(
       (tense) => tense === tenseValue,
@@ -79,6 +85,9 @@ export class CreateNovelComponent {
       (language) => language === languageValue,
     )!;
 
+    const imageFile = this.imageFile;
+    this.isCreating = true;
+
     this.novelService
       .createNovel({
         title: this.formGroup.get('title')!.value!,
@@ -90,18 +99,24 @@ export class CreateNovelComponent {
         rpgMode: false,
         mainCharacterId: null,
       })
-      .subscribe((novel) => {
-        if (this.imageFile !== null) {
-          this.novelService
-            .uploadNovelCoverImage(novel.id, this.imageFile)
-            .subscribe(() => {
-              this.toastr.success('Novel created successfully.');
-              this.dialogRef.close(true);
-            });
-        } else {
+      .pipe(
+        switchMap((novel) =>
+          imageFile === null
+            ? of(undefined)
+            : this.novelService.uploadNovelCoverImage(novel.id, imageFile),
+        ),
+        finalize(() => {
+          this.isCreating = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
           this.toastr.success('Novel created successfully.');
           this.dialogRef.close(true);
-        }
+        },
+        error: () => {
+          this.toastr.error('Failed to create novel.');
+        },
       });
   }
 
