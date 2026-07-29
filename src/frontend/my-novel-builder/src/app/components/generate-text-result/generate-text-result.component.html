@@ -33,7 +33,7 @@
       <p-button
         label="{{ data.textToReplace.length > 0 ? 'Replace' : 'Insert' }}"
         (click)="accept()"
-        [disabled]="isGenerating"
+        [disabled]="isGenerating || hasGenerationError"
       />
       <p-button label="Discard" (click)="discard()" [disabled]="isGenerating" />
     </div>

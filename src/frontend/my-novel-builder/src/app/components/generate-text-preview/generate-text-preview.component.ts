@@ -47,7 +47,6 @@ export class GenerateTextPreviewComponent implements OnInit {
       modelInfos: this.generateTextService.getAvailableModelInfos(),
     }).subscribe({
       next: ({ preview, modelInfos }) => {
-        console.log('Infos:', { preview, modelInfos });
         this.preview = preview;
         this.selectedModelInfo =
           modelInfos.find((m) => m.id === this.data.request.model) ?? null;
@@ -67,8 +66,7 @@ export class GenerateTextPreviewComponent implements OnInit {
   }
 
   getRecordImage(record: CompendiumRecordDto): string | null {
-    const mainImage = record.media.filter((image) => image.isCurrent);
-    return mainImage.length > 0 ? mainImage[0].url : null;
+    return record.media.find((image) => image.isCurrent)?.url ?? null;
   }
 
   private loadIncludedRecords(): void {

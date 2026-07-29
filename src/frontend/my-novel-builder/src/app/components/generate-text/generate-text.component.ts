@@ -16,7 +16,6 @@ import {
   TextGenerationContextInfoDto,
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
-import { GenerateTextService } from '../../services/generate-text.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { TextareaModule } from 'primeng/textarea';
@@ -60,8 +59,6 @@ export class GenerateTextComponent {
   instructionsRequired = false;
   showInstructions = false;
   storageContext = '';
-  readonly generateTextService: GenerateTextService =
-    inject(GenerateTextService);
   readonly localStorageService: LocalStorageService =
     inject(LocalStorageService);
 
@@ -135,6 +132,10 @@ export class GenerateTextComponent {
   }
 
   accept(): void {
+    if (this.formGroup.invalid) {
+      return;
+    }
+
     const request = this.buildRequest();
     if (request === null) {
       return;
@@ -168,6 +169,10 @@ export class GenerateTextComponent {
   }
 
   openPreviewDialog(): void {
+    if (this.formGroup.invalid) {
+      return;
+    }
+
     const request = this.buildRequest();
     if (request === null) {
       return;

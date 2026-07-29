@@ -3,6 +3,7 @@ import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-
 import { GenerateTextService } from '../../services/generate-text.service';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
+import { Subscription } from 'rxjs';
 
 export interface GenerateTextResultComponentData {
   textToReplace: string; // In HTML format
@@ -19,6 +20,7 @@ export interface GenerateTextResultComponentData {
 export class GenerateTextResultComponent implements OnInit, OnDestroy {
   private generationTimerId: ReturnType<typeof setInterval> | null = null;
   private generationStartedAt: number | null = null;
+  private generationSubscription: Subscription | null = null;
 
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
@@ -28,6 +30,7 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
   isGenerating = true;
+  hasGenerationError = false;
   generatedText = '';
   generationElapsedSeconds = 0;
   lastGenerationDurationSeconds: number | null = null;
@@ -41,32 +44,46 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.generationSubscription?.unsubscribe();
+    this.generationSubscription = null;
     this.stopGenerationTimer();
   }
 
   generateText(): void {
+    this.generationSubscription?.unsubscribe();
+    this.stopGenerationTimer();
     this.generatedText = '[Generating text...]';
     this.isGenerating = true;
+    this.hasGenerationError = false;
     this.lastGenerationDurationSeconds = null;
     this.startGenerationTimer();
 
-    this.generateTextService.generateText(this.data.request).subscribe({
-      next: (update) => {
-        if (update.content.length > 0) {
-          this.generatedText = update.content;
-        }
+    this.generationSubscription = this.generateTextService
+      .generateText(this.data.request)
+      .subscribe({
+        next: (update) => {
+          if (update.content.length > 0) {
+            this.generatedText = update.content;
+          }
 
-        if (update.isComplete) {
+          if (update.isComplete) {
+            this.isGenerating = false;
+            this.stopGenerationTimer();
+          }
+        },
+        error: (error) => {
+          console.error('Error generating text:', error);
           this.isGenerating = false;
+          this.hasGenerationError = true;
           this.stopGenerationTimer();
-        }
-      },
-      error: (error) => {
-        console.error('Error generating text:', error);
-        this.isGenerating = false;
-        this.stopGenerationTimer();
-      },
-    });
+        },
+        complete: () => {
+          if (this.isGenerating) {
+            this.isGenerating = false;
+            this.stopGenerationTimer();
+          }
+        },
+      });
   }
 
   get retryButtonLabel(): string {
@@ -87,17 +104,21 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
     return `Generation took ${this.lastGenerationDurationSeconds}s`;
   }
 
-  accept() {
+  accept(): void {
+    if (this.isGenerating || this.hasGenerationError) {
+      return;
+    }
+
     // Replace multiple linebreaks with a single linebreak
     // TODO: Make this configurable, this is just my personal preference
     this.dialogRef.close(this.generatedText.replace(/\n{2,}/g, '\n'));
   }
 
-  discard() {
+  discard(): void {
     this.dialogRef.close();
   }
 
-  goBack() {
+  goBack(): void {
     this.dialogRef.close('back');
   }
 
