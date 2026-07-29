@@ -65,6 +65,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   private dialogRef: DynamicDialogRef | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private previewRequestId = 0;
+  private mediaListRequestId = 0;
   private zoomedPromptRequestId = 0;
   private currentFolderId: string | null = null;
   private currentGridColumns = 1;
@@ -191,6 +192,8 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.mediaListRequestId += 1;
+    this.zoomedPromptRequestId += 1;
     this.previewLoadSubscription?.unsubscribe();
     this.dialogRef?.close();
     this.resizeObserver?.disconnect();
@@ -257,13 +260,13 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
 
     dialogRef.onClose.subscribe(
       (result: 'upload' | 'generate' | 'clipboard' | undefined) => {
-      if (result === 'upload') {
-        this.openUploadMediaDialog();
-      } else if (result === 'generate') {
-        this.openGenerateImageDialog();
-      } else if (result === 'clipboard') {
-        this.openUploadMediaFromClipboardDialog();
-      }
+        if (result === 'upload') {
+          this.openUploadMediaDialog();
+        } else if (result === 'generate') {
+          this.openGenerateImageDialog();
+        } else if (result === 'clipboard') {
+          this.openUploadMediaFromClipboardDialog();
+        }
       },
     );
   }
@@ -308,6 +311,9 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
           });
         });
       },
+      error: () => {
+        this.toastrService.error('Failed to load image');
+      },
     });
   }
 
@@ -320,6 +326,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   }
 
   unzoomMedia(): void {
+    this.zoomedPromptRequestId += 1;
     this.zoomedMedia = null;
     this.zoomedMediaPrompt = null;
     this.zoomedMediaDescription = null;
@@ -466,6 +473,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
     const nextFolderId = this.folder?.id ?? null;
 
     if (nextFolderId === null) {
+      this.mediaListRequestId += 1;
       this.currentFolderId = null;
       this.allMediaFiles = [];
       this.currentPageFirst = 0;
@@ -482,13 +490,17 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   }
 
   private loadInitialMedia(folderId: string): void {
+    const requestId = ++this.mediaListRequestId;
     this.currentFolderId = folderId;
     this._mediaFiles = null;
     this.allMediaFiles = [];
     this.currentPageFirst = 0;
     this.mediaLibraryService.getMedia(folderId).subscribe({
       next: (mediaFiles) => {
-        if (this.folder?.id !== folderId) {
+        if (
+          requestId !== this.mediaListRequestId ||
+          this.folder?.id !== folderId
+        ) {
           return;
         }
 
@@ -497,19 +509,28 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
         queueMicrotask(() => this.updatePageSizeFromLayout());
       },
       error: () => {
-        if (this.folder?.id !== folderId) {
+        if (
+          requestId !== this.mediaListRequestId ||
+          this.folder?.id !== folderId
+        ) {
           return;
         }
 
         this._mediaFiles = [];
         this.loadMediaPreviews();
+        this.toastrService.error('Failed to load media.');
       },
     });
   }
 
   private uploadMedia(request: { name: string; file: File }): void {
-    if (this.folder === null) {
+    const folderId = this.folder?.id;
+    if (folderId === undefined) {
       this.toastrService.error('Select a media folder first.');
+      return;
+    }
+
+    if (this.uploadingMedia) {
       return;
     }
 
@@ -525,26 +546,39 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
     }
 
     this.uploadingMedia = true;
-    this.mediaLibraryService.uploadMedia(this.folder.id, name, request.file).subscribe({
-      next: () => {
-        this.uploadingMedia = false;
-        this.toastrService.success('Media uploaded.');
-        this.loadInitialMedia(this.folder!.id);
-      },
-      error: () => {
-        this.uploadingMedia = false;
-      },
-    });
+    this.mediaLibraryService
+      .uploadMedia(folderId, name, request.file)
+      .subscribe({
+        next: () => {
+          this.uploadingMedia = false;
+          this.toastrService.success('Media uploaded.');
+          if (this.folder?.id === folderId) {
+            this.loadInitialMedia(folderId);
+          }
+        },
+        error: () => {
+          this.uploadingMedia = false;
+          this.toastrService.error('Failed to upload media.');
+        },
+      });
   }
 
   private deleteMedia(fileName: string): void {
-    if (this.folder === null) {
+    const folderId = this.folder?.id;
+    if (folderId === undefined) {
       return;
     }
 
-    this.mediaLibraryService.deleteMedia(this.folder.id, fileName).subscribe(() => {
-      this.toastrService.success('Media deleted.');
-      this.loadInitialMedia(this.folder!.id);
+    this.mediaLibraryService.deleteMedia(folderId, fileName).subscribe({
+      next: () => {
+        this.toastrService.success('Media deleted.');
+        if (this.folder?.id === folderId) {
+          this.loadInitialMedia(folderId);
+        }
+      },
+      error: () => {
+        this.toastrService.error('Failed to delete media.');
+      },
     });
   }
 
@@ -734,6 +768,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   }
 
   private clearPreviewCache(): void {
+    this.zoomedPromptRequestId += 1;
     this.zoomedMedia = null;
     this.zoomedMediaPrompt = null;
     this.zoomedMediaDescription = null;
@@ -843,6 +878,7 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
   }
 
   private async loadZoomedMediaPrompt(media: MediaPreview): Promise<void> {
+    const requestId = ++this.zoomedPromptRequestId;
     if (media.isVideo || media.url === null) {
       this.zoomedMediaPrompt = null;
       this.zoomedMediaDescription = null;
@@ -850,7 +886,6 @@ export class MediaFolderComponent implements OnChanges, OnDestroy {
       return;
     }
 
-    const requestId = ++this.zoomedPromptRequestId;
     this.isZoomedMediaPromptLoading = true;
     this.zoomedMediaPrompt = null;
     this.zoomedMediaDescription = null;
