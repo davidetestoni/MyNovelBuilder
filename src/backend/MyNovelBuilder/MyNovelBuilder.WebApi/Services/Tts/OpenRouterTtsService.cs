@@ -123,7 +123,7 @@ public class OpenRouterTtsService : ITtsService
     {
         var apiKey = await GetApiKeyAsync(cancellationToken);
 
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "models?output_modalities=all");
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Get, "models?output_modalities=speech");
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
         using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
@@ -225,7 +225,7 @@ public class OpenRouterTtsService : ITtsService
             response_format = "pcm"
         };
 
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "tts")
+        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "audio/speech")
         {
             Content = new StringContent(
                 JsonSerializer.Serialize(payload),
@@ -261,7 +261,7 @@ public class OpenRouterTtsService : ITtsService
 
         var outputModalities = modelNode?["architecture"]?["output_modalities"]?.AsArray();
         return outputModalities?.Any(modality =>
-            string.Equals(modality?.GetValue<string>(), "tts", StringComparison.OrdinalIgnoreCase)) == true;
+            string.Equals(modality?.GetValue<string>(), "speech", StringComparison.OrdinalIgnoreCase)) == true;
     }
 
     private static string? GetErrorMessage(string errorResponse)
