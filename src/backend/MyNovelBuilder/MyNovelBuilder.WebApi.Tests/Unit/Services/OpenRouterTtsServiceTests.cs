@@ -12,7 +12,7 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public class OpenRouterTtsServiceTests
 {
     [Fact]
-    public async Task GetModelsAsync_RequestsSpeechModels_AndMapsBuiltInVoices()
+    public async Task GetModelsAsync_RequestsSpeechModels_AndMapsSupportedVoices()
     {
         var handler = new RecordingHttpMessageHandler(
             new HttpResponseMessage(HttpStatusCode.OK)
@@ -26,7 +26,8 @@ public class OpenRouterTtsServiceTests
                           "name": "hexgrad: Kokoro 82M",
                           "architecture": {
                             "output_modalities": ["speech"]
-                          }
+                          },
+                          "supported_voices": ["af_alloy", "if_sara"]
                         },
                         {
                           "id": "example/text-model",
@@ -48,8 +49,9 @@ public class OpenRouterTtsServiceTests
         var model = Assert.Single(models);
         Assert.Equal("hexgrad/kokoro-82m", model.ModelId);
         Assert.Equal("hexgrad: Kokoro 82M", model.Name);
-        Assert.Contains(model.Voices, voice => voice.VoiceId == "alloy");
-        Assert.Contains(model.Voices, voice => voice.VoiceId == "nova");
+        Assert.Equal(
+            new[] { "af_alloy", "if_sara" },
+            model.Voices.Select(voice => voice.VoiceId));
 
         var request = Assert.Single(handler.Requests);
         Assert.Equal(

@@ -162,14 +162,7 @@ public class OpenRouterTtsService : ITtsService
                 {
                     ModelId = modelId,
                     Name = modelName,
-                    Voices = BuiltInVoices
-                        .Select(voice => new TtsVoiceDto
-                        {
-                            VoiceId = voice.Id,
-                            Name = voice.Name,
-                            Language = WritingLanguage.English
-                        })
-                        .ToList()
+                    Voices = GetVoices(modelNode)
                 };
             })
             .OrderBy(model => model.Name, StringComparer.OrdinalIgnoreCase)
@@ -262,6 +255,26 @@ public class OpenRouterTtsService : ITtsService
         var outputModalities = modelNode?["architecture"]?["output_modalities"]?.AsArray();
         return outputModalities?.Any(modality =>
             string.Equals(modality?.GetValue<string>(), "speech", StringComparison.OrdinalIgnoreCase)) == true;
+    }
+
+    private static IEnumerable<TtsVoiceDto> GetVoices(JsonNode? modelNode)
+    {
+        var supportedVoices = modelNode?["supported_voices"]?.AsArray()
+            .Select(voice => voice?.GetValue<string>())
+            .Where(voice => !string.IsNullOrWhiteSpace(voice))
+            .Cast<string>()
+            .ToList();
+
+        var voices = supportedVoices is { Count: > 0 }
+            ? supportedVoices.Select(voice => (Id: voice, Name: voice))
+            : BuiltInVoices;
+
+        return voices.Select(voice => new TtsVoiceDto
+        {
+            VoiceId = voice.Id,
+            Name = voice.Name,
+            Language = WritingLanguage.English
+        }).ToList();
     }
 
     private static string? GetErrorMessage(string errorResponse)
