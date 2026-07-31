@@ -10,11 +10,8 @@ import type {
   Range,
 } from 'ngx-quill';
 import type Quill from 'quill';
-import { GenerateAudioService } from '../../services/generate-audio.service';
 import { GenerateTextService } from '../../services/generate-text.service';
 import type { GenerateTextStreamUpdate } from '../../services/generate-text.service';
-import { IntegrationsService } from '../../services/integrations.service';
-import { LocalStorageService } from '../../services/local-storage.service';
 import { NovelService } from '../../services/novel.service';
 import type {
   GenerateTextContextInfoDto,
@@ -24,13 +21,7 @@ import type {
 import { NovelTextGenerationType } from '../../types/dtos/generate/generate-text-request.dto';
 import type { Prose, Section } from '../../types/dtos/novel/prose';
 import type { PromptDto } from '../../types/dtos/prompt/prompt.dto';
-import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptType } from '../../types/enums/prompt-type';
-import {
-  STREAMING_WAV_PLAYER_FACTORY,
-  StreamingWavPlayerFactory,
-  StreamingWavPlayerHandle,
-} from '../../utils/streaming-wav-player.factory';
 import { GenerateCompendiumRecordResultComponent } from '../generate-compendium-record-result/generate-compendium-record-result.component';
 import { GenerateStorySuggestionsDialogComponent } from '../generate-story-suggestions-dialog/generate-story-suggestions-dialog.component';
 import { GenerateMediaComponent } from '../generate-media/generate-media.component';
@@ -39,6 +30,7 @@ import { GenerateTextComponent } from '../generate-text/generate-text.component'
 import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
 import { RecordOverridesEditorComponent } from '../record-overrides-editor/record-overrides-editor.component';
 import { ProseEditorComponent } from './prose-editor.component';
+import { ProseTtsService } from './prose-tts.service';
 
 describe('ProseEditorComponent', () => {
   let component: ProseEditorComponent;
@@ -46,13 +38,8 @@ describe('ProseEditorComponent', () => {
   let dialogService: jasmine.SpyObj<DialogService>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
-  let generateAudioService: jasmine.SpyObj<GenerateAudioService>;
   let novelService: jasmine.SpyObj<NovelService>;
-  let localStorageService: jasmine.SpyObj<LocalStorageService>;
-  let integrationsConfig$: Subject<{ ttsEnableImmersive: boolean }>;
-  let player: jasmine.SpyObj<StreamingWavPlayerHandle>;
-  let createPlayer: jasmine.Spy<StreamingWavPlayerFactory>;
-  let firstAudioCallback: (() => void) | undefined;
+  let proseTtsService: jasmine.SpyObj<ProseTtsService>;
 
   const createSection = (
     summary = 'Summary',
@@ -182,33 +169,15 @@ describe('ProseEditorComponent', () => {
       'GenerateTextService',
       ['generateText'],
     );
-    generateAudioService = jasmine.createSpyObj<GenerateAudioService>(
-      'GenerateAudioService',
-      ['immersiveTextToSpeechStreamResponse', 'textToSpeechStreamResponse'],
-    );
     novelService = jasmine.createSpyObj<NovelService>('NovelService', [
       'deleteProseImage',
       'uploadProseImage',
     ]);
-    localStorageService = jasmine.createSpyObj<LocalStorageService>(
-      'LocalStorageService',
-      [
-        'getNestedStringForKey',
-        'removeNestedKey',
-        'setNestedStringForKey',
-      ],
+    proseTtsService = jasmine.createSpyObj<ProseTtsService>(
+      'ProseTtsService',
+      ['playSection'],
     );
-    integrationsConfig$ = new Subject<{ ttsEnableImmersive: boolean }>();
-    player = jasmine.createSpyObj<StreamingWavPlayerHandle>(
-      'StreamingWavPlayerHandle',
-      ['addChunk', 'stop'],
-    );
-    createPlayer = jasmine.createSpy<StreamingWavPlayerFactory>(
-      'StreamingWavPlayerFactory',
-    ).and.callFake((callback) => {
-      firstAudioCallback = callback;
-      return player;
-    });
+    proseTtsService.playSection.and.resolveTo();
 
     TestBed.configureTestingModule({
       providers: [
@@ -216,26 +185,16 @@ describe('ProseEditorComponent', () => {
         { provide: DialogService, useValue: dialogService },
         { provide: ToastrService, useValue: toastr },
         { provide: GenerateTextService, useValue: generateTextService },
-        { provide: GenerateAudioService, useValue: generateAudioService },
         { provide: NovelService, useValue: novelService },
-        { provide: LocalStorageService, useValue: localStorageService },
-        {
-          provide: IntegrationsService,
-          useValue: { getIntegrationsConfig: () => integrationsConfig$ },
-        },
-        { provide: STREAMING_WAV_PLAYER_FACTORY, useValue: createPlayer },
+        { provide: ProseTtsService, useValue: proseTtsService },
       ],
     });
 
     spyOn(console, 'error');
-    spyOn(console, 'time');
-    spyOn(console, 'timeEnd');
-
     component = TestBed.runInInjectionContext(() => new ProseEditorComponent());
     component.novelId = 'novel-1';
     component.prose = createProse();
     component.prompts = [];
-    integrationsConfig$.next({ ttsEnableImmersive: false });
   });
 
   describe('prose mutations and derived values', () => {
@@ -622,129 +581,20 @@ describe('ProseEditorComponent', () => {
   });
 
   describe('text to speech', () => {
-    const playableResponse = () => new Response(new Uint8Array(45));
-
-    it('streams narrator audio, strips markup, and clears loading on first audio', async () => {
+    it('delegates playback with normalized section text and context', async () => {
       component.prose.chapters[0].sections[0].text =
         '<p>Hello</p><p>world</p>';
-      generateAudioService.textToSpeechStreamResponse.and.resolveTo(
-        playableResponse(),
-      );
-      player.addChunk.and.callFake(() => firstAudioCallback?.());
+      component.prompts = [createPrompt(PromptType.PrepareImmersiveTts)];
 
       await component.textToSpeech(0, 0);
 
-      expect(generateAudioService.textToSpeechStreamResponse)
-        .toHaveBeenCalledOnceWith({ message: 'Hello world' });
-      expect(createPlayer).toHaveBeenCalledTimes(1);
-      expect(player.addChunk).toHaveBeenCalled();
-      expect(toastr.info).toHaveBeenCalledWith(
-        'Generating TTS...',
-        '',
-        jasmine.objectContaining({ timeOut: 0, tapToDismiss: false }),
-      );
-      expect(toastr.clear).toHaveBeenCalledOnceWith(41);
-    });
-
-    it('uses the stored immersive prompt when it remains available', async () => {
-      component.prompts = [
-        createPrompt(PromptType.PrepareImmersiveTts, 'immersive-1'),
-      ];
-      integrationsConfig$.next({ ttsEnableImmersive: true });
-      localStorageService.getNestedStringForKey.and.returnValue('immersive-1');
-      generateAudioService.immersiveTextToSpeechStreamResponse.and.resolveTo(
-        playableResponse(),
-      );
-
-      await component.textToSpeech(0, 0);
-
-      expect(
-        generateAudioService.immersiveTextToSpeechStreamResponse,
-      ).toHaveBeenCalledOnceWith({
+      expect(proseTtsService.playSection).toHaveBeenCalledOnceWith({
         novelId: 'novel-1',
-        promptId: 'immersive-1',
+        prompts: component.prompts,
         chapterIndex: 0,
         sectionIndex: 0,
+        narratorText: 'Hello world',
       });
-      expect(generateAudioService.textToSpeechStreamResponse).not.toHaveBeenCalled();
-    });
-
-    it('replaces a stale immersive preference with the first available prompt', async () => {
-      component.prompts = [
-        createPrompt(PromptType.PrepareImmersiveTts, 'fallback'),
-      ];
-      integrationsConfig$.next({ ttsEnableImmersive: true });
-      localStorageService.getNestedStringForKey.and.returnValue('removed');
-      generateAudioService.immersiveTextToSpeechStreamResponse.and.resolveTo(
-        playableResponse(),
-      );
-
-      await component.textToSpeech(0, 0);
-
-      expect(localStorageService.removeNestedKey).toHaveBeenCalledOnceWith(
-        LocalStorageKey.RecentPrompts,
-        PromptType.PrepareImmersiveTts,
-      );
-      expect(localStorageService.setNestedStringForKey).toHaveBeenCalledOnceWith(
-        LocalStorageKey.RecentPrompts,
-        PromptType.PrepareImmersiveTts,
-        'fallback',
-      );
-    });
-
-    it('falls back to narrator audio when immersive playback fails', async () => {
-      component.prompts = [
-        createPrompt(PromptType.PrepareImmersiveTts, 'immersive'),
-      ];
-      integrationsConfig$.next({ ttsEnableImmersive: true });
-      generateAudioService.immersiveTextToSpeechStreamResponse.and.rejectWith(
-        new Error('provider unavailable'),
-      );
-      generateAudioService.textToSpeechStreamResponse.and.resolveTo(
-        playableResponse(),
-      );
-
-      await component.textToSpeech(0, 0);
-
-      expect(toastr.warning).toHaveBeenCalledOnceWith(
-        'Immersive TTS failed (provider unavailable). Falling back to narrator-only playback.',
-      );
-      expect(generateAudioService.textToSpeechStreamResponse).toHaveBeenCalled();
-    });
-
-    it('explains the fallback when immersive mode has no configured prompt', async () => {
-      integrationsConfig$.next({ ttsEnableImmersive: true });
-      generateAudioService.textToSpeechStreamResponse.and.resolveTo(
-        playableResponse(),
-      );
-
-      await component.textToSpeech(0, 0);
-
-      expect(toastr.info).toHaveBeenCalledWith(
-        'No immersive TTS prompt is configured. Falling back to narrator-only playback.',
-      );
-    });
-
-    it('reports a missing response body and rejects header-only audio', async () => {
-      generateAudioService.textToSpeechStreamResponse.and.resolveTo(
-        new Response(null),
-      );
-      await component.textToSpeech(0, 0);
-      expect(toastr.error).toHaveBeenCalledOnceWith(
-        'No audio stream was returned.',
-      );
-
-      toastr.error.calls.reset();
-      generateAudioService.textToSpeechStreamResponse.and.resolveTo(
-        new Response(new Uint8Array(44)),
-      );
-      await component.textToSpeech(0, 0);
-
-      expect(console.error).toHaveBeenCalledWith(
-        'WAV streaming error:',
-        jasmine.any(Error),
-      );
-      expect(toastr.clear).toHaveBeenCalledWith(41);
     });
   });
 
@@ -1113,30 +963,14 @@ describe('ProseEditorComponent', () => {
       expect(emit).toHaveBeenCalledOnceWith(component.prose);
     });
 
-    it('closes the active dialog and clears an outstanding TTS toast on destroy', () => {
+    it('closes the active dialog on destroy', () => {
       const ref = createDialogRef();
       dialogService.open.and.returnValue(ref);
       component.addProseImage(0, 0);
-      (component as unknown as { ttsLoadingToastId?: number }).ttsLoadingToastId =
-        99;
 
       component.ngOnDestroy();
 
       expect(ref.close).toHaveBeenCalled();
-      expect(toastr.clear).toHaveBeenCalledOnceWith(99);
-    });
-
-    it('falls back safely when integrations configuration cannot be loaded', () => {
-      integrationsConfig$.error(new Error('config failed'));
-
-      expect(console.error).toHaveBeenCalledWith(
-        'Error loading integrations config for TTS:',
-        jasmine.any(Error),
-      );
-      expect(
-        (component as unknown as { ttsEnableImmersive: boolean })
-          .ttsEnableImmersive,
-      ).toBeFalse();
     });
   });
 });

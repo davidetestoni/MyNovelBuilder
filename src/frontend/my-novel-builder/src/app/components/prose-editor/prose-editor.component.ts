@@ -39,7 +39,6 @@ import {
   GenerateTextResultComponentData,
 } from '../generate-text-result/generate-text-result.component';
 import Quill from 'quill';
-import { GenerateAudioService } from '../../services/generate-audio.service';
 import {
   GenerateCompendiumRecordComponentData,
   GenerateCompendiumRecordResultComponent,
@@ -51,17 +50,9 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
 import { GenerateMediaComponent } from '../generate-media/generate-media.component';
-import {
-  STREAMING_WAV_PLAYER_FACTORY,
-  StreamingWavPlayerFactory,
-} from '../../utils/streaming-wav-player.factory';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 import { createGeneratedMediaFile } from '../../utils/generated-media';
 import { marked } from 'marked';
-import { LocalStorageService } from '../../services/local-storage.service';
-import { LocalStorageKey } from '../../types/enums/local-storage-key';
-import { ImmersiveTtsRequestDto } from '../../types/dtos/generate/immersive-tts-request.dto';
-import { IntegrationsService } from '../../services/integrations.service';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import {
   RecordOverridesEditorComponent,
@@ -74,6 +65,7 @@ import {
 } from '../generate-story-suggestions-dialog/generate-story-suggestions-dialog.component';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
+import { ProseTtsService } from './prose-tts.service';
 
 interface LastSelection {
   editor: Quill;
@@ -114,7 +106,7 @@ interface RpgAppendTarget {
     PromptSelectComponent,
     ModelSelectComponent,
   ],
-  providers: [DialogService, ConfirmationService],
+  providers: [DialogService, ConfirmationService, ProseTtsService],
 })
 export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
@@ -132,14 +124,8 @@ export class ProseEditorComponent implements OnDestroy {
   readonly toastr: ToastrService = inject(ToastrService);
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
-  readonly generateAudioService: GenerateAudioService =
-    inject(GenerateAudioService);
   readonly novelService = inject(NovelService);
-  readonly localStorageService = inject(LocalStorageService);
-  readonly integrationsService = inject(IntegrationsService);
-  private readonly createStreamingWavPlayer: StreamingWavPlayerFactory = inject(
-    STREAMING_WAV_PLAYER_FACTORY,
-  );
+  private readonly proseTtsService = inject(ProseTtsService);
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
@@ -152,29 +138,12 @@ export class ProseEditorComponent implements OnDestroy {
   selectedRpgModel: string | null = null;
   rpgPromptCount = -1;
   isRpgGenerating = false;
-  private ttsEnableImmersive = false;
-  private ttsLoadingToastId: number | undefined;
-
   private dialogRef: DynamicDialogRef | null = null;
-
-  constructor() {
-    this.integrationsService.getIntegrationsConfig().subscribe({
-      next: (config) => {
-        this.ttsEnableImmersive = config.ttsEnableImmersive;
-      },
-      error: (error) => {
-        console.error('Error loading integrations config for TTS:', error);
-        this.ttsEnableImmersive = false;
-      },
-    });
-  }
 
   ngOnDestroy(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     }
-
-    this.clearTtsLoadingToast();
   }
 
   getImageUrl(fileName: string): string {
@@ -587,169 +556,14 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   async textToSpeech(chapterIndex: number, sectionIndex: number) {
-    const timerLabel = `TTS section ${chapterIndex}-${sectionIndex}`;
-    const firstAudioTimerLabel = `TTS first audio ${chapterIndex}-${sectionIndex}`;
-    let firstAudioTimerEnded = false;
-    try {
-      this.showTtsLoadingToast();
-      console.time(timerLabel);
-      console.time(firstAudioTimerLabel);
-      const immersivePromptId = this.ttsEnableImmersive
-        ? this.getDefaultImmersiveTtsPromptId()
-        : null;
-
-      if (immersivePromptId) {
-        try {
-          const response =
-            await this.generateAudioService.immersiveTextToSpeechStreamResponse({
-              novelId: this.novelId,
-              promptId: immersivePromptId,
-              chapterIndex,
-              sectionIndex,
-            } satisfies ImmersiveTtsRequestDto);
-
-          await this.playWavStreamResponse(response, firstAudioTimerLabel, () => {
-            firstAudioTimerEnded = true;
-            this.clearTtsLoadingToast();
-          });
-          return;
-        } catch (error) {
-          console.error('Immersive TTS streaming error:', error);
-          this.toastr.warning(
-            `Immersive TTS failed${this.formatTtsErrorSuffix(error)}. Falling back to narrator-only playback.`,
-          );
-        }
-      } else if (this.ttsEnableImmersive) {
-        this.toastr.info(
-          'No immersive TTS prompt is configured. Falling back to narrator-only playback.',
-        );
-      }
-
-      const response = await this.generateAudioService.textToSpeechStreamResponse({
-        message: this.getRawText(
-          this.prose.chapters[chapterIndex].sections[sectionIndex].text,
-        ),
-      });
-      await this.playWavStreamResponse(response, firstAudioTimerLabel, () => {
-        firstAudioTimerEnded = true;
-        this.clearTtsLoadingToast();
-      });
-    } catch (error) {
-      console.error('WAV streaming error:', error);
-    } finally {
-      if (!firstAudioTimerEnded) {
-        this.clearTtsLoadingToast();
-      }
-
-      if (!firstAudioTimerEnded) {
-        console.timeEnd(firstAudioTimerLabel);
-      }
-      console.timeEnd(timerLabel);
-    }
-  }
-
-  private async playWavStreamResponse(
-    response: Response,
-    firstAudioTimerLabel?: string,
-    onFirstAudio?: () => void,
-  ): Promise<void> {
-    const stream = response.body;
-    if (!stream) {
-      this.toastr.error('No audio stream was returned.');
-      return;
-    }
-
-    let firstAudioReported = false;
-    const player = this.createStreamingWavPlayer(() => {
-      if (!firstAudioReported && firstAudioTimerLabel) {
-        firstAudioReported = true;
-        onFirstAudio?.();
-        console.timeEnd(firstAudioTimerLabel);
-      }
+    const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
+    await this.proseTtsService.playSection({
+      novelId: this.novelId,
+      prompts: this.prompts ?? [],
+      chapterIndex,
+      sectionIndex,
+      narratorText: this.getRawText(section.text),
     });
-    const reader = stream.getReader();
-    let totalBytes = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      if (value) {
-        totalBytes += value.byteLength;
-        player.addChunk(value);
-      }
-    }
-
-    if (totalBytes <= 44) {
-      throw new Error('No playable audio bytes were returned from the TTS stream.');
-    }
-  }
-
-  private getDefaultImmersiveTtsPromptId(): string | null {
-    const immersivePrompts = (this.prompts ?? []).filter(
-      (prompt) => prompt.type === PromptType.PrepareImmersiveTts,
-    );
-    const storedPromptId = this.localStorageService.getNestedStringForKey(
-      LocalStorageKey.RecentPrompts,
-      PromptType.PrepareImmersiveTts,
-    );
-
-    if (storedPromptId && immersivePrompts.some((prompt) => prompt.id === storedPromptId)) {
-      return storedPromptId;
-    }
-
-    if (storedPromptId) {
-      this.localStorageService.removeNestedKey(
-        LocalStorageKey.RecentPrompts,
-        PromptType.PrepareImmersiveTts,
-      );
-    }
-
-    const fallbackPromptId = immersivePrompts[0]?.id;
-
-    if (fallbackPromptId) {
-      this.localStorageService.setNestedStringForKey(
-        LocalStorageKey.RecentPrompts,
-        PromptType.PrepareImmersiveTts,
-        fallbackPromptId,
-      );
-    }
-
-    return fallbackPromptId ?? null;
-  }
-
-  private formatTtsErrorSuffix(error: unknown): string {
-    if (!(error instanceof Error) || !error.message) {
-      return '';
-    }
-
-    return ` (${error.message})`;
-  }
-
-  private showTtsLoadingToast(): void {
-    this.clearTtsLoadingToast();
-
-    const toast = this.toastr.info('Generating TTS...', '', {
-      toastClass: 'ngx-toastr tts-loading-toast',
-      positionClass: 'toast-bottom-right',
-      closeButton: false,
-      tapToDismiss: false,
-      progressBar: false,
-      timeOut: 0,
-      extendedTimeOut: 0,
-    });
-
-    this.ttsLoadingToastId = toast.toastId;
-  }
-
-  private clearTtsLoadingToast(): void {
-    if (this.ttsLoadingToastId === undefined) {
-      return;
-    }
-
-    this.toastr.clear(this.ttsLoadingToastId);
-    this.ttsLoadingToastId = undefined;
   }
 
   openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {
