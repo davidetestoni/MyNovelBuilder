@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ConfirmationService } from 'primeng/api';
 import type { Confirmation } from 'primeng/api';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject, of, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import type {
@@ -21,21 +20,19 @@ import { NovelTextGenerationType } from '../../types/dtos/generate/generate-text
 import type { Prose, Section } from '../../types/dtos/novel/prose';
 import type { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
-import { GenerateCompendiumRecordResultComponent } from '../generate-compendium-record-result/generate-compendium-record-result.component';
-import { GenerateStorySuggestionsDialogComponent } from '../generate-story-suggestions-dialog/generate-story-suggestions-dialog.component';
-import { GenerateTextResultComponent } from '../generate-text-result/generate-text-result.component';
-import { GenerateTextComponent } from '../generate-text/generate-text.component';
-import { RecordOverridesEditorComponent } from '../record-overrides-editor/record-overrides-editor.component';
 import { ProseEditorComponent } from './prose-editor.component';
+import { ProseGenerationDialogService } from './prose-generation-dialog.service';
 import { ProseMediaService } from './prose-media.service';
 import { ProseTtsService } from './prose-tts.service';
 
 describe('ProseEditorComponent', () => {
   let component: ProseEditorComponent;
   let confirmationService: jasmine.SpyObj<ConfirmationService>;
-  let dialogService: jasmine.SpyObj<DialogService>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
+  let proseGenerationDialogService: jasmine.SpyObj<
+    ProseGenerationDialogService
+  >;
   let proseMediaService: jasmine.SpyObj<ProseMediaService>;
   let proseTtsService: jasmine.SpyObj<ProseTtsService>;
 
@@ -67,12 +64,6 @@ describe('ProseEditorComponent', () => {
     type,
     messages: [],
   });
-
-  const createDialogRef = <T>(onClose = new Subject<T>()): DynamicDialogRef =>
-    ({
-      onClose,
-      close: jasmine.createSpy('close'),
-    }) as unknown as DynamicDialogRef;
 
   const createQuill = () => {
     const quill = {
@@ -153,9 +144,6 @@ describe('ProseEditorComponent', () => {
       'ConfirmationService',
       ['confirm'],
     );
-    dialogService = jasmine.createSpyObj<DialogService>('DialogService', [
-      'open',
-    ]);
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', [
       'clear',
       'error',
@@ -167,6 +155,27 @@ describe('ProseEditorComponent', () => {
       'GenerateTextService',
       ['generateText'],
     );
+    proseGenerationDialogService =
+      jasmine.createSpyObj<ProseGenerationDialogService>(
+        'ProseGenerationDialogService',
+        [
+          'openCompendiumRecordResultDialog',
+          'openRecordOverridesDialog',
+          'openStorySuggestionsDialog',
+          'openTextRequestDialog',
+          'openTextResultDialog',
+        ],
+      );
+    proseGenerationDialogService.openCompendiumRecordResultDialog.and
+      .returnValue(of());
+    proseGenerationDialogService.openRecordOverridesDialog.and.returnValue(
+      of(),
+    );
+    proseGenerationDialogService.openStorySuggestionsDialog.and.returnValue(
+      of(),
+    );
+    proseGenerationDialogService.openTextRequestDialog.and.returnValue(of());
+    proseGenerationDialogService.openTextResultDialog.and.returnValue(of());
     proseMediaService = jasmine.createSpyObj<ProseMediaService>(
       'ProseMediaService',
       [
@@ -187,9 +196,12 @@ describe('ProseEditorComponent', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: ConfirmationService, useValue: confirmationService },
-        { provide: DialogService, useValue: dialogService },
         { provide: ToastrService, useValue: toastr },
         { provide: GenerateTextService, useValue: generateTextService },
+        {
+          provide: ProseGenerationDialogService,
+          useValue: proseGenerationDialogService,
+        },
         { provide: ProseMediaService, useValue: proseMediaService },
         { provide: ProseTtsService, useValue: proseTtsService },
       ],
@@ -607,7 +619,9 @@ describe('ProseEditorComponent', () => {
       expect(toastr.error).toHaveBeenCalledOnceWith(
         'No summarization prompts available',
       );
-      expect(dialogService.open).not.toHaveBeenCalled();
+      expect(
+        proseGenerationDialogService.openTextRequestDialog,
+      ).not.toHaveBeenCalled();
     });
 
     it('requires a selection and a matching generation prompt', () => {
@@ -622,7 +636,9 @@ describe('ProseEditorComponent', () => {
       expect(toastr.error).toHaveBeenCalledOnceWith(
         'No generation prompts available',
       );
-      expect(dialogService.open).not.toHaveBeenCalled();
+      expect(
+        proseGenerationDialogService.openTextRequestDialog,
+      ).not.toHaveBeenCalled();
     });
 
     it('opens the generate-text dialog with selection context and prefill', () => {
@@ -632,7 +648,9 @@ describe('ProseEditorComponent', () => {
         createPrompt(PromptType.ReplaceText, 'replace'),
       ];
       const close$ = new Subject<GenerateTextRequestDto>();
-      dialogService.open.and.returnValue(createDialogRef(close$));
+      proseGenerationDialogService.openTextRequestDialog.and.returnValue(
+        close$,
+      );
       const openResult = spyOn(component, 'openGenerateTextResultDialog');
       const emit = spyOn(component.proseChange, 'emit');
       const request = createRequest();
@@ -644,9 +662,11 @@ describe('ProseEditorComponent', () => {
       });
       close$.next(request);
 
-      const [dialog, config] = dialogService.open.calls.mostRecent().args;
-      expect(dialog).toBe(GenerateTextComponent);
-      expect(config?.data).toEqual(
+      const [header, data] =
+        proseGenerationDialogService.openTextRequestDialog.calls.mostRecent()
+          .args;
+      expect(header).toBe('Generate Text');
+      expect(data).toEqual(
         jasmine.objectContaining({
           prompts: [jasmine.objectContaining({ id: 'generate' })],
           initialPromptId: 'recent-prompt',
@@ -665,15 +685,20 @@ describe('ProseEditorComponent', () => {
 
     it('navigates back from generate results with the previous choices', () => {
       const close$ = new Subject<string | 'back' | undefined>();
-      dialogService.open.and.returnValue(createDialogRef(close$));
+      proseGenerationDialogService.openTextResultDialog.and.returnValue(
+        close$,
+      );
       const reopen = spyOn(component, 'openGenerateTextDialog');
       const request = createRequest();
 
       component.openGenerateTextResultDialog(request);
       close$.next('back');
 
-      expect(dialogService.open.calls.mostRecent().args[0]).toBe(
-        GenerateTextResultComponent,
+      expect(
+        proseGenerationDialogService.openTextResultDialog,
+      ).toHaveBeenCalledOnceWith(
+        'Generate Text',
+        jasmine.objectContaining({ request, textToReplace: '' }),
       );
       expect(reopen).toHaveBeenCalledOnceWith({
         initialPromptId: 'prompt-1',
@@ -685,7 +710,9 @@ describe('ProseEditorComponent', () => {
     it('inserts accepted generation output and persists editor HTML', async () => {
       const quill = setSelection();
       const close$ = new Subject<string>();
-      dialogService.open.and.returnValue(createDialogRef(close$));
+      proseGenerationDialogService.openTextResultDialog.and.returnValue(
+        close$,
+      );
       const emit = spyOn(component.proseChange, 'emit');
 
       component.openGenerateTextResultDialog(createRequest());
@@ -707,7 +734,9 @@ describe('ProseEditorComponent', () => {
 
     it('does not apply generation output after the selection is lost', () => {
       const close$ = new Subject<string>();
-      dialogService.open.and.returnValue(createDialogRef(close$));
+      proseGenerationDialogService.openTextResultDialog.and.returnValue(
+        close$,
+      );
 
       component.openGenerateTextResultDialog(createRequest());
       component.lastSelection = null;
@@ -723,16 +752,19 @@ describe('ProseEditorComponent', () => {
       component.prompts = [createPrompt(PromptType.ReplaceText)];
       const request$ = new Subject<GenerateTextRequestDto>();
       const result$ = new Subject<string>();
-      dialogService.open.and.returnValues(
-        createDialogRef(request$),
-        createDialogRef(result$),
+      proseGenerationDialogService.openTextRequestDialog.and.returnValue(
+        request$,
+      );
+      proseGenerationDialogService.openTextResultDialog.and.returnValue(
+        result$,
       );
       const request = createRequest(NovelTextGenerationType.ReplaceText);
 
       component.openReplaceTextDialog();
-      expect(dialogService.open.calls.argsFor(0)[0]).toBe(GenerateTextComponent);
-      const replaceDialogData = dialogService.open.calls.argsFor(0)[1]
-        ?.data as { contextInfo: ReplaceTextContextInfoDto };
+      const [header, replaceDialogData] =
+        proseGenerationDialogService.openTextRequestDialog.calls.mostRecent()
+          .args;
+      expect(header).toBe('Replace Text');
       expect(replaceDialogData.contextInfo).toEqual(
         jasmine.objectContaining({ textOffset: 2, textLength: 3 }),
       );
@@ -740,8 +772,11 @@ describe('ProseEditorComponent', () => {
       result$.next('Replacement');
       await flushAsyncSubscriber();
 
-      expect(dialogService.open.calls.argsFor(1)[0]).toBe(
-        GenerateTextResultComponent,
+      expect(
+        proseGenerationDialogService.openTextResultDialog,
+      ).toHaveBeenCalledOnceWith(
+        'Replace Text',
+        jasmine.objectContaining({ request, textToReplace: 'llo' }),
       );
       expect(quill.deleteText).toHaveBeenCalledOnceWith(2, 3);
       expect(
@@ -757,7 +792,9 @@ describe('ProseEditorComponent', () => {
       component.prompts = [createPrompt(PromptType.SummarizeText, 'summary')];
       const request$ = new Subject<GenerateTextRequestDto>();
       const updates$ = new Subject<GenerateTextStreamUpdate>();
-      dialogService.open.and.returnValue(createDialogRef(request$));
+      proseGenerationDialogService.openTextRequestDialog.and.returnValue(
+        request$,
+      );
       generateTextService.generateText.and.returnValue(updates$);
       const emit = spyOn(component.proseChange, 'emit');
       const request = createRequest();
@@ -790,13 +827,23 @@ describe('ProseEditorComponent', () => {
         range: { index: 3, length: 0 },
       };
       const close$ = new Subject<{ model: string; instructions: string }>();
-      dialogService.open.and.returnValue(createDialogRef(close$));
+      proseGenerationDialogService.openStorySuggestionsDialog.and.returnValue(
+        close$,
+      );
       const generate = spyOn(component, 'openGenerateTextDialog');
       component.openGenerateStorySuggestionsDialog();
       close$.next({ model: 'story-model', instructions: 'Use option two' });
 
-      expect(dialogService.open.calls.mostRecent().args[0]).toBe(
-        GenerateStorySuggestionsDialogComponent,
+      expect(
+        proseGenerationDialogService.openStorySuggestionsDialog,
+      ).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({
+          prompts: [jasmine.objectContaining({ id: 'suggest' })],
+          novelId: 'novel-1',
+          chapterIndex: 0,
+          sectionIndex: 0,
+          textOffset: 3,
+        }),
       );
       expect(generate).toHaveBeenCalledOnceWith({
         initialModel: 'story-model',
@@ -810,11 +857,14 @@ describe('ProseEditorComponent', () => {
       const request$ = new Subject<GenerateTextRequestDto>();
       const generated$ = new Subject<string>();
       const changed$ = new Subject<boolean>();
-      dialogService.open.and.returnValues(
-        createDialogRef(request$),
-        createDialogRef(generated$),
-        createDialogRef(changed$),
+      proseGenerationDialogService.openTextRequestDialog.and.returnValue(
+        request$,
       );
+      proseGenerationDialogService.openTextResultDialog.and.returnValue(
+        generated$,
+      );
+      proseGenerationDialogService.openCompendiumRecordResultDialog.and
+        .returnValue(changed$);
       const recordsEmit = spyOn(component.recordsChange, 'emit');
 
       component.openCreateCompendiumRecordDialog();
@@ -822,14 +872,16 @@ describe('ProseEditorComponent', () => {
       generated$.next('{"name":"Ayla"}');
       changed$.next(true);
 
-      expect(dialogService.open.calls.argsFor(2)[0]).toBe(
-        GenerateCompendiumRecordResultComponent,
+      expect(
+        proseGenerationDialogService.openCompendiumRecordResultDialog,
+      ).toHaveBeenCalledOnceWith(
+        { generatedText: '{"name":"Ayla"}', novelId: 'novel-1' },
       );
       expect(recordsEmit).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('images, overrides, and cleanup', () => {
+  describe('images and overrides', () => {
     it('routes image-source choices to upload, generation, and clipboard actions', () => {
       const upload = spyOn(component, 'uploadProseImageFile');
       const generate = spyOn(component, 'generateProseImage');
@@ -919,7 +971,9 @@ describe('ProseEditorComponent', () => {
       const record = { id: 'record-1', name: 'Ayla' } as never;
       component.compendia = [{ records: [record] } as never];
       const close$ = new Subject<Section['recordOverrides']>();
-      dialogService.open.and.returnValue(createDialogRef(close$));
+      proseGenerationDialogService.openRecordOverridesDialog.and.returnValue(
+        close$,
+      );
       const emit = spyOn(component.proseChange, 'emit');
       const overrides = [
         {
@@ -930,26 +984,20 @@ describe('ProseEditorComponent', () => {
       ];
 
       component.openRecordOverridesDialog(0, 0);
-      expect(dialogService.open.calls.mostRecent().args[0]).toBe(
-        RecordOverridesEditorComponent,
+      expect(
+        proseGenerationDialogService.openRecordOverridesDialog,
+      ).toHaveBeenCalledOnceWith(
+        jasmine.objectContaining({
+          availableRecords: [record],
+          prose: component.prose,
+          chapterIndex: 0,
+          sectionIndex: 0,
+        }),
       );
-      const overridesDialogData = dialogService.open.calls.mostRecent().args[1]
-        ?.data as { availableRecords: unknown[] };
-      expect(overridesDialogData.availableRecords).toEqual([record]);
       close$.next(overrides);
 
       expect(section.recordOverrides).toBe(overrides);
       expect(emit).toHaveBeenCalledOnceWith(component.prose);
-    });
-
-    it('closes the active dialog on destroy', () => {
-      const ref = createDialogRef();
-      dialogService.open.and.returnValue(ref);
-      component.openRecordOverridesDialog(0, 0);
-
-      component.ngOnDestroy();
-
-      expect(ref.close).toHaveBeenCalled();
     });
   });
 });

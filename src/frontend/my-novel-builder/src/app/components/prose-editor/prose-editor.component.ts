@@ -2,11 +2,10 @@ import {
   Component,
   EventEmitter,
   Input,
-  OnDestroy,
   Output,
   inject,
 } from '@angular/core';
-import { Prose, Section, RecordOverride } from '../../types/dtos/novel/prose';
+import { Prose, Section } from '../../types/dtos/novel/prose';
 import { CommonModule } from '@angular/common';
 import {
   Blur,
@@ -23,10 +22,6 @@ import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import {
-  GenerateTextComponent,
-  GenerateTextComponentData,
-} from '../generate-text/generate-text.component';
-import {
   CreateCompendiumRecordContextInfoDto,
   GenerateTextContextInfoDto,
   GenerateTextRequestDto,
@@ -34,33 +29,17 @@ import {
   SummarizeTextContextInfoDto,
   NovelTextGenerationType,
 } from '../../types/dtos/generate/generate-text-request.dto';
-import {
-  GenerateTextResultComponent,
-  GenerateTextResultComponentData,
-} from '../generate-text-result/generate-text-result.component';
 import Quill from 'quill';
-import {
-  GenerateCompendiumRecordComponentData,
-  GenerateCompendiumRecordResultComponent,
-} from '../generate-compendium-record-result/generate-compendium-record-result.component';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
-import {
-  RecordOverridesEditorComponent,
-  RecordOverridesEditorComponentData,
-} from '../record-overrides-editor/record-overrides-editor.component';
-import {
-  GenerateStorySuggestionsDialogComponent,
-  GenerateStorySuggestionsDialogData,
-  GenerateStorySuggestionsDialogResult,
-} from '../generate-story-suggestions-dialog/generate-story-suggestions-dialog.component';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
 import { ProseTtsService } from './prose-tts.service';
 import { ProseMediaService } from './prose-media.service';
+import { ProseGenerationDialogService } from './prose-generation-dialog.service';
 import {
   appendMarkdownToHtml,
   calculateReadingTimeMinutes,
@@ -111,11 +90,12 @@ interface RpgAppendTarget {
   providers: [
     DialogService,
     ConfirmationService,
+    ProseGenerationDialogService,
     ProseMediaService,
     ProseTtsService,
   ],
 })
-export class ProseEditorComponent implements OnDestroy {
+export class ProseEditorComponent {
   @Input() novelId!: string;
   @Input() prose!: Prose;
   @Input() selectedChapterIndex: number | null = null;
@@ -126,11 +106,13 @@ export class ProseEditorComponent implements OnDestroy {
   @Output() recordsChange: EventEmitter<void> = new EventEmitter<void>();
   @Output() proseImageClicked: EventEmitter<string> =
     new EventEmitter<string>();
-  private dialogService = inject(DialogService);
   private confirmationService = inject(ConfirmationService);
   readonly toastr: ToastrService = inject(ToastrService);
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
+  private readonly proseGenerationDialogService = inject(
+    ProseGenerationDialogService,
+  );
   private readonly proseMediaService = inject(ProseMediaService);
   private readonly proseTtsService = inject(ProseTtsService);
   showEditorControls = false;
@@ -144,13 +126,6 @@ export class ProseEditorComponent implements OnDestroy {
   selectedRpgModel: string | null = null;
   rpgPromptCount = -1;
   isRpgGenerating = false;
-  private dialogRef: DynamicDialogRef | null = null;
-
-  ngOnDestroy(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    }
-  }
 
   getImageUrl(fileName: string): string {
     // TODO: This should come directly from the API in ImageSectionItem
@@ -532,16 +507,8 @@ export class ProseEditorComponent implements OnDestroy {
       return;
     }
 
-    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
-      header: 'Generate Section Summary',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      data: <GenerateTextComponentData>{
+    this.proseGenerationDialogService
+      .openTextRequestDialog('Generate Section Summary', {
         prompts: prompts,
         instructionsRequired: false,
         contextInfo: <SummarizeTextContextInfoDto>{
@@ -550,14 +517,12 @@ export class ProseEditorComponent implements OnDestroy {
           chapterIndex: chapterIndex,
           sectionIndex: sectionIndex,
         },
-      },
-    });
-
-    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
-      if (request) {
-        this.generateSectionSummary(chapterIndex, sectionIndex, request);
-      }
-    });
+      })
+      .subscribe((request) => {
+        if (request) {
+          this.generateSectionSummary(chapterIndex, sectionIndex, request);
+        }
+      });
   }
 
   generateSectionSummary(
@@ -602,16 +567,8 @@ export class ProseEditorComponent implements OnDestroy {
     // all generation happens on the backend with the saved prose
     this.saveProse();
 
-    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
-      header: 'Generate Text',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      data: <GenerateTextComponentData>{
+    this.proseGenerationDialogService
+      .openTextRequestDialog('Generate Text', {
         prompts: prompts,
         contextInfo: <GenerateTextContextInfoDto>{
           $type: NovelTextGenerationType.GenerateText,
@@ -625,64 +582,52 @@ export class ProseEditorComponent implements OnDestroy {
         initialPromptId: prefill.initialPromptId,
         initialModel: prefill.initialModel,
         initialInstructions: prefill.initialInstructions,
-      },
-    });
-
-    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
-      if (request) {
-        this.openGenerateTextResultDialog(request);
-      }
-    });
+      })
+      .subscribe((request) => {
+        if (request) {
+          this.openGenerateTextResultDialog(request);
+        }
+      });
   }
 
   openGenerateTextResultDialog(request: GenerateTextRequestDto) {
-    this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
-      header: 'Generate Text',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      data: <GenerateTextResultComponentData>{
+    this.proseGenerationDialogService
+      .openTextResultDialog('Generate Text', {
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
-      },
-    });
+      })
+      .subscribe(async (result) => {
+        const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
 
-    this.dialogRef?.onClose.subscribe(async (result: string | 'back' | undefined) => {
-      const contextInfo = request.contextInfo as GenerateTextContextInfoDto;
+        if (result === 'back') {
+          this.openGenerateTextDialog({
+            initialPromptId: request.promptId,
+            initialModel: request.model,
+            initialInstructions: contextInfo.instructions ?? undefined,
+          });
+        } else if (result) {
+          const selection = this.lastSelection;
+          if (!selection) {
+            this.toastr.error('Selection is no longer available.');
+            return;
+          }
 
-      if (result === 'back') {
-        this.openGenerateTextDialog({
-          initialPromptId: request.promptId,
-          initialModel: request.model,
-          initialInstructions: contextInfo.instructions ?? undefined,
-        });
-      } else if (result) {
-        const selection = this.lastSelection;
-        if (!selection) {
-          this.toastr.error('Selection is no longer available.');
-          return;
+          // Append the generated text at the end of the range in the Quill editor.
+          await insertMarkdownIntoEditor(
+            selection.editor,
+            contextInfo.textOffset,
+            result,
+          );
+
+          const section =
+            this.prose.chapters[contextInfo.chapterIndex].sections[
+              contextInfo.sectionIndex
+            ];
+
+          section.text = selection.editor.getSemanticHTML();
+          this.saveProse();
         }
-
-        // Append the generated text at the end of the range in the Quill editor.
-        await insertMarkdownIntoEditor(
-          selection.editor,
-          contextInfo.textOffset,
-          result,
-        );
-
-        const section =
-          this.prose.chapters[contextInfo.chapterIndex].sections[
-            contextInfo.sectionIndex
-          ];
-
-        section.text = selection.editor.getSemanticHTML();
-        this.saveProse();
-      }
-    });
+      });
   }
 
   openGenerateStorySuggestionsDialog() {
@@ -692,7 +637,9 @@ export class ProseEditorComponent implements OnDestroy {
     }
 
     if (selection.range.length > 0) {
-      this.toastr.error('Story suggestions are only available with no text selected.');
+      this.toastr.error(
+        'Story suggestions are only available with no text selected.',
+      );
       return;
     }
 
@@ -707,29 +654,15 @@ export class ProseEditorComponent implements OnDestroy {
 
     this.saveProse();
 
-    this.dialogRef = this.dialogService.open(
-      GenerateStorySuggestionsDialogComponent,
-      {
-        header: 'Story Suggestions',
-        width: '50vw',
-        contentStyle: { overflow: 'auto' },
-        baseZIndex: 10000,
-        modal: true,
-        closable: true,
-        closeOnEscape: true,
-        dismissableMask: true,
-        data: <GenerateStorySuggestionsDialogData>{
-          prompts,
-          novelId: this.novelId,
-          chapterIndex: selection.chapterIndex,
-          sectionIndex: selection.sectionIndex,
-          textOffset: selection.range.index,
-        },
-      },
-    );
-
-    this.dialogRef?.onClose.subscribe(
-      (result: GenerateStorySuggestionsDialogResult | undefined) => {
+    this.proseGenerationDialogService
+      .openStorySuggestionsDialog({
+        prompts,
+        novelId: this.novelId,
+        chapterIndex: selection.chapterIndex,
+        sectionIndex: selection.sectionIndex,
+        textOffset: selection.range.index,
+      })
+      .subscribe((result) => {
         if (!result) {
           return;
         }
@@ -738,8 +671,7 @@ export class ProseEditorComponent implements OnDestroy {
           initialModel: result.model,
           initialInstructions: result.instructions,
         });
-      },
-    );
+      });
   }
 
   openReplaceTextDialog() {
@@ -761,16 +693,8 @@ export class ProseEditorComponent implements OnDestroy {
     // all generation happens on the backend with the saved prose
     this.saveProse();
 
-    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
-      header: 'Replace Text',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      data: <GenerateTextComponentData>{
+    this.proseGenerationDialogService
+      .openTextRequestDialog('Replace Text', {
         prompts: prompts,
         contextInfo: <ReplaceTextContextInfoDto>{
           $type: NovelTextGenerationType.ReplaceText,
@@ -782,66 +706,54 @@ export class ProseEditorComponent implements OnDestroy {
           instructions: null,
         },
         instructionsRequired: true, // This should be defined by the prompt
-      },
-    });
-
-    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
-      if (request) {
-        this.openReplaceTextResultDialog(request);
-      }
-    });
+      })
+      .subscribe((request) => {
+        if (request) {
+          this.openReplaceTextResultDialog(request);
+        }
+      });
   }
 
   openReplaceTextResultDialog(request: GenerateTextRequestDto) {
-    this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
-      header: 'Replace Text',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      data: <GenerateTextResultComponentData>{
+    this.proseGenerationDialogService
+      .openTextResultDialog('Replace Text', {
         request: request,
         textToReplace: this.lastSelection?.text ?? '',
-      },
-    });
+      })
+      .subscribe(async (result) => {
+        if (result === 'back') {
+          this.openReplaceTextDialog();
+        } else if (result) {
+          const selection = this.lastSelection;
+          if (!selection) {
+            this.toastr.error('Selection is no longer available.');
+            return;
+          }
 
-    this.dialogRef?.onClose.subscribe(async (result: string | 'back' | undefined) => {
-      if (result === 'back') {
-        this.openReplaceTextDialog();
-      } else if (result) {
-        const selection = this.lastSelection;
-        if (!selection) {
-          this.toastr.error('Selection is no longer available.');
-          return;
+          const contextInfo = request.contextInfo as ReplaceTextContextInfoDto;
+
+          // Replace the selected text with the generated text.
+          // Do not use the current selection's range, as it may have changed
+          // since the dialog was opened.
+          selection.editor.deleteText(
+            contextInfo.textOffset,
+            contextInfo.textLength,
+          );
+          await insertMarkdownIntoEditor(
+            selection.editor,
+            contextInfo.textOffset,
+            result,
+          );
+
+          const section =
+            this.prose.chapters[contextInfo.chapterIndex].sections[
+              contextInfo.sectionIndex
+            ];
+
+          section.text = selection.editor.getSemanticHTML();
+          this.saveProse();
         }
-
-        const contextInfo = request.contextInfo as ReplaceTextContextInfoDto;
-
-        // Replace the selected text with the generated text.
-        // Do not use the current selection's range, as it may have changed
-        // since the dialog was opened.
-        selection.editor.deleteText(
-          contextInfo.textOffset,
-          contextInfo.textLength,
-        );
-        await insertMarkdownIntoEditor(
-          selection.editor,
-          contextInfo.textOffset,
-          result,
-        );
-
-        const section =
-          this.prose.chapters[contextInfo.chapterIndex].sections[
-            contextInfo.sectionIndex
-          ];
-
-        section.text = selection.editor.getSemanticHTML();
-        this.saveProse();
-      }
-    });
+      });
   }
 
   openCreateCompendiumRecordDialog() {
@@ -859,16 +771,8 @@ export class ProseEditorComponent implements OnDestroy {
       return;
     }
 
-    this.dialogRef = this.dialogService.open(GenerateTextComponent, {
-      header: 'Create Compendium Record',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      data: <GenerateTextComponentData>{
+    this.proseGenerationDialogService
+      .openTextRequestDialog('Create Compendium Record', {
         prompts: prompts,
         contextInfo: <CreateCompendiumRecordContextInfoDto>{
           $type: NovelTextGenerationType.CreateCompendiumRecord,
@@ -880,57 +784,32 @@ export class ProseEditorComponent implements OnDestroy {
           instructions: null,
         },
         instructionsRequired: true,
-      },
-    });
-
-    this.dialogRef?.onClose.subscribe((request: GenerateTextRequestDto) => {
-      if (request) {
-        this.dialogRef = this.dialogService.open(GenerateTextResultComponent, {
-          header: 'Create Compendium Record',
-          width: '50vw',
-          contentStyle: { overflow: 'auto' },
-          baseZIndex: 10000,
-          modal: true,
-          closable: true,
-          closeOnEscape: true,
-          dismissableMask: true,
-          data: <GenerateTextResultComponentData>{
-            request: request,
-            textToReplace: '',
-          },
-        });
-        this.dialogRef?.onClose.subscribe(
-          (result: string | 'back' | undefined) => {
-            if (result === 'back') {
-              this.openCreateCompendiumRecordDialog();
-            } else if (result) {
-              this.dialogRef = this.dialogService.open(
-                GenerateCompendiumRecordResultComponent,
-                {
-                  header: 'Create Compendium Record',
-                  width: '50vw',
-                  contentStyle: { overflow: 'auto' },
-                  baseZIndex: 10000,
-                  modal: true,
-                  closable: true,
-                  closeOnEscape: true,
-                  dismissableMask: true,
-                  data: <GenerateCompendiumRecordComponentData>{
+      })
+      .subscribe((request) => {
+        if (request) {
+          this.proseGenerationDialogService
+            .openTextResultDialog('Create Compendium Record', {
+              request: request,
+              textToReplace: '',
+            })
+            .subscribe((result) => {
+              if (result === 'back') {
+                this.openCreateCompendiumRecordDialog();
+              } else if (result) {
+                this.proseGenerationDialogService
+                  .openCompendiumRecordResultDialog({
                     generatedText: result,
                     novelId: this.novelId,
-                  },
-                },
-              );
-              this.dialogRef?.onClose.subscribe((changed) => {
-                if (changed === true) {
-                  this.recordsChange.emit();
-                }
-              });
-            }
-          },
-        );
-      }
-    });
+                  })
+                  .subscribe((changed) => {
+                    if (changed === true) {
+                      this.recordsChange.emit();
+                    }
+                  });
+              }
+            });
+        }
+      });
   }
 
   addProseImage(chapterIndex: number, sectionIndex: number) {
@@ -1021,30 +900,19 @@ export class ProseEditorComponent implements OnDestroy {
       ? this.compendia.flatMap((c) => c.records)
       : [];
 
-    this.dialogRef = this.dialogService.open(RecordOverridesEditorComponent, {
-      header: 'Record Overrides',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      focusOnShow: false,
-      data: <RecordOverridesEditorComponentData>{
+    this.proseGenerationDialogService
+      .openRecordOverridesDialog({
         recordOverrides: section.recordOverrides || [],
         availableRecords: availableRecords,
         prose: this.prose,
         chapterIndex,
         sectionIndex,
-      },
-    });
-
-    this.dialogRef?.onClose.subscribe((overrides: RecordOverride[]) => {
-      if (overrides) {
-        section.recordOverrides = overrides;
-        this.saveProse();
-      }
-    });
+      })
+      .subscribe((overrides) => {
+        if (overrides) {
+          section.recordOverrides = overrides;
+          this.saveProse();
+        }
+      });
   }
 }
