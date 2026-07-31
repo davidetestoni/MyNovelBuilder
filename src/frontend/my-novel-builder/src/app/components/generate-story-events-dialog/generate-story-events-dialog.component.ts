@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormControl,
@@ -65,7 +65,7 @@ interface GeneratedStoryEventsPreview {
   templateUrl: './generate-story-events-dialog.component.html',
   styleUrl: './generate-story-events-dialog.component.scss',
 })
-export class GenerateStoryEventsDialogComponent {
+export class GenerateStoryEventsDialogComponent implements OnDestroy {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
 
@@ -80,6 +80,7 @@ export class GenerateStoryEventsDialogComponent {
   generatedPreviews: GeneratedStoryEventsPreview[] = [];
   isGenerating = false;
   generationError: string | null = null;
+  private generationRequestId = 0;
 
   formGroup = new FormGroup({
     chapterIndex: new FormControl<number | null>(null, [Validators.required]),
@@ -96,12 +97,15 @@ export class GenerateStoryEventsDialogComponent {
   }
 
   async generate(): Promise<void> {
-    if (this.formGroup.invalid) {
+    if (this.formGroup.invalid || this.isGenerating) {
       return;
     }
 
-    const promptId = this.formGroup.get('promptId')!.value ?? '';
-    const model = this.formGroup.get('model')!.value ?? '';
+    const promptId = (this.formGroup.get('promptId')!.value ?? '').trim();
+    const model = (this.formGroup.get('model')!.value ?? '').trim();
+    if (!promptId || !model) {
+      return;
+    }
 
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
@@ -112,6 +116,7 @@ export class GenerateStoryEventsDialogComponent {
     this.isGenerating = true;
     this.generationError = null;
     this.generatedPreviews = [];
+    const requestId = ++this.generationRequestId;
 
     const selectedChapterIndex = this.formGroup.get('chapterIndex')!.value;
     if (selectedChapterIndex === null) {
@@ -120,94 +125,94 @@ export class GenerateStoryEventsDialogComponent {
       return;
     }
 
-    const chapterIndexes = [selectedChapterIndex];
+    const chapterIndex = selectedChapterIndex;
+    const chapterTitle =
+      this.data.chapters.find((chapter) => chapter.value === chapterIndex)
+        ?.label ?? `Chapter ${chapterIndex + 1}`;
+    const request: GenerateTextRequestDto = {
+      model,
+      promptId,
+      contextInfo: <CreateStoryEventsContextInfoDto>{
+        $type: NovelTextGenerationType.CreateStoryEvents,
+        novelId: this.data.novelId,
+        chapterIndex,
+      },
+    };
 
-    if (chapterIndexes.length === 0) {
-      this.isGenerating = false;
-      this.generationError = 'No chapters are available to generate story events.';
-      return;
-    }
-
-    for (const chapterIndex of chapterIndexes) {
-      const chapterTitle =
-        this.data.chapters.find((chapter) => chapter.value === chapterIndex)
-          ?.label ?? `Chapter ${chapterIndex + 1}`;
-
-      const request: GenerateTextRequestDto = {
-        model,
-        promptId,
-        contextInfo: <CreateStoryEventsContextInfoDto>{
-          $type: NovelTextGenerationType.CreateStoryEvents,
-          novelId: this.data.novelId,
-          chapterIndex,
-        },
-      };
-
-      let completion: GenerateTextCompletion | null = null;
-      try {
-        completion = await firstValueFrom(
-          this.generateTextService.generateTextCompletion(request),
-        );
-      } catch (error) {
-        this.generatedPreviews.push({
-          chapterIndex,
-          chapterTitle,
-          storyEvents: [],
-          error: 'Failed to generate story events.',
-          rawOutput: error instanceof Error ? error.message : null,
-        });
-        continue;
+    try {
+      const completion: GenerateTextCompletion = await firstValueFrom(
+        this.generateTextService.generateTextCompletion(request),
+      );
+      if (requestId !== this.generationRequestId) {
+        return;
       }
 
       if (completion.parseError) {
-        this.generatedPreviews.push({
-          chapterIndex,
-          chapterTitle,
-          storyEvents: [],
-          error: `Unable to read the streamed response: ${completion.parseError}`,
-          rawOutput: completion.rawResponse || null,
-        });
-        continue;
+        this.generatedPreviews = [
+          {
+            chapterIndex,
+            chapterTitle,
+            storyEvents: [],
+            error: `Unable to read the streamed response: ${completion.parseError}`,
+            rawOutput: completion.rawResponse || null,
+          },
+        ];
+        return;
       }
 
       const rawOutput = completion.content.trim();
       const parsedStoryEvents = this.parseStoryEvents(rawOutput);
 
-      if (parsedStoryEvents === null) {
-        this.generatedPreviews.push({
+      this.generatedPreviews = [
+        parsedStoryEvents === null
+          ? {
+              chapterIndex,
+              chapterTitle,
+              storyEvents: [],
+              error:
+                'The generated output is not valid JSON or does not match the expected format.',
+              rawOutput: rawOutput || completion.rawResponse || null,
+            }
+          : {
+              chapterIndex,
+              chapterTitle,
+              storyEvents: parsedStoryEvents,
+              error: null,
+              rawOutput: null,
+            },
+      ];
+    } catch (error) {
+      if (requestId !== this.generationRequestId) {
+        return;
+      }
+
+      this.generatedPreviews = [
+        {
           chapterIndex,
           chapterTitle,
           storyEvents: [],
-          error:
-            'The generated output is not valid JSON or does not match the expected format.',
-          rawOutput: rawOutput || completion.rawResponse || null,
-        });
-        continue;
+          error: 'Failed to generate story events.',
+          rawOutput: error instanceof Error ? error.message : null,
+        },
+      ];
+    } finally {
+      if (requestId === this.generationRequestId) {
+        this.isGenerating = false;
       }
-
-      this.generatedPreviews.push({
-        chapterIndex,
-        chapterTitle,
-        storyEvents: parsedStoryEvents,
-        error: null,
-        rawOutput: null,
-      });
     }
-
-    this.isGenerating = false;
   }
 
   accept(): void {
+    if (!this.canAccept) {
+      return;
+    }
+
     const chapters = this.generatedPreviews
       .filter((preview) => preview.storyEvents.length > 0)
       .map((preview) => ({
         chapterIndex: preview.chapterIndex,
         storyEvents: preview.storyEvents,
       }));
-
-    if (chapters.length === 0) {
-      return;
-    }
 
     this.dialogRef.close({
       chapters,
@@ -259,5 +264,10 @@ export class GenerateStoryEventsDialogComponent {
 
   onPromptOptionsChanged(count: number): void {
     this.promptCount = count;
+  }
+
+  ngOnDestroy(): void {
+    this.generationRequestId++;
+    this.isGenerating = false;
   }
 }

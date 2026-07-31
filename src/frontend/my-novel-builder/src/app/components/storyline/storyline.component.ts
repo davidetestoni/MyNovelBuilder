@@ -118,6 +118,7 @@ export class StorylineComponent implements OnDestroy {
   ngOnDestroy(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
+      this.dialogRef = null;
     }
   }
 
@@ -259,7 +260,7 @@ export class StorylineComponent implements OnDestroy {
       novelId: this.novelId,
     };
 
-    this.dialogRef = this.dialogService.open(
+    const dialogRef = this.dialogService.open(
       GenerateStoryEventsDialogComponent,
       {
         header: 'Generate Story Events',
@@ -274,8 +275,13 @@ export class StorylineComponent implements OnDestroy {
       },
     );
 
-    this.dialogRef?.onClose.subscribe(
+    this.dialogRef = dialogRef;
+    dialogRef?.onClose.subscribe(
       (result: GenerateStoryEventsDialogResult | undefined) => {
+        if (this.dialogRef === dialogRef) {
+          this.dialogRef = null;
+        }
+
         if (!result || !result.chapters.length) {
           return;
         }
@@ -297,7 +303,7 @@ export class StorylineComponent implements OnDestroy {
     data: StoryEventDialogData,
     onClose: (result: StoryEventDialogResult) => void,
   ): void {
-    this.dialogRef = this.dialogService.open(StoryEventDialogComponent, {
+    const dialogRef = this.dialogService.open(StoryEventDialogComponent, {
       header: data.mode === 'edit' ? 'Edit Story Event' : 'Create Story Event',
       width: '45vw',
       contentStyle: { overflow: 'auto' },
@@ -309,8 +315,13 @@ export class StorylineComponent implements OnDestroy {
       data,
     });
 
-    this.dialogRef?.onClose.subscribe(
+    this.dialogRef = dialogRef;
+    dialogRef?.onClose.subscribe(
       (result: StoryEventDialogResult | undefined) => {
+        if (this.dialogRef === dialogRef) {
+          this.dialogRef = null;
+        }
+
         if (!result) {
           return;
         }

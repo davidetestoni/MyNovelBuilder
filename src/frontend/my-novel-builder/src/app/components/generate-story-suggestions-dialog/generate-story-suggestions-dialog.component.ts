@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormControl,
@@ -56,7 +56,7 @@ export interface GenerateStorySuggestionsDialogResult {
   templateUrl: './generate-story-suggestions-dialog.component.html',
   styleUrl: './generate-story-suggestions-dialog.component.scss',
 })
-export class GenerateStorySuggestionsDialogComponent {
+export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
 
@@ -70,6 +70,7 @@ export class GenerateStorySuggestionsDialogComponent {
   isGenerating = false;
   generationError: string | null = null;
   rawOutput: string | null = null;
+  private generationRequestId = 0;
 
   formGroup = new FormGroup({
     promptId: new FormControl('', [Validators.required]),
@@ -81,12 +82,15 @@ export class GenerateStorySuggestionsDialogComponent {
   }
 
   async generate(): Promise<void> {
-    if (this.formGroup.invalid) {
+    if (this.formGroup.invalid || this.isGenerating) {
       return;
     }
 
-    const promptId = this.formGroup.get('promptId')!.value ?? '';
-    const model = this.formGroup.get('model')!.value ?? '';
+    const promptId = (this.formGroup.get('promptId')!.value ?? '').trim();
+    const model = (this.formGroup.get('model')!.value ?? '').trim();
+    if (!promptId || !model) {
+      return;
+    }
 
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
@@ -99,6 +103,7 @@ export class GenerateStorySuggestionsDialogComponent {
     this.generationError = null;
     this.generatedSuggestions = [];
     this.rawOutput = null;
+    const requestId = ++this.generationRequestId;
 
     const request: GenerateTextRequestDto = {
       model,
@@ -118,9 +123,17 @@ export class GenerateStorySuggestionsDialogComponent {
         this.generateTextService.generateTextCompletion(request),
       );
     } catch (error) {
+      if (requestId !== this.generationRequestId) {
+        return;
+      }
+
       this.generationError = 'Failed to generate story suggestions.';
       this.rawOutput = error instanceof Error ? error.message : null;
       this.isGenerating = false;
+      return;
+    }
+
+    if (requestId !== this.generationRequestId) {
       return;
     }
 
@@ -153,12 +166,17 @@ export class GenerateStorySuggestionsDialogComponent {
 
     this.dialogRef.close({
       instructions: suggestion.description,
-      model: this.formGroup.get('model')!.value ?? '',
+      model: (this.formGroup.get('model')!.value ?? '').trim(),
     } as GenerateStorySuggestionsDialogResult);
   }
 
   onPromptOptionsChanged(count: number): void {
     this.promptCount = count;
+  }
+
+  ngOnDestroy(): void {
+    this.generationRequestId++;
+    this.isGenerating = false;
   }
 
   private parseSuggestions(

@@ -46,7 +46,11 @@ export class StoryEventDialogComponent {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
 
-  data = (this.config.data || { mode: 'create' }) as StoryEventDialogData;
+  data = (this.config.data ?? {
+    mode: 'create',
+    chapters: [],
+    selectedChapterIndex: 0,
+  }) as StoryEventDialogData;
 
   formGroup = new FormGroup({
     chapterIndex: new FormControl<number | null>(null, [Validators.required]),
@@ -78,7 +82,10 @@ export class StoryEventDialogComponent {
     }
 
     const chapterIndex = this.formGroup.get('chapterIndex')!.value;
-    if (chapterIndex === null) {
+    if (
+      chapterIndex === null ||
+      !this.data.chapters.some((chapter) => chapter.value === chapterIndex)
+    ) {
       return;
     }
 
