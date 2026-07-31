@@ -12,7 +12,6 @@ import type {
 import type Quill from 'quill';
 import { GenerateTextService } from '../../services/generate-text.service';
 import type { GenerateTextStreamUpdate } from '../../services/generate-text.service';
-import { NovelService } from '../../services/novel.service';
 import type {
   GenerateTextContextInfoDto,
   GenerateTextRequestDto,
@@ -24,12 +23,11 @@ import type { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import { GenerateCompendiumRecordResultComponent } from '../generate-compendium-record-result/generate-compendium-record-result.component';
 import { GenerateStorySuggestionsDialogComponent } from '../generate-story-suggestions-dialog/generate-story-suggestions-dialog.component';
-import { GenerateMediaComponent } from '../generate-media/generate-media.component';
 import { GenerateTextResultComponent } from '../generate-text-result/generate-text-result.component';
 import { GenerateTextComponent } from '../generate-text/generate-text.component';
-import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
 import { RecordOverridesEditorComponent } from '../record-overrides-editor/record-overrides-editor.component';
 import { ProseEditorComponent } from './prose-editor.component';
+import { ProseMediaService } from './prose-media.service';
 import { ProseTtsService } from './prose-tts.service';
 
 describe('ProseEditorComponent', () => {
@@ -38,7 +36,7 @@ describe('ProseEditorComponent', () => {
   let dialogService: jasmine.SpyObj<DialogService>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
-  let novelService: jasmine.SpyObj<NovelService>;
+  let proseMediaService: jasmine.SpyObj<ProseMediaService>;
   let proseTtsService: jasmine.SpyObj<ProseTtsService>;
 
   const createSection = (
@@ -169,10 +167,17 @@ describe('ProseEditorComponent', () => {
       'GenerateTextService',
       ['generateText'],
     );
-    novelService = jasmine.createSpyObj<NovelService>('NovelService', [
-      'deleteProseImage',
-      'uploadProseImage',
-    ]);
+    proseMediaService = jasmine.createSpyObj<ProseMediaService>(
+      'ProseMediaService',
+      [
+        'deleteImage',
+        'generateAndUpload',
+        'selectFileAndUpload',
+        'selectSource',
+        'uploadClipboardImage',
+      ],
+    );
+    proseMediaService.selectSource.and.returnValue(of());
     proseTtsService = jasmine.createSpyObj<ProseTtsService>(
       'ProseTtsService',
       ['playSection'],
@@ -185,7 +190,7 @@ describe('ProseEditorComponent', () => {
         { provide: DialogService, useValue: dialogService },
         { provide: ToastrService, useValue: toastr },
         { provide: GenerateTextService, useValue: generateTextService },
-        { provide: NovelService, useValue: novelService },
+        { provide: ProseMediaService, useValue: proseMediaService },
         { provide: ProseTtsService, useValue: proseTtsService },
       ],
     });
@@ -499,9 +504,6 @@ describe('ProseEditorComponent', () => {
       generateTextService.generateText.and.returnValue(
         of({ content: '**Reply**', isComplete: true }),
       );
-      const append = spyOn<any>(component, 'appendMarkdownToHtml').and.resolveTo(
-        '<p>Text</p><p><strong>Reply</strong></p>',
-      );
       const emit = spyOn(component.proseChange, 'emit');
 
       component.sendRpgPrompt();
@@ -519,7 +521,6 @@ describe('ProseEditorComponent', () => {
           instructions: 'Say: Hello there',
         }),
       });
-      expect(append).toHaveBeenCalledOnceWith('<p>Text</p>', '**Reply**');
       expect(component.prose.chapters[0].sections[0].text).toContain('Reply');
       expect(component.rpgInput).toBe('');
       expect(component.isRpgGenerating).toBeFalse();
@@ -536,12 +537,13 @@ describe('ProseEditorComponent', () => {
       generateTextService.generateText.and.returnValue(
         of({ content: 'Next', isComplete: true }),
       );
-      const insert = spyOn<any>(component, 'insertGeneratedMarkdown').and.resolveTo();
 
       component.sendRpgPrompt();
       await flushAsyncSubscriber();
 
-      expect(insert).toHaveBeenCalledOnceWith(quill, 5, 'Next');
+      expect(
+        quill.clipboard.dangerouslyPasteHTML as jasmine.Spy,
+      ).toHaveBeenCalledOnceWith(5, jasmine.stringContaining('Next'), 'user');
       expect(component.prose.chapters[0].sections[0].text).toBe(
         '<p>Editor text</p>',
       );
@@ -599,27 +601,6 @@ describe('ProseEditorComponent', () => {
   });
 
   describe('generation dialogs', () => {
-    it('converts markdown and inserts it into Quill as user content', async () => {
-      const quill = createQuill();
-
-      await (component as any).insertGeneratedMarkdown(
-        quill,
-        4,
-        '**Generated**',
-      );
-      const appended = await (component as any).appendMarkdownToHtml(
-        '<p>Existing</p>',
-        '_Next_',
-      );
-
-      expect(quill.clipboard.dangerouslyPasteHTML).toHaveBeenCalledWith(
-        4,
-        jasmine.stringContaining('<strong>Generated</strong>'),
-        'user',
-      );
-      expect(appended).toContain('<p><em>Next</em></p>');
-    });
-
     it('requires a matching summary prompt', () => {
       component.openGenerateSectionSummaryDialog(0, 0);
 
@@ -705,14 +686,19 @@ describe('ProseEditorComponent', () => {
       const quill = setSelection();
       const close$ = new Subject<string>();
       dialogService.open.and.returnValue(createDialogRef(close$));
-      const insert = spyOn<any>(component, 'insertGeneratedMarkdown').and.resolveTo();
       const emit = spyOn(component.proseChange, 'emit');
 
       component.openGenerateTextResultDialog(createRequest());
       close$.next('Generated');
       await flushAsyncSubscriber();
 
-      expect(insert).toHaveBeenCalledOnceWith(quill, 2, 'Generated');
+      expect(
+        quill.clipboard.dangerouslyPasteHTML as jasmine.Spy,
+      ).toHaveBeenCalledOnceWith(
+        2,
+        jasmine.stringContaining('Generated'),
+        'user',
+      );
       expect(component.prose.chapters[0].sections[0].text).toBe(
         '<p>Editor text</p>',
       );
@@ -741,7 +727,6 @@ describe('ProseEditorComponent', () => {
         createDialogRef(request$),
         createDialogRef(result$),
       );
-      const insert = spyOn<any>(component, 'insertGeneratedMarkdown').and.resolveTo();
       const request = createRequest(NovelTextGenerationType.ReplaceText);
 
       component.openReplaceTextDialog();
@@ -759,7 +744,13 @@ describe('ProseEditorComponent', () => {
         GenerateTextResultComponent,
       );
       expect(quill.deleteText).toHaveBeenCalledOnceWith(2, 3);
-      expect(insert).toHaveBeenCalledOnceWith(quill, 2, 'Replacement');
+      expect(
+        quill.clipboard.dangerouslyPasteHTML as jasmine.Spy,
+      ).toHaveBeenCalledOnceWith(
+        2,
+        jasmine.stringContaining('Replacement'),
+        'user',
+      );
     });
 
     it('opens summary generation and saves only on a complete update', () => {
@@ -844,75 +835,63 @@ describe('ProseEditorComponent', () => {
       const generate = spyOn(component, 'generateProseImage');
       const clipboard = spyOn(component, 'uploadClipboardProseImage').and.resolveTo();
 
-      for (const result of ['upload', 'generate', 'clipboard'] as const) {
-        const close$ = new Subject<typeof result>();
-        dialogService.open.and.returnValue(createDialogRef(close$));
+      for (const source of ['upload', 'generate', 'clipboard'] as const) {
+        proseMediaService.selectSource.and.returnValue(of(source));
         component.addProseImage(0, 0);
-        expect(dialogService.open.calls.mostRecent().args[0]).toBe(
-          ImageSourceSelectorComponent,
-        );
-        close$.next(result);
       }
 
+      expect(proseMediaService.selectSource).toHaveBeenCalledTimes(3);
       expect(upload).toHaveBeenCalledOnceWith(0, 0);
       expect(generate).toHaveBeenCalledOnceWith(0, 0);
       expect(clipboard).toHaveBeenCalledOnceWith(0, 0);
     });
 
-    it('uploads a selected image file and appends the returned location', () => {
-      const input = document.createElement('input');
-      const file = new File(['image'], 'scene.png', { type: 'image/png' });
-      Object.defineProperty(input, 'files', { value: [file] });
-      spyOn(input, 'click');
-      spyOn(input, 'remove');
-      spyOn(document, 'createElement').and.returnValue(input);
-      novelService.uploadProseImage.and.returnValue(of('uploaded.png'));
+    it('appends locations returned by file and generated-media uploads', () => {
+      proseMediaService.selectFileAndUpload.and.returnValue(of('uploaded.png'));
+      proseMediaService.generateAndUpload.and.returnValue(of('generated.mp4'));
       const emit = spyOn(component.proseChange, 'emit');
 
       component.uploadProseImageFile(0, 0);
-      input.onchange?.(new Event('change'));
+      component.generateProseImage(0, 0);
 
-      expect(input.type).toBe('file');
-      expect(input.accept).toBe('image/*,video/*');
-      expect(input.click).toHaveBeenCalled();
-      expect(novelService.uploadProseImage).toHaveBeenCalledOnceWith(
+      expect(proseMediaService.selectFileAndUpload).toHaveBeenCalledOnceWith(
         'novel-1',
-        file,
+      );
+      expect(proseMediaService.generateAndUpload).toHaveBeenCalledOnceWith(
+        'novel-1',
       );
       expect(component.prose.chapters[0].sections[0].images).toEqual([
         'uploaded.png',
-      ]);
-      expect(emit).toHaveBeenCalledOnceWith(component.prose);
-      expect(input.remove).toHaveBeenCalled();
-    });
-
-    it('uploads generated media with a filename derived from its MIME type', () => {
-      const close$ = new Subject<Blob>();
-      dialogService.open.and.returnValue(createDialogRef(close$));
-      novelService.uploadProseImage.and.returnValue(of('generated.mp4'));
-      const emit = spyOn(component.proseChange, 'emit');
-      const video = new Blob(['video'], { type: 'video/mp4' });
-
-      component.generateProseImage(0, 0);
-      close$.next(video);
-
-      expect(dialogService.open.calls.mostRecent().args[0]).toBe(
-        GenerateMediaComponent,
-      );
-      const uploadedFile = novelService.uploadProseImage.calls.mostRecent()
-        .args[1];
-      expect(uploadedFile.name).toBe('generated-media.mp4');
-      expect(uploadedFile.type).toBe('video/mp4');
-      expect(component.prose.chapters[0].sections[0].images).toEqual([
         'generated.mp4',
       ]);
+      expect(emit).toHaveBeenCalledTimes(2);
+    });
+
+    it('appends clipboard uploads and reports clipboard failures', async () => {
+      proseMediaService.uploadClipboardImage.and.resolveTo('clipboard.png');
+      const emit = spyOn(component.proseChange, 'emit');
+
+      await component.uploadClipboardProseImage(0, 0);
+
+      expect(component.prose.chapters[0].sections[0].images).toEqual([
+        'clipboard.png',
+      ]);
       expect(emit).toHaveBeenCalledOnceWith(component.prose);
+
+      proseMediaService.uploadClipboardImage.and.rejectWith(
+        new Error('No image found in the clipboard.'),
+      );
+      await component.uploadClipboardProseImage(0, 0);
+
+      expect(toastr.error).toHaveBeenCalledWith(
+        'No image found in the clipboard.',
+      );
     });
 
     it('removes an image after server confirmation and keeps it after failure', () => {
       const section = component.prose.chapters[0].sections[0];
       section.images = ['one.png', 'two.png'];
-      novelService.deleteProseImage.and.returnValue(of(undefined));
+      proseMediaService.deleteImage.and.returnValue(of(undefined));
       const emit = spyOn(component.proseChange, 'emit');
 
       component.removeProseImage(0, 0, 'one.png');
@@ -922,7 +901,7 @@ describe('ProseEditorComponent', () => {
       expect(section.images).toEqual(['two.png']);
       expect(emit).toHaveBeenCalledTimes(1);
 
-      novelService.deleteProseImage.and.returnValue(
+      proseMediaService.deleteImage.and.returnValue(
         throwError(() => new Error('failed')),
       );
       component.removeProseImage(0, 0, 'two.png');
@@ -966,7 +945,7 @@ describe('ProseEditorComponent', () => {
     it('closes the active dialog on destroy', () => {
       const ref = createDialogRef();
       dialogService.open.and.returnValue(ref);
-      component.addProseImage(0, 0);
+      component.openRecordOverridesDialog(0, 0);
 
       component.ngOnDestroy();
 

@@ -45,14 +45,8 @@ import {
 } from '../generate-compendium-record-result/generate-compendium-record-result.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { TooltipModule } from 'primeng/tooltip';
-import { NovelService } from '../../services/novel.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
-import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
-import { GenerateMediaComponent } from '../generate-media/generate-media.component';
-import { readImageFileFromClipboard } from '../../utils/clipboard-image';
-import { createGeneratedMediaFile } from '../../utils/generated-media';
-import { marked } from 'marked';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import {
   RecordOverridesEditorComponent,
@@ -66,6 +60,14 @@ import {
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
 import { ProseTtsService } from './prose-tts.service';
+import { ProseMediaService } from './prose-media.service';
+import {
+  appendMarkdownToHtml,
+  calculateReadingTimeMinutes,
+  countChapterWords,
+  htmlToPlainText,
+  insertMarkdownIntoEditor,
+} from './prose-text.utils';
 
 interface LastSelection {
   editor: Quill;
@@ -106,7 +108,12 @@ interface RpgAppendTarget {
     PromptSelectComponent,
     ModelSelectComponent,
   ],
-  providers: [DialogService, ConfirmationService, ProseTtsService],
+  providers: [
+    DialogService,
+    ConfirmationService,
+    ProseMediaService,
+    ProseTtsService,
+  ],
 })
 export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
@@ -124,12 +131,11 @@ export class ProseEditorComponent implements OnDestroy {
   readonly toastr: ToastrService = inject(ToastrService);
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
-  readonly novelService = inject(NovelService);
+  private readonly proseMediaService = inject(ProseMediaService);
   private readonly proseTtsService = inject(ProseTtsService);
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
-  private readonly averageReadingWpm = 238;
   private readonly sectionEditors = new Map<string, Quill>();
   PromptType = PromptType;
   rpgAction: 'do' | 'say' = 'do';
@@ -324,14 +330,14 @@ export class ProseEditorComponent implements OnDestroy {
         }
 
         if (target.editor) {
-          await this.insertGeneratedMarkdown(
+          await insertMarkdownIntoEditor(
             target.editor,
             target.editorOffset,
             generatedText,
           );
           target.section.text = target.editor.getSemanticHTML();
         } else {
-          target.section.text = await this.appendMarkdownToHtml(
+          target.section.text = await appendMarkdownToHtml(
             target.section.text,
             generatedText,
           );
@@ -369,7 +375,7 @@ export class ProseEditorComponent implements OnDestroy {
     const editorOffset = editor ? Math.max(0, editor.getLength() - 1) : 0;
     const textOffset = editor
       ? editor.getText(0, editorOffset).length
-      : this.getRawText(section.text).length;
+      : htmlToPlainText(section.text).length;
 
     return {
       editor,
@@ -398,37 +404,12 @@ export class ProseEditorComponent implements OnDestroy {
     };
   }
 
-  private async appendMarkdownToHtml(
-    currentHtml: string,
-    markdown: string,
-  ): Promise<string> {
-    const generatedHtml = await this.convertMarkdownToHtml(markdown);
-    return `${currentHtml}${generatedHtml}`;
-  }
-
   getChapterWordCount(chapter: Prose['chapters'][number]): number {
-    const text = chapter.sections
-      .map((section) => this.stripHtml(section.text))
-      .join(' ')
-      .trim();
-
-    if (!text) {
-      return 0;
-    }
-
-    return text.split(/\s+/).length;
+    return countChapterWords(chapter);
   }
 
   getReadingTimeMinutes(wordCount: number): number {
-    if (wordCount === 0) {
-      return 0;
-    }
-
-    return Math.ceil(wordCount / this.averageReadingWpm);
-  }
-
-  private stripHtml(value: string): string {
-    return this.getRawText(value).replace(/\s+/g, ' ').trim();
+    return calculateReadingTimeMinutes(wordCount);
   }
 
   private requireLastSelection(): LastSelection | null {
@@ -530,31 +511,6 @@ export class ProseEditorComponent implements OnDestroy {
     return `${chapterIndex}:${sectionIndex}`;
   }
 
-  private getRawText(html: string): string {
-    // Add space between <p> tags, otherwise it looks like
-    // "First paragraph.Second paragraph."
-    const normalizedHtml = html.replace(/<\/p>\s*<p>/g, '</p> <p>');
-    const div = document.createElement('div');
-    div.innerHTML = normalizedHtml;
-    const innerText = div.innerText;
-    div.remove();
-    return innerText;
-  }
-
-  private async convertMarkdownToHtml(markdown: string): Promise<string> {
-    const html = await marked.parse(markdown);
-    return typeof html === 'string' ? html : markdown;
-  }
-
-  private async insertGeneratedMarkdown(
-    editor: Quill,
-    offset: number,
-    markdown: string,
-  ): Promise<void> {
-    const html = await this.convertMarkdownToHtml(markdown);
-    editor.clipboard.dangerouslyPasteHTML(offset, html, 'user');
-  }
-
   async textToSpeech(chapterIndex: number, sectionIndex: number) {
     const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
     await this.proseTtsService.playSection({
@@ -562,7 +518,7 @@ export class ProseEditorComponent implements OnDestroy {
       prompts: this.prompts ?? [],
       chapterIndex,
       sectionIndex,
-      narratorText: this.getRawText(section.text),
+      narratorText: htmlToPlainText(section.text),
     });
   }
 
@@ -712,7 +668,7 @@ export class ProseEditorComponent implements OnDestroy {
         }
 
         // Append the generated text at the end of the range in the Quill editor.
-        await this.insertGeneratedMarkdown(
+        await insertMarkdownIntoEditor(
           selection.editor,
           contextInfo.textOffset,
           result,
@@ -871,7 +827,7 @@ export class ProseEditorComponent implements OnDestroy {
           contextInfo.textOffset,
           contextInfo.textLength,
         );
-        await this.insertGeneratedMarkdown(
+        await insertMarkdownIntoEditor(
           selection.editor,
           contextInfo.textOffset,
           result,
@@ -978,47 +934,23 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   addProseImage(chapterIndex: number, sectionIndex: number) {
-    this.dialogRef = this.dialogService.open(ImageSourceSelectorComponent, {
-      header: 'Add Image',
-      width: '300px',
-      modal: true,
-      closable: true,
-      dismissableMask: true,
-    });
-
-    this.dialogRef?.onClose.subscribe(
-      (result: 'upload' | 'generate' | 'clipboard') => {
-      if (result === 'upload') {
+    this.proseMediaService.selectSource().subscribe((source) => {
+      if (source === 'upload') {
         this.uploadProseImageFile(chapterIndex, sectionIndex);
-      } else if (result === 'generate') {
+      } else if (source === 'generate') {
         this.generateProseImage(chapterIndex, sectionIndex);
-      } else if (result === 'clipboard') {
+      } else if (source === 'clipboard') {
         this.uploadClipboardProseImage(chapterIndex, sectionIndex);
       }
-      },
-    );
+    });
   }
 
   uploadProseImageFile(chapterIndex: number, sectionIndex: number) {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/*,video/*';
-    fileInput.onchange = () => {
-      if (fileInput.files && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        this.novelService
-          .uploadProseImage(this.novelId, file)
-          .subscribe((location: string) => {
-            this.prose.chapters[chapterIndex].sections[sectionIndex].images =
-              this.prose.chapters[chapterIndex].sections[
-                sectionIndex
-              ].images.concat(location);
-            this.saveProse();
-            fileInput.remove();
-          });
-      }
-    };
-    fileInput.click();
+    this.proseMediaService
+      .selectFileAndUpload(this.novelId)
+      .subscribe((location) => {
+        this.appendProseImage(chapterIndex, sectionIndex, location);
+      });
   }
 
   async uploadClipboardProseImage(
@@ -1026,16 +958,10 @@ export class ProseEditorComponent implements OnDestroy {
     sectionIndex: number,
   ): Promise<void> {
     try {
-      const file = await readImageFileFromClipboard();
-      this.novelService
-        .uploadProseImage(this.novelId, file)
-        .subscribe((location: string) => {
-          this.prose.chapters[chapterIndex].sections[sectionIndex].images =
-            this.prose.chapters[chapterIndex].sections[
-              sectionIndex
-            ].images.concat(location);
-          this.saveProse();
-        });
+      const location = await this.proseMediaService.uploadClipboardImage(
+        this.novelId,
+      );
+      this.appendProseImage(chapterIndex, sectionIndex, location);
     } catch (error) {
       this.toastr.error(
         error instanceof Error
@@ -1046,31 +972,11 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   generateProseImage(chapterIndex: number, sectionIndex: number) {
-    this.dialogRef = this.dialogService.open(GenerateMediaComponent, {
-      header: 'Generate Media',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      closable: true,
-      closeOnEscape: true,
-      modal: true,
-      dismissableMask: true,
-    });
-
-    this.dialogRef?.onClose.subscribe((media: Blob) => {
-      if (media) {
-        const file = createGeneratedMediaFile(media);
-        this.novelService
-          .uploadProseImage(this.novelId, file)
-          .subscribe((location: string) => {
-            this.prose.chapters[chapterIndex].sections[sectionIndex].images =
-              this.prose.chapters[chapterIndex].sections[
-                sectionIndex
-              ].images.concat(location);
-            this.saveProse();
-          });
-      }
-    });
+    this.proseMediaService
+      .generateAndUpload(this.novelId)
+      .subscribe((location) => {
+        this.appendProseImage(chapterIndex, sectionIndex, location);
+      });
   }
 
   removeProseImage(
@@ -1083,7 +989,7 @@ export class ProseEditorComponent implements OnDestroy {
       header: 'Confirm Image Removal',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.novelService.deleteProseImage(this.novelId, imageId).subscribe({
+        this.proseMediaService.deleteImage(this.novelId, imageId).subscribe({
           next: () => {
             this.prose.chapters[chapterIndex].sections[sectionIndex].images =
               this.prose.chapters[chapterIndex].sections[
@@ -1097,6 +1003,16 @@ export class ProseEditorComponent implements OnDestroy {
         });
       },
     });
+  }
+
+  private appendProseImage(
+    chapterIndex: number,
+    sectionIndex: number,
+    location: string,
+  ): void {
+    const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
+    section.images = section.images.concat(location);
+    this.saveProse();
   }
 
   openRecordOverridesDialog(chapterIndex: number, sectionIndex: number) {
