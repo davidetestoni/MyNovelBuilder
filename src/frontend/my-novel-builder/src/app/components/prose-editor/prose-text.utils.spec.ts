@@ -6,12 +6,21 @@ import {
   htmlToPlainText,
   insertMarkdownIntoEditor,
   normalizeHtmlText,
+  normalizeQuillHtmlWhitespace,
 } from './prose-text.utils';
 
 describe('prose text utilities', () => {
   it('converts HTML to normalized plain text without merging paragraphs', () => {
     expect(htmlToPlainText('<p>Hello</p><p>world</p>')).toBe('Hello world');
     expect(normalizeHtmlText('<p>  Hello   world  </p>')).toBe('Hello world');
+  });
+
+  it('restores breakable spaces in HTML saved by Quill', () => {
+    expect(
+      normalizeQuillHtmlWhitespace(
+        '<p>One&nbsp;two&#160;three&#xA0;four\u00a0five</p>',
+      ),
+    ).toBe('<p>One two three four five</p>');
   });
 
   it('counts words across sections and handles empty chapters', () => {

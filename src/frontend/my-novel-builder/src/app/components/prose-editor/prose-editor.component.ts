@@ -47,6 +47,7 @@ import {
   countChapterWords,
   htmlToPlainText,
   insertMarkdownIntoEditor,
+  normalizeQuillHtmlWhitespace,
 } from './prose-text.utils';
 
 interface LastSelection {
@@ -119,6 +120,7 @@ export class ProseEditorComponent {
   lastSelection: LastSelection | null = null;
   private readonly sectionEditors = new Map<string, Quill>();
   isRpgGenerating = false;
+  readonly normalizeQuillHtmlWhitespace = normalizeQuillHtmlWhitespace;
 
   getImageUrl(fileName: string): string {
     // TODO: This should come directly from the API in ImageSectionItem

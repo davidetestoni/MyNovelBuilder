@@ -4,6 +4,10 @@ import type { Prose } from '../../types/dtos/novel/prose';
 
 const averageReadingWordsPerMinute = 238;
 
+export function normalizeQuillHtmlWhitespace(html: string): string {
+  return html.replace(/&nbsp;|&#160;|&#x0*a0;|\u00a0/gi, ' ');
+}
+
 export function htmlToPlainText(html: string): string {
   const normalizedHtml = html.replace(/<\/p>\s*<p>/g, '</p> <p>');
   const container = document.createElement('div');

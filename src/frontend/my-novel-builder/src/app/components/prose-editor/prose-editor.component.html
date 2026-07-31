@@ -59,7 +59,7 @@
                         editorChange($event, chapterIndex, sectionIndex)
                       "
                       (onBlur)="updateSectionText(section, $event)"
-                      [ngModel]="section.text"
+                      [ngModel]="normalizeQuillHtmlWhitespace(section.text)"
                       spellcheck="false"
                     ></quill-editor>
                   </div>

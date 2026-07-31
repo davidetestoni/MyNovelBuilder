@@ -1065,10 +1065,12 @@ describe('ProseEditorComponent layout', () => {
       '.section-summary',
     ) as HTMLElement;
     const sectionBounds = section.getBoundingClientRect();
+    const sectionBodyBounds = sectionBody.getBoundingClientRect();
     const summaryBounds = summary.getBoundingClientRect();
 
     expect(getComputedStyle(sectionBody).minWidth).toBe('0px');
     expect(getComputedStyle(summary).flexShrink).toBe('0');
+    expect(sectionBodyBounds.width).toBe(sectionBounds.width - 250);
     expect(summaryBounds.width).toBe(250);
     expect(summaryBounds.right).toBeLessThanOrEqual(sectionBounds.right);
     expect(summary.textContent).toContain('Visible summary');
