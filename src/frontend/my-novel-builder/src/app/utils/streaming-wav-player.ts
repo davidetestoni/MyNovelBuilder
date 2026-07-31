@@ -107,10 +107,6 @@ export class StreamingWavPlayer {
       return;
     }
 
-    console.log(
-      `WAV Format: format=${this.audioFormat}, ${this.sampleRate}Hz, ${this.numChannels} channels, ${this.bitsPerSample} bits`,
-    );
-
     const isPcm16 = this.audioFormat === 1 && this.bitsPerSample === 16;
     const isFloat32 = this.audioFormat === 3 && this.bitsPerSample === 32;
     if (!isPcm16 && !isFloat32) {
@@ -135,7 +131,7 @@ export class StreamingWavPlayer {
     this.pcmData = newBuffer;
   }
 
-  private async tryPlayBuffer(): Promise<void> {
+  private tryPlayBuffer(): void {
     if (!this.headerParsed || this.pcmData.length < this.minBufferSize) {
       return;
     }

@@ -71,6 +71,7 @@ export class CodeEditorComponent
   private editableCompartment = new Compartment();
   private placeholderCompartment = new Compartment();
   private languageCompartment = new Compartment();
+  private isDisabled = false;
 
   private onChange: (value: string) => void = () => {};
   private onTouched: () => void = () => {};
@@ -101,17 +102,20 @@ export class CodeEditorComponent
       ]),
       this.languageCompartment.of(getLanguageExtensions(this.language)),
       EditorView.lineWrapping,
-      this.editableCompartment.of(EditorView.editable.of(true)),
+      this.editableCompartment.of(EditorView.editable.of(!this.isDisabled)),
       this.placeholderCompartment.of(placeholder(this.placeholderText)),
-      EditorView.domEventHandlers({
+      EditorView.domEventObservers({
         keydown: (event) => {
           this.keydown.emit(event);
         },
       }),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          this.value = update.state.doc.toString();
-          this.onChange(this.value);
+          const nextValue = update.state.doc.toString();
+          if (nextValue !== this.value) {
+            this.value = nextValue;
+            this.onChange(this.value);
+          }
         }
         if (update.focusChanged && !update.view.hasFocus) {
           this.onTouched();
@@ -196,6 +200,7 @@ export class CodeEditorComponent
   }
 
   setDisabledState?(isDisabled: boolean): void {
+    this.isDisabled = isDisabled;
     if (this.view) {
       this.view.dispatch({
         effects: this.editableCompartment.reconfigure(
