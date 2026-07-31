@@ -3,19 +3,25 @@ import {
   EventEmitter,
   Input,
   OnChanges,
+  OnDestroy,
   OnInit,
   Output,
   SimpleChanges,
   forwardRef,
   inject,
 } from '@angular/core';
-import { ControlValueAccessor, FormsModule, NG_VALUE_ACCESSOR } from '@angular/forms';
+import {
+  ControlValueAccessor,
+  FormsModule,
+  NG_VALUE_ACCESSOR,
+} from '@angular/forms';
 import { PromptService } from '../../services/prompt.service';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import { SelectModule } from 'primeng/select';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-prompt-select',
@@ -32,7 +38,7 @@ import { SelectModule } from 'primeng/select';
   ],
 })
 export class PromptSelectComponent
-  implements OnInit, OnChanges, ControlValueAccessor
+  implements OnInit, OnChanges, OnDestroy, ControlValueAccessor
 {
   @Input() promptType: PromptType | null = null;
   @Input() prompts: PromptDto[] | null = null;
@@ -52,6 +58,7 @@ export class PromptSelectComponent
   isLoading = false;
 
   private isDisabledFromForm = false;
+  private optionsSubscription?: Subscription;
   private onChange: (value: string | null) => void = () => {};
   private onTouched: () => void = () => {};
 
@@ -72,7 +79,7 @@ export class PromptSelectComponent
 
   writeValue(value: string | null): void {
     const normalizedValue =
-      value !== null && value.trim() !== '' ? value : null;
+      value !== null && value.trim() !== '' ? value.trim() : null;
 
     if (normalizedValue === null) {
       if (this.isValidOption(this.value)) {
@@ -107,16 +114,18 @@ export class PromptSelectComponent
   }
 
   onValueChange(value: string | null): void {
-    this.value = value;
-    this.onChange(value);
+    const normalizedValue =
+      value !== null && value.trim() !== '' ? value.trim() : null;
+    this.value = normalizedValue;
+    this.onChange(normalizedValue);
     this.onTouched();
 
     const storagePromptType = this.getStoragePromptType();
-    if (storagePromptType !== null && value !== null && value !== '') {
+    if (storagePromptType !== null && normalizedValue !== null) {
       this.localStorageService.setNestedStringForKey(
         LocalStorageKey.RecentPrompts,
         storagePromptType,
-        value,
+        normalizedValue,
       );
     }
   }
@@ -125,22 +134,32 @@ export class PromptSelectComponent
     return this.disabled || this.isDisabledFromForm || this.isLoading;
   }
 
+  ngOnDestroy(): void {
+    this.optionsSubscription?.unsubscribe();
+    this.isLoading = false;
+  }
+
   private refreshOptions(): void {
+    this.optionsSubscription?.unsubscribe();
+    this.optionsSubscription = undefined;
+
     if (this.prompts !== null) {
+      this.isLoading = false;
       this.options = this.filterPrompts(this.prompts);
       this.applyDefaultValue();
       return;
     }
 
     this.isLoading = true;
-    this.promptService.getPrompts().subscribe({
+    this.optionsSubscription = this.promptService.getPrompts().subscribe({
       next: (prompts) => {
         this.options = this.filterPrompts(prompts);
         this.applyDefaultValue();
       },
       error: () => {
         this.options = [];
-        this.optionsChanged.emit(0);
+        this.applyDefaultValue();
+        this.isLoading = false;
       },
       complete: () => {
         this.isLoading = false;

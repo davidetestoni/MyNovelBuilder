@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild, inject } from '@angular/core';
+import { Component, OnDestroy, ViewChild, inject } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -14,7 +14,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
-import { GenerateTextCompletion, GenerateTextService } from '../../services/generate-text.service';
+import {
+  GenerateTextCompletion,
+  GenerateTextService,
+} from '../../services/generate-text.service';
 import { NovelService } from '../../services/novel.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
@@ -75,7 +78,7 @@ export interface TranslateNovelDialogResult {
   templateUrl: './translate-novel-dialog.component.html',
   styleUrl: './translate-novel-dialog.component.scss',
 })
-export class TranslateNovelDialogComponent {
+export class TranslateNovelDialogComponent implements OnDestroy {
   @ViewChild(PromptSelectComponent) promptSelect?: PromptSelectComponent;
   @ViewChild(ModelSelectComponent) modelSelect?: ModelSelectComponent;
 
@@ -97,6 +100,8 @@ export class TranslateNovelDialogComponent {
   generationError: string | null = null;
   translatedProse: Prose | null = null;
   progressItems: TranslationProgressItem[] = [];
+  private generationRequestId = 0;
+  private translatedLanguage: WritingLanguage | null = null;
 
   formGroup = new FormGroup({
     title: new FormControl('', [Validators.maxLength(100)]),
@@ -116,7 +121,7 @@ export class TranslateNovelDialogComponent {
   async generate(): Promise<void> {
     const promptId = this.selectedPromptId;
     const model = this.selectedModelId;
-    if (!promptId || !model || this.formGroup.get('targetLanguage')!.invalid) {
+    if (!this.canGenerate || !promptId || !model) {
       return;
     }
 
@@ -136,16 +141,25 @@ export class TranslateNovelDialogComponent {
 
     this.isGenerating = true;
     this.generationError = null;
-    this.progressItems = this.data.prose.chapters.map((chapter, chapterIndex) => ({
-      chapterIndex,
-      chapterTitle: chapter.title,
-      isCompleted: false,
-    }));
+    this.translatedProse = null;
+    this.translatedLanguage = null;
+    this.progressItems = this.data.prose.chapters.map(
+      (chapter, chapterIndex) => ({
+        chapterIndex,
+        chapterTitle: chapter.title,
+        isCompleted: false,
+      }),
+    );
+    const requestId = ++this.generationRequestId;
 
     try {
-      const translatedChapters = [];
+      const translatedChapters: Prose['chapters'] = [];
 
-      for (let chapterIndex = 0; chapterIndex < this.data.prose.chapters.length; chapterIndex++) {
+      for (
+        let chapterIndex = 0;
+        chapterIndex < this.data.prose.chapters.length;
+        chapterIndex++
+      ) {
         const chapter = this.data.prose.chapters[chapterIndex];
         const translatedSections: Section[] = Array.from(
           { length: chapter.sections.length },
@@ -173,6 +187,9 @@ export class TranslateNovelDialogComponent {
         const completion = await firstValueFrom(
           this.generateTextService.generateTextCompletion(request),
         );
+        if (requestId !== this.generationRequestId) {
+          return;
+        }
 
         const parsed = this.parseTranslationResult(completion);
         if (!parsed) {
@@ -186,7 +203,8 @@ export class TranslateNovelDialogComponent {
           expectedSectionIndexes.add(i);
         }
 
-        translatedChapterTitle = parsed.chapterTitle.trim() || translatedChapterTitle;
+        translatedChapterTitle =
+          parsed.chapterTitle.trim() || translatedChapterTitle;
         translatedStoryEvents = parsed.storyEvents;
 
         for (const translatedSection of parsed.sections) {
@@ -229,12 +247,22 @@ export class TranslateNovelDialogComponent {
       this.translatedProse = {
         chapters: translatedChapters,
       };
+      this.translatedLanguage = targetLanguage;
     } catch (error) {
+      if (requestId !== this.generationRequestId) {
+        return;
+      }
+
       this.generationError =
-        error instanceof Error ? error.message : 'Failed to translate the novel.';
+        error instanceof Error
+          ? error.message
+          : 'Failed to translate the novel.';
       this.translatedProse = null;
+      this.translatedLanguage = null;
     } finally {
-      this.isGenerating = false;
+      if (requestId === this.generationRequestId) {
+        this.isGenerating = false;
+      }
     }
   }
 
@@ -281,18 +309,7 @@ export class TranslateNovelDialogComponent {
         }),
       );
 
-      if (this.data.novel.coverImageUrl) {
-        const response = await fetch(this.data.novel.coverImageUrl);
-        if (response.ok) {
-          const blob = await response.blob();
-          const coverFile = new File([blob], 'cover.png', {
-            type: blob.type || 'image/png',
-          });
-          await firstValueFrom(
-            this.novelService.uploadNovelCoverImage(createdNovel.id, coverFile),
-          );
-        }
-      }
+      await this.copyCoverImage(createdNovel.id);
 
       await firstValueFrom(
         this.novelService.updateNovelProse(createdNovel.id, translatedProse),
@@ -316,6 +333,7 @@ export class TranslateNovelDialogComponent {
       this.translatedProse !== null &&
       !this.isGenerating &&
       !this.isSaving &&
+      this.formGroup.get('targetLanguage')?.value === this.translatedLanguage &&
       this.formGroup.get('targetLanguage')?.valid === true &&
       this.formGroup.get('title')?.valid === true &&
       this.formGroup.get('instructions')?.valid === true
@@ -324,6 +342,11 @@ export class TranslateNovelDialogComponent {
 
   onPromptOptionsChanged(count: number): void {
     this.promptCount = count;
+  }
+
+  ngOnDestroy(): void {
+    this.generationRequestId++;
+    this.isGenerating = false;
   }
 
   get hasTranslationPromptOptions(): boolean {
@@ -344,28 +367,34 @@ export class TranslateNovelDialogComponent {
   private get selectedPromptId(): string | null {
     const formValue = this.formGroup.get('promptId')?.value;
     if (typeof formValue === 'string' && formValue.trim() !== '') {
-      return formValue;
+      return formValue.trim();
     }
 
     const componentValue = this.promptSelect?.value;
-    return componentValue && componentValue.trim() !== '' ? componentValue : null;
+    return componentValue && componentValue.trim() !== ''
+      ? componentValue.trim()
+      : null;
   }
 
   private get selectedModelId(): string | null {
     const formValue = this.formGroup.get('model')?.value;
     if (typeof formValue === 'string' && formValue.trim() !== '') {
-      return formValue;
+      return formValue.trim();
     }
 
     const componentValue = this.modelSelect?.value;
-    return componentValue && componentValue.trim() !== '' ? componentValue : null;
+    return componentValue && componentValue.trim() !== ''
+      ? componentValue.trim()
+      : null;
   }
 
   private parseTranslationResult(
     completion: GenerateTextCompletion,
   ): TranslationChapterResult | null {
     if (completion.parseError) {
-      return null;
+      throw new Error(
+        `Unable to read the streamed response: ${completion.parseError}`,
+      );
     }
 
     try {
@@ -379,6 +408,7 @@ export class TranslateNovelDialogComponent {
         return null;
       }
 
+      const storyEvents: StoryEvent[] = [];
       for (const event of parsed.storyEvents) {
         if (
           !event ||
@@ -388,20 +418,42 @@ export class TranslateNovelDialogComponent {
         ) {
           return null;
         }
+
+        storyEvents.push({
+          title: event.title.trim(),
+          date: event.date.trim(),
+          description: event.description.trim(),
+        });
       }
 
+      const sectionIndexes = new Set<number>();
+      const sections: TranslationSectionResult[] = [];
       for (const section of parsed.sections) {
         if (
           !section ||
           typeof section.sectionIndex !== 'number' ||
+          !Number.isInteger(section.sectionIndex) ||
+          section.sectionIndex < 0 ||
+          sectionIndexes.has(section.sectionIndex) ||
           typeof section.summary !== 'string' ||
           typeof section.text !== 'string'
         ) {
           return null;
         }
+
+        sectionIndexes.add(section.sectionIndex);
+        sections.push({
+          sectionIndex: section.sectionIndex,
+          summary: section.summary.trim(),
+          text: section.text.trim(),
+        });
       }
 
-      return parsed;
+      return {
+        chapterTitle: parsed.chapterTitle.trim(),
+        storyEvents,
+        sections,
+      };
     } catch {
       return null;
     }
@@ -420,5 +472,29 @@ export class TranslateNovelDialogComponent {
     return this.writingLanguages.find(
       (language) => language !== this.data.novel.language,
     )!;
+  }
+
+  private async copyCoverImage(novelId: string): Promise<void> {
+    const coverImageUrl = this.data.novel.coverImageUrl;
+    if (!coverImageUrl) {
+      return;
+    }
+
+    try {
+      const response = await fetch(coverImageUrl);
+      if (!response.ok) {
+        return;
+      }
+
+      const blob = await response.blob();
+      const coverFile = new File([blob], 'cover.png', {
+        type: blob.type || 'image/png',
+      });
+      await firstValueFrom(
+        this.novelService.uploadNovelCoverImage(novelId, coverFile),
+      );
+    } catch {
+      // Cover copying is best-effort; the translated novel remains usable without it.
+    }
   }
 }
