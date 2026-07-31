@@ -51,7 +51,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { ImageSourceSelectorComponent } from '../image-source-selector/image-source-selector.component';
 import { GenerateMediaComponent } from '../generate-media/generate-media.component';
-import { StreamingWavPlayer } from '../../utils/streaming-wav-player';
+import {
+  STREAMING_WAV_PLAYER_FACTORY,
+  StreamingWavPlayerFactory,
+} from '../../utils/streaming-wav-player.factory';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 import { createGeneratedMediaFile } from '../../utils/generated-media';
 import { marked } from 'marked';
@@ -134,6 +137,9 @@ export class ProseEditorComponent implements OnDestroy {
   readonly novelService = inject(NovelService);
   readonly localStorageService = inject(LocalStorageService);
   readonly integrationsService = inject(IntegrationsService);
+  private readonly createStreamingWavPlayer: StreamingWavPlayerFactory = inject(
+    STREAMING_WAV_PLAYER_FACTORY,
+  );
   showEditorControls = false;
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
@@ -453,9 +459,7 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   private stripHtml(value: string): string {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(value, 'text/html');
-    return (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+    return this.getRawText(value).replace(/\s+/g, ' ').trim();
   }
 
   private requireLastSelection(): LastSelection | null {
@@ -656,7 +660,7 @@ export class ProseEditorComponent implements OnDestroy {
     }
 
     let firstAudioReported = false;
-    const player = new StreamingWavPlayer(() => {
+    const player = this.createStreamingWavPlayer(() => {
       if (!firstAudioReported && firstAudioTimerLabel) {
         firstAudioReported = true;
         onFirstAudio?.();

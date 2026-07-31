@@ -6,13 +6,16 @@ export interface StreamingWavPlayerHandle {
   stop(): void;
 }
 
-export type StreamingWavPlayerFactory = () => StreamingWavPlayerHandle;
+export type StreamingWavPlayerFactory = (
+  firstAudioCallback?: () => void,
+) => StreamingWavPlayerHandle;
 
 export const STREAMING_WAV_PLAYER_FACTORY =
   new InjectionToken<StreamingWavPlayerFactory>(
     'StreamingWavPlayerFactory',
     {
       providedIn: 'root',
-      factory: () => () => new StreamingWavPlayer(),
+      factory: () => (firstAudioCallback?: () => void) =>
+        new StreamingWavPlayer(firstAudioCallback),
     },
   );
