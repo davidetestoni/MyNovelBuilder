@@ -30,7 +30,7 @@ const extractErrorMessage = (error: HttpErrorResponse): string | null => {
   const apiError = error.error;
   const message = apiError.message;
   if (typeof message === 'string' && message.trim().length > 0) {
-    return message;
+    return message.trim();
   }
 
   return null;
@@ -47,8 +47,9 @@ export const apiErrorInterceptor: HttpInterceptorFn = (req, next) => {
         );
       } else if (error?.status >= 400 && error.status < 600) {
         const apiMessage = extractErrorMessage(error);
-        const statusText = error.statusText
-          ? ` (${error.statusText})`
+        const normalizedStatusText = error.statusText.trim();
+        const statusText = normalizedStatusText
+          ? ` (${normalizedStatusText})`
           : '';
         const message =
           apiMessage ??
@@ -57,6 +58,6 @@ export const apiErrorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       return throwError(() => error);
-    })
+    }),
   );
 };

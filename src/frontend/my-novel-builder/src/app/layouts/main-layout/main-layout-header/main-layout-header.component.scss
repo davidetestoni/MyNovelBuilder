@@ -19,6 +19,8 @@
     font-size: 1.5em;
     font-weight: 200;
     cursor: pointer;
+    color: inherit;
+    text-decoration: none;
 
     img {
       height: 42px;
@@ -36,6 +38,8 @@
       align-items: center;
       padding: 10px;
       cursor: pointer;
+      color: inherit;
+      text-decoration: none;
       transition: background-color 0.3s;
 
       &.active {

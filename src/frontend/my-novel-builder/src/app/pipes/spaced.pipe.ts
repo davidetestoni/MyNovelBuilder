@@ -5,13 +5,14 @@ import { Pipe, PipeTransform } from '@angular/core';
   standalone: true,
 })
 export class SpacedPipe implements PipeTransform {
-  transform(value: string): string {
-    if (!value || value.length === 0) {
+  transform(value: string | null | undefined): string {
+    if (!value) {
       return '';
     }
 
-    // This pipe will turn camelCase into Camel Case
-    let replaced = value.replace(/([a-z])([A-Z])/g, '$1 $2');
+    const replaced = value
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+      .replace(/([a-z\d])([A-Z])/g, '$1 $2');
     return replaced.charAt(0).toUpperCase() + replaced.slice(1);
   }
 }

@@ -6,7 +6,12 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class FileSizePipe implements PipeTransform {
   transform(value: number | null | undefined): string {
-    if (value === null || value === undefined || !Number.isFinite(value)) {
+    if (
+      value === null ||
+      value === undefined ||
+      !Number.isFinite(value) ||
+      value < 0
+    ) {
       return '';
     }
 

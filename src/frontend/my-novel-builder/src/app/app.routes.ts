@@ -10,7 +10,7 @@ export const routes: Routes = [
   // Redirect / to /novels
   {
     path: '',
-    redirectTo: '/novels',
+    redirectTo: 'novels',
     pathMatch: 'full',
   },
   {
