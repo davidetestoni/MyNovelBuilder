@@ -23,6 +23,10 @@ import { PromptType } from '../../types/enums/prompt-type';
 import { ProseEditorComponent } from './prose-editor.component';
 import { ProseGenerationDialogService } from './prose-generation-dialog.service';
 import { ProseMediaService } from './prose-media.service';
+import {
+  ProseRpgCommand,
+  ProseRpgPanelComponent,
+} from './prose-rpg-panel.component';
 import { ProseTtsService } from './prose-tts.service';
 
 describe('ProseEditorComponent', () => {
@@ -455,70 +459,44 @@ describe('ProseEditorComponent', () => {
   });
 
   describe('RPG mode', () => {
-    it('derives input and send states from chapter, prompt, model, and content state', () => {
-      component.selectedChapterIndex = 0;
-      component.rpgPromptCount = 1;
-      component.selectedRpgPromptId = 'prompt';
-      component.selectedRpgModel = 'model';
-      component.rpgInput = ' guide ';
-
-      expect(component.isRpgInputDisabled()).toBeFalse();
-      expect(component.getRpgInputPlaceholder()).toBe('Guide the next beat...');
-      expect(component.isRpgSendDisabled()).toBeFalse();
-
-      component.prose.chapters.push({
-        title: 'Chapter 2',
-        sections: [createSection()],
-        storyEvents: [],
-      });
-      expect(component.isRpgInputDisabled()).toBeTrue();
-      expect(component.getRpgInputPlaceholder()).toBe(
-        'Go to the last chapter for RPG mode',
-      );
-      expect(component.isRpgSendDisabled()).toBeTrue();
+    const createCommand = (
+      overrides: Partial<ProseRpgCommand> = {},
+    ): ProseRpgCommand => ({
+      action: 'do',
+      input: 'Open the door',
+      promptId: 'rpg-prompt',
+      model: 'rpg-model',
+      ...overrides,
     });
 
-    it('updates RPG action and prompt-option count', () => {
-      component.setRpgAction('say');
-      component.onRpgPromptOptionsChanged(3);
-
-      expect(component.rpgAction).toBe('say');
-      expect(component.rpgPromptCount).toBe(3);
-    });
-
-    it('does nothing when sending is disabled', () => {
-      component.sendRpgPrompt();
-
-      expect(generateTextService.generateText).not.toHaveBeenCalled();
-    });
+    const createPanel = (): jasmine.SpyObj<ProseRpgPanelComponent> =>
+      jasmine.createSpyObj<ProseRpgPanelComponent>('ProseRpgPanelComponent', [
+        'clearInput',
+        'restoreInput',
+      ]);
 
     it('reports that a section is required before RPG generation', () => {
       component.prose.chapters[0].sections = [];
-      component.rpgPromptCount = 1;
-      component.selectedRpgPromptId = 'rpg-prompt';
-      component.selectedRpgModel = 'rpg-model';
-      component.rpgInput = 'Open the door';
+      const panel = createPanel();
 
-      component.sendRpgPrompt();
+      component.sendRpgPrompt(createCommand(), panel);
 
       expect(toastr.error).toHaveBeenCalledOnceWith(
         'Add a section before using RPG mode.',
       );
+      expect(panel.clearInput).not.toHaveBeenCalled();
       expect(generateTextService.generateText).not.toHaveBeenCalled();
     });
 
     it('appends completed RPG markdown without a mounted editor', async () => {
-      component.rpgPromptCount = 1;
-      component.selectedRpgPromptId = 'rpg-prompt';
-      component.selectedRpgModel = 'rpg-model';
-      component.rpgAction = 'say';
-      component.rpgInput = '  Hello there  ';
+      const panel = createPanel();
+      const command = createCommand({ action: 'say', input: 'Hello there' });
       generateTextService.generateText.and.returnValue(
         of({ content: '**Reply**', isComplete: true }),
       );
       const emit = spyOn(component.proseChange, 'emit');
 
-      component.sendRpgPrompt();
+      component.sendRpgPrompt(command, panel);
       await flushAsyncSubscriber();
 
       expect(generateTextService.generateText.calls.mostRecent().args[0]).toEqual({
@@ -534,7 +512,7 @@ describe('ProseEditorComponent', () => {
         }),
       });
       expect(component.prose.chapters[0].sections[0].text).toContain('Reply');
-      expect(component.rpgInput).toBe('');
+      expect(panel.clearInput).toHaveBeenCalledTimes(1);
       expect(component.isRpgGenerating).toBeFalse();
       expect(emit).toHaveBeenCalledTimes(2);
     });
@@ -542,15 +520,12 @@ describe('ProseEditorComponent', () => {
     it('appends RPG output to a mounted editor at its final offset', async () => {
       const quill = createQuill();
       component.editorInit(quill, 0, 0);
-      component.rpgPromptCount = 1;
-      component.selectedRpgPromptId = 'rpg-prompt';
-      component.selectedRpgModel = 'rpg-model';
-      component.rpgInput = 'continue';
+      const panel = createPanel();
       generateTextService.generateText.and.returnValue(
         of({ content: 'Next', isComplete: true }),
       );
 
-      component.sendRpgPrompt();
+      component.sendRpgPrompt(createCommand({ input: 'continue' }), panel);
       await flushAsyncSubscriber();
 
       expect(
@@ -567,26 +542,23 @@ describe('ProseEditorComponent', () => {
     });
 
     it('handles empty and failed RPG responses and restores input after errors', () => {
-      component.rpgPromptCount = 1;
-      component.selectedRpgPromptId = 'rpg-prompt';
-      component.selectedRpgModel = 'rpg-model';
-      component.rpgInput = 'first';
+      const panel = createPanel();
       generateTextService.generateText.and.returnValue(
         of({ content: '   ', isComplete: true }),
       );
 
-      component.sendRpgPrompt();
+      component.sendRpgPrompt(createCommand({ input: 'first' }), panel);
       expect(toastr.error).toHaveBeenCalledWith('No RPG response was generated.');
       expect(component.isRpgGenerating).toBeFalse();
+      expect(panel.restoreInput).not.toHaveBeenCalled();
 
       toastr.error.calls.reset();
-      component.rpgInput = ' retry this ';
       generateTextService.generateText.and.returnValue(
         throwError(() => new Error('network')),
       );
-      component.sendRpgPrompt();
+      component.sendRpgPrompt(createCommand({ input: 'retry this' }), panel);
 
-      expect(component.rpgInput).toBe('retry this');
+      expect(panel.restoreInput).toHaveBeenCalledOnceWith('retry this');
       expect(component.isRpgGenerating).toBeFalse();
       expect(toastr.error).toHaveBeenCalledOnceWith(
         'Failed to generate RPG response.',

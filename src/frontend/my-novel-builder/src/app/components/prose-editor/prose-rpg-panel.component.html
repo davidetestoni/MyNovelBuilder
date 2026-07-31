@@ -1,0 +1,65 @@
+@if (visible) {
+  <app-prompt-select
+    [(ngModel)]="selectedPromptId"
+    [prompts]="prompts"
+    [promptType]="promptType"
+    [storagePromptType]="promptType"
+    (optionsChanged)="onPromptOptionsChanged($event)"
+    placeholder="Select Prompt"
+    width="180px"
+    size="small"
+    [disabled]="isGenerating"
+  />
+  <app-model-select
+    [(ngModel)]="selectedModel"
+    capability="text"
+    storageContext="rpg-mode"
+    placeholder="Select Model"
+    width="220px"
+    size="small"
+    [disabled]="isGenerating"
+  />
+  <div class="rpg-action-toggle" aria-label="RPG action mode">
+    <button
+      type="button"
+      [class.active]="action === 'do'"
+      (click)="setAction('do')"
+      [disabled]="isInputDisabled()"
+    >
+      Do
+    </button>
+    <button
+      type="button"
+      [class.active]="action === 'say'"
+      (click)="setAction('say')"
+      [disabled]="isInputDisabled()"
+    >
+      Say
+    </button>
+  </div>
+  <div class="rpg-input-wrapper" [class.disabled]="isInputDisabled()">
+    <textarea
+      pInputTextarea
+      [(ngModel)]="input"
+      [placeholder]="getInputPlaceholder()"
+      rows="1"
+      [autoResize]="true"
+      [disabled]="isInputDisabled()"
+      (keydown.enter)="onEnter($event)"
+    ></textarea>
+    <button
+      type="button"
+      class="rpg-send-btn"
+      pTooltip="Send"
+      tooltipPosition="top"
+      (click)="submitPrompt()"
+      [disabled]="isSendDisabled()"
+    >
+      @if (isGenerating) {
+        <i class="pi pi-spin pi-spinner"></i>
+      } @else {
+        <i class="pi pi-send"></i>
+      }
+    </button>
+  </div>
+}

@@ -16,7 +16,6 @@ import {
 } from 'ngx-quill';
 import { environment } from '../../../environment';
 import { FormsModule } from '@angular/forms';
-import { TextareaModule } from 'primeng/textarea';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { GenerateTextService } from '../../services/generate-text.service';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
@@ -35,11 +34,13 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
-import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
-import { ModelSelectComponent } from '../model-select/model-select.component';
 import { ProseTtsService } from './prose-tts.service';
 import { ProseMediaService } from './prose-media.service';
 import { ProseGenerationDialogService } from './prose-generation-dialog.service';
+import {
+  ProseRpgCommand,
+  ProseRpgPanelComponent,
+} from './prose-rpg-panel.component';
 import {
   appendMarkdownToHtml,
   calculateReadingTimeMinutes,
@@ -83,9 +84,7 @@ interface RpgAppendTarget {
     ToastrModule,
     TooltipModule,
     ConfirmDialogModule,
-    TextareaModule,
-    PromptSelectComponent,
-    ModelSelectComponent,
+    ProseRpgPanelComponent,
   ],
   providers: [
     DialogService,
@@ -119,12 +118,6 @@ export class ProseEditorComponent {
   editorControlsPosition: { x: number; y: number } = { x: 0, y: 0 };
   lastSelection: LastSelection | null = null;
   private readonly sectionEditors = new Map<string, Quill>();
-  PromptType = PromptType;
-  rpgAction: 'do' | 'say' = 'do';
-  rpgInput = '';
-  selectedRpgPromptId: string | null = null;
-  selectedRpgModel: string | null = null;
-  rpgPromptCount = -1;
   isRpgGenerating = false;
 
   getImageUrl(fileName: string): string {
@@ -227,66 +220,29 @@ export class ProseEditorComponent {
     this.proseChange.emit(this.prose);
   }
 
-  setRpgAction(action: 'do' | 'say'): void {
-    this.rpgAction = action;
-  }
-
-  onRpgPromptOptionsChanged(count: number): void {
-    this.rpgPromptCount = count;
-  }
-
-  isRpgInputDisabled(): boolean {
-    return this.isRpgGenerating || this.isViewingNonLastChapter();
-  }
-
-  getRpgInputPlaceholder(): string {
-    return this.isViewingNonLastChapter()
-      ? 'Go to the last chapter for RPG mode'
-      : 'Guide the next beat...';
-  }
-
-  isRpgSendDisabled(): boolean {
-    return (
-      this.isRpgInputDisabled() ||
-      this.rpgPromptCount === 0 ||
-      !this.rpgInput.trim() ||
-      !this.selectedRpgPromptId ||
-      !this.selectedRpgModel
-    );
-  }
-
-  private isViewingNonLastChapter(): boolean {
-    return (
-      this.selectedChapterIndex !== null &&
-      this.selectedChapterIndex !== this.prose.chapters.length - 1
-    );
-  }
-
-  sendRpgPrompt(): void {
-    if (this.isRpgSendDisabled()) {
-      return;
-    }
-
+  sendRpgPrompt(
+    command: ProseRpgCommand,
+    panel: ProseRpgPanelComponent,
+  ): void {
     const target = this.getRpgAppendTarget();
-    if (!target || !this.selectedRpgPromptId || !this.selectedRpgModel) {
+    if (!target) {
       return;
     }
 
-    const rpgInput = this.rpgInput.trim();
-    this.rpgInput = '';
+    panel.clearInput();
     this.isRpgGenerating = true;
     this.saveProse();
 
     const request: GenerateTextRequestDto = {
-      model: this.selectedRpgModel,
-      promptId: this.selectedRpgPromptId,
+      model: command.model,
+      promptId: command.promptId,
       contextInfo: <GenerateTextContextInfoDto>{
         $type: NovelTextGenerationType.GenerateText,
         novelId: this.novelId,
         chapterIndex: target.chapterIndex,
         sectionIndex: target.sectionIndex,
         textOffset: target.textOffset,
-        instructions: `${this.rpgAction === 'do' ? 'Do' : 'Say'}: ${rpgInput}`,
+        instructions: `${command.action === 'do' ? 'Do' : 'Say'}: ${command.input}`,
       },
     };
 
@@ -323,7 +279,7 @@ export class ProseEditorComponent {
       },
       error: (error) => {
         console.error('Error generating RPG text:', error);
-        this.rpgInput = rpgInput;
+        panel.restoreInput(command.input);
         this.isRpgGenerating = false;
         this.toastr.error('Failed to generate RPG response.');
       },
