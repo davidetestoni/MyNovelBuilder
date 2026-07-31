@@ -973,3 +973,104 @@ describe('ProseEditorComponent', () => {
     });
   });
 });
+
+describe('ProseEditorComponent layout', () => {
+  it('keeps the section summary visible after the editor is initialized', async () => {
+    const toastr = jasmine.createSpyObj<ToastrService>('ToastrService', [
+      'clear',
+      'error',
+      'info',
+      'warning',
+    ]);
+    const generateTextService = jasmine.createSpyObj<GenerateTextService>(
+      'GenerateTextService',
+      ['generateText'],
+    );
+    const proseGenerationDialogService =
+      jasmine.createSpyObj<ProseGenerationDialogService>(
+        'ProseGenerationDialogService',
+        [
+          'openCompendiumRecordResultDialog',
+          'openRecordOverridesDialog',
+          'openStorySuggestionsDialog',
+          'openTextRequestDialog',
+          'openTextResultDialog',
+        ],
+      );
+    const proseMediaService = jasmine.createSpyObj<ProseMediaService>(
+      'ProseMediaService',
+      [
+        'deleteImage',
+        'generateAndUpload',
+        'selectFileAndUpload',
+        'selectSource',
+        'uploadClipboardImage',
+      ],
+    );
+    const proseTtsService = jasmine.createSpyObj<ProseTtsService>(
+      'ProseTtsService',
+      ['playSection'],
+    );
+
+    TestBed.configureTestingModule({ imports: [ProseEditorComponent] });
+    TestBed.overrideComponent(ProseEditorComponent, {
+      set: {
+        providers: [
+          ConfirmationService,
+          { provide: ToastrService, useValue: toastr },
+          { provide: GenerateTextService, useValue: generateTextService },
+          {
+            provide: ProseGenerationDialogService,
+            useValue: proseGenerationDialogService,
+          },
+          { provide: ProseMediaService, useValue: proseMediaService },
+          { provide: ProseTtsService, useValue: proseTtsService },
+        ],
+      },
+    });
+
+    const fixture = TestBed.createComponent(ProseEditorComponent);
+    fixture.componentRef.setInput('novelId', 'novel-1');
+    fixture.componentRef.setInput('prose', {
+      chapters: [
+        {
+          title: 'Chapter 1',
+          sections: [
+            {
+              summary: 'Visible summary',
+              text: '<p>Section text</p>',
+              images: [],
+              recordOverrides: [],
+            },
+          ],
+          storyEvents: [],
+        },
+      ],
+    } satisfies Prose);
+    fixture.componentRef.setInput('prompts', []);
+    fixture.nativeElement.style.display = 'block';
+    fixture.nativeElement.style.width = '800px';
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector(
+      '.section',
+    ) as HTMLElement;
+    const sectionBody = fixture.nativeElement.querySelector(
+      '.section-body',
+    ) as HTMLElement;
+    const summary = fixture.nativeElement.querySelector(
+      '.section-summary',
+    ) as HTMLElement;
+    const sectionBounds = section.getBoundingClientRect();
+    const summaryBounds = summary.getBoundingClientRect();
+
+    expect(getComputedStyle(sectionBody).minWidth).toBe('0px');
+    expect(getComputedStyle(summary).flexShrink).toBe('0');
+    expect(summaryBounds.width).toBe(250);
+    expect(summaryBounds.right).toBeLessThanOrEqual(sectionBounds.right);
+    expect(summary.textContent).toContain('Visible summary');
+  });
+});

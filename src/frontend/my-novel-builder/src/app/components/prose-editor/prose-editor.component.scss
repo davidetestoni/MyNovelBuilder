@@ -97,8 +97,9 @@
           .section-body {
             display: flex;
             flex-direction: column;
+            flex: 1 1 auto;
             gap: 2rem;
-            width: 100%;
+            min-width: 0;
 
             .section-text {
               outline: none;
@@ -161,6 +162,7 @@
           }
 
           .section-summary {
+            flex: 0 0 250px;
             width: 250px;
             padding: 0 1.5rem;
 
