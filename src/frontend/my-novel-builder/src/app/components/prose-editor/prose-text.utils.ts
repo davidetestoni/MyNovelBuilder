@@ -39,7 +39,7 @@ export function calculateReadingTimeMinutes(wordCount: number): number {
 }
 
 export async function markdownToHtml(markdown: string): Promise<string> {
-  const html = await marked.parse(markdown);
+  const html = await marked.parse(markdown, { breaks: true });
   return typeof html === 'string' ? html : markdown;
 }
 

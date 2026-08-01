@@ -48,14 +48,15 @@ describe('prose text utilities', () => {
     expect(calculateReadingTimeMinutes(239)).toBe(2);
   });
 
-  it('converts and appends generated markdown', async () => {
+  it('converts and appends generated markdown while preserving line breaks', async () => {
     const result = await appendMarkdownToHtml(
       '<p>Existing</p>',
-      '**Generated**',
+      '**Generated**\nNext line',
     );
 
     expect(result).toContain('<p>Existing</p>');
     expect(result).toContain('<strong>Generated</strong>');
+    expect(result).toContain('<br>Next line');
   });
 
   it('inserts converted markdown into Quill as user content', async () => {
