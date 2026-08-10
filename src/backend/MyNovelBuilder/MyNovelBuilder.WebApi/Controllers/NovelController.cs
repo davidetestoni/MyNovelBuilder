@@ -16,17 +16,20 @@ namespace MyNovelBuilder.WebApi.Controllers;
 public class NovelController : ControllerBase
 {
     private readonly INovelService _novelService;
+    private readonly INovelImportService _novelImportService;
     private readonly ICompendiumService _compendiumService;
     private readonly ICompendiumRecordService _compendiumRecordService;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     /// <summary></summary>
     public NovelController(INovelService novelService,
+        INovelImportService novelImportService,
         ICompendiumService compendiumService,
         ICompendiumRecordService compendiumRecordService,
         IHttpContextAccessor httpContextAccessor)
     {
         _novelService = novelService;
+        _novelImportService = novelImportService;
         _compendiumService = compendiumService;
         _compendiumRecordService = compendiumRecordService;
         _httpContextAccessor = httpContextAccessor;
@@ -85,7 +88,7 @@ public class NovelController : ControllerBase
         
         return dto;
     }
-    
+
     /// <summary>
     /// Update a novel.
     /// </summary>
@@ -139,6 +142,24 @@ public class NovelController : ControllerBase
         
         // Also update the novel's updated at time.
         var novel = await _novelService.GetByIdAsync(id, cancellationToken);
+        await _novelService.UpdateAsync(novel, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replace a novel's prose with chapters imported from a Markdown file.
+    /// Novel metadata and settings are left unchanged.
+    /// </summary>
+    [HttpPut("{id:guid}/prose/import/markdown")]
+    public async Task ImportNovelProseFromMarkdown(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        var novel = await _novelService.GetByIdAsync(id, cancellationToken);
+        var prose = _novelImportService.ImportFromMarkdown(
+            await ReadMarkdownFileAsync(file, cancellationToken));
+
+        await _novelService.UpdateProseAsync(id, prose, cancellationToken);
         await _novelService.UpdateAsync(novel, cancellationToken);
     }
     
@@ -201,5 +222,31 @@ public class NovelController : ControllerBase
         var request = _httpContextAccessor.HttpContext!.Request;
         var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
         dto.CoverImageUrl = $"{baseUrl}/{urlPath.Replace(Path.DirectorySeparatorChar, '/')}";
+    }
+
+    private static async Task<string> ReadMarkdownFileAsync(
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        const long maximumFileSize = 5 * 1024 * 1024;
+        if (file.Length == 0)
+        {
+            throw new ApiException(ErrorCodes.InvalidFile, "The Markdown file is empty.");
+        }
+
+        if (file.Length > maximumFileSize)
+        {
+            throw new ApiException(ErrorCodes.InvalidFile, "The Markdown file cannot exceed 5 MB.");
+        }
+
+        var extension = Path.GetExtension(file.FileName);
+        if (!extension.Equals(".md", StringComparison.OrdinalIgnoreCase) &&
+            !extension.Equals(".markdown", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ApiException(ErrorCodes.InvalidFile, "Only .md and .markdown files can be imported.");
+        }
+
+        using var reader = new StreamReader(file.OpenReadStream());
+        return await reader.ReadToEndAsync(cancellationToken);
     }
 }

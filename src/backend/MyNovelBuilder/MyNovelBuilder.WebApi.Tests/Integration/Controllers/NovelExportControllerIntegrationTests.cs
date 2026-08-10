@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using MyNovelBuilder.WebApi.Data.Entities;
@@ -49,6 +50,43 @@ public class NovelExportControllerIntegrationTests(
         Assert.Equal(
             expected.Replace("\r\n", "\n").Trim(),
             result.Replace("\r\n", "\n").Trim());
+    }
+
+    [Fact]
+    public async Task ExportedMarkdown_CanReplaceAnotherNovelsProse()
+    {
+        using var client = Factory.CreateClient();
+        var sourceNovelId = await CreateNovelWithProseAsync();
+        var exportResponse = await client.GetAsync($"api/novel/{sourceNovelId}/export/markdown");
+        var markdown = await exportResponse.Content.ReadAsStringAsync();
+        using var form = new MultipartFormDataContent();
+        var file = new StringContent(markdown, Encoding.UTF8);
+        file.Headers.ContentType = MediaTypeHeaderValue.Parse("text/markdown");
+        form.Add(file, "file", "exported.md");
+
+        var targetNovel = new Novel { Title = "Import target" };
+        UnitOfWork.Novels.Add(targetNovel);
+        await UnitOfWork.SaveChangesAsync();
+
+        var importResponse = await client.PutAsync(
+            $"api/novel/{targetNovel.Id}/prose/import/markdown",
+            form);
+
+        Assert.True(importResponse.IsSuccessStatusCode);
+        var importedProse = await GetJsonAsync<Prose>(
+            client,
+            $"api/novel/{targetNovel.Id}/prose");
+        Assert.True(importedProse.IsOk);
+        Assert.Collection(
+            importedProse.Value.Chapters,
+            chapter =>
+            {
+                Assert.Equal("Chapter 1", chapter.Title);
+                var section = Assert.Single(chapter.Sections);
+                Assert.Contains("Section 1 text", section.Text);
+                Assert.Contains("Section 2 text", section.Text);
+            },
+            chapter => Assert.Equal("Chapter 2", chapter.Title));
     }
 
     [Fact]

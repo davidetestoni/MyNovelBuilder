@@ -47,6 +47,13 @@ export class MockNovelService extends NovelService {
     return mockObservable<void>(undefined);
   }
 
+  replaceNovelProseFromMarkdown(
+    _novelId: string,
+    _file: File,
+  ): Observable<void> {
+    return mockObservable<void>(undefined);
+  }
+
   deleteNovel(_novelId: string): Observable<void> {
     return mockObservable<void>(undefined);
   }

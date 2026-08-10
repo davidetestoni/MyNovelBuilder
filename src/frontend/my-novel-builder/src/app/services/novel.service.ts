@@ -28,6 +28,10 @@ export abstract class NovelService {
   abstract createNovel(novel: CreateNovelDto): Observable<NovelDto>;
   abstract updateNovel(novel: UpdateNovelDto): Observable<NovelDto>;
   abstract updateNovelProse(novelId: string, prose: Prose): Observable<void>;
+  abstract replaceNovelProseFromMarkdown(
+    novelId: string,
+    file: File,
+  ): Observable<void>;
   abstract deleteNovel(novelId: string): Observable<void>;
   abstract exportNovel(
     novelId: string,

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -201,6 +202,67 @@ public class NovelControllerIntegrationTests(
     }
 
     [Fact]
+    public async Task ImportNovelProseFromMarkdown_ReplacesOnlyProse()
+    {
+        using var client = Factory.CreateClient();
+        var novel = new Novel
+        {
+            Title = "Existing Novel",
+            Author = "Existing Author",
+            Brief = "Existing Brief",
+            Tense = WritingTense.Past
+        };
+        UnitOfWork.Novels.Add(novel);
+        await UnitOfWork.SaveChangesAsync();
+        await PutJsonAsync<object>(client, $"api/novel/{novel.Id}/prose", new Prose
+        {
+            Chapters = [new Chapter { Title = "Old", Sections = [] }]
+        });
+        using var content = CreateMarkdownContent("""
+                                                  # Different Metadata
+                                                  by Someone Else
+
+                                                  Different brief.
+
+                                                  ## Replacement Chapter
+                                                  Replacement text.
+                                                  """);
+
+        var response = await client.PutAsync(
+            $"api/novel/{novel.Id}/prose/import/markdown",
+            content);
+
+        Assert.True(response.IsSuccessStatusCode);
+        var novelResult = await GetJsonAsync<NovelDto>(client, $"api/novel/{novel.Id}");
+        Assert.True(novelResult.IsOk);
+        Assert.Equal("Existing Novel", novelResult.Value.Title);
+        Assert.Equal("Existing Author", novelResult.Value.Author);
+        Assert.Equal("Existing Brief", novelResult.Value.Brief);
+        Assert.Equal(WritingTense.Past, novelResult.Value.Tense);
+
+        var proseResult = await GetJsonAsync<Prose>(client, $"api/novel/{novel.Id}/prose");
+        var chapter = Assert.Single(proseResult.Value.Chapters);
+        Assert.Equal("Replacement Chapter", chapter.Title);
+        Assert.Contains("Replacement text.", Assert.Single(chapter.Sections).Text);
+    }
+
+    [Fact]
+    public async Task ImportNovelProseFromMarkdown_RejectsInvalidFileExtension()
+    {
+        using var client = Factory.CreateClient();
+        var novel = new Novel { Title = "Existing Novel" };
+        UnitOfWork.Novels.Add(novel);
+        await UnitOfWork.SaveChangesAsync();
+        using var content = CreateMarkdownContent("# Imported Novel", "novel.txt");
+
+        var response = await client.PutAsync(
+            $"api/novel/{novel.Id}/prose/import/markdown",
+            content);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task DeleteNovel_ReturnsOk()
     {
         // Arrange
@@ -389,5 +451,16 @@ public class NovelControllerIntegrationTests(
     public Task DisposeAsync()
     {
         return Task.CompletedTask;
+    }
+
+    private static MultipartFormDataContent CreateMarkdownContent(
+        string markdown,
+        string fileName = "novel.md")
+    {
+        var content = new MultipartFormDataContent();
+        var fileContent = new StringContent(markdown);
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("text/markdown");
+        content.Add(fileContent, "file", fileName);
+        return content;
     }
 }

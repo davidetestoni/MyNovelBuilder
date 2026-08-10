@@ -36,6 +36,10 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 import { CompendiumOptionPreviewComponent } from '../../components/compendium-option-preview/compendium-option-preview.component';
 import { RecordOptionPreviewComponent } from '../../components/record-option-preview/record-option-preview.component';
+import {
+  ImportMarkdownDialogComponent,
+  ImportMarkdownDialogResult,
+} from '../../components/import-markdown-dialog/import-markdown-dialog.component';
 
 @Component({
   selector: 'app-novel-settings',
@@ -251,6 +255,47 @@ export class NovelSettingsComponent implements OnDestroy {
       `${this.novel.id}.${format === 'markdown' ? 'md' : format}`,
     );
     this.downloadBlob(blob, fileName);
+  }
+
+  confirmReplaceProseFromMarkdown(): void {
+    if (this.novel === null) {
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message:
+        'Importing Markdown will replace every existing chapter and section. Novel settings, compendia, and media will remain unchanged.',
+      header: 'Replace prose from Markdown?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => this.openReplaceProseDialog(),
+    });
+  }
+
+  private openReplaceProseDialog(): void {
+    this.dialogRef = this.dialogService.open(ImportMarkdownDialogComponent, {
+      header: 'Replace prose from Markdown',
+      width: '44rem',
+      breakpoints: {
+        '960px': '90vw',
+        '640px': '96vw',
+      },
+      contentStyle: { overflow: 'auto' },
+      baseZIndex: 10000,
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
+      data: { novelId: this.novelId },
+    });
+
+    this.dialogRef?.onClose.subscribe(
+      (result: ImportMarkdownDialogResult | undefined) => {
+        if (result) {
+          void this.goToProse();
+        }
+      },
+    );
   }
 
   async openTranslateDialog(): Promise<void> {

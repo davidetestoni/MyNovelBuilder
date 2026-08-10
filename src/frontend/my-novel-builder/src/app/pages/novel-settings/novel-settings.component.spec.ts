@@ -9,6 +9,10 @@ import {
   TranslateNovelDialogComponent,
   type TranslateNovelDialogResult,
 } from '../../components/translate-novel-dialog/translate-novel-dialog.component';
+import {
+  ImportMarkdownDialogComponent,
+  type ImportMarkdownDialogResult,
+} from '../../components/import-markdown-dialog/import-markdown-dialog.component';
 import { CompendiumService } from '../../services/compendium.service';
 import { NovelService } from '../../services/novel.service';
 import { PromptService } from '../../services/prompt.service';
@@ -33,7 +37,9 @@ describe('NovelSettingsComponent workflows', () => {
   let dialogService: jasmine.SpyObj<DialogService>;
   let confirmationService: jasmine.SpyObj<ConfirmationService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
-  let dialogClosed: Subject<TranslateNovelDialogResult | undefined>;
+  let dialogClosed: Subject<
+    TranslateNovelDialogResult | ImportMarkdownDialogResult | undefined
+  >;
 
   const novel = (): NovelDto => ({
     id: 'novel-id',
@@ -124,7 +130,9 @@ describe('NovelSettingsComponent workflows', () => {
       'ToastrService',
       ['error'],
     );
-    dialogClosed = new Subject<TranslateNovelDialogResult | undefined>();
+    dialogClosed = new Subject<
+      TranslateNovelDialogResult | ImportMarkdownDialogResult | undefined
+    >();
     dialogRef = jasmine.createSpyObj<DynamicDialogRef>(
       'DynamicDialogRef',
       ['close'],
@@ -357,6 +365,44 @@ describe('NovelSettingsComponent workflows', () => {
     expect(window.URL.createObjectURL).not.toHaveBeenCalled();
   });
 
+  it('confirms prose replacement, opens the importer, and navigates after success', () => {
+    component.novel = novel();
+    component.novelId = 'novel-id';
+
+    component.confirmReplaceProseFromMarkdown();
+
+    expect(confirmationService.confirm).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({
+        message:
+          'Importing Markdown will replace every existing chapter and section. Novel settings, compendia, and media will remain unchanged.',
+        header: 'Replace prose from Markdown?',
+        icon: 'pi pi-exclamation-triangle',
+        acceptButtonStyleClass: 'p-button-danger',
+        accept: jasmine.any(Function),
+      }),
+    );
+    expect(dialogService.open).not.toHaveBeenCalled();
+
+    confirmationService.confirm.calls.mostRecent().args[0].accept!();
+    expect(dialogService.open).toHaveBeenCalledOnceWith(
+      ImportMarkdownDialogComponent,
+      jasmine.objectContaining({
+        header: 'Replace prose from Markdown',
+        modal: true,
+        data: { novelId: 'novel-id' },
+      }),
+    );
+
+    dialogClosed.next(undefined);
+    expect(router.navigate).not.toHaveBeenCalled();
+
+    dialogClosed.next({ novelId: 'novel-id' });
+    expect(router.navigate).toHaveBeenCalledOnceWith([
+      '/novel',
+      'novel-id',
+    ]);
+  });
+
   it('opens translation with matching prompts and navigates on completion', async () => {
     const loadedNovel = novel();
     const loadedProse = prose();
@@ -438,6 +484,7 @@ describe('NovelSettingsComponent workflows', () => {
     await component.exportNovel('pdf');
     await component.openTranslateDialog();
     component.confirmDeleteNovel();
+    component.confirmReplaceProseFromMarkdown();
 
     expect(novelService.updateNovel).not.toHaveBeenCalled();
     expect(novelService.uploadNovelCoverImage).not.toHaveBeenCalled();

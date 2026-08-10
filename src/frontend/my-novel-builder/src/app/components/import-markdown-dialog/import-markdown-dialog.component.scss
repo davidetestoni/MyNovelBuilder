@@ -1,0 +1,55 @@
+@use "../../../styles/colors" as *;
+
+.import-markdown-dialog {
+  display: grid;
+  gap: 18px;
+
+  p {
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+.file-field,
+.paste-field {
+  display: grid;
+  gap: 8px;
+
+  label {
+    font-weight: 600;
+  }
+}
+
+.paste-field textarea {
+  width: 100%;
+  min-height: 24rem;
+  resize: vertical;
+  font-family: monospace;
+}
+
+.source-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: $grey11;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+
+  &::before,
+  &::after {
+    height: 1px;
+    flex: 1;
+    background: $grey6;
+    content: "";
+  }
+}
+
+.selected-file {
+  color: $grey11;
+  font-size: 0.9rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}

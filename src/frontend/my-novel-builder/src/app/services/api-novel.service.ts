@@ -57,6 +57,18 @@ export class ApiNovelService extends NovelService {
     return this.http.put<void>(`${this.baseUrl}/novel/${novelId}/prose`, prose);
   }
 
+  replaceNovelProseFromMarkdown(
+    novelId: string,
+    file: File,
+  ): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.put<void>(
+      `${this.baseUrl}/novel/${novelId}/prose/import/markdown`,
+      formData,
+    );
+  }
+
   deleteNovel(novelId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/novel/${novelId}`);
   }

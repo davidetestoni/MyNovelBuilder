@@ -107,6 +107,7 @@ builder.Services.AddScoped<IVoiceRepository, VoiceRepository>();
 builder.Services.AddScoped<IMediaFolderRepository, MediaFolderRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<INovelService, NovelService>();
+builder.Services.AddScoped<INovelImportService, NovelImportService>();
 builder.Services.AddScoped<ICompendiumService, CompendiumService>();
 builder.Services.AddScoped<ICompendiumRecordService, CompendiumRecordService>();
 builder.Services.AddScoped<IPromptService, PromptService>();
