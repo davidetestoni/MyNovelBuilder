@@ -1,6 +1,8 @@
 @use "../../../styles/colors" as *;
 
 :host {
+  --rpg-control-height: 36px;
+
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -9,7 +11,7 @@
   gap: 0.5rem;
   align-items: center;
   box-sizing: border-box;
-  padding: 0.75rem 9rem 0.75rem 0.75rem;
+  padding: 0.75rem;
   margin: 1rem -20px -20px;
   background-color: $grey0;
   border-top: 1px solid $grey4;
@@ -19,8 +21,21 @@
   display: none;
 }
 
+app-prompt-select,
+app-model-select {
+  display: block;
+  height: var(--rpg-control-height);
+}
+
+:host ::ng-deep app-prompt-select .p-select,
+:host ::ng-deep app-model-select .p-select {
+  height: 100%;
+}
+
 .rpg-action-toggle {
   display: flex;
+  box-sizing: border-box;
+  height: var(--rpg-control-height);
   overflow: hidden;
   border: 1px solid $grey5;
   border-radius: 0.4rem;
@@ -31,7 +46,7 @@
     background-color: transparent;
     color: $grey13;
     min-width: 48px;
-    height: 34px;
+    height: 100%;
     padding: 0 0.75rem;
     cursor: pointer;
     font-weight: 500;
@@ -57,10 +72,12 @@
   align-items: center;
   gap: 0.4rem;
   min-width: 0;
+  min-height: var(--rpg-control-height);
+  box-sizing: border-box;
   background-color: $grey2;
   border: 1px solid $grey5;
   border-radius: 0.5rem;
-  padding: 0.25rem 0.35rem 0.25rem 0.6rem;
+  padding: 1px 0.35rem 1px 0.6rem;
 
   &:focus-within:not(.disabled) {
     border-color: $grey6;
@@ -80,7 +97,7 @@
     color: $grey19;
     font-family: inherit;
     line-height: 1.4;
-    padding: 0.35rem 0;
+    padding: 0;
 
     &:focus {
       outline: none;
