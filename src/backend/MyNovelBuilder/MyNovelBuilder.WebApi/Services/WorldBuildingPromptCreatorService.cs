@@ -62,8 +62,17 @@ public class WorldBuildingPromptCreatorService : IWorldBuildingPromptCreatorServ
             prose = await novelService.GetProseAsync(context.NovelId.Value, cancellationToken);
         }
 
+        var compendiumIds = context.CompendiumIds.Distinct().ToList();
+        if (compendiumIds.Count == 0)
+        {
+            compendiumIds = (await unitOfWork.Compendia.GetAllAsync(cancellationToken))
+                .Select(compendium => compendium.Id)
+                .Distinct()
+                .ToList();
+        }
+
         var compendia = new List<Compendium>();
-        foreach (var compendiumId in context.CompendiumIds.Distinct())
+        foreach (var compendiumId in compendiumIds)
         {
             var compendium = await unitOfWork.Compendia.GetWithRecordsByIdAsync(
                 compendiumId,
@@ -79,17 +88,12 @@ public class WorldBuildingPromptCreatorService : IWorldBuildingPromptCreatorServ
             compendia.Add(compendium);
         }
 
+        var selectedRecordIds = context.CompendiumRecordIds.ToHashSet();
         var records = compendia
             .SelectMany(compendium => compendium.Records)
-            .Where(record => record.AlwaysIncluded || context.CompendiumRecordIds.Contains(record.Id))
-            .ToList();
-
-        var explicitlySelectedRecords = await unitOfWork.CompendiumRecords.GetByIdsAsync(
-            context.CompendiumRecordIds,
-            cancellationToken);
-
-        records = records
-            .Concat(explicitlySelectedRecords)
+            .Where(record => selectedRecordIds.Count == 0
+                || record.AlwaysIncluded
+                || selectedRecordIds.Contains(record.Id))
             .GroupBy(record => record.Id)
             .Select(group => group.First())
             .OrderBy(record => record.Name)

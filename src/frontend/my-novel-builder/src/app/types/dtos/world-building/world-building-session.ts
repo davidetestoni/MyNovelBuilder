@@ -32,6 +32,7 @@ export interface WorldBuildingMessage {
   sentAt: string;
   role: ChatMessageRole;
   textContent: string;
+  structuredContent?: string | null;
 }
 
 export enum WorldBuildingProposalStatus {

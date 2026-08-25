@@ -127,9 +127,24 @@ export class WorldBuilderSessionComponent
     }));
   });
 
-  allAvailableRecords = computed(() => {
-    return this.compendia().flatMap((compendium) => compendium.records);
-  });
+  allAvailableRecords() {
+    const selectedCompendiumIds = new Set(
+      this.currentSession?.context.compendiumIds ?? [],
+    );
+    const scopedCompendia = selectedCompendiumIds.size
+      ? this.compendia().filter((compendium) =>
+          selectedCompendiumIds.has(compendium.id),
+        )
+      : this.compendia();
+
+    return [
+      ...new Map(
+        scopedCompendia
+          .flatMap((compendium) => compendium.records)
+          .map((record) => [record.id, record]),
+      ).values(),
+    ];
+  }
 
   getOperationKindLabel(kind: WorldBuildingOperationKind): string {
     switch (kind) {
@@ -270,6 +285,7 @@ export class WorldBuilderSessionComponent
     this.dialogRef?.onClose.subscribe((newText: string | undefined) => {
       if (newText !== undefined && newText !== message.textContent) {
         message.textContent = newText;
+        message.structuredContent = null;
         this.saveSession();
       }
     });
@@ -330,21 +346,22 @@ export class WorldBuilderSessionComponent
 
   onCompendiaChange(event: { value: string[] }): void {
     const selectedIds = event.value;
-    const previousIds = this.currentSession.context.compendiumIds;
-    const added = selectedIds.filter((id) => !previousIds.includes(id));
-    const recordIds = [...this.currentSession.context.compendiumRecordIds];
-
-    for (const compendiumId of added) {
-      const compendium = this.compendia().find((item) => item.id === compendiumId);
-      for (const record of compendium?.records ?? []) {
-        if (!recordIds.includes(record.id)) {
-          recordIds.push(record.id);
-        }
-      }
-    }
+    const scopedRecordIds = new Set(
+      (selectedIds.length
+        ? this.compendia().filter((compendium) =>
+            selectedIds.includes(compendium.id),
+          )
+        : this.compendia()
+      ).flatMap((compendium) =>
+        compendium.records.map((record) => record.id),
+      ),
+    );
 
     this.currentSession.context.compendiumIds = selectedIds;
-    this.currentSession.context.compendiumRecordIds = recordIds;
+    this.currentSession.context.compendiumRecordIds =
+      this.currentSession.context.compendiumRecordIds.filter((recordId) =>
+        scopedRecordIds.has(recordId),
+      );
     this.saveSession();
   }
 
@@ -505,7 +522,9 @@ export class WorldBuilderSessionComponent
     }
 
     return (
-      this.allAvailableRecords().find((record) => record.id === recordId)?.name ??
+      this.compendia()
+        .flatMap((compendium) => compendium.records)
+        .find((record) => record.id === recordId)?.name ??
       recordId
     );
   }

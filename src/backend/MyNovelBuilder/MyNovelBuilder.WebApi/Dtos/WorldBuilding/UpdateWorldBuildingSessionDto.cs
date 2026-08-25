@@ -59,6 +59,7 @@ internal class UpdateWorldBuildingSessionDtoValidator : AbstractValidator<Update
             message.RuleFor(x => x.Id).NotEmpty();
             message.RuleFor(x => x.Role).IsInEnum();
             message.RuleFor(x => x.TextContent).NotEmpty().MaximumLength(50_000);
+            message.RuleFor(x => x.StructuredContent).MaximumLength(200_000);
         });
     }
 }

@@ -233,8 +233,22 @@ describe('WorldBuilderSessionComponent workflows', () => {
     expect(component.compendia()).toBe(compendia);
     expect(component.allAvailableRecords().map(({ id }) => id)).toEqual([
       'castle',
+    ]);
+  });
+
+  it('shows records only from selected compendia and treats no compendia as all', () => {
+    component.compendia.set(compendia);
+
+    component.currentSession.context.compendiumIds = ['people'];
+    expect(component.allAvailableRecords().map(({ id }) => id)).toEqual([
       'hero',
       'castle',
+    ]);
+
+    component.currentSession.context.compendiumIds = [];
+    expect(component.allAvailableRecords().map(({ id }) => id)).toEqual([
+      'castle',
+      'hero',
     ]);
   });
 
@@ -350,26 +364,37 @@ describe('WorldBuilderSessionComponent workflows', () => {
     );
   });
 
-  it('adds records from newly selected compendia without duplicate IDs', () => {
+  it('prunes explicit records outside the selected compendia', () => {
     component.compendia.set(compendia);
+    component.currentSession.context.compendiumRecordIds = ['castle', 'hero'];
 
-    component.onCompendiaChange({ value: ['places', 'people'] });
+    component.onCompendiaChange({ value: ['places'] });
 
-    expect(component.currentSession.context.compendiumIds).toEqual([
-      'places',
-      'people',
-    ]);
+    expect(component.currentSession.context.compendiumIds).toEqual(['places']);
     expect(component.currentSession.context.compendiumRecordIds).toEqual([
       'castle',
-      'hero',
     ]);
     expect(sessionService.updateSession).toHaveBeenCalledOnceWith(
       'session-id',
       jasmine.objectContaining({
-        compendiumIds: ['places', 'people'],
-        compendiumRecordIds: ['castle', 'hero'],
+        compendiumIds: ['places'],
+        compendiumRecordIds: ['castle'],
       }),
     );
+  });
+
+  it('preserves an empty record selection as all records in the new scope', () => {
+    component.compendia.set(compendia);
+    component.currentSession.context.compendiumRecordIds = [];
+
+    component.onCompendiaChange({ value: ['people'] });
+
+    expect(component.currentSession.context.compendiumIds).toEqual(['people']);
+    expect(component.currentSession.context.compendiumRecordIds).toEqual([]);
+    expect(component.allAvailableRecords().map(({ id }) => id)).toEqual([
+      'hero',
+      'castle',
+    ]);
   });
 
   it('persists explicit record selection', () => {
@@ -798,6 +823,7 @@ describe('WorldBuilderSessionComponent workflows', () => {
 
   it('edits a message through the dialog and persists the changed text', () => {
     const message = component.currentSession.messages[0];
+    message.structuredContent = '{"assistantMessage":"Suggestions"}';
     const dialogClosed = new Subject<string | undefined>();
     const dialogRef = {
       onClose: dialogClosed.asObservable(),
@@ -823,6 +849,7 @@ describe('WorldBuilderSessionComponent workflows', () => {
     dialogClosed.next('Edited suggestions');
 
     expect(message.textContent).toBe('Edited suggestions');
+    expect(message.structuredContent).toBeNull();
     expect(sessionService.updateSession).toHaveBeenCalledOnceWith(
       'session-id',
       jasmine.objectContaining({

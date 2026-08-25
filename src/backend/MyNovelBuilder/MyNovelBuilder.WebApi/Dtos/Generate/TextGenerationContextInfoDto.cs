@@ -212,6 +212,11 @@ public class ChatMessageDto
     /// The text content of the chat message.
     /// </summary>
     public required string TextContent { get; set; }
+
+    /// <summary>
+    /// Optional structured assistant output to preserve in conversation history.
+    /// </summary>
+    public string? StructuredContent { get; set; }
 }
 
 /// <summary>
@@ -669,4 +674,3 @@ public class WorldBuildingProposalSummaryDto
     /// </summary>
     public string? Rationale { get; set; }
 }
-

@@ -319,4 +319,45 @@ public class PromptBuilderTests
         Assert.DoesNotContain(@"\u0026nbsp", prompt);
         Assert.DoesNotContain(@"\u003C", prompt);
     }
+
+    [Fact]
+    public void WorldBuildingAgentPromptBuilder_PreservesStructuredAssistantHistory()
+    {
+        const string structuredOutput = """
+                                        {"assistantMessage":"I proposed a city.","proposals":[{"kind":"createCompendiumRecord","name":"Veyra","context":"A city of glass."}]}
+                                        """;
+        var context = new WorldBuildingAgentPromptBuilderContext
+        {
+            Client = new WorldBuildingAgentContextInfoDto
+            {
+                UserMessage = "Continue",
+                PreviousMessages =
+                [
+                    new ChatMessageDto
+                    {
+                        Role = ChatMessageRole.User,
+                        TextContent = "Create a city"
+                    },
+                    new ChatMessageDto
+                    {
+                        Role = ChatMessageRole.Assistant,
+                        TextContent = "I proposed a city.",
+                        StructuredContent = structuredOutput
+                    }
+                ]
+            },
+            Compendia = [],
+            CompendiumRecords = [],
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+
+        var prompt = new WorldBuildingAgentPromptBuilder("{{chatHistory}}")
+            .ReplacePlaceholders(context)
+            .ToString();
+
+        Assert.Contains("User: Create a city", prompt);
+        Assert.Contains($"Assistant: {structuredOutput}", prompt);
+        Assert.Contains("createCompendiumRecord", prompt);
+        Assert.Contains("A city of glass.", prompt);
+    }
 }

@@ -94,6 +94,7 @@ internal class ChatMessageDtoValidator : AbstractValidator<ChatMessageDto>
     {
         RuleFor(x => x.Role).IsInEnum();
         RuleFor(x => x.TextContent).NotEmpty().MaximumLength(50_000);
+        RuleFor(x => x.StructuredContent).MaximumLength(200_000);
     }
 }
 
@@ -202,4 +203,3 @@ internal class WorldBuildingAgentContextInfoDtoValidator : AbstractValidator<Wor
         });
     }
 }
-

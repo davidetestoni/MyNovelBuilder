@@ -26,4 +26,9 @@ public class ChatMessage
     /// The text content of the chat message.
     /// </summary>
     public required string TextContent { get; set;  }
+
+    /// <summary>
+    /// Optional raw structured output associated with an assistant message.
+    /// </summary>
+    public string? StructuredContent { get; set; }
 }

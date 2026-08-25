@@ -199,7 +199,8 @@ public class WorldBuildingSessionService : IWorldBuildingSessionService
             Id = Guid.NewGuid(),
             SentAt = DateTime.UtcNow,
             Role = ChatMessageRole.Assistant,
-            TextContent = agentResponse.AssistantMessage
+            TextContent = agentResponse.AssistantMessage,
+            StructuredContent = responseJson
         };
 
         session.Messages.Add(userMessage);
@@ -347,11 +348,7 @@ public class WorldBuildingSessionService : IWorldBuildingSessionService
             CompendiumRecordIds = session.Context.CompendiumRecordIds,
             FreeformPremise = session.Context.FreeformPremise,
             UserMessage = userMessage,
-            PreviousMessages = session.Messages.Select(message => new ChatMessageDto
-            {
-                Role = message.Role,
-                TextContent = message.TextContent
-            }),
+            PreviousMessages = BuildPreviousMessages(session),
             PreviousProposals = session.Proposals.Select(proposal => new WorldBuildingProposalSummaryDto
             {
                 Status = proposal.Status.ToString(),
@@ -359,6 +356,85 @@ public class WorldBuildingSessionService : IWorldBuildingSessionService
                 Name = proposal.Operation.Name,
                 Rationale = proposal.Rationale
             })
+        };
+    }
+
+    private IEnumerable<ChatMessageDto> BuildPreviousMessages(WorldBuildingSession session)
+    {
+        return session.Messages.Select(message => new ChatMessageDto
+        {
+            Role = message.Role,
+            TextContent = message.TextContent,
+            StructuredContent = message.Role == ChatMessageRole.Assistant
+                ? message.StructuredContent ?? BuildStructuredResponse(session, message)
+                : null
+        });
+    }
+
+    private string BuildStructuredResponse(
+        WorldBuildingSession session,
+        ChatMessage message)
+    {
+        var response = new WorldBuildingAgentResponseDto
+        {
+            AssistantMessage = message.TextContent,
+            Proposals = session.Proposals
+                .Where(proposal => proposal.MessageId == message.Id)
+                .Select(ToAgentProposalDto)
+                .ToList()
+        };
+
+        return JsonSerializer.Serialize(response, _jsonSerializerOptions);
+    }
+
+    private static WorldBuildingAgentProposalDto ToAgentProposalDto(
+        WorldBuildingProposal proposal)
+    {
+        var operation = proposal.Operation;
+
+        return operation.Kind switch
+        {
+            WorldBuildingOperationKind.CreateCompendium =>
+                new CreateCompendiumWorldBuildingAgentProposalDto
+                {
+                    Name = operation.Name,
+                    Description = operation.Description,
+                    Rationale = proposal.Rationale
+                },
+            WorldBuildingOperationKind.UpdateCompendium =>
+                new UpdateCompendiumWorldBuildingAgentProposalDto
+                {
+                    TargetCompendiumId = operation.TargetCompendiumId?.ToString(),
+                    Name = operation.Name,
+                    Description = operation.Description,
+                    Rationale = proposal.Rationale
+                },
+            WorldBuildingOperationKind.CreateCompendiumRecord =>
+                new CreateRecordWorldBuildingAgentProposalDto
+                {
+                    TargetCompendiumId = operation.TargetCompendiumId?.ToString(),
+                    Name = operation.Name,
+                    Aliases = operation.Aliases,
+                    Type = operation.Type,
+                    Context = operation.Context,
+                    AlwaysIncluded = operation.AlwaysIncluded,
+                    Rationale = proposal.Rationale
+                },
+            WorldBuildingOperationKind.UpdateCompendiumRecord =>
+                new UpdateRecordWorldBuildingAgentProposalDto
+                {
+                    TargetRecordId = operation.TargetRecordId?.ToString(),
+                    Name = operation.Name,
+                    Aliases = operation.Aliases,
+                    Type = operation.Type,
+                    Context = operation.Context,
+                    AlwaysIncluded = operation.AlwaysIncluded,
+                    Rationale = proposal.Rationale
+                },
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(proposal),
+                operation.Kind,
+                "Unsupported world-building operation kind.")
         };
     }
 

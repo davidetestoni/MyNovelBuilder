@@ -149,7 +149,10 @@ public class WorldBuildingAgentPromptBuilder : PromptBuilderBase
 
         foreach (var message in previousMessages)
         {
-            builder.AppendLine($"{message.Role}: {message.TextContent.StripHtml()}");
+            var content = string.IsNullOrWhiteSpace(message.StructuredContent)
+                ? message.TextContent.StripHtml()
+                : message.StructuredContent;
+            builder.AppendLine($"{message.Role}: {content}");
             builder.AppendLine();
         }
 
