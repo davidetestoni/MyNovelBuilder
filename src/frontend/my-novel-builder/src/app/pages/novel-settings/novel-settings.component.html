@@ -196,15 +196,15 @@
                 filterPlaceholder="Search records"
               >
                 <ng-template #item let-record>
-                  <app-record-option-preview
-                    [name]="record.name"
+                  <app-option-preview
+                    [label]="record.name"
                     [imageUrl]="record.imageUrl"
                   />
                 </ng-template>
                 <ng-template #selectedItem let-record>
                   @if (record) {
-                    <app-record-option-preview
-                      [name]="record.name"
+                    <app-option-preview
+                      [label]="record.name"
                       [imageUrl]="record.imageUrl"
                     />
                   }

@@ -14,11 +14,18 @@ import { ButtonModule } from 'primeng/button';
 import { Select } from 'primeng/select';
 import { ToastrService } from 'ngx-toastr';
 import { finalize } from 'rxjs';
+import { OptionPreviewComponent } from '../option-preview/option-preview.component';
 
 @Component({
   selector: 'app-create-chat',
   standalone: true,
-  imports: [FormsModule, ReactiveFormsModule, ButtonModule, Select],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    Select,
+    OptionPreviewComponent,
+  ],
   templateUrl: './create-chat.component.html',
   styleUrls: ['./create-chat.component.scss'],
 })

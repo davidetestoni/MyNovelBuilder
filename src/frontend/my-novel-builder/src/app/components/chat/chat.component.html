@@ -83,8 +83,8 @@
               [style]="{ width: '180px' }"
             >
               <ng-template #item let-record>
-                <app-record-option-preview
-                  [name]="record.name"
+                <app-option-preview
+                  [label]="record.name"
                   [imageUrl]="record.imageUrl"
                 />
               </ng-template>

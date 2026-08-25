@@ -27,7 +27,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/compendium-option-preview.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
-import { RecordOptionPreviewComponent } from '../record-option-preview/record-option-preview.component';
+import { OptionPreviewComponent } from '../option-preview/option-preview.component';
 import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message.component';
 import { CompendiumService } from '../../services/compendium.service';
 import { LocalStorageService } from '../../services/local-storage.service';
@@ -64,7 +64,7 @@ import { v4 as uuidv4 } from 'uuid';
     ModelSelectComponent,
     PromptSelectComponent,
     CompendiumOptionPreviewComponent,
-    RecordOptionPreviewComponent,
+    OptionPreviewComponent,
     ConfirmDialogModule,
   ],
   providers: [ConfirmationService, DialogService],

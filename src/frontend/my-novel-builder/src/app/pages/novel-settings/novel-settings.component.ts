@@ -35,7 +35,7 @@ import {
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 import { CompendiumOptionPreviewComponent } from '../../components/compendium-option-preview/compendium-option-preview.component';
-import { RecordOptionPreviewComponent } from '../../components/record-option-preview/record-option-preview.component';
+import { OptionPreviewComponent } from '../../components/option-preview/option-preview.component';
 import {
   ImportMarkdownDialogComponent,
   ImportMarkdownDialogResult,
@@ -59,7 +59,7 @@ import {
     ConfirmDialogModule,
     ToastrModule,
     CompendiumOptionPreviewComponent,
-    RecordOptionPreviewComponent,
+    OptionPreviewComponent,
   ],
   providers: [DialogService, ConfirmationService],
   templateUrl: './novel-settings.component.html',

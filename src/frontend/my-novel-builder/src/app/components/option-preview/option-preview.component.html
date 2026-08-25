@@ -1,0 +1,12 @@
+<div class="option-preview">
+  <div class="option-preview-image">
+    @if (imageUrl) {
+      <img [src]="imageUrl" [alt]="label" />
+    } @else {
+      <div class="no-image">
+        <i [class]="'icon ' + fallbackIcon"></i>
+      </div>
+    }
+  </div>
+  <span>{{ label }}</span>
+</div>

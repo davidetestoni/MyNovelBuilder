@@ -16,7 +16,7 @@ import {
 } from 'primeng/autocomplete';
 import { Prose } from '../../types/dtos/novel/prose';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
-import { RecordOptionPreviewComponent } from '../record-option-preview/record-option-preview.component';
+import { OptionPreviewComponent } from '../option-preview/option-preview.component';
 
 export interface RecordOverridesEditorComponentData {
   recordOverrides: RecordOverride[];
@@ -44,7 +44,7 @@ interface EditableRecordOverride extends RecordOverride {
     TooltipModule,
     AutoCompleteModule,
     ToastrModule,
-    RecordOptionPreviewComponent,
+    OptionPreviewComponent,
   ],
   templateUrl: './record-overrides-editor.component.html',
   styleUrl: './record-overrides-editor.component.scss',
