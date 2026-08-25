@@ -513,6 +513,53 @@ describe('ChatComponent workflow', () => {
     expect(generateTextService.generateText).not.toHaveBeenCalled();
   });
 
+  it('expands the default filters to all available compendia and records', () => {
+    component.compendia.set([
+      compendium('compendium-1', ['record-1', 'shared-record']),
+      compendium('compendium-2', ['shared-record', 'record-2']),
+    ]);
+    component.currentChat.context.compendiumIds = [];
+    component.currentChat.context.compendiumRecordIds = [];
+    component.userInput = 'Use all context';
+    selectGenerationOptions();
+
+    component.previewMessage();
+
+    const request = previewDialogService.open.calls.mostRecent()
+      .args[0] as GenerateTextRequestDto;
+    const context = request.contextInfo as SendChatMessageContextInfoDto;
+    expect(context.compendiumIds).toEqual([
+      'compendium-1',
+      'compendium-2',
+    ]);
+    expect(context.compendiumRecordIds).toEqual([
+      'record-1',
+      'shared-record',
+      'record-2',
+    ]);
+    expect(component.currentChat.context.compendiumIds).toEqual([]);
+    expect(component.currentChat.context.compendiumRecordIds).toEqual([]);
+  });
+
+  it('preserves explicit compendium and record filters', () => {
+    component.compendia.set([
+      compendium('compendium-1', ['record-1']),
+      compendium('compendium-2', ['record-2']),
+    ]);
+    component.currentChat.context.compendiumIds = ['compendium-2'];
+    component.currentChat.context.compendiumRecordIds = ['record-2'];
+    component.userInput = 'Use selected context';
+    selectGenerationOptions();
+
+    component.previewMessage();
+
+    const request = previewDialogService.open.calls.mostRecent()
+      .args[0] as GenerateTextRequestDto;
+    const context = request.contextInfo as SendChatMessageContextInfoDto;
+    expect(context.compendiumIds).toEqual(['compendium-2']);
+    expect(context.compendiumRecordIds).toEqual(['record-2']);
+  });
+
   it('adds both messages and creates the generation request with prior history', () => {
     component.currentChat.context = {
       novelId: 'novel-1',

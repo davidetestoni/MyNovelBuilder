@@ -498,8 +498,8 @@ export class ChatComponent
       chapterIndex: this.currentChat.context.chapterIndex,
       userMessage,
       previousMessages: chatHistory,
-      compendiumIds: this.currentChat.context.compendiumIds,
-      compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
+      compendiumIds: this.getEffectiveCompendiumIds(),
+      compendiumRecordIds: this.getEffectiveCompendiumRecordIds(),
     };
 
     return {
@@ -507,6 +507,24 @@ export class ChatComponent
       promptId: this.selectedPromptId,
       contextInfo,
     };
+  }
+
+  private getEffectiveCompendiumIds(): string[] {
+    if (this.currentChat.context.compendiumIds.length > 0) {
+      return [...this.currentChat.context.compendiumIds];
+    }
+
+    return this.compendia()?.map((compendium) => compendium.id) ?? [];
+  }
+
+  private getEffectiveCompendiumRecordIds(): string[] {
+    if (this.currentChat.context.compendiumRecordIds.length > 0) {
+      return [...this.currentChat.context.compendiumRecordIds];
+    }
+
+    return [
+      ...new Set(this.allAvailableRecords().map((record) => record.id)),
+    ];
   }
 
   private finishGeneration(): void {
