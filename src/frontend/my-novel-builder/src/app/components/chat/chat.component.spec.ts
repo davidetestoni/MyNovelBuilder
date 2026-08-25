@@ -35,6 +35,7 @@ import { WritingLanguage } from '../../types/enums/writing-language';
 import { WritingPov } from '../../types/enums/writing-pov';
 import { WritingTense } from '../../types/enums/writing-tense';
 import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import { ChatComponent } from './chat.component';
 
 describe('ChatComponent workflow', () => {
@@ -45,6 +46,7 @@ describe('ChatComponent workflow', () => {
   let confirmationService: jasmine.SpyObj<ConfirmationService>;
   let dialogService: jasmine.SpyObj<DialogService>;
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
   let localStorageService: jasmine.SpyObj<LocalStorageService>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let generation: Subject<GenerateTextStreamUpdate>;
@@ -167,6 +169,11 @@ describe('ChatComponent workflow', () => {
       'GenerateTextService',
       ['generateText'],
     );
+    previewDialogService =
+      jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+        'GenerateTextPreviewDialogService',
+        ['open'],
+      );
     localStorageService = jasmine.createSpyObj<LocalStorageService>(
       'LocalStorageService',
       ['setNestedStringForKey'],
@@ -186,6 +193,7 @@ describe('ChatComponent workflow', () => {
       ]),
     );
     generateTextService.generateText.and.returnValue(generation);
+    previewDialogService.open.and.returnValue(dialogRef);
     dialogService.open.and.returnValue(dialogRef);
 
     TestBed.configureTestingModule({
@@ -196,6 +204,10 @@ describe('ChatComponent workflow', () => {
         { provide: ConfirmationService, useValue: confirmationService },
         { provide: DialogService, useValue: dialogService },
         { provide: GenerateTextService, useValue: generateTextService },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
+        },
         { provide: LocalStorageService, useValue: localStorageService },
         { provide: ToastrService, useValue: toastr },
       ],
@@ -445,6 +457,59 @@ describe('ChatComponent workflow', () => {
     component.sendMessage();
 
     expect(component.currentChat.messages).toEqual([]);
+    expect(generateTextService.generateText).not.toHaveBeenCalled();
+  });
+
+  it('does not preview when input or generation options are invalid', () => {
+    component.userInput = 'Message';
+
+    component.previewMessage();
+
+    expect(previewDialogService.open).not.toHaveBeenCalled();
+    expect(component.currentChat.messages).toEqual([]);
+  });
+
+  it('previews the exact request without changing the conversation', () => {
+    component.currentChat.context = {
+      novelId: 'novel-1',
+      chapterIndex: 2,
+      compendiumIds: ['compendium-1'],
+      compendiumRecordIds: ['record-1'],
+    };
+    component.currentChat.messages = [
+      message('old-user', ChatMessageRole.User, 'Earlier question'),
+      message('old-assistant', ChatMessageRole.Assistant, 'Earlier answer'),
+    ];
+    component.userInput = 'New question';
+    selectGenerationOptions();
+
+    component.previewMessage();
+
+    const expectedContext: SendChatMessageContextInfoDto = {
+      $type: NovelTextGenerationType.SendChatMessage,
+      novelId: 'novel-1',
+      chapterIndex: 2,
+      userMessage: 'New question',
+      previousMessages: [
+        { role: ChatMessageRole.User, textContent: 'Earlier question' },
+        {
+          role: ChatMessageRole.Assistant,
+          textContent: 'Earlier answer',
+        },
+      ],
+      compendiumIds: ['compendium-1'],
+      compendiumRecordIds: ['record-1'],
+    };
+    const expectedRequest: GenerateTextRequestDto = {
+      model: 'model-a',
+      promptId: 'prompt-a',
+      contextInfo: expectedContext,
+    };
+    expect(previewDialogService.open).toHaveBeenCalledOnceWith(
+      expectedRequest,
+    );
+    expect(component.currentChat.messages.length).toBe(2);
+    expect(component.userInput).toBe('New question');
     expect(generateTextService.generateText).not.toHaveBeenCalled();
   });
 

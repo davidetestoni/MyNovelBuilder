@@ -50,6 +50,7 @@ import { PromptSelectComponent } from '../prompt-select/prompt-select.component'
 import { ModelSelectComponent } from '../model-select/model-select.component';
 import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/compendium-option-preview.component';
 import { OptionPreviewComponent } from '../option-preview/option-preview.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 @Component({
   selector: 'app-chat',
@@ -71,7 +72,11 @@ import { OptionPreviewComponent } from '../option-preview/option-preview.compone
     CompendiumOptionPreviewComponent,
     OptionPreviewComponent,
   ],
-  providers: [ConfirmationService, DialogService],
+  providers: [
+    ConfirmationService,
+    DialogService,
+    GenerateTextPreviewDialogService,
+  ],
 })
 export class ChatComponent
   implements OnChanges, OnDestroy, AfterViewChecked
@@ -89,6 +94,7 @@ export class ChatComponent
   private dialogService = inject(DialogService);
   private generateTextService = inject(GenerateTextService);
   private localStorageService = inject(LocalStorageService);
+  private previewDialogService = inject(GenerateTextPreviewDialogService);
 
   private dialogRef: DynamicDialogRef | null = null;
   private contextSubscriptions = new Subscription();
@@ -140,16 +146,19 @@ export class ChatComponent
   }
 
   sendMessage(): void {
-    if (
-      !this.userInput.trim() ||
-      this.isGenerating ||
-      !this.selectedModel ||
-      !this.selectedPromptId
-    ) {
+    if (!this.canSendMessage()) {
       return;
     }
 
     const userMessageContent = this.userInput;
+    const request = this.buildGenerationRequest(
+      userMessageContent,
+      this.currentChat.messages,
+    );
+    if (request === null) {
+      return;
+    }
+
     this.userInput = '';
 
     // Add user message
@@ -170,7 +179,30 @@ export class ChatComponent
     };
     this.currentChat.messages.push(assistantMessage);
 
-    this.executeGeneration(userMessageContent, assistantMessage);
+    this.executeGeneration(request, assistantMessage);
+  }
+
+  canSendMessage(): boolean {
+    return Boolean(
+      this.userInput.trim() &&
+        !this.isGenerating &&
+        this.selectedModel &&
+        this.selectedPromptId,
+    );
+  }
+
+  previewMessage(): void {
+    if (!this.canSendMessage()) {
+      return;
+    }
+
+    const request = this.buildGenerationRequest(
+      this.userInput,
+      this.currentChat.messages,
+    );
+    if (request !== null) {
+      this.dialogRef = this.previewDialogService.open(request);
+    }
   }
 
   private scrollToBottom(): void {
@@ -375,6 +407,13 @@ export class ChatComponent
 
     const userMessageContent = message.textContent;
     const index = this.currentChat.messages.indexOf(message);
+    const request = this.buildGenerationRequest(
+      userMessageContent,
+      this.currentChat.messages.slice(0, index),
+    );
+    if (request === null) {
+      return;
+    }
 
     // Create placeholder assistant message
     const assistantMessage: ChatMessage = {
@@ -387,47 +426,22 @@ export class ChatComponent
     // Insert after the user message
     this.currentChat.messages.splice(index + 1, 0, assistantMessage);
 
-    this.executeGeneration(userMessageContent, assistantMessage);
+    this.executeGeneration(request, assistantMessage);
   }
 
   private executeGeneration(
-    userMessageContent: string,
+    request: GenerateTextRequestDto,
     assistantMessage: ChatMessage,
   ): void {
-    if (!this.selectedModel || !this.selectedPromptId) {
-      return;
-    }
-
     // Save selected prompt
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
       PromptType.SendChatMessage,
-      this.selectedPromptId,
+      request.promptId,
     );
 
     this.isGenerating = true;
     this.shouldScrollToBottom = true;
-
-    const assistantIndex = this.currentChat.messages.indexOf(assistantMessage);
-    const previousMessages: ChatMessageDto[] = this.currentChat.messages
-      .slice(0, assistantIndex - 1)
-      .map((m) => ({ role: m.role, textContent: m.textContent }));
-
-    const contextInfo: SendChatMessageContextInfoDto = {
-      $type: NovelTextGenerationType.SendChatMessage,
-      novelId: this.currentChat.context.novelId,
-      chapterIndex: this.currentChat.context.chapterIndex,
-      userMessage: userMessageContent,
-      previousMessages,
-      compendiumIds: this.currentChat.context.compendiumIds,
-      compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
-    };
-
-    const request: GenerateTextRequestDto = {
-      model: this.selectedModel,
-      promptId: this.selectedPromptId,
-      contextInfo: contextInfo,
-    };
 
     this.generationSubscription?.unsubscribe();
     const generationSubscription = this.generateTextService
@@ -464,6 +478,35 @@ export class ChatComponent
     this.generationSubscription = generationSubscription.closed
       ? null
       : generationSubscription;
+  }
+
+  private buildGenerationRequest(
+    userMessage: string,
+    previousMessages: ChatMessage[],
+  ): GenerateTextRequestDto | null {
+    if (!this.selectedModel || !this.selectedPromptId) {
+      return null;
+    }
+
+    const chatHistory: ChatMessageDto[] = previousMessages.map((message) => ({
+      role: message.role,
+      textContent: message.textContent,
+    }));
+    const contextInfo: SendChatMessageContextInfoDto = {
+      $type: NovelTextGenerationType.SendChatMessage,
+      novelId: this.currentChat.context.novelId,
+      chapterIndex: this.currentChat.context.chapterIndex,
+      userMessage,
+      previousMessages: chatHistory,
+      compendiumIds: this.currentChat.context.compendiumIds,
+      compendiumRecordIds: this.currentChat.context.compendiumRecordIds,
+    };
+
+    return {
+      model: this.selectedModel,
+      promptId: this.selectedPromptId,
+      contextInfo,
+    };
   }
 
   private finishGeneration(): void {

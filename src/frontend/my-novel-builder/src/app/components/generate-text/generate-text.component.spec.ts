@@ -1,9 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import {
-  DialogService,
-  DynamicDialogConfig,
-  DynamicDialogRef,
-} from 'primeng/dynamicdialog';
+import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { LocalStorageService } from '../../services/local-storage.service';
 import {
   GenerateTextContextInfoDto,
@@ -13,7 +9,7 @@ import {
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptType } from '../../types/enums/prompt-type';
-import { GenerateTextPreviewComponent } from '../generate-text-preview/generate-text-preview.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import {
   GenerateTextComponent,
   GenerateTextComponentData,
@@ -22,7 +18,7 @@ import {
 describe('GenerateTextComponent workflow', () => {
   let component: GenerateTextComponent;
   let localStorageService: jasmine.SpyObj<LocalStorageService>;
-  let dialogService: jasmine.SpyObj<DialogService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
   let config: { data: GenerateTextComponentData };
 
@@ -78,21 +74,25 @@ describe('GenerateTextComponent workflow', () => {
         'pushNestedRecentStringForKey',
       ],
     );
-    dialogService = jasmine.createSpyObj<DialogService>('DialogService', [
-      'open',
-    ]);
+    previewDialogService = jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+      'GenerateTextPreviewDialogService',
+      ['open'],
+    );
     dialogRef = jasmine.createSpyObj<DynamicDialogRef>('DynamicDialogRef', [
       'close',
     ]);
     config = { data: data() };
 
     localStorageService.getNestedStringForKey.and.returnValue(null);
-    dialogService.open.and.returnValue({} as DynamicDialogRef);
+    previewDialogService.open.and.returnValue({} as DynamicDialogRef);
 
     TestBed.configureTestingModule({
       providers: [
         { provide: LocalStorageService, useValue: localStorageService },
-        { provide: DialogService, useValue: dialogService },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
+        },
         { provide: DynamicDialogRef, useValue: dialogRef },
         { provide: DynamicDialogConfig, useValue: config },
       ],
@@ -288,7 +288,7 @@ describe('GenerateTextComponent workflow', () => {
   it('does not open a preview for an invalid form', () => {
     component.openPreviewDialog();
 
-    expect(dialogService.open).not.toHaveBeenCalled();
+    expect(previewDialogService.open).not.toHaveBeenCalled();
   });
 
   it('opens a preview with the same normalized request and saves its model', () => {
@@ -300,24 +300,16 @@ describe('GenerateTextComponent workflow', () => {
 
     component.openPreviewDialog();
 
-    expect(dialogService.open).toHaveBeenCalledOnceWith(
-      GenerateTextPreviewComponent,
-      jasmine.objectContaining({
-        header: 'Prompt Preview',
-        width: '50vw',
-        modal: true,
-        data: {
-          request: {
-            promptId: 'prompt-b',
-            model: 'model-a',
-            contextInfo: {
-              ...contextInfo(),
-              instructions: 'Preview this',
-            },
-          },
-        },
-      }),
-    );
+    const previewContext: GenerateTextContextInfoDto = {
+      ...contextInfo(),
+      instructions: 'Preview this',
+    };
+    const previewRequest = {
+      promptId: 'prompt-b',
+      model: 'model-a',
+      contextInfo: previewContext,
+    };
+    expect(previewDialogService.open).toHaveBeenCalledOnceWith(previewRequest);
     expect(
       localStorageService.pushNestedRecentStringForKey,
     ).toHaveBeenCalledOnceWith(

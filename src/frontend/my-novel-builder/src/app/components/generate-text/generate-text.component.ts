@@ -20,9 +20,9 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
-import { GenerateTextPreviewComponent } from '../generate-text-preview/generate-text-preview.component';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 export interface GenerateTextComponentData {
   prompts: PromptDto[];
@@ -46,14 +46,14 @@ export interface GenerateTextComponentData {
     PromptSelectComponent,
     ModelSelectComponent,
   ],
-  providers: [DialogService],
+  providers: [DialogService, GenerateTextPreviewDialogService],
   templateUrl: './generate-text.component.html',
   styleUrl: './generate-text.component.scss',
 })
 export class GenerateTextComponent {
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
-  private dialogService = inject(DialogService);
+  private previewDialogService = inject(GenerateTextPreviewDialogService);
 
   data!: GenerateTextComponentData;
   instructionsRequired = false;
@@ -180,20 +180,7 @@ export class GenerateTextComponent {
 
     this.saveRecentModelForContext();
 
-    this.dialogService.open(GenerateTextPreviewComponent, {
-      header: 'Prompt Preview',
-      width: '50vw',
-      contentStyle: { overflow: 'auto' },
-      baseZIndex: 10000,
-      modal: true,
-      closable: true,
-      closeOnEscape: true,
-      dismissableMask: true,
-      focusOnShow: false,
-      data: {
-        request,
-      },
-    });
+    this.previewDialogService.open(request);
   }
 
   private buildRequest(): GenerateTextRequestDto | null {
