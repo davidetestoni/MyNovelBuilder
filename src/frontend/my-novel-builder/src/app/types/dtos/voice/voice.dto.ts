@@ -8,4 +8,5 @@ export interface VoiceDto {
   name: string;
   voiceGender: VoiceGender;
   language: WritingLanguage;
+  transcript?: string | null;
 }

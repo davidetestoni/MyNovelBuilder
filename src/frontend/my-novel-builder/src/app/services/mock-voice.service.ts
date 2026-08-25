@@ -19,6 +19,7 @@ export class MockVoiceService extends VoiceService {
     name: string,
     voiceGender: VoiceGender,
     language: WritingLanguage,
+    transcript: string | null,
     _file: File,
   ): Observable<VoiceDto> {
     const now = new Date().toISOString();
@@ -29,6 +30,7 @@ export class MockVoiceService extends VoiceService {
       name,
       voiceGender,
       language,
+      transcript,
     };
 
     this.voices = [voice, ...this.voices];
@@ -40,6 +42,7 @@ export class MockVoiceService extends VoiceService {
     name: string,
     voiceGender: VoiceGender,
     language: WritingLanguage,
+    transcript: string | null,
     _file: File,
   ): Observable<VoiceDto> {
     const current = this.voices.find((v) => v.id === id);
@@ -50,6 +53,7 @@ export class MockVoiceService extends VoiceService {
       name,
       voiceGender,
       language,
+      transcript,
     };
 
     this.voices = this.voices.map((voice) => (voice.id === id ? updated : voice));

@@ -1,4 +1,5 @@
 export enum TtsProvider {
+  Audio8 = 'audio8',
   Chatterbox = 'chatterbox',
   Custom = 'custom',
   DeApi = 'deApi',

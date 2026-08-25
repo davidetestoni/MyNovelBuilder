@@ -43,6 +43,11 @@ public class IntegrationsConfig
     public const string DefaultOmniVoiceBaseUrl = "http://localhost:8000/";
 
     /// <summary>
+    /// The default base URL for the Audio8 provider.
+    /// </summary>
+    public const string DefaultAudio8BaseUrl = "http://localhost:8000/";
+
+    /// <summary>
     /// The OpenRouter API key.
     /// </summary>
     public string? OpenRouterApiKey { get; set; }
@@ -101,6 +106,11 @@ public class IntegrationsConfig
     /// The base URL for the OmniVoice provider.
     /// </summary>
     public string OmniVoiceBaseUrl { get; set; } = DefaultOmniVoiceBaseUrl;
+
+    /// <summary>
+    /// The base URL for the Audio8 provider.
+    /// </summary>
+    public string Audio8BaseUrl { get; set; } = DefaultAudio8BaseUrl;
     
     /// <summary>
     /// The Text Generation provider to use to generate text.

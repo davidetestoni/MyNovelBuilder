@@ -17,6 +17,7 @@ export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   chatterboxBaseUrl: 'http://localhost:8000/',
   qwen3BaseUrl: 'http://localhost:8000/',
   omniVoiceBaseUrl: 'http://localhost:8000/',
+  audio8BaseUrl: 'http://localhost:8000/',
   textGenerationProvider: TextGenerationProvider.OpenRouter,
   textGenerationModelId: 'openrouter/auto',
   ttsProvider: TtsProvider.Custom,

@@ -64,4 +64,9 @@ public enum TtsProvider
     /// OpenRouter TTS provider.
     /// </summary>
     OpenRouter,
+
+    /// <summary>
+    /// Audio8 TTS provider.
+    /// </summary>
+    Audio8,
 }

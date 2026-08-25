@@ -21,12 +21,14 @@ export class ApiVoiceService extends VoiceService {
     name: string,
     voiceGender: VoiceGender,
     language: WritingLanguage,
+    transcript: string | null,
     file: File,
   ): Observable<VoiceDto> {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('voiceGender', voiceGender);
     formData.append('language', language);
+    formData.append('transcript', transcript ?? '');
     formData.append('file', file);
     return this.http.post<VoiceDto>(`${this.baseUrl}/voices`, formData);
   }
@@ -36,6 +38,7 @@ export class ApiVoiceService extends VoiceService {
     name: string,
     voiceGender: VoiceGender,
     language: WritingLanguage,
+    transcript: string | null,
     file: File,
   ): Observable<VoiceDto> {
     const formData = new FormData();
@@ -43,6 +46,7 @@ export class ApiVoiceService extends VoiceService {
     formData.append('name', name);
     formData.append('voiceGender', voiceGender);
     formData.append('language', language);
+    formData.append('transcript', transcript ?? '');
     formData.append('file', file);
     return this.http.put<VoiceDto>(`${this.baseUrl}/voices`, formData);
   }

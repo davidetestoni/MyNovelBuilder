@@ -66,6 +66,11 @@ public class IntegrationsConfigDto
     /// The configured base URL for the OmniVoice provider.
     /// </summary>
     public required string OmniVoiceBaseUrl { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the Audio8 provider.
+    /// </summary>
+    public required string Audio8BaseUrl { get; init; }
     
     /// <summary>
     /// The configured Text Generation provider.

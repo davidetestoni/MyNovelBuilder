@@ -72,6 +72,21 @@
         }
       </div>
 
+      <div class="form-field">
+        <label for="transcript" class="form-field-label">Voice Sample Transcript</label>
+        <textarea
+          pInputTextarea
+          id="transcript"
+          formControlName="transcript"
+          rows="5"
+          placeholder="Enter exactly what is spoken in the voice sample"
+        ></textarea>
+        <small>
+          Required by voice-cloning providers such as Audio8. The transcript should
+          match the recording exactly.
+        </small>
+      </div>
+
       <div class="form-buttons-container">
         <p-button
           label="Cancel"

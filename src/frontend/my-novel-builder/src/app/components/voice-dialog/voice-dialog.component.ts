@@ -87,6 +87,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
     name: new FormControl('', [Validators.required, Validators.maxLength(100)]),
     voiceGender: new FormControl<VoiceGender>(VoiceGender.Both, [Validators.required]),
     language: new FormControl<WritingLanguage>(WritingLanguage.English, [Validators.required]),
+    transcript: new FormControl('', [Validators.maxLength(50_000)]),
     file: new FormControl<File | null>(null, [Validators.required]),
   });
 
@@ -96,6 +97,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
         name: this.data.voice.name,
         voiceGender: this.data.voice.voiceGender,
         language: this.data.voice.language,
+        transcript: this.data.voice.transcript ?? '',
       });
     }
   }
@@ -251,6 +253,9 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
     );
     this.formGroup.controls.file.setValue(designedVoiceFile);
     this.formGroup.controls.file.markAsDirty();
+    this.formGroup.controls.transcript.setValue(
+      this.voiceDesignFormGroup.controls.prompt.value?.trim() ?? '',
+    );
     this.selectedFileName = designedVoiceFile.name;
     this.closeVoiceDesignDialog();
   }
@@ -286,6 +291,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
     const name = this.formGroup.controls.name.value?.trim() ?? '';
     const voiceGender = this.formGroup.controls.voiceGender.value ?? VoiceGender.Both;
     const language = this.formGroup.controls.language.value ?? WritingLanguage.English;
+    const transcript = this.formGroup.controls.transcript.value?.trim() || null;
     const file = this.formGroup.controls.file.value;
 
     if (!name || file === null) {
@@ -294,7 +300,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
 
     if (this.data.mode === 'edit' && this.data.voice) {
       this.voiceService
-        .updateVoice(this.data.voice.id, name, voiceGender, language, file)
+        .updateVoice(this.data.voice.id, name, voiceGender, language, transcript, file)
         .subscribe(() => {
           this.toastr.success('Voice updated successfully.');
           this.dialogRef.close(true);
@@ -302,7 +308,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.voiceService.createVoice(name, voiceGender, language, file).subscribe(() => {
+    this.voiceService.createVoice(name, voiceGender, language, transcript, file).subscribe(() => {
       this.toastr.success('Voice created successfully.');
       this.dialogRef.close(true);
     });

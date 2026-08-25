@@ -43,6 +43,7 @@ describe('IntegrationsComponent workflows', () => {
     chatterboxBaseUrl: 'http://chatterbox/',
     qwen3BaseUrl: 'http://qwen/',
     omniVoiceBaseUrl: 'http://omni/',
+    audio8BaseUrl: 'http://audio8/',
     textGenerationProvider: TextGenerationProvider.OpenRouter,
     textGenerationModelId: 'structured-model',
     ttsProvider: TtsProvider.Qwen3,
@@ -380,6 +381,7 @@ describe('IntegrationsComponent workflows', () => {
       [TtsProvider.Chatterbox, 'chatterboxBaseUrl', 'Chatterbox', 'http://localhost:8000/'],
       [TtsProvider.Qwen3, 'qwen3BaseUrl', 'Qwen3', 'http://localhost:8000/'],
       [TtsProvider.OmniVoice, 'omniVoiceBaseUrl', 'OmniVoice', 'http://localhost:8000/'],
+      [TtsProvider.Audio8, 'audio8BaseUrl', 'Audio8', 'http://localhost:8000/'],
     ] as const;
 
     for (const [provider, controlName, label, placeholder] of cases) {

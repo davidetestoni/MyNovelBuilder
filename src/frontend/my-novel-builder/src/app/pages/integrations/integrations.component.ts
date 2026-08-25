@@ -77,6 +77,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     chatterboxBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     qwen3BaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     omniVoiceBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    audio8BaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
     ttsEnableTextEmphasis: new FormControl<boolean>(false),
@@ -188,6 +189,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           chatterboxBaseUrl: config.chatterboxBaseUrl,
           qwen3BaseUrl: config.qwen3BaseUrl,
           omniVoiceBaseUrl: config.omniVoiceBaseUrl,
+          audio8BaseUrl: config.audio8BaseUrl,
           ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
           ttsEnableImmersive: config.ttsEnableImmersive,
           ttsImmersivePauseMs: config.ttsImmersivePauseMs,
@@ -264,6 +266,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         return this.integrationsForm.controls.qwen3BaseUrl;
       case TtsProvider.OmniVoice:
         return this.integrationsForm.controls.omniVoiceBaseUrl;
+      case TtsProvider.Audio8:
+        return this.integrationsForm.controls.audio8BaseUrl;
       default:
         return null;
     }
@@ -283,6 +287,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         return 'Qwen3';
       case TtsProvider.OmniVoice:
         return 'OmniVoice';
+      case TtsProvider.Audio8:
+        return 'Audio8';
       default:
         return null;
     }
@@ -297,6 +303,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       case TtsProvider.Chatterbox:
       case TtsProvider.Qwen3:
       case TtsProvider.OmniVoice:
+      case TtsProvider.Audio8:
         return 'http://localhost:8000/';
       default:
         return 'http://localhost:8000/';
@@ -601,6 +608,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       chatterboxBaseUrl: this.integrationsForm.value.chatterboxBaseUrl ?? undefined,
       qwen3BaseUrl: this.integrationsForm.value.qwen3BaseUrl ?? undefined,
       omniVoiceBaseUrl: this.integrationsForm.value.omniVoiceBaseUrl ?? undefined,
+      audio8BaseUrl: this.integrationsForm.value.audio8BaseUrl ?? undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,

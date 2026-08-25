@@ -11,6 +11,7 @@ export abstract class VoiceService {
     name: string,
     voiceGender: VoiceGender,
     language: WritingLanguage,
+    transcript: string | null,
     file: File,
   ): Observable<VoiceDto>;
   abstract updateVoice(
@@ -18,6 +19,7 @@ export abstract class VoiceService {
     name: string,
     voiceGender: VoiceGender,
     language: WritingLanguage,
+    transcript: string | null,
     file: File,
   ): Observable<VoiceDto>;
   abstract deleteVoice(id: string): Observable<void>;

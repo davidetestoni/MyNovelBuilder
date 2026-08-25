@@ -37,6 +37,7 @@ describe('VoiceDialogComponent workflows', () => {
     name: 'Existing voice',
     voiceGender: VoiceGender.Female,
     language: WritingLanguage.Italian,
+    transcript: 'Existing transcript',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-02T00:00:00Z',
   });
@@ -73,6 +74,7 @@ describe('VoiceDialogComponent workflows', () => {
       name: '  My voice  ',
       voiceGender: VoiceGender.Male,
       language: WritingLanguage.French,
+      transcript: '  The exact sample transcript.  ',
       file,
     });
     return file;
@@ -141,6 +143,7 @@ describe('VoiceDialogComponent workflows', () => {
       name: '',
       voiceGender: VoiceGender.Both,
       language: WritingLanguage.English,
+      transcript: '',
       file: null,
     });
     expect(component['formGroup'].invalid).toBeTrue();
@@ -158,6 +161,7 @@ describe('VoiceDialogComponent workflows', () => {
       name: 'Existing voice',
       voiceGender: VoiceGender.Female,
       language: WritingLanguage.Italian,
+      transcript: 'Existing transcript',
       file: null,
     });
     expect(component['formGroup'].invalid).toBeTrue();
@@ -433,6 +437,7 @@ describe('VoiceDialogComponent workflows', () => {
     const sample = new Blob(['audio'], { type: 'audio/wav' });
     component['generatedVoiceSample'] = sample;
     component['generatedVoiceSampleFileName'] = 'designed.wav';
+    component['voiceDesignFormGroup'].controls.prompt.setValue('  Designed sample words.  ');
     component['isVoiceDesignDialogVisible'] = true;
 
     component['applyDesignedVoice']();
@@ -443,6 +448,9 @@ describe('VoiceDialogComponent workflows', () => {
     expect(file?.type).toBe('audio/wav');
     expect(component['formGroup'].controls.file.dirty).toBeTrue();
     expect(component['selectedFileName']).toBe('designed.wav');
+    expect(component['formGroup'].controls.transcript.value).toBe(
+      'Designed sample words.',
+    );
     expect(component['isVoiceDesignDialogVisible']).toBeFalse();
   });
 
@@ -496,6 +504,7 @@ describe('VoiceDialogComponent workflows', () => {
       'My voice',
       VoiceGender.Male,
       WritingLanguage.French,
+      'The exact sample transcript.',
       file,
     );
     expect(toastr.success).toHaveBeenCalledOnceWith(
@@ -518,6 +527,7 @@ describe('VoiceDialogComponent workflows', () => {
       'My voice',
       VoiceGender.Male,
       WritingLanguage.French,
+      'The exact sample transcript.',
       file,
     );
     expect(toastr.success).toHaveBeenCalledOnceWith(

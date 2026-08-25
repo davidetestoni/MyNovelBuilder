@@ -16,6 +16,7 @@ export interface IntegrationsConfigDto {
   chatterboxBaseUrl: string;
   qwen3BaseUrl: string;
   omniVoiceBaseUrl: string;
+  audio8BaseUrl: string;
   textGenerationProvider: TextGenerationProvider;
   textGenerationModelId: string;
   ttsProvider: TtsProvider;
@@ -41,6 +42,7 @@ export interface UpdateIntegrationsConfigDto {
   chatterboxBaseUrl?: string | null;
   qwen3BaseUrl?: string | null;
   omniVoiceBaseUrl?: string | null;
+  audio8BaseUrl?: string | null;
   textGenerationProvider?: TextGenerationProvider | null;
   textGenerationModelId?: string | null;
   ttsProvider?: TtsProvider | null;

@@ -76,6 +76,7 @@ public class VoiceControllerIntegrationTests(
             name: "New Voice",
             voiceGender: VoiceGender.Both,
             language: WritingLanguage.Spanish,
+            transcript: "Estas son las palabras exactas.",
             fileName: "voice.wav",
             fileBytes: wavBytes);
 
@@ -90,6 +91,7 @@ public class VoiceControllerIntegrationTests(
         var createdVoice = dbContext.Voices.Single(v => v.Name == "New Voice");
         Assert.Equal(VoiceGender.Both, createdVoice.VoiceGender);
         Assert.Equal(WritingLanguage.Spanish, createdVoice.Language);
+        Assert.Equal("Estas son las palabras exactas.", createdVoice.Transcript);
 
         var wavPath = GetVoiceWavPath(createdVoice.Id);
         Assert.True(File.Exists(wavPath));
@@ -121,6 +123,7 @@ public class VoiceControllerIntegrationTests(
             name: "Updated Voice",
             voiceGender: VoiceGender.Female,
             language: WritingLanguage.French,
+            transcript: "Voici les mots exacts.",
             fileName: "updated.wav",
             fileBytes: updatedBytes,
             id: voice.Id);
@@ -137,6 +140,7 @@ public class VoiceControllerIntegrationTests(
         Assert.Equal("Updated Voice", updatedVoice.Name);
         Assert.Equal(VoiceGender.Female, updatedVoice.VoiceGender);
         Assert.Equal(WritingLanguage.French, updatedVoice.Language);
+        Assert.Equal("Voici les mots exacts.", updatedVoice.Transcript);
 
         var storedBytes = await File.ReadAllBytesAsync(wavPath);
         Assert.Equal(updatedBytes, storedBytes);
@@ -303,7 +307,8 @@ public class VoiceControllerIntegrationTests(
         string fileName,
         byte[] fileBytes,
         string contentType = "audio/wav",
-        Guid? id = null)
+        Guid? id = null,
+        string? transcript = null)
     {
         var content = new MultipartFormDataContent();
 
@@ -315,6 +320,11 @@ public class VoiceControllerIntegrationTests(
         content.Add(new StringContent(name), "name");
         content.Add(new StringContent(voiceGender.ToString()), "voiceGender");
         content.Add(new StringContent(language.ToString()), "language");
+
+        if (transcript is not null)
+        {
+            content.Add(new StringContent(transcript), "transcript");
+        }
 
         var fileContent = new ByteArrayContent(fileBytes);
         fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);

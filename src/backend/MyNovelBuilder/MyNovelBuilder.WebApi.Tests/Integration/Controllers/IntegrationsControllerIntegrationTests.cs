@@ -29,6 +29,7 @@ public class IntegrationsControllerIntegrationTests(
         {
             OpenRouterApiKey = "test-api-key",
             NanoGptApiKey = "nano-gpt-api-key",
+            Audio8BaseUrl = "http://audio8.test/",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/gpt-test",
             TtsProvider = TtsProvider.PocketTts,
@@ -51,6 +52,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.True(dto.HasOpenRouterApiKey);
         Assert.False(dto.HasGoogleGenAiApiKey);
         Assert.True(dto.HasNanoGptApiKey);
+        Assert.Equal(config.Audio8BaseUrl, dto.Audio8BaseUrl);
         Assert.Equal(TextGenerationProvider.OpenRouter, dto.TextGenerationProvider);
         Assert.Equal(config.TextGenerationModelId, dto.TextGenerationModelId);
         Assert.Equal(TtsProvider.PocketTts, dto.TtsProvider);
@@ -101,6 +103,7 @@ public class IntegrationsControllerIntegrationTests(
         {
             OpenRouterApiKey = "new-api-key",
             NanoGptApiKey = "new-nano-gpt-api-key",
+            Audio8BaseUrl = "http://new-audio8.test/",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/new-model",
             TtsProvider = TtsProvider.Kokoro,
@@ -122,6 +125,7 @@ public class IntegrationsControllerIntegrationTests(
         var updatedConfig = await IntegrationsService.GetConfigAsync();
         Assert.Equal(updateDto.OpenRouterApiKey, updatedConfig.OpenRouterApiKey);
         Assert.Equal(updateDto.NanoGptApiKey, updatedConfig.NanoGptApiKey);
+        Assert.Equal(updateDto.Audio8BaseUrl, updatedConfig.Audio8BaseUrl);
         Assert.Equal(updateDto.TextGenerationProvider, updatedConfig.TextGenerationProvider);
         Assert.Equal(updateDto.TextGenerationModelId, updatedConfig.TextGenerationModelId);
         Assert.Equal(updateDto.TtsProvider, updatedConfig.TtsProvider);

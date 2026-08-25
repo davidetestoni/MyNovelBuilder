@@ -49,6 +49,7 @@ public class IntegrationsController : ControllerBase
             ChatterboxBaseUrl = config.ChatterboxBaseUrl,
             Qwen3BaseUrl = config.Qwen3BaseUrl,
             OmniVoiceBaseUrl = config.OmniVoiceBaseUrl,
+            Audio8BaseUrl = config.Audio8BaseUrl,
             TextGenerationProvider = config.TextGenerationProvider,
             TextGenerationModelId = config.TextGenerationModelId,
             TtsProvider = config.TtsProvider,
@@ -153,6 +154,14 @@ public class IntegrationsController : ControllerBase
                 dto.OmniVoiceBaseUrl,
                 IntegrationsConfig.DefaultOmniVoiceBaseUrl);
             invalidatedTags.Add(Enums.TtsProvider.OmniVoice.ToString());
+        }
+
+        if (dto.Audio8BaseUrl is not null)
+        {
+            config.Audio8BaseUrl = ResolveBaseUrl(
+                dto.Audio8BaseUrl,
+                IntegrationsConfig.DefaultAudio8BaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.Audio8.ToString());
         }
         
         if (dto.TextGenerationProvider.HasValue)

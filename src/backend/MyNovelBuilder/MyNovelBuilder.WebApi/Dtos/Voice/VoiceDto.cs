@@ -36,4 +36,9 @@ public class VoiceDto
     /// The voice's language.
     /// </summary>
     public required WritingLanguage Language { get; set; }
+
+    /// <summary>
+    /// The exact transcript of the voice sample, when available.
+    /// </summary>
+    public string? Transcript { get; set; }
 }

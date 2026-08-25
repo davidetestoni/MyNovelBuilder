@@ -24,4 +24,10 @@ public class Voice : TimestampedEntity
     /// The language for this voice.
     /// </summary>
     public WritingLanguage Language { get; init; } = WritingLanguage.English;
+
+    /// <summary>
+    /// The exact transcript of the voice sample, when available.
+    /// </summary>
+    [MaxLength(50000)]
+    public string? Transcript { get; init; }
 }
