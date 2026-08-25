@@ -124,7 +124,7 @@ describe('GenerateTextPreviewComponent workflow', () => {
     component.ngOnInit();
 
     expect(generateTextService.getGenerationPreview).toHaveBeenCalledOnceWith(
-      config.data.request,
+      config.data.request!,
     );
     expect(generateTextService.getAvailableModelInfos).toHaveBeenCalledTimes(1);
     expect(component.preview).toBe(loadedPreview);
@@ -164,6 +164,59 @@ describe('GenerateTextPreviewComponent workflow', () => {
     component.ngOnInit();
 
     expect(component.estimatedInputPrice).toBeCloseTo(0.006, 10);
+  });
+
+  it('aggregates labeled batch requests and deduplicates included records', () => {
+    const firstRequest = request();
+    const secondRequest = request();
+    secondRequest.contextInfo = {
+      ...secondRequest.contextInfo,
+      chapterIndex: 1,
+    } as SummarizeTextContextInfoDto;
+    config.data = {
+      model: 'model-a',
+      items: [
+        { label: 'Chapter 1', request: firstRequest },
+        { label: 'Chapter 2', request: secondRequest },
+      ],
+    };
+    generateTextService.getGenerationPreview.and.returnValues(
+      of({ ...preview(['record-a']), inputTokens: 100 }),
+      of({ ...preview(['record-a', 'record-b']), inputTokens: 250 }),
+    );
+
+    component = TestBed.runInInjectionContext(
+      () => new GenerateTextPreviewComponent(),
+    );
+    component.ngOnInit();
+
+    expect(component.preview?.inputTokens).toBe(350);
+    expect(component.preview?.includedCompendiumRecordIds).toEqual([
+      'record-a',
+      'record-b',
+    ]);
+    expect(component.previewItems.map((item) => item.label)).toEqual([
+      'Chapter 1',
+      'Chapter 2',
+    ]);
+    expect(component.estimatedInputPrice).toBeCloseTo(0.0007, 10);
+  });
+
+  it('loads an externally supplied exact preview', () => {
+    const loadedPreview = preview();
+    config.data = {
+      model: 'model-a',
+      items: [{ preview: of(loadedPreview) }],
+    };
+
+    component = TestBed.runInInjectionContext(
+      () => new GenerateTextPreviewComponent(),
+    );
+    component.ngOnInit();
+
+    expect(component.preview).toBe(loadedPreview);
+    expect(generateTextService.getGenerationPreview).not.toHaveBeenCalled();
+    expect(component.isLoading).toBeFalse();
   });
 
   it('leaves pricing unavailable when the requested model is absent', () => {

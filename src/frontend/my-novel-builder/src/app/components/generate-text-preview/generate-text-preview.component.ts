@@ -2,7 +2,7 @@ import { DecimalPipe, TitleCasePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { TextareaModule } from 'primeng/textarea';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { CompendiumService } from '../../services/compendium.service';
 import { GenerateTextService } from '../../services/generate-text.service';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
@@ -12,7 +12,20 @@ import { TextGenerationModelInfoDto } from '../../types/dtos/generate/text-gener
 import { TextGenerationPreviewDto } from '../../types/dtos/generate/text-generation-preview.dto';
 
 export interface GenerateTextPreviewComponentData {
-  request: GenerateTextRequestDto;
+  request?: GenerateTextRequestDto;
+  model?: string;
+  items?: GenerateTextPreviewItemSource[];
+}
+
+export interface GenerateTextPreviewItemSource {
+  label?: string;
+  request?: GenerateTextRequestDto;
+  preview?: Observable<TextGenerationPreviewDto>;
+}
+
+export interface GenerateTextPreviewItem {
+  label?: string;
+  preview: TextGenerationPreviewDto;
 }
 
 @Component({
@@ -31,6 +44,8 @@ export class GenerateTextPreviewComponent implements OnInit {
 
   data!: GenerateTextPreviewComponentData;
   preview: TextGenerationPreviewDto | null = null;
+  previewItems: GenerateTextPreviewItem[] = [];
+  model = '';
   selectedModelInfo: TextGenerationModelInfoDto | null = null;
   includedRecords: CompendiumRecordDto[] = [];
   estimatedInputPrice: number | null = null;
@@ -42,18 +57,31 @@ export class GenerateTextPreviewComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const sources = this.getSources();
+    this.model = this.data.request?.model ?? this.data.model ?? '';
+    if (sources.length === 0 || !this.model) {
+      this.hasError = true;
+      this.isLoading = false;
+      return;
+    }
+
     forkJoin({
-      preview: this.generateTextService.getGenerationPreview(this.data.request),
+      previews: forkJoin(sources.map((source) => this.loadPreview(source))),
       modelInfos: this.generateTextService.getAvailableModelInfos(),
     }).subscribe({
-      next: ({ preview, modelInfos }) => {
-        this.preview = preview;
+      next: ({ previews, modelInfos }) => {
+        this.previewItems = previews.map((preview, index) => ({
+          label: sources[index].label,
+          preview,
+        }));
+        this.preview =
+          previews.length === 1 ? previews[0] : this.combinePreviews(previews);
         this.selectedModelInfo =
-          modelInfos.find((m) => m.id === this.data.request.model) ?? null;
+          modelInfos.find((modelInfo) => modelInfo.id === this.model) ?? null;
 
         if (this.selectedModelInfo !== null) {
           this.estimatedInputPrice =
-            preview.inputTokens * this.selectedModelInfo.inputTokenPrice;
+            this.preview.inputTokens * this.selectedModelInfo.inputTokenPrice;
         }
 
         this.loadIncludedRecords();
@@ -67,6 +95,45 @@ export class GenerateTextPreviewComponent implements OnInit {
 
   getRecordImage(record: CompendiumRecordDto): string | null {
     return record.media.find((image) => image.isCurrent)?.url ?? null;
+  }
+
+  private getSources(): GenerateTextPreviewItemSource[] {
+    if (this.data.request) {
+      return [{ request: this.data.request }];
+    }
+
+    return this.data.items ?? [];
+  }
+
+  private loadPreview(
+    source: GenerateTextPreviewItemSource,
+  ): Observable<TextGenerationPreviewDto> {
+    if (source.request) {
+      return this.generateTextService.getGenerationPreview(source.request);
+    }
+
+    if (source.preview) {
+      return source.preview;
+    }
+
+    throw new Error('A prompt preview source is required.');
+  }
+
+  private combinePreviews(
+    previews: TextGenerationPreviewDto[],
+  ): TextGenerationPreviewDto {
+    return {
+      inputTokens: previews.reduce(
+        (total, preview) => total + preview.inputTokens,
+        0,
+      ),
+      includedCompendiumRecordIds: [
+        ...new Set(
+          previews.flatMap((preview) => preview.includedCompendiumRecordIds),
+        ),
+      ],
+      finalMessages: previews.flatMap((preview) => preview.finalMessages),
+    };
   }
 
   private loadIncludedRecords(): void {

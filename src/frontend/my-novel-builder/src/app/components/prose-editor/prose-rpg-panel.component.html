@@ -50,6 +50,16 @@
     <button
       type="button"
       class="rpg-send-btn"
+      pTooltip="Preview prompt"
+      tooltipPosition="top"
+      (click)="previewPrompt()"
+      [disabled]="isSendDisabled()"
+    >
+      <i class="pi pi-eye"></i>
+    </button>
+    <button
+      type="button"
+      class="rpg-send-btn"
       pTooltip="Send"
       tooltipPosition="top"
       (click)="submitPrompt()"

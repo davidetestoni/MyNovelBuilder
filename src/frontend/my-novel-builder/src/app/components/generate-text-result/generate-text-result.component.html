@@ -23,6 +23,12 @@
     <div class="result-actions">
       <p-button label="Back" (click)="goBack()" [disabled]="isGenerating" />
       <p-button
+        label="Preview"
+        variant="text"
+        (click)="previewPrompt()"
+        [disabled]="isGenerating"
+      />
+      <p-button
         label="{{ retryButtonLabel }}"
         (click)="generateText()"
         [disabled]="isGenerating"

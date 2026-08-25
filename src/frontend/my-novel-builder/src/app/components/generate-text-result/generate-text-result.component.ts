@@ -1,9 +1,14 @@
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { GenerateTextRequestDto } from '../../types/dtos/generate/generate-text-request.dto';
 import { GenerateTextService } from '../../services/generate-text.service';
-import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogConfig,
+  DynamicDialogRef,
+} from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
 import { Subscription } from 'rxjs';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 export interface GenerateTextResultComponentData {
   textToReplace: string; // In HTML format
@@ -14,6 +19,7 @@ export interface GenerateTextResultComponentData {
   selector: 'app-generate-text-result',
   standalone: true,
   imports: [ButtonModule],
+  providers: [DialogService, GenerateTextPreviewDialogService],
   templateUrl: './generate-text-result.component.html',
   styleUrl: './generate-text-result.component.scss',
 })
@@ -21,6 +27,7 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
   private generationTimerId: ReturnType<typeof setInterval> | null = null;
   private generationStartedAt: number | null = null;
   private generationSubscription: Subscription | null = null;
+  private previewDialogRef: DynamicDialogRef | null = null;
 
   config = inject(DynamicDialogConfig);
   dialogRef = inject(DynamicDialogRef);
@@ -29,6 +36,9 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
 
   readonly generateTextService: GenerateTextService =
     inject(GenerateTextService);
+  private readonly previewDialogService = inject(
+    GenerateTextPreviewDialogService,
+  );
   isGenerating = true;
   hasGenerationError = false;
   generatedText = '';
@@ -47,6 +57,15 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
     this.generationSubscription?.unsubscribe();
     this.generationSubscription = null;
     this.stopGenerationTimer();
+    this.previewDialogRef?.close();
+  }
+
+  previewPrompt(): void {
+    if (this.isGenerating) {
+      return;
+    }
+
+    this.previewDialogRef = this.previewDialogService.open(this.data.request);
   }
 
   generateText(): void {

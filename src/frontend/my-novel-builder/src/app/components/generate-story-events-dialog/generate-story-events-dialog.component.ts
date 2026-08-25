@@ -6,7 +6,11 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogConfig,
+  DynamicDialogRef,
+} from 'primeng/dynamicdialog';
 import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
@@ -26,6 +30,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 interface GenerateStoryEventsDialogChapter {
   label: string;
@@ -64,6 +69,7 @@ interface GeneratedStoryEventsPreview {
   ],
   templateUrl: './generate-story-events-dialog.component.html',
   styleUrl: './generate-story-events-dialog.component.scss',
+  providers: [DialogService, GenerateTextPreviewDialogService],
 })
 export class GenerateStoryEventsDialogComponent implements OnDestroy {
   config = inject(DynamicDialogConfig);
@@ -73,6 +79,9 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
     inject(GenerateTextService);
   readonly localStorageService: LocalStorageService =
     inject(LocalStorageService);
+  private readonly previewDialogService = inject(
+    GenerateTextPreviewDialogService,
+  );
   PromptType = PromptType;
 
   data: GenerateStoryEventsDialogData;
@@ -101,11 +110,12 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
       return;
     }
 
-    const promptId = (this.formGroup.get('promptId')!.value ?? '').trim();
-    const model = (this.formGroup.get('model')!.value ?? '').trim();
-    if (!promptId || !model) {
+    const request = this.buildRequest();
+    if (request === null) {
       return;
     }
+
+    const promptId = request.promptId;
 
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
@@ -118,27 +128,12 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
     this.generatedPreviews = [];
     const requestId = ++this.generationRequestId;
 
-    const selectedChapterIndex = this.formGroup.get('chapterIndex')!.value;
-    if (selectedChapterIndex === null) {
-      this.isGenerating = false;
-      this.generationError = 'Please select a chapter.';
-      return;
-    }
-
-    const chapterIndex = selectedChapterIndex;
+    const chapterIndex = (
+      request.contextInfo as CreateStoryEventsContextInfoDto
+    ).chapterIndex;
     const chapterTitle =
       this.data.chapters.find((chapter) => chapter.value === chapterIndex)
         ?.label ?? `Chapter ${chapterIndex + 1}`;
-    const request: GenerateTextRequestDto = {
-      model,
-      promptId,
-      contextInfo: <CreateStoryEventsContextInfoDto>{
-        $type: NovelTextGenerationType.CreateStoryEvents,
-        novelId: this.data.novelId,
-        chapterIndex,
-      },
-    };
-
     try {
       const completion: GenerateTextCompletion = await firstValueFrom(
         this.generateTextService.generateTextCompletion(request),
@@ -199,6 +194,17 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
       if (requestId === this.generationRequestId) {
         this.isGenerating = false;
       }
+    }
+  }
+
+  previewPrompt(): void {
+    if (this.formGroup.invalid || this.isGenerating) {
+      return;
+    }
+
+    const request = this.buildRequest();
+    if (request !== null) {
+      this.previewDialogService.open(request);
     }
   }
 
@@ -269,5 +275,24 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.generationRequestId++;
     this.isGenerating = false;
+  }
+
+  private buildRequest(): GenerateTextRequestDto | null {
+    const promptId = (this.formGroup.get('promptId')!.value ?? '').trim();
+    const model = (this.formGroup.get('model')!.value ?? '').trim();
+    const chapterIndex = this.formGroup.get('chapterIndex')!.value;
+    if (!promptId || !model || chapterIndex === null) {
+      return null;
+    }
+
+    return {
+      model,
+      promptId,
+      contextInfo: <CreateStoryEventsContextInfoDto>{
+        $type: NovelTextGenerationType.CreateStoryEvents,
+        novelId: this.data.novelId,
+        chapterIndex,
+      },
+    };
   }
 }

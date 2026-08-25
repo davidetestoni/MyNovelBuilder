@@ -6,7 +6,11 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogConfig,
+  DynamicDialogRef,
+} from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
@@ -24,6 +28,7 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 interface StoryDevelopmentSuggestion {
   title: string;
@@ -55,6 +60,7 @@ export interface GenerateStorySuggestionsDialogResult {
   ],
   templateUrl: './generate-story-suggestions-dialog.component.html',
   styleUrl: './generate-story-suggestions-dialog.component.scss',
+  providers: [DialogService, GenerateTextPreviewDialogService],
 })
 export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
   config = inject(DynamicDialogConfig);
@@ -62,6 +68,9 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
 
   readonly generateTextService = inject(GenerateTextService);
   readonly localStorageService = inject(LocalStorageService);
+  private readonly previewDialogService = inject(
+    GenerateTextPreviewDialogService,
+  );
   readonly promptType = PromptType.SuggestStoryDevelopments;
 
   data: GenerateStorySuggestionsDialogData;
@@ -86,11 +95,12 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
       return;
     }
 
-    const promptId = (this.formGroup.get('promptId')!.value ?? '').trim();
-    const model = (this.formGroup.get('model')!.value ?? '').trim();
-    if (!promptId || !model) {
+    const request = this.buildRequest();
+    if (request === null) {
       return;
     }
+
+    const { promptId, model } = request;
 
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
@@ -104,18 +114,6 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
     this.generatedSuggestions = [];
     this.rawOutput = null;
     const requestId = ++this.generationRequestId;
-
-    const request: GenerateTextRequestDto = {
-      model,
-      promptId,
-      contextInfo: <SuggestStoryDevelopmentsContextInfoDto>{
-        $type: NovelTextGenerationType.SuggestStoryDevelopments,
-        novelId: this.data.novelId,
-        chapterIndex: this.data.chapterIndex,
-        sectionIndex: this.data.sectionIndex,
-        textOffset: this.data.textOffset,
-      },
-    };
 
     let completion: GenerateTextCompletion;
     try {
@@ -157,6 +155,17 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
 
     this.generatedSuggestions = parsedSuggestions;
     this.isGenerating = false;
+  }
+
+  previewPrompt(): void {
+    if (this.formGroup.invalid || this.isGenerating) {
+      return;
+    }
+
+    const request = this.buildRequest();
+    if (request !== null) {
+      this.previewDialogService.open(request);
+    }
   }
 
   selectSuggestion(suggestion: StoryDevelopmentSuggestion): void {
@@ -226,5 +235,25 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
       model,
       5,
     );
+  }
+
+  private buildRequest(): GenerateTextRequestDto | null {
+    const promptId = (this.formGroup.get('promptId')!.value ?? '').trim();
+    const model = (this.formGroup.get('model')!.value ?? '').trim();
+    if (!promptId || !model) {
+      return null;
+    }
+
+    return {
+      model,
+      promptId,
+      contextInfo: <SuggestStoryDevelopmentsContextInfoDto>{
+        $type: NovelTextGenerationType.SuggestStoryDevelopments,
+        novelId: this.data.novelId,
+        chapterIndex: this.data.chapterIndex,
+        sectionIndex: this.data.sectionIndex,
+        textOffset: this.data.textOffset,
+      },
+    };
   }
 }

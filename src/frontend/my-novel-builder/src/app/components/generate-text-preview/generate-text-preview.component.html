@@ -18,9 +18,15 @@
           } @else {
             Unavailable
           }
-          ({{ data.request.model }})
+          ({{ model }})
         </span>
       </div>
+      @if (previewItems.length > 1) {
+        <div class="stat-line">
+          <span class="stat-key">Generation requests:</span>
+          <span class="stat-value">{{ previewItems.length }}</span>
+        </div>
+      }
     </div>
 
     <div class="preview-section">
@@ -57,20 +63,27 @@
       @if (preview.finalMessages.length === 0) {
         <p>No messages in prompt.</p>
       } @else {
-        <div class="messages-list">
-          @for (message of preview.finalMessages; track $index) {
-            <div class="message-item">
-              <label class="message-role">{{ message.role | titlecase }}</label>
-              <textarea
-                pTextarea
-                [value]="message.message"
-                [readonly]="true"
-                [autoResize]="true"
-                rows="5"
-              ></textarea>
+        @for (item of previewItems; track $index) {
+          <div class="preview-request">
+            @if (item.label) {
+              <h4>{{ item.label }}</h4>
+            }
+            <div class="messages-list">
+              @for (message of item.preview.finalMessages; track $index) {
+                <div class="message-item">
+                  <label class="message-role">{{ message.role | titlecase }}</label>
+                  <textarea
+                    pTextarea
+                    [value]="message.message"
+                    [readonly]="true"
+                    [autoResize]="true"
+                    rows="5"
+                  ></textarea>
+                </div>
+              }
             </div>
-          }
-        </div>
+          </div>
+        }
       }
     </div>
   }

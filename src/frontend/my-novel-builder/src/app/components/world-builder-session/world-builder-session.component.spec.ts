@@ -25,6 +25,7 @@ import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptType } from '../../types/enums/prompt-type';
 import { WorldBuilderSessionComponent } from './world-builder-session.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 describe('WorldBuilderSessionComponent workflows', () => {
   let component: WorldBuilderSessionComponent;
@@ -35,6 +36,7 @@ describe('WorldBuilderSessionComponent workflows', () => {
   let toastrService: jasmine.SpyObj<ToastrService>;
   let confirmationService: jasmine.SpyObj<ConfirmationService>;
   let dialogService: jasmine.SpyObj<DialogService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
 
   const prose: Prose = {
     chapters: [
@@ -156,6 +158,7 @@ describe('WorldBuilderSessionComponent workflows', () => {
         'acceptProposal',
         'rejectProposal',
         'sendMessage',
+        'getMessagePreview',
         'deleteMessage',
       ],
     );
@@ -175,6 +178,10 @@ describe('WorldBuilderSessionComponent workflows', () => {
     dialogService = jasmine.createSpyObj<DialogService>('DialogService', [
       'open',
     ]);
+    previewDialogService = jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+      'GenerateTextPreviewDialogService',
+      ['openPreview'],
+    );
 
     novelService.getNovels.and.returnValue(of([]));
     novelService.getNovelProse.and.returnValue(of(prose));
@@ -184,6 +191,13 @@ describe('WorldBuilderSessionComponent workflows', () => {
     sessionService.acceptProposal.and.callFake(() => of(session()));
     sessionService.rejectProposal.and.callFake(() => of(session()));
     sessionService.sendMessage.and.callFake(() => of(session()));
+    sessionService.getMessagePreview.and.returnValue(
+      of({
+        inputTokens: 25,
+        includedCompendiumRecordIds: [],
+        finalMessages: [],
+      }),
+    );
     sessionService.deleteMessage.and.callFake(() => of(session()));
 
     TestBed.configureTestingModule({
@@ -195,6 +209,10 @@ describe('WorldBuilderSessionComponent workflows', () => {
         { provide: ToastrService, useValue: toastrService },
         { provide: ConfirmationService, useValue: confirmationService },
         { provide: DialogService, useValue: dialogService },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
+        },
       ],
     });
 
@@ -653,6 +671,32 @@ describe('WorldBuilderSessionComponent workflows', () => {
       promptId: 'prompt-id',
       message: 'Describe the city',
     });
+  });
+
+  it('previews the exact server-built prompt without adding a message', () => {
+    component.selectedModel = 'model-id';
+    component.selectedPromptId = 'prompt-id';
+    component.userInput = '  Describe the city  ';
+
+    component.previewMessage();
+
+    expect(sessionService.getMessagePreview).toHaveBeenCalledOnceWith(
+      'session-id',
+      {
+        model: 'model-id',
+        promptId: 'prompt-id',
+        message: 'Describe the city',
+      },
+    );
+    const preview$ = sessionService.getMessagePreview.calls.mostRecent()
+      .returnValue as ReturnType<WorldBuildingSessionService['getMessagePreview']>;
+    expect(previewDialogService.openPreview).toHaveBeenCalledOnceWith(
+      'model-id',
+      preview$,
+    );
+    expect(component.currentSession.messages).toHaveSize(1);
+    expect(component.userInput).toBe('  Describe the city  ');
+    expect(sessionService.sendMessage).not.toHaveBeenCalled();
   });
 
   it('replaces local state with the completed message response', () => {

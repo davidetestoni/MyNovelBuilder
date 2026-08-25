@@ -22,6 +22,7 @@ import type { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import { ProseEditorComponent } from './prose-editor.component';
 import { ProseGenerationDialogService } from './prose-generation-dialog.service';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import { ProseMediaService } from './prose-media.service';
 import {
   ProseRpgCommand,
@@ -38,6 +39,7 @@ describe('ProseEditorComponent', () => {
     ProseGenerationDialogService
   >;
   let proseMediaService: jasmine.SpyObj<ProseMediaService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
   let proseTtsService: jasmine.SpyObj<ProseTtsService>;
 
   const createSection = (
@@ -170,6 +172,10 @@ describe('ProseEditorComponent', () => {
           'openTextResultDialog',
         ],
       );
+    previewDialogService = jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+      'GenerateTextPreviewDialogService',
+      ['open'],
+    );
     proseGenerationDialogService.openCompendiumRecordResultDialog.and
       .returnValue(of());
     proseGenerationDialogService.openRecordOverridesDialog.and.returnValue(
@@ -205,6 +211,10 @@ describe('ProseEditorComponent', () => {
         {
           provide: ProseGenerationDialogService,
           useValue: proseGenerationDialogService,
+        },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
         },
         { provide: ProseMediaService, useValue: proseMediaService },
         { provide: ProseTtsService, useValue: proseTtsService },
@@ -515,6 +525,26 @@ describe('ProseEditorComponent', () => {
       expect(panel.clearInput).toHaveBeenCalledTimes(1);
       expect(component.isRpgGenerating).toBeFalse();
       expect(emit).toHaveBeenCalledTimes(2);
+    });
+
+    it('previews the RPG request without clearing input or generating', () => {
+      const command = createCommand({ action: 'say', input: 'Hello there' });
+
+      component.previewRpgPrompt(command);
+
+      expect(previewDialogService.open).toHaveBeenCalledOnceWith({
+        model: 'rpg-model',
+        promptId: 'rpg-prompt',
+        contextInfo: jasmine.objectContaining({
+          $type: NovelTextGenerationType.GenerateText,
+          novelId: 'novel-1',
+          chapterIndex: 0,
+          sectionIndex: 0,
+          textOffset: 4,
+          instructions: 'Say: Hello there',
+        }),
+      });
+      expect(generateTextService.generateText).not.toHaveBeenCalled();
     });
 
     it('appends RPG output to a mounted editor at its final offset', async () => {
@@ -1011,6 +1041,11 @@ describe('ProseEditorComponent layout', () => {
       'ProseTtsService',
       ['playSection'],
     );
+    const previewDialogService =
+      jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+        'GenerateTextPreviewDialogService',
+        ['open'],
+      );
 
     TestBed.configureTestingModule({ imports: [ProseEditorComponent] });
     TestBed.overrideComponent(ProseEditorComponent, {
@@ -1022,6 +1057,10 @@ describe('ProseEditorComponent layout', () => {
           {
             provide: ProseGenerationDialogService,
             useValue: proseGenerationDialogService,
+          },
+          {
+            provide: GenerateTextPreviewDialogService,
+            useValue: previewDialogService,
           },
           { provide: ProseMediaService, useValue: proseMediaService },
           { provide: ProseTtsService, useValue: proseTtsService },

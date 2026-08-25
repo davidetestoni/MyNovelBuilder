@@ -37,6 +37,7 @@ import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { ProseTtsService } from './prose-tts.service';
 import { ProseMediaService } from './prose-media.service';
 import { ProseGenerationDialogService } from './prose-generation-dialog.service';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import {
   ProseRpgCommand,
   ProseRpgPanelComponent,
@@ -91,6 +92,7 @@ interface RpgAppendTarget {
     DialogService,
     ConfirmationService,
     ProseGenerationDialogService,
+    GenerateTextPreviewDialogService,
     ProseMediaService,
     ProseTtsService,
   ],
@@ -112,6 +114,9 @@ export class ProseEditorComponent {
     inject(GenerateTextService);
   private readonly proseGenerationDialogService = inject(
     ProseGenerationDialogService,
+  );
+  private readonly previewDialogService = inject(
+    GenerateTextPreviewDialogService,
   );
   private readonly proseMediaService = inject(ProseMediaService);
   private readonly proseTtsService = inject(ProseTtsService);
@@ -235,18 +240,7 @@ export class ProseEditorComponent {
     this.isRpgGenerating = true;
     this.saveProse();
 
-    const request: GenerateTextRequestDto = {
-      model: command.model,
-      promptId: command.promptId,
-      contextInfo: <GenerateTextContextInfoDto>{
-        $type: NovelTextGenerationType.GenerateText,
-        novelId: this.novelId,
-        chapterIndex: target.chapterIndex,
-        sectionIndex: target.sectionIndex,
-        textOffset: target.textOffset,
-        instructions: `${command.action === 'do' ? 'Do' : 'Say'}: ${command.input}`,
-      },
-    };
+    const request = this.buildRpgRequest(command, target);
 
     this.generateTextService.generateText(request).subscribe({
       next: async (update) => {
@@ -286,6 +280,33 @@ export class ProseEditorComponent {
         this.toastr.error('Failed to generate RPG response.');
       },
     });
+  }
+
+  previewRpgPrompt(command: ProseRpgCommand): void {
+    const target = this.getRpgAppendTarget();
+    if (!target) {
+      return;
+    }
+
+    this.previewDialogService.open(this.buildRpgRequest(command, target));
+  }
+
+  private buildRpgRequest(
+    command: ProseRpgCommand,
+    target: RpgAppendTarget,
+  ): GenerateTextRequestDto {
+    return {
+      model: command.model,
+      promptId: command.promptId,
+      contextInfo: <GenerateTextContextInfoDto>{
+        $type: NovelTextGenerationType.GenerateText,
+        novelId: this.novelId,
+        chapterIndex: target.chapterIndex,
+        sectionIndex: target.sectionIndex,
+        textOffset: target.textOffset,
+        instructions: `${command.action === 'do' ? 'Do' : 'Say'}: ${command.input}`,
+      },
+    };
   }
 
   private getRpgAppendTarget(): RpgAppendTarget | null {

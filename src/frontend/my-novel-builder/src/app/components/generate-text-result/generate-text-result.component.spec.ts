@@ -14,10 +14,12 @@ import {
   GenerateTextResultComponent,
   GenerateTextResultComponentData,
 } from './generate-text-result.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 describe('GenerateTextResultComponent workflow', () => {
   let component: GenerateTextResultComponent;
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
   let config: { data: GenerateTextResultComponentData };
   let generation: Subject<GenerateTextStreamUpdate>;
@@ -43,6 +45,10 @@ describe('GenerateTextResultComponent workflow', () => {
       'GenerateTextService',
       ['generateText'],
     );
+    previewDialogService = jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+      'GenerateTextPreviewDialogService',
+      ['open'],
+    );
     dialogRef = jasmine.createSpyObj<DynamicDialogRef>('DynamicDialogRef', [
       'close',
     ]);
@@ -58,6 +64,10 @@ describe('GenerateTextResultComponent workflow', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: GenerateTextService, useValue: generateTextService },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
+        },
         { provide: DynamicDialogRef, useValue: dialogRef },
         { provide: DynamicDialogConfig, useValue: config },
       ],
@@ -80,6 +90,16 @@ describe('GenerateTextResultComponent workflow', () => {
     expect(component.retryButtonLabel).toBe('Generating (0s)');
 
     component.ngOnDestroy();
+  });
+
+  it('previews the same request before a retry', () => {
+    component.isGenerating = false;
+
+    component.previewPrompt();
+
+    expect(previewDialogService.open).toHaveBeenCalledOnceWith(
+      config.data.request,
+    );
   });
 
   it('applies non-empty streamed snapshots and ignores empty updates', () => {

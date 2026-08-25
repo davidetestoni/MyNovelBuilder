@@ -33,6 +33,12 @@
       <div class="form-field">
         <div class="form-buttons-container">
           <p-button
+            label="Preview"
+            variant="text"
+            (click)="previewPrompt()"
+            [disabled]="formGroup.invalid || isGenerating || promptCount === 0"
+          />
+          <p-button
             label="Generate"
             variant="text"
             (click)="generate()"

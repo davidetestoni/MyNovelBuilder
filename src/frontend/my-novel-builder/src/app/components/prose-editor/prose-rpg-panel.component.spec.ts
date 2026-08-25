@@ -73,6 +73,28 @@ describe('ProseRpgPanelComponent', () => {
     });
   });
 
+  it('emits the same normalized command for preview without submitting', () => {
+    component.action = 'do';
+    component.input = '  Open the gate  ';
+    component.selectedPromptId = 'prompt-1';
+    component.selectedModel = 'model-1';
+    component.promptCount = 1;
+    const submit = spyOn(component.promptSubmitted, 'emit');
+    let command: ProseRpgCommand | undefined;
+    component.promptPreviewed.subscribe((value) => (command = value));
+
+    component.previewPrompt();
+
+    expect(command).toEqual({
+      action: 'do',
+      input: 'Open the gate',
+      promptId: 'prompt-1',
+      model: 'model-1',
+    });
+    expect(submit).not.toHaveBeenCalled();
+    expect(component.input).toBe('  Open the gate  ');
+  });
+
   it('prevents enter submission defaults and supports input clearing and restoration', () => {
     component.input = 'Continue';
     component.selectedPromptId = 'prompt-1';

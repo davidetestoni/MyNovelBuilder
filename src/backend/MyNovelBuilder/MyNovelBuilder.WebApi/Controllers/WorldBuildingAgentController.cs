@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Dtos.WorldBuilding;
+using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Models.WorldBuilding;
 using MyNovelBuilder.WebApi.Services;
 
@@ -129,6 +130,21 @@ public class WorldBuildingAgentController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         return await _worldBuildingSessionService.SendMessageAsync(id, dto, cancellationToken);
+    }
+
+    /// <summary>
+    /// Preview the exact prompt for a world-building agent message.
+    /// </summary>
+    [HttpPost("{id:guid}/message/preview")]
+    public async Task<TextGenerationPreviewDto> PreviewMessage(
+        Guid id,
+        SendWorldBuildingMessageDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        return await _worldBuildingSessionService.GetMessagePreviewAsync(
+            id,
+            dto,
+            cancellationToken);
     }
 
     /// <summary>

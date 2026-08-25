@@ -12,6 +12,7 @@ import {
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptType } from '../../types/enums/prompt-type';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import {
   GenerateStorySuggestionsDialogComponent,
   GenerateStorySuggestionsDialogData,
@@ -21,6 +22,7 @@ describe('GenerateStorySuggestionsDialogComponent workflow', () => {
   let component: GenerateStorySuggestionsDialogComponent;
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
   let localStorageService: jasmine.SpyObj<LocalStorageService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
   let config: { data: GenerateStorySuggestionsDialogData };
 
@@ -46,6 +48,10 @@ describe('GenerateStorySuggestionsDialogComponent workflow', () => {
       'LocalStorageService',
       ['setNestedStringForKey', 'pushNestedRecentStringForKey'],
     );
+    previewDialogService = jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+      'GenerateTextPreviewDialogService',
+      ['open'],
+    );
     dialogRef = jasmine.createSpyObj<DynamicDialogRef>('DynamicDialogRef', [
       'close',
     ]);
@@ -66,6 +72,10 @@ describe('GenerateStorySuggestionsDialogComponent workflow', () => {
       providers: [
         { provide: GenerateTextService, useValue: generateTextService },
         { provide: LocalStorageService, useValue: localStorageService },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
+        },
         { provide: DynamicDialogConfig, useValue: config },
         { provide: DynamicDialogRef, useValue: dialogRef },
       ],
@@ -132,6 +142,25 @@ describe('GenerateStorySuggestionsDialogComponent workflow', () => {
         textOffset: 144,
       },
     } as GenerateTextRequestDto);
+  });
+
+  it('previews the normalized request without generating', () => {
+    setValidForm();
+
+    component.previewPrompt();
+
+    expect(previewDialogService.open).toHaveBeenCalledOnceWith({
+      model: 'model-one',
+      promptId: 'prompt-one',
+      contextInfo: {
+        $type: NovelTextGenerationType.SuggestStoryDevelopments,
+        novelId: 'novel-one',
+        chapterIndex: 2,
+        sectionIndex: 3,
+        textOffset: 144,
+      },
+    } as GenerateTextRequestDto);
+    expect(generateTextService.generateTextCompletion).not.toHaveBeenCalled();
   });
 
   it('parses and trims generated suggestions', async () => {

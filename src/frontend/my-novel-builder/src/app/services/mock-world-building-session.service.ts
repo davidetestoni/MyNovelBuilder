@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
+import { PromptMessageRole } from '../types/enums/prompt-message-role';
 import { CreateWorldBuildingSessionDto } from '../types/dtos/world-building/create-world-building-session.dto';
 import { SendWorldBuildingMessageDto } from '../types/dtos/world-building/send-world-building-message.dto';
 import { UpdateWorldBuildingProposalDto } from '../types/dtos/world-building/update-world-building-proposal.dto';
@@ -47,6 +49,22 @@ export class MockWorldBuildingSessionService extends WorldBuildingSessionService
     _dto: SendWorldBuildingMessageDto,
   ): Observable<WorldBuildingSession> {
     return mockObservable(mockedWorldBuildingSession);
+  }
+
+  getMessagePreview(
+    _sessionId: string,
+    dto: SendWorldBuildingMessageDto,
+  ): Observable<TextGenerationPreviewDto> {
+    return mockObservable({
+      inputTokens: 42,
+      includedCompendiumRecordIds: [],
+      finalMessages: [
+        {
+          role: PromptMessageRole.User,
+          message: dto.message,
+        },
+      ],
+    });
   }
 
   deleteMessage(

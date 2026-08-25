@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { of } from 'rxjs';
 import {
   GenerateTextRequestDto,
   NovelTextGenerationType,
@@ -64,6 +65,49 @@ describe('GenerateTextPreviewDialogService', () => {
         focusOnShow: false,
         data: { request: previewRequest },
       },
+    );
+  });
+
+  it('opens a labeled batch using one shared modal', () => {
+    const first = request();
+    const second = request();
+
+    service.openBatch([
+      { label: 'First', request: first },
+      { label: 'Second', request: second },
+    ]);
+
+    expect(dialogService.open).toHaveBeenCalledOnceWith(
+      GenerateTextPreviewComponent,
+      jasmine.objectContaining({
+        data: {
+          model: 'model-a',
+          items: [
+            { label: 'First', request: first },
+            { label: 'Second', request: second },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('opens an externally supplied exact preview', () => {
+    const preview$ = of({
+      inputTokens: 10,
+      includedCompendiumRecordIds: [],
+      finalMessages: [],
+    });
+
+    service.openPreview('model-a', preview$, 'World Builder');
+
+    expect(dialogService.open).toHaveBeenCalledOnceWith(
+      GenerateTextPreviewComponent,
+      jasmine.objectContaining({
+        data: {
+          model: 'model-a',
+          items: [{ label: 'World Builder', preview: preview$ }],
+        },
+      }),
     );
   });
 });

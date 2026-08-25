@@ -21,6 +21,7 @@ import { WritingPov } from '../../types/enums/writing-pov';
 import { WritingTense } from '../../types/enums/writing-tense';
 import { ModelSelectComponent } from '../model-select/model-select.component';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import {
   TranslateNovelDialogComponent,
   TranslateNovelDialogData,
@@ -31,6 +32,7 @@ describe('TranslateNovelDialogComponent workflow', () => {
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
   let novelService: jasmine.SpyObj<NovelService>;
   let localStorageService: jasmine.SpyObj<LocalStorageService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let config: { data: TranslateNovelDialogData };
@@ -200,6 +202,10 @@ describe('TranslateNovelDialogComponent workflow', () => {
       'LocalStorageService',
       ['setNestedStringForKey'],
     );
+    previewDialogService = jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+      'GenerateTextPreviewDialogService',
+      ['openBatch'],
+    );
     dialogRef = jasmine.createSpyObj<DynamicDialogRef>('DynamicDialogRef', [
       'close',
     ]);
@@ -238,6 +244,10 @@ describe('TranslateNovelDialogComponent workflow', () => {
         { provide: GenerateTextService, useValue: generateTextService },
         { provide: NovelService, useValue: novelService },
         { provide: LocalStorageService, useValue: localStorageService },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
+        },
         { provide: DynamicDialogConfig, useValue: config },
         { provide: DynamicDialogRef, useValue: dialogRef },
         { provide: ToastrService, useValue: toastr },
@@ -261,6 +271,25 @@ describe('TranslateNovelDialogComponent workflow', () => {
     expect(component.writingLanguages).toEqual(Object.values(WritingLanguage));
     expect(component.promptType).toBe(PromptType.TranslateNovel);
     expect(component.canGenerate).toBeFalse();
+  });
+
+  it('previews every chapter as one aggregated batch', () => {
+    setValidForm();
+
+    component.previewPrompt();
+
+    const items = previewDialogService.openBatch.calls.mostRecent().args[0];
+    expect(items.map((item) => item.label)).toEqual([
+      'Chapter 1: Opening',
+      'Chapter 2: Ending',
+    ]);
+    expect(
+      items.map((item) => item.request.contextInfo),
+    ).toEqual([
+      jasmine.objectContaining({ chapterIndex: 0 }),
+      jasmine.objectContaining({ chapterIndex: 1 }),
+    ]);
+    expect(generateTextService.generateTextCompletion).not.toHaveBeenCalled();
   });
 
   it('enforces title and instruction length limits', async () => {

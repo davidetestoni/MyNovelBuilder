@@ -192,6 +192,7 @@
       selectedChapterIndex === prose.chapters.length - 1
     "
     (promptSubmitted)="sendRpgPrompt($event, rpgPanel)"
+    (promptPreviewed)="previewRpgPrompt($event)"
   />
   @if (showEditorControls) {
     <div

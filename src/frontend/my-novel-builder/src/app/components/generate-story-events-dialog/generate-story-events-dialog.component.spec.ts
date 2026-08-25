@@ -12,6 +12,7 @@ import {
 } from '../../types/dtos/generate/generate-text-request.dto';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptType } from '../../types/enums/prompt-type';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import {
   GenerateStoryEventsDialogComponent,
   GenerateStoryEventsDialogData,
@@ -21,6 +22,7 @@ describe('GenerateStoryEventsDialogComponent workflow', () => {
   let component: GenerateStoryEventsDialogComponent;
   let generateTextService: jasmine.SpyObj<GenerateTextService>;
   let localStorageService: jasmine.SpyObj<LocalStorageService>;
+  let previewDialogService: jasmine.SpyObj<GenerateTextPreviewDialogService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
   let config: { data: GenerateStoryEventsDialogData };
 
@@ -47,6 +49,10 @@ describe('GenerateStoryEventsDialogComponent workflow', () => {
       'LocalStorageService',
       ['setNestedStringForKey'],
     );
+    previewDialogService = jasmine.createSpyObj<GenerateTextPreviewDialogService>(
+      'GenerateTextPreviewDialogService',
+      ['open'],
+    );
     dialogRef = jasmine.createSpyObj<DynamicDialogRef>('DynamicDialogRef', [
       'close',
     ]);
@@ -69,6 +75,10 @@ describe('GenerateStoryEventsDialogComponent workflow', () => {
       providers: [
         { provide: GenerateTextService, useValue: generateTextService },
         { provide: LocalStorageService, useValue: localStorageService },
+        {
+          provide: GenerateTextPreviewDialogService,
+          useValue: previewDialogService,
+        },
         { provide: DynamicDialogConfig, useValue: config },
         { provide: DynamicDialogRef, useValue: dialogRef },
       ],
@@ -126,6 +136,23 @@ describe('GenerateStoryEventsDialogComponent workflow', () => {
         chapterIndex: 1,
       },
     } as GenerateTextRequestDto);
+  });
+
+  it('previews the normalized request without generating', () => {
+    setValidForm();
+
+    component.previewPrompt();
+
+    expect(previewDialogService.open).toHaveBeenCalledOnceWith({
+      model: 'model-one',
+      promptId: 'prompt-one',
+      contextInfo: {
+        $type: NovelTextGenerationType.CreateStoryEvents,
+        novelId: 'novel-one',
+        chapterIndex: 1,
+      },
+    } as GenerateTextRequestDto);
+    expect(generateTextService.generateTextCompletion).not.toHaveBeenCalled();
   });
 
   it('parses and trims a generated story-event array', async () => {

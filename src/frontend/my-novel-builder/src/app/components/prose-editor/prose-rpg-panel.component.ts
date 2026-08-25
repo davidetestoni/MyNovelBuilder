@@ -41,6 +41,7 @@ export class ProseRpgPanelComponent {
   @Input() isGenerating = false;
   @Input() isLastChapterSelected = true;
   @Output() promptSubmitted = new EventEmitter<ProseRpgCommand>();
+  @Output() promptPreviewed = new EventEmitter<ProseRpgCommand>();
 
   readonly promptType = PromptType.GenerateText;
   action: ProseRpgAction = 'do';
@@ -88,6 +89,19 @@ export class ProseRpgPanelComponent {
     }
 
     this.promptSubmitted.emit({
+      action: this.action,
+      input: this.input.trim(),
+      promptId: this.selectedPromptId,
+      model: this.selectedModel,
+    });
+  }
+
+  previewPrompt(): void {
+    if (this.isSendDisabled() || !this.selectedPromptId || !this.selectedModel) {
+      return;
+    }
+
+    this.promptPreviewed.emit({
       action: this.action,
       input: this.input.trim(),
       promptId: this.selectedPromptId,

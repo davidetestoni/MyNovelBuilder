@@ -1,4 +1,5 @@
 using MyNovelBuilder.WebApi.Dtos.WorldBuilding;
+using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Models.WorldBuilding;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -37,6 +38,14 @@ public interface IWorldBuildingSessionService
     /// Send a message to the world-building agent.
     /// </summary>
     Task<WorldBuildingSession> SendMessageAsync(
+        Guid id,
+        SendWorldBuildingMessageDto dto,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Preview the exact prompt that would be used for a world-building message.
+    /// </summary>
+    Task<TextGenerationPreviewDto> GetMessagePreviewAsync(
         Guid id,
         SendWorldBuildingMessageDto dto,
         CancellationToken cancellationToken = default);

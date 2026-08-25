@@ -6,6 +6,7 @@ using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Compendium;
 using MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
 using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Dtos.WorldBuilding;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
@@ -222,6 +223,33 @@ public class WorldBuildingSessionService : IWorldBuildingSessionService
         session.UpdatedAt = DateTime.UtcNow;
         await UpdateAsync(id, session, cancellationToken);
         return session;
+    }
+
+    /// <inheritdoc />
+    public async Task<TextGenerationPreviewDto> GetMessagePreviewAsync(
+        Guid id,
+        SendWorldBuildingMessageDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await GetByIdAsync(id, cancellationToken);
+        var prompt = await _promptService.GetByIdAsync(dto.PromptId, cancellationToken);
+        var contextInfo = CreateContextInfo(session, dto.Message);
+        var processedPrompt = await _promptCreatorService.CreatePromptAsync(
+            prompt,
+            contextInfo,
+            cancellationToken);
+        var messages = processedPrompt.Messages.ToList();
+
+        return new TextGenerationPreviewDto
+        {
+            InputTokens = messages.Sum(message => _tokenizerService.CountTokens(message.Message)),
+            IncludedCompendiumRecordIds = processedPrompt.IncludedCompendiumRecordIds,
+            FinalMessages = messages.Select(message => new PromptMessageDto
+            {
+                Message = message.Message,
+                Role = message.Role
+            })
+        };
     }
 
     /// <inheritdoc />

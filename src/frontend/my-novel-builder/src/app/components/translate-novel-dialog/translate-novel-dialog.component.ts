@@ -9,7 +9,11 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { ButtonModule } from 'primeng/button';
-import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
+import {
+  DialogService,
+  DynamicDialogConfig,
+  DynamicDialogRef,
+} from 'primeng/dynamicdialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
@@ -32,6 +36,7 @@ import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { LocalStorageService } from '../../services/local-storage.service';
 import { SpacedPipe } from '../../pipes/spaced.pipe';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 
 interface TranslationSectionResult {
   sectionIndex: number;
@@ -77,6 +82,7 @@ export interface TranslateNovelDialogResult {
   ],
   templateUrl: './translate-novel-dialog.component.html',
   styleUrl: './translate-novel-dialog.component.scss',
+  providers: [DialogService, GenerateTextPreviewDialogService],
 })
 export class TranslateNovelDialogComponent implements OnDestroy {
   @ViewChild(PromptSelectComponent) promptSelect?: PromptSelectComponent;
@@ -89,6 +95,9 @@ export class TranslateNovelDialogComponent implements OnDestroy {
   readonly generateTextService = inject(GenerateTextService);
   readonly novelService = inject(NovelService);
   readonly localStorageService = inject(LocalStorageService);
+  private readonly previewDialogService = inject(
+    GenerateTextPreviewDialogService,
+  );
 
   readonly data = this.config.data as TranslateNovelDialogData;
   readonly promptType = PromptType.TranslateNovel;
@@ -102,6 +111,7 @@ export class TranslateNovelDialogComponent implements OnDestroy {
   progressItems: TranslationProgressItem[] = [];
   private generationRequestId = 0;
   private translatedLanguage: WritingLanguage | null = null;
+  private previewDialogRef: DynamicDialogRef | null = null;
 
   formGroup = new FormGroup({
     title: new FormControl('', [Validators.maxLength(100)]),
@@ -120,8 +130,7 @@ export class TranslateNovelDialogComponent implements OnDestroy {
 
   async generate(): Promise<void> {
     const promptId = this.selectedPromptId;
-    const model = this.selectedModelId;
-    if (!this.canGenerate || !promptId || !model) {
+    if (!this.canGenerate || !promptId) {
       return;
     }
 
@@ -130,8 +139,6 @@ export class TranslateNovelDialogComponent implements OnDestroy {
       this.generationError = 'Please choose a target language different from the source novel language.';
       return;
     }
-
-    const instructions = this.normalizeOptionalText(this.formGroup.get('instructions')!.value);
 
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
@@ -172,17 +179,10 @@ export class TranslateNovelDialogComponent implements OnDestroy {
         );
         let translatedChapterTitle = chapter.title;
         let translatedStoryEvents: StoryEvent[] = [...chapter.storyEvents];
-        const request: GenerateTextRequestDto = {
-          model,
-          promptId,
-          contextInfo: <TranslateNovelContextInfoDto>{
-            $type: NovelTextGenerationType.TranslateNovel,
-            novelId: this.data.novel.id,
-            chapterIndex,
-            targetLanguage,
-            instructions,
-          },
-        };
+        const request = this.buildRequest(chapterIndex);
+        if (request === null) {
+          throw new Error('The translation request is incomplete.');
+        }
 
         const completion = await firstValueFrom(
           this.generateTextService.generateTextCompletion(request),
@@ -266,6 +266,33 @@ export class TranslateNovelDialogComponent implements OnDestroy {
     }
   }
 
+  previewPrompt(): void {
+    if (!this.canGenerate) {
+      return;
+    }
+
+    const targetLanguage = this.formGroup.get('targetLanguage')!.value;
+    if (!targetLanguage || targetLanguage === this.data.novel.language) {
+      this.generationError =
+        'Please choose a target language different from the source novel language.';
+      return;
+    }
+
+    const items = this.data.prose.chapters
+      .map((chapter, chapterIndex) => {
+        const request = this.buildRequest(chapterIndex);
+        return request
+          ? {
+              label: `Chapter ${chapterIndex + 1}: ${chapter.title}`,
+              request,
+            }
+          : null;
+      })
+      .filter((item) => item !== null);
+
+    this.previewDialogRef = this.previewDialogService.openBatch(items);
+  }
+
   async accept(): Promise<void> {
     if (!this.canAccept) {
       return;
@@ -347,6 +374,7 @@ export class TranslateNovelDialogComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.generationRequestId++;
     this.isGenerating = false;
+    this.previewDialogRef?.close();
   }
 
   get hasTranslationPromptOptions(): boolean {
@@ -386,6 +414,29 @@ export class TranslateNovelDialogComponent implements OnDestroy {
     return componentValue && componentValue.trim() !== ''
       ? componentValue.trim()
       : null;
+  }
+
+  private buildRequest(chapterIndex: number): GenerateTextRequestDto | null {
+    const promptId = this.selectedPromptId;
+    const model = this.selectedModelId;
+    const targetLanguage = this.formGroup.get('targetLanguage')!.value;
+    if (!promptId || !model || !targetLanguage) {
+      return null;
+    }
+
+    return {
+      model,
+      promptId,
+      contextInfo: <TranslateNovelContextInfoDto>{
+        $type: NovelTextGenerationType.TranslateNovel,
+        novelId: this.data.novel.id,
+        chapterIndex,
+        targetLanguage,
+        instructions: this.normalizeOptionalText(
+          this.formGroup.get('instructions')!.value,
+        ),
+      },
+    };
   }
 
   private parseTranslationResult(

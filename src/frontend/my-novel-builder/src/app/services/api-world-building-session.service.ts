@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { environment } from '../../environment';
 import { CreateWorldBuildingSessionDto } from '../types/dtos/world-building/create-world-building-session.dto';
 import { SendWorldBuildingMessageDto } from '../types/dtos/world-building/send-world-building-message.dto';
@@ -60,6 +61,16 @@ export class ApiWorldBuildingSessionService extends WorldBuildingSessionService 
   ): Observable<WorldBuildingSession> {
     return this.http.post<WorldBuildingSession>(
       `${this.baseUrl}/world-building-agent/session/${sessionId}/message`,
+      dto,
+    );
+  }
+
+  getMessagePreview(
+    sessionId: string,
+    dto: SendWorldBuildingMessageDto,
+  ): Observable<TextGenerationPreviewDto> {
+    return this.http.post<TextGenerationPreviewDto>(
+      `${this.baseUrl}/world-building-agent/session/${sessionId}/message/preview`,
       dto,
     );
   }

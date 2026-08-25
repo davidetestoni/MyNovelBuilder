@@ -28,6 +28,7 @@ import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/c
 import { ModelSelectComponent } from '../model-select/model-select.component';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { OptionPreviewComponent } from '../option-preview/option-preview.component';
+import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
 import { EditChatMessageComponent } from '../edit-chat-message/edit-chat-message.component';
 import { CompendiumService } from '../../services/compendium.service';
 import { LocalStorageService } from '../../services/local-storage.service';
@@ -47,6 +48,7 @@ import { ChatMessageRole } from '../../types/enums/chat-message-role';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { LocalStorageKey } from '../../types/enums/local-storage-key';
 import { PromptType } from '../../types/enums/prompt-type';
+import { SendWorldBuildingMessageDto } from '../../types/dtos/world-building/send-world-building-message.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Component({
@@ -67,7 +69,11 @@ import { v4 as uuidv4 } from 'uuid';
     OptionPreviewComponent,
     ConfirmDialogModule,
   ],
-  providers: [ConfirmationService, DialogService],
+  providers: [
+    ConfirmationService,
+    DialogService,
+    GenerateTextPreviewDialogService,
+  ],
 })
 export class WorldBuilderSessionComponent
   implements OnInit, OnChanges, AfterViewChecked, OnDestroy
@@ -84,6 +90,7 @@ export class WorldBuilderSessionComponent
   private toastr = inject(ToastrService);
   private confirmationService = inject(ConfirmationService);
   private dialogService = inject(DialogService);
+  private previewDialogService = inject(GenerateTextPreviewDialogService);
   private dialogRef: DynamicDialogRef | null = null;
 
   ChatMessageRole = ChatMessageRole;
@@ -182,12 +189,7 @@ export class WorldBuilderSessionComponent
   }
 
   sendMessage(): void {
-    if (
-      !this.userInput.trim() ||
-      this.isGenerating ||
-      !this.selectedModel ||
-      !this.selectedPromptId
-    ) {
+    if (!this.canSendMessage()) {
       return;
     }
 
@@ -204,6 +206,34 @@ export class WorldBuilderSessionComponent
     this.shouldScrollToBottom = true;
 
     this.executeSend(message, localMessage.id);
+  }
+
+  canSendMessage(): boolean {
+    return Boolean(
+      this.userInput.trim() &&
+        !this.isGenerating &&
+        this.selectedModel &&
+        this.selectedPromptId,
+    );
+  }
+
+  previewMessage(): void {
+    if (!this.canSendMessage() || !this.selectedModel) {
+      return;
+    }
+
+    const dto = this.buildSendDto(this.userInput.trim());
+    if (dto === null) {
+      return;
+    }
+
+    this.dialogRef = this.previewDialogService.openPreview(
+      this.selectedModel,
+      this.worldBuildingSessionService.getMessagePreview(
+        this.currentSessionId,
+        dto,
+      ),
+    );
   }
 
   retryMessage(message: WorldBuildingMessage): void {
@@ -481,7 +511,8 @@ export class WorldBuilderSessionComponent
   }
 
   private executeSend(message: string, localMessageId: string): void {
-    if (!this.selectedModel || !this.selectedPromptId) {
+    const dto = this.buildSendDto(message);
+    if (dto === null) {
       return;
     }
 
@@ -489,15 +520,11 @@ export class WorldBuilderSessionComponent
     this.localStorageService.setNestedStringForKey(
       LocalStorageKey.RecentPrompts,
       PromptType.WorldBuildingAgent,
-      this.selectedPromptId,
+      dto.promptId,
     );
 
     this.worldBuildingSessionService
-      .sendMessage(this.currentSessionId, {
-        model: this.selectedModel,
-        promptId: this.selectedPromptId,
-        message,
-      })
+      .sendMessage(this.currentSessionId, dto)
       .subscribe({
         next: (session) => {
           this.failedMessageIds.delete(localMessageId);
@@ -514,6 +541,18 @@ export class WorldBuilderSessionComponent
           this.toastr.error('Message failed. You can retry it.');
         },
       });
+  }
+
+  private buildSendDto(message: string): SendWorldBuildingMessageDto | null {
+    if (!this.selectedModel || !this.selectedPromptId) {
+      return null;
+    }
+
+    return {
+      model: this.selectedModel,
+      promptId: this.selectedPromptId,
+      message,
+    };
   }
 
   private saveSession(): void {

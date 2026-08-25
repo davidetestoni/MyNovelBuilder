@@ -105,6 +105,16 @@
       }
     }
   }
+
+  .preview-request {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    h4 {
+      margin: 0;
+    }
+  }
 }
 
 @media (max-width: 1200px) {

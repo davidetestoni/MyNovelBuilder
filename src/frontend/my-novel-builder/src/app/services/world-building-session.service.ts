@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { TextGenerationPreviewDto } from '../types/dtos/generate/text-generation-preview.dto';
 import { CreateWorldBuildingSessionDto } from '../types/dtos/world-building/create-world-building-session.dto';
 import { SendWorldBuildingMessageDto } from '../types/dtos/world-building/send-world-building-message.dto';
 import { UpdateWorldBuildingProposalDto } from '../types/dtos/world-building/update-world-building-proposal.dto';
@@ -25,6 +26,10 @@ export abstract class WorldBuildingSessionService {
     sessionId: string,
     dto: SendWorldBuildingMessageDto,
   ): Observable<WorldBuildingSession>;
+  abstract getMessagePreview(
+    sessionId: string,
+    dto: SendWorldBuildingMessageDto,
+  ): Observable<TextGenerationPreviewDto>;
   abstract deleteMessage(
     sessionId: string,
     messageId: string,
