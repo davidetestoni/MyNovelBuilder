@@ -154,7 +154,7 @@ describe('VoiceDialogComponent workflows', () => {
     ]);
   });
 
-  it('prepopulates editable metadata while still requiring a replacement file', () => {
+  it('prepopulates editable metadata without requiring a replacement file', () => {
     component = createComponent({ mode: 'edit', voice: voice() });
 
     expect(component['formGroup'].getRawValue()).toEqual({
@@ -164,7 +164,7 @@ describe('VoiceDialogComponent workflows', () => {
       transcript: 'Existing transcript',
       file: null,
     });
-    expect(component['formGroup'].invalid).toBeTrue();
+    expect(component['formGroup'].valid).toBeTrue();
   });
 
   it('restores the design draft and loads only providers that support voice design', () => {
@@ -535,6 +535,25 @@ describe('VoiceDialogComponent workflows', () => {
     );
     expect(dialogRef.close).toHaveBeenCalledOnceWith(true);
     expect(voiceService.createVoice).not.toHaveBeenCalled();
+  });
+
+  it('updates metadata without replacing the existing WAV file', () => {
+    const existingVoice = voice();
+    component = createComponent({ mode: 'edit', voice: existingVoice });
+    component['formGroup'].controls.name.setValue('Updated metadata');
+    voiceService.updateVoice.and.returnValue(of(existingVoice));
+
+    component['submit']();
+
+    expect(voiceService.updateVoice).toHaveBeenCalledOnceWith(
+      'voice-id',
+      'Updated metadata',
+      VoiceGender.Female,
+      WritingLanguage.Italian,
+      'Existing transcript',
+      null,
+    );
+    expect(dialogRef.close).toHaveBeenCalledOnceWith(true);
   });
 
   it('does not submit invalid or whitespace-only form values', () => {

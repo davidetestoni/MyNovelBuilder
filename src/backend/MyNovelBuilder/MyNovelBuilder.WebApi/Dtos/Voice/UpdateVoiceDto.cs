@@ -34,9 +34,9 @@ public class UpdateVoiceDto
     public string? Transcript { get; set; }
 
     /// <summary>
-    /// The voice sample WAV file.
+    /// An optional replacement voice sample WAV file.
     /// </summary>
-    public required IFormFile File { get; set; }
+    public IFormFile? File { get; set; }
 }
 
 internal class UpdateVoiceDtoValidator : AbstractValidator<UpdateVoiceDto>
@@ -49,8 +49,11 @@ internal class UpdateVoiceDtoValidator : AbstractValidator<UpdateVoiceDto>
         RuleFor(x => x.Language).IsInEnum();
         RuleFor(x => x.Transcript).MaximumLength(50000);
         RuleFor(x => x.File)
-            .NotNull()
-            .Must(file => string.Equals(Path.GetExtension(file.FileName), ".wav", StringComparison.OrdinalIgnoreCase))
+            .Must(file => file is null
+                          || string.Equals(
+                              Path.GetExtension(file.FileName),
+                              ".wav",
+                              StringComparison.OrdinalIgnoreCase))
             .WithMessage("The voice sample file must be a .wav file.");
     }
 }

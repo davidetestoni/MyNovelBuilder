@@ -88,7 +88,10 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
     voiceGender: new FormControl<VoiceGender>(VoiceGender.Both, [Validators.required]),
     language: new FormControl<WritingLanguage>(WritingLanguage.English, [Validators.required]),
     transcript: new FormControl('', [Validators.maxLength(50_000)]),
-    file: new FormControl<File | null>(null, [Validators.required]),
+    file: new FormControl<File | null>(
+      null,
+      this.data.mode === 'create' ? [Validators.required] : [],
+    ),
   });
 
   constructor() {
@@ -294,7 +297,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
     const transcript = this.formGroup.controls.transcript.value?.trim() || null;
     const file = this.formGroup.controls.file.value;
 
-    if (!name || file === null) {
+    if (!name) {
       return;
     }
 
@@ -305,6 +308,10 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
           this.toastr.success('Voice updated successfully.');
           this.dialogRef.close(true);
         });
+      return;
+    }
+
+    if (file === null) {
       return;
     }
 

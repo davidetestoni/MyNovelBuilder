@@ -52,11 +52,18 @@ public class VoiceService : IVoiceService
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(Voice voice, IFormFile wavFile, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(
+        Voice voice,
+        IFormFile? wavFile,
+        CancellationToken cancellationToken = default)
     {
         _unitOfWork.Voices.Update(voice);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await SaveWavFileAsync(voice.Id, wavFile, cancellationToken);
+
+        if (wavFile is not null)
+        {
+            await SaveWavFileAsync(voice.Id, wavFile, cancellationToken);
+        }
     }
 
     /// <inheritdoc />

@@ -20,7 +20,7 @@ export abstract class VoiceService {
     voiceGender: VoiceGender,
     language: WritingLanguage,
     transcript: string | null,
-    file: File,
+    file: File | null,
   ): Observable<VoiceDto>;
   abstract deleteVoice(id: string): Observable<void>;
   abstract getVoicePreviewStreamResponse(

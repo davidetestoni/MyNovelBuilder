@@ -43,7 +43,7 @@ export class MockVoiceService extends VoiceService {
     voiceGender: VoiceGender,
     language: WritingLanguage,
     transcript: string | null,
-    _file: File,
+    _file: File | null,
   ): Observable<VoiceDto> {
     const current = this.voices.find((v) => v.id === id);
     const updated: VoiceDto = {

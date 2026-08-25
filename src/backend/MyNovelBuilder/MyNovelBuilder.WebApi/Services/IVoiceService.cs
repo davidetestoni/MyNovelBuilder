@@ -23,9 +23,9 @@ public interface IVoiceService
     Task CreateAsync(Voice voice, IFormFile wavFile, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Update a voice and replace its WAV sample.
+    /// Update a voice and optionally replace its WAV sample.
     /// </summary>
-    Task UpdateAsync(Voice voice, IFormFile wavFile, CancellationToken cancellationToken = default);
+    Task UpdateAsync(Voice voice, IFormFile? wavFile, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete a voice by its ID.

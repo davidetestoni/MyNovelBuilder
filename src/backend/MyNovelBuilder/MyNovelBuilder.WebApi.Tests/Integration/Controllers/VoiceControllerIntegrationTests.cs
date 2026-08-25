@@ -147,6 +147,52 @@ public class VoiceControllerIntegrationTests(
     }
 
     [Fact]
+    public async Task UpdateVoice_WithoutFile_UpdatesMetadataAndPreservesWavFile()
+    {
+        // Arrange
+        using var client = Factory.CreateClient();
+        var voice = new Voice
+        {
+            Name = "Original Voice",
+            VoiceGender = VoiceGender.Male,
+            Language = WritingLanguage.English,
+            Transcript = "Original transcript"
+        };
+        UnitOfWork.Voices.Add(voice);
+        await UnitOfWork.SaveChangesAsync();
+
+        var originalBytes = CreateWavBytes(seconds: 1);
+        var wavPath = GetVoiceWavPath(voice.Id);
+        Directory.CreateDirectory(Path.GetDirectoryName(wavPath)!);
+        await File.WriteAllBytesAsync(wavPath, originalBytes);
+
+        using var content = CreateVoiceFormData(
+            name: "Metadata Only",
+            voiceGender: VoiceGender.Female,
+            language: WritingLanguage.Italian,
+            transcript: "Updated transcript",
+            fileName: "unused.wav",
+            fileBytes: [],
+            id: voice.Id,
+            includeFile: false);
+
+        // Act
+        var response = await client.PutAsync("api/voices", content);
+
+        // Assert
+        Assert.True(response.IsSuccessStatusCode);
+
+        using var scope = Factory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var updatedVoice = dbContext.Voices.Single(v => v.Id == voice.Id);
+        Assert.Equal("Metadata Only", updatedVoice.Name);
+        Assert.Equal(VoiceGender.Female, updatedVoice.VoiceGender);
+        Assert.Equal(WritingLanguage.Italian, updatedVoice.Language);
+        Assert.Equal("Updated transcript", updatedVoice.Transcript);
+        Assert.Equal(originalBytes, await File.ReadAllBytesAsync(wavPath));
+    }
+
+    [Fact]
     public async Task DeleteVoice_ReturnsOk_RemovesVoiceAndWavFile()
     {
         // Arrange
@@ -308,7 +354,8 @@ public class VoiceControllerIntegrationTests(
         byte[] fileBytes,
         string contentType = "audio/wav",
         Guid? id = null,
-        string? transcript = null)
+        string? transcript = null,
+        bool includeFile = true)
     {
         var content = new MultipartFormDataContent();
 
@@ -326,9 +373,12 @@ public class VoiceControllerIntegrationTests(
             content.Add(new StringContent(transcript), "transcript");
         }
 
-        var fileContent = new ByteArrayContent(fileBytes);
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
-        content.Add(fileContent, "file", fileName);
+        if (includeFile)
+        {
+            var fileContent = new ByteArrayContent(fileBytes);
+            fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
+            content.Add(fileContent, "file", fileName);
+        }
 
         return content;
     }
