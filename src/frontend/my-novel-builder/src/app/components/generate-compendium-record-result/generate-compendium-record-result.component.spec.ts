@@ -3,10 +3,8 @@ import { ToastrService } from 'ngx-toastr';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { of, Subject, throwError } from 'rxjs';
 import { CompendiumService } from '../../services/compendium.service';
-import { NovelService } from '../../services/novel.service';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
-import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import {
   GenerateCompendiumRecordComponentData,
@@ -16,7 +14,6 @@ import {
 describe('GenerateCompendiumRecordResultComponent workflow', () => {
   let component: GenerateCompendiumRecordResultComponent;
   let compendiumService: jasmine.SpyObj<CompendiumService>;
-  let novelService: jasmine.SpyObj<NovelService>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
   let config: { data: GenerateCompendiumRecordComponentData };
@@ -29,9 +26,6 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
     description: '',
     records: [],
   });
-
-  const novel = (compendiumIds = ['linked']): NovelDto =>
-    ({ id: 'novel-one', compendiumIds }) as NovelDto;
 
   const createdRecord = (): CompendiumRecordDto => ({
     id: 'record-one',
@@ -61,11 +55,8 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
   beforeEach(() => {
     compendiumService = jasmine.createSpyObj<CompendiumService>(
       'CompendiumService',
-      ['getCompendia', 'createRecord'],
+      ['getNovelCompendia', 'createRecord'],
     );
-    novelService = jasmine.createSpyObj<NovelService>('NovelService', [
-      'getNovel',
-    ]);
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', [
       'success',
       'error',
@@ -79,16 +70,14 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
         novelId: 'novel-one',
       },
     };
-    novelService.getNovel.and.returnValue(of(novel()));
-    compendiumService.getCompendia.and.returnValue(
-      of([compendium('unlinked'), compendium('linked')]),
+    compendiumService.getNovelCompendia.and.returnValue(
+      of([compendium('linked')]),
     );
     compendiumService.createRecord.and.returnValue(of(createdRecord()));
 
     TestBed.configureTestingModule({
       providers: [
         { provide: CompendiumService, useValue: compendiumService },
-        { provide: NovelService, useValue: novelService },
         { provide: ToastrService, useValue: toastr },
         { provide: DynamicDialogRef, useValue: dialogRef },
         { provide: DynamicDialogConfig, useValue: config },
@@ -130,8 +119,9 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
   it('loads only compendia linked to the novel and selects the first one', () => {
     component.ngOnInit();
 
-    expect(novelService.getNovel).toHaveBeenCalledOnceWith('novel-one');
-    expect(compendiumService.getCompendia).toHaveBeenCalledOnceWith();
+    expect(compendiumService.getNovelCompendia).toHaveBeenCalledOnceWith(
+      'novel-one',
+    );
     expect(component.compendia).toEqual([compendium('linked')]);
     expect(component.formGroup.controls.compendiumId.value).toBe('linked');
     expect(component.formGroup.controls.context.value).toBe(
@@ -141,7 +131,7 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
   });
 
   it('keeps compendium selection required when the novel has none linked', () => {
-    novelService.getNovel.and.returnValue(of(novel([])));
+    compendiumService.getNovelCompendia.and.returnValue(of([]));
 
     component.ngOnInit();
 
@@ -150,16 +140,11 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
     expect(component.formGroup.controls.compendiumId.invalid).toBeTrue();
   });
 
-  it('tracks loading until both requests complete', () => {
-    const novelResponse = new Subject<NovelDto>();
+  it('tracks loading until the request completes', () => {
     const compendiaResponse = new Subject<CompendiumDto[]>();
-    novelService.getNovel.and.returnValue(novelResponse);
-    compendiumService.getCompendia.and.returnValue(compendiaResponse);
+    compendiumService.getNovelCompendia.and.returnValue(compendiaResponse);
 
     component.ngOnInit();
-    expect(component.isLoadingCompendia).toBeTrue();
-    novelResponse.next(novel());
-    novelResponse.complete();
     expect(component.isLoadingCompendia).toBeTrue();
     compendiaResponse.next([compendium('linked')]);
     compendiaResponse.complete();
@@ -167,9 +152,9 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
     expect(component.isLoadingCompendia).toBeFalse();
   });
 
-  it('reports novel loading failures and clears selection state', () => {
-    novelService.getNovel.and.returnValue(
-      throwError(() => new Error('novel failed')),
+  it('reports loading failures and clears selection state', () => {
+    compendiumService.getNovelCompendia.and.returnValue(
+      throwError(() => new Error('compendia failed')),
     );
     component.compendia = [compendium('old')];
     component.formGroup.controls.compendiumId.setValue('old');
@@ -178,20 +163,6 @@ describe('GenerateCompendiumRecordResultComponent workflow', () => {
 
     expect(component.compendia).toEqual([]);
     expect(component.formGroup.controls.compendiumId.value).toBe('');
-    expect(component.isLoadingCompendia).toBeFalse();
-    expect(toastr.error).toHaveBeenCalledOnceWith(
-      'Failed to load the novel compendia.',
-    );
-  });
-
-  it('reports compendia loading failures', () => {
-    compendiumService.getCompendia.and.returnValue(
-      throwError(() => new Error('compendia failed')),
-    );
-
-    component.ngOnInit();
-
-    expect(component.compendia).toEqual([]);
     expect(component.isLoadingCompendia).toBeFalse();
     expect(toastr.error).toHaveBeenCalledOnceWith(
       'Failed to load the novel compendia.',

@@ -11,7 +11,6 @@ import { CompendiumService } from '../../services/compendium.service';
 import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import { ToastrService } from 'ngx-toastr';
 import { TitleCasePipe } from '@angular/common';
-import { NovelService } from '../../services/novel.service';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 
 // Latest PrimeNG Imports
@@ -21,7 +20,7 @@ import { SelectModule } from 'primeng/select';
 import { ButtonModule } from 'primeng/button';
 import { AliasSuggestionsComponent } from '../alias-suggestions/alias-suggestions.component';
 import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/compendium-option-preview.component';
-import { finalize, switchMap, tap } from 'rxjs';
+import { finalize, tap } from 'rxjs';
 
 export interface GenerateCompendiumRecordComponentData {
   generatedText: string;
@@ -52,7 +51,6 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
   data!: GenerateCompendiumRecordComponentData;
 
   readonly compendiumService: CompendiumService = inject(CompendiumService);
-  readonly novelService: NovelService = inject(NovelService);
   readonly toastr: ToastrService = inject(ToastrService);
 
   compendia: CompendiumDto[] = [];
@@ -101,24 +99,18 @@ export class GenerateCompendiumRecordResultComponent implements OnInit {
     this.formGroup.get('context')!.setValue(this.data.generatedText);
 
     this.isLoadingCompendia = true;
-    this.novelService
-      .getNovel(this.data.novelId)
+    this.compendiumService
+      .getNovelCompendia(this.data.novelId)
       .pipe(
-        switchMap((novel) =>
-          this.compendiumService.getCompendia().pipe(
-            tap((compendia) => {
-              this.compendia = compendia.filter((compendium) =>
-                novel.compendiumIds.includes(compendium.id),
-              );
+        tap((compendia) => {
+          this.compendia = compendia;
 
-              if (this.compendia.length > 0) {
-                this.formGroup
-                  .get('compendiumId')!
-                  .setValue(this.compendia[0].id);
-              }
-            }),
-          ),
-        ),
+          if (this.compendia.length > 0) {
+            this.formGroup
+              .get('compendiumId')!
+              .setValue(this.compendia[0].id);
+          }
+        }),
         finalize(() => (this.isLoadingCompendia = false)),
       )
       .subscribe({

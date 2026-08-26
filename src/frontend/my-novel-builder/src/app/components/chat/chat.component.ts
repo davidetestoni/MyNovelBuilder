@@ -236,7 +236,7 @@ export class ChatComponent
       this.novelService.getNovel(novelId).subscribe({
         next: (novel) => {
           this.novel.set(novel);
-          this.loadCompendia(novel);
+          this.loadCompendia(novel.id);
         },
         error: () => {
           this.novelNotFound.set(true);
@@ -254,15 +254,11 @@ export class ChatComponent
     );
   }
 
-  loadCompendia(novel: NovelDto): void {
+  loadCompendia(novelId: string): void {
     this.contextSubscriptions.add(
-      this.compendiumService.getCompendia().subscribe({
+      this.compendiumService.getNovelCompendia(novelId).subscribe({
         next: (compendia) => {
-          this.compendia.set(
-            compendia.filter((compendium) =>
-              novel.compendiumIds.includes(compendium.id),
-            ),
-          );
+          this.compendia.set(compendia);
         },
         error: () => undefined,
       }),

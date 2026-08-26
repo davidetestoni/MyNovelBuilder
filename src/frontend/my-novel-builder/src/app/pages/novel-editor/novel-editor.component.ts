@@ -159,12 +159,11 @@ export class NovelEditorComponent {
   }
 
   getCompendia(): void {
-    // TODO: Only get the novel's compendia, not all compendia
-    this.compendiumService.getCompendia().subscribe((compendia) => {
-      this.compendia = compendia.filter((compendium) =>
-        this.novel?.compendiumIds.includes(compendium.id),
-      );
-    });
+    this.compendiumService
+      .getNovelCompendia(this.novelId)
+      .subscribe((compendia) => {
+        this.compendia = compendia;
+      });
   }
 
   restoreFloatedMedia(): void {

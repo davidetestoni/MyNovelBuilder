@@ -21,6 +21,12 @@ export class ApiCompendiumService extends CompendiumService {
     return this.http.get<CompendiumDto[]>(`${this.baseUrl}/compendia`);
   }
 
+  getNovelCompendia(novelId: string): Observable<CompendiumDto[]> {
+    return this.http.get<CompendiumDto[]>(
+      `${this.baseUrl}/novel/${novelId}/compendia`,
+    );
+  }
+
   getCompendium(compendiumId: string): Observable<CompendiumDto> {
     return this.http.get<CompendiumDto>(`${this.baseUrl}/compendium/${compendiumId}`);
   }

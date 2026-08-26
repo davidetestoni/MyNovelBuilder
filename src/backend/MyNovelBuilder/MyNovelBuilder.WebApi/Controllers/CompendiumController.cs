@@ -16,15 +16,18 @@ public class CompendiumController : ControllerBase
 {
     private readonly ICompendiumService _compendiumService;
     private readonly ICompendiumRecordService _compendiumRecordService;
+    private readonly INovelService _novelService;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
     /// <summary></summary>
     public CompendiumController(ICompendiumService compendiumService,
         ICompendiumRecordService compendiumRecordService,
+        INovelService novelService,
         IHttpContextAccessor httpContextAccessor)
     {
         _compendiumService = compendiumService;
         _compendiumRecordService = compendiumRecordService;
+        _novelService = novelService;
         _httpContextAccessor = httpContextAccessor;
     }
     
@@ -48,11 +51,19 @@ public class CompendiumController : ControllerBase
     public async Task<IEnumerable<CompendiumDto>> GetAllCompendia(CancellationToken cancellationToken = default)
     {
         var compendia = await _compendiumService.GetAllAsync(cancellationToken);
-        var dtos = compendia.Adapt<IEnumerable<CompendiumDto>>().ToList();
-        var tasks = dtos.Select(dto => AddRecordsAsync(dto, cancellationToken));
-        await Task.WhenAll(tasks);
-        
-        return dtos;
+        return await MapWithRecordsAsync(compendia, cancellationToken);
+    }
+
+    /// <summary>
+    /// Get the compendia used by a novel.
+    /// </summary>
+    [HttpGet("/api/novel/{novelId:guid}/compendia")]
+    public async Task<IEnumerable<CompendiumDto>> GetNovelCompendia(
+        Guid novelId,
+        CancellationToken cancellationToken = default)
+    {
+        var novel = await _novelService.GetByIdAsync(novelId, cancellationToken);
+        return await MapWithRecordsAsync(novel.Compendia, cancellationToken);
     }
     
     /// <summary>
@@ -137,5 +148,18 @@ public class CompendiumController : ControllerBase
         recordDtos.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
         
         compendiumDto.Records = recordDtos;
+    }
+
+    private async Task<IEnumerable<CompendiumDto>> MapWithRecordsAsync(
+        IEnumerable<Compendium> compendia,
+        CancellationToken cancellationToken)
+    {
+        var dtos = compendia.Adapt<IEnumerable<CompendiumDto>>().ToList();
+        foreach (var dto in dtos)
+        {
+            await AddRecordsAsync(dto, cancellationToken);
+        }
+
+        return dtos;
     }
 }

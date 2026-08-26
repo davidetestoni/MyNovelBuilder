@@ -88,7 +88,7 @@ describe('NovelEditorComponent workflows', () => {
     ]);
     compendiumService = jasmine.createSpyObj<CompendiumService>(
       'CompendiumService',
-      ['getCompendia'],
+      ['getNovelCompendia'],
     );
     toastrService = jasmine.createSpyObj<ToastrService>('ToastrService', [
       'success',
@@ -101,7 +101,7 @@ describe('NovelEditorComponent workflows', () => {
     novelService.getFloatedMediaForNovel.and.returnValue([]);
     novelService.updateNovelProse.and.returnValue(of(undefined));
     promptService.getPrompts.and.returnValue(of([]));
-    compendiumService.getCompendia.and.returnValue(of([]));
+    compendiumService.getNovelCompendia.and.returnValue(of([]));
     toastrService.success.and.returnValue({
       toastId: 101,
     } as ReturnType<ToastrService['success']>);
@@ -137,11 +137,8 @@ describe('NovelEditorComponent workflows', () => {
       { id: 'media-id', url: '/media.webp', isCurrent: true, isVideo: false },
     ];
     novelService.getFloatedMediaForNovel.and.returnValue(floatedMedia);
-    compendiumService.getCompendia.and.returnValue(
-      of([
-        compendium('excluded-compendium'),
-        compendium('included-compendium'),
-      ]),
+    compendiumService.getNovelCompendia.and.returnValue(
+      of([compendium('included-compendium')]),
     );
     component = createComponent();
 
@@ -156,6 +153,9 @@ describe('NovelEditorComponent workflows', () => {
       { label: 'Chapter 2', value: 1 },
     ]);
     expect(component.compendia).toEqual([compendium('included-compendium')]);
+    expect(compendiumService.getNovelCompendia).toHaveBeenCalledOnceWith(
+      'novel-id',
+    );
     expect(component.prompts).toEqual([]);
     expect(component.floatedMedia).toBe(floatedMedia);
   });

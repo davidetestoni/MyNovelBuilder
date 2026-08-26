@@ -105,6 +105,38 @@ public class CompendiumControllerIntegrationTests(
     }
 
     [Fact]
+    public async Task GetNovelCompendia_ReturnsOnlyLinkedCompendiaWithRecords()
+    {
+        using var client = Factory.CreateClient();
+        var linkedCompendium = new Compendium { Name = "Linked Compendium" };
+        var unlinkedCompendium = new Compendium { Name = "Unlinked Compendium" };
+        UnitOfWork.Compendia.Add(linkedCompendium);
+        UnitOfWork.Compendia.Add(unlinkedCompendium);
+        var record = new CompendiumRecord
+        {
+            Name = "Linked Character",
+            Type = CompendiumRecordType.Character,
+            Compendium = linkedCompendium
+        };
+        UnitOfWork.CompendiumRecords.Add(record);
+        var novel = new Novel
+        {
+            Title = "Test Novel",
+            Compendia = [linkedCompendium]
+        };
+        UnitOfWork.Novels.Add(novel);
+        await UnitOfWork.SaveChangesAsync();
+
+        var result = await GetJsonAsync<IEnumerable<CompendiumDto>>(
+            client, $"api/novel/{novel.Id}/compendia");
+
+        Assert.True(result.IsOk);
+        var dto = Assert.Single(result.Value);
+        Assert.Equal(linkedCompendium.Id, dto.Id);
+        Assert.Equal(record.Id, Assert.Single(dto.Records).Id);
+    }
+
+    [Fact]
     public async Task CreateCompendium_ReturnsOk()
     {
         // Arrange

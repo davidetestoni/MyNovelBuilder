@@ -10,6 +10,7 @@ import {
   mockedCompendia,
   mockedCompendiumRecords,
 } from './mocks/mock-compendium.data';
+import { mockedNovels } from './mocks/mock-novel.data';
 import { mockObservable } from './mocks/mock-utils';
 import { CompendiumService } from './compendium.service';
 
@@ -17,6 +18,15 @@ import { CompendiumService } from './compendium.service';
 export class MockCompendiumService extends CompendiumService {
   getCompendia(): Observable<CompendiumDto[]> {
     return mockObservable(mockedCompendia);
+  }
+
+  getNovelCompendia(novelId: string): Observable<CompendiumDto[]> {
+    const compendiumIds = new Set(
+      mockedNovels.find((novel) => novel.id === novelId)?.compendiumIds ?? [],
+    );
+    return mockObservable(
+      mockedCompendia.filter((compendium) => compendiumIds.has(compendium.id)),
+    );
   }
 
   getCompendium(_compendiumId: string): Observable<CompendiumDto> {

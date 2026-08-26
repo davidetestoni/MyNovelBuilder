@@ -10,6 +10,7 @@ import { UpdateCompendiumRecordDto } from '../types/dtos/compendium-record/updat
 @Injectable()
 export abstract class CompendiumService {
   abstract getCompendia(): Observable<CompendiumDto[]>;
+  abstract getNovelCompendia(novelId: string): Observable<CompendiumDto[]>;
   abstract getCompendium(compendiumId: string): Observable<CompendiumDto>;
   abstract getRecords(compendiumId: string): Observable<CompendiumRecordDto[]>;
   abstract getRecordsByIds(recordIds: string[]): Observable<CompendiumRecordDto[]>;

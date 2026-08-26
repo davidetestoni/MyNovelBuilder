@@ -156,7 +156,7 @@ describe('ChatComponent workflow', () => {
     ]);
     compendiumService = jasmine.createSpyObj<CompendiumService>(
       'CompendiumService',
-      ['getCompendia'],
+      ['getNovelCompendia'],
     );
     confirmationService = jasmine.createSpyObj<ConfirmationService>(
       'ConfirmationService',
@@ -186,11 +186,8 @@ describe('ChatComponent workflow', () => {
     chatService.updateChat.and.returnValue(of(undefined));
     novelService.getNovel.and.returnValue(of(novel()));
     novelService.getNovelProse.and.returnValue(of(prose()));
-    compendiumService.getCompendia.and.returnValue(
-      of([
-        compendium('compendium-1', ['record-1']),
-        compendium('compendium-2', ['record-2']),
-      ]),
+    compendiumService.getNovelCompendia.and.returnValue(
+      of([compendium('compendium-1', ['record-1'])]),
     );
     generateTextService.generateText.and.returnValue(generation);
     previewDialogService.open.and.returnValue(dialogRef);
@@ -269,6 +266,9 @@ describe('ChatComponent workflow', () => {
     expect(component.compendia()?.map((item) => item.id)).toEqual([
       'compendium-1',
     ]);
+    expect(compendiumService.getNovelCompendia).toHaveBeenCalledOnceWith(
+      'novel-1',
+    );
     expect(component.novelNotFound()).toBeFalse();
   });
 
@@ -281,14 +281,14 @@ describe('ChatComponent workflow', () => {
 
     expect(component.novel()).toBeNull();
     expect(component.novelNotFound()).toBeTrue();
-    expect(compendiumService.getCompendia).not.toHaveBeenCalled();
+    expect(compendiumService.getNovelCompendia).not.toHaveBeenCalled();
   });
 
   it('keeps optional context empty when prose or compendia loading fails', () => {
     novelService.getNovelProse.and.returnValue(
       throwError(() => new Error('prose failed')),
     );
-    compendiumService.getCompendia.and.returnValue(
+    compendiumService.getNovelCompendia.and.returnValue(
       throwError(() => new Error('compendia failed')),
     );
 
