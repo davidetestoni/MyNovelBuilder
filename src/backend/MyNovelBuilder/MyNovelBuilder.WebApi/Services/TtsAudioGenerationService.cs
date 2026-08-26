@@ -248,7 +248,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
 
         if (!string.Equals(ttsRequest.Message, resolved.Request.Message, StringComparison.Ordinal))
         {
-            _logger.LogInformation("Emphasized text: {EmphasizedText}", ttsRequest.Message);
+            _logger.LogDebug("Emphasized text: {EmphasizedText}", ttsRequest.Message);
         }
 
         return ttsRequest;

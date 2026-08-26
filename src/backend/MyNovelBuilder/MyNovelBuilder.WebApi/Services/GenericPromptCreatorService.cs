@@ -66,7 +66,7 @@ public class GenericPromptCreatorService : IGenericPromptCreatorService
                 "The prompt context is invalid.")
         };
 
-        _logger.LogInformation("Sending generic prompt with messages: {@Messages}", processedPrompt.Messages);
+        _logger.LogDebug("Sending generic prompt with messages: {@Messages}", processedPrompt.Messages);
         return processedPrompt;
     }
 

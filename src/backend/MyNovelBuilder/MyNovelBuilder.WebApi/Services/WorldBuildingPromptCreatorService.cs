@@ -116,7 +116,7 @@ public class WorldBuildingPromptCreatorService : IWorldBuildingPromptCreatorServ
                 .ToString()
         }).ToList();
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Sending world-building prompt with messages: {@Messages}",
             messages);
 

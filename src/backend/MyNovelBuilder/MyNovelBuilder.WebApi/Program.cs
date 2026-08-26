@@ -71,8 +71,28 @@ builder.Services.AddResponseCompression(options =>
 });
 
 // Add logging through serilog
+var configuredDefaultLogLevel = builder.Configuration
+    .GetValue<Microsoft.Extensions.Logging.LogLevel?>("Logging:LogLevel:Default")
+    ?? Microsoft.Extensions.Logging.LogLevel.Information;
+var defaultLogLevel = configuredDefaultLogLevel switch
+{
+    Microsoft.Extensions.Logging.LogLevel.Trace => LogEventLevel.Verbose,
+    Microsoft.Extensions.Logging.LogLevel.Debug => LogEventLevel.Debug,
+    Microsoft.Extensions.Logging.LogLevel.Information => LogEventLevel.Information,
+    Microsoft.Extensions.Logging.LogLevel.Warning => LogEventLevel.Warning,
+    Microsoft.Extensions.Logging.LogLevel.Error => LogEventLevel.Error,
+    Microsoft.Extensions.Logging.LogLevel.Critical => LogEventLevel.Fatal,
+    Microsoft.Extensions.Logging.LogLevel.None => LogEventLevel.Fatal,
+    _ => LogEventLevel.Information
+};
+
 builder.Host.UseSerilog((_, options) =>
 {
+    // Keep the default concise. Full prompts, generated text, and provider
+    // response bodies are logged at Debug and are only emitted when this
+    // configured level is Debug (or Trace).
+    options.MinimumLevel.Is(defaultLogLevel);
+
     // This will destructure JsonDocument and JsonElement when passed
     // as structured logs argument
     options.Destructure.With<JsonDestructuringPolicy>();

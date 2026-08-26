@@ -412,8 +412,6 @@ export class NovelEditorComponent {
         async: true,
       })) as ExifReader.ExpandedTags;
 
-      console.log('Extracted tags from image metadata:', tags.pngText);
-
       return tags.pngText?.['prompt (en)']?.description || null;
     } catch {
       return null;

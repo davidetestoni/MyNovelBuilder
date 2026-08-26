@@ -78,7 +78,7 @@ public class CompendiumPromptCreatorService : ICompendiumPromptCreatorService
                 "The prompt context is invalid.")
         };
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Sending compendium prompt with messages for compendium {CompendiumId}: {@Messages}",
             compendiumContextInfo.CompendiumId, processedPrompt.Messages);
 

@@ -99,7 +99,7 @@ public class NovelPromptCreatorService : INovelPromptCreatorService
                 "The prompt context is invalid.")
         };
 
-        _logger.LogInformation("Sending novel prompt with messages: {@Messages}", processedPrompt.Messages);
+        _logger.LogDebug("Sending novel prompt with messages: {@Messages}", processedPrompt.Messages);
         return processedPrompt;
     }
 

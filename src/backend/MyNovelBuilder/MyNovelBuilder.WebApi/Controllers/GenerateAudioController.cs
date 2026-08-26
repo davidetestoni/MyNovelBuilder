@@ -77,7 +77,8 @@ public class GenerateAudioController : ControllerBase
         TtsRequestDto dto,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Generating audio for text: {Text}", dto.Message);
+        _logger.LogInformation("Generating audio for textLength={TextLength}.", dto.Message.Length);
+        _logger.LogDebug("Generating audio for text: {Text}", dto.Message);
         var wavBytes = await _ttsAudioGenerationService.GenerateWavBytesAsync(
             new TextToSpeechGenerationRequest
             {
@@ -99,7 +100,8 @@ public class GenerateAudioController : ControllerBase
         TtsRequestDto dto,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Generating audio stream for text: {Text}", dto.Message);
+        _logger.LogInformation("Generating audio stream for textLength={TextLength}.", dto.Message.Length);
+        _logger.LogDebug("Generating audio stream for text: {Text}", dto.Message);
         var audioStream = await _ttsAudioGenerationService.GenerateWavStreamAsync(
             new TextToSpeechGenerationRequest
             {
