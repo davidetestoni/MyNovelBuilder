@@ -93,7 +93,7 @@ public class UnrealSpeechTtsService : ITtsService
         }
         
         // Create the task
-        var httpRequest = new HttpRequestMessage
+        using var httpRequest = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
             RequestUri = new Uri(_httpClient.BaseAddress!, "synthesisTasks"),
@@ -130,12 +130,9 @@ public class UnrealSpeechTtsService : ITtsService
         // This service is pretty unreliable...
         await Task.Delay(15000, cancellationToken);
         
-        // Read the audio from the output uri
-        // We use a brand new HttpClient here, otherwise it has the
-        // Authorization header set and the request fails
-        // (although we should be using the IHttpClientFactory to create it...)
-        using var httpClient = new HttpClient();
-        using var audioResponse = await httpClient.GetAsync(outputUri, cancellationToken);
+        // The provider authorization header belongs only to the synthesis request,
+        // so it is safe to reuse the managed client for the absolute output URI.
+        using var audioResponse = await _httpClient.GetAsync(outputUri, cancellationToken);
         
         if (!audioResponse.IsSuccessStatusCode)
         {

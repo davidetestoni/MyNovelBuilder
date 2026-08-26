@@ -15,17 +15,21 @@ namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 /// <summary>
 /// Service for generating text using OpenRouter's OpenAI-compatible API.
 /// </summary>
-[RegisterKeyedService(TextGenerationProvider.OpenRouter)]
+[RegisterKeyedService(TextGenerationProvider.OpenRouter, useHttpClient: true)]
 public class OpenRouterTextGenerationService : ITextGenerationService
 {
+    private readonly HttpClient _httpClient;
     private readonly IIntegrationsService _integrationsService;
     private readonly OpenAIClient? _openAiClient = null;
 
     /// <summary></summary>
     public OpenRouterTextGenerationService(
+        HttpClient httpClient,
         IIntegrationsService integrationsService)
     {
+        _httpClient = httpClient;
         _integrationsService = integrationsService;
+        _httpClient.BaseAddress = new Uri("https://openrouter.ai/api/v1/");
     }
     
     private async ValueTask<OpenAIClient> GetOpenAiClientAsync(
@@ -197,13 +201,10 @@ public class OpenRouterTextGenerationService : ITextGenerationService
                 "OpenRouter API key is missing in integrations configuration.");
         }
 
-        using var httpClient = new HttpClient();
-        httpClient.BaseAddress = new Uri("https://openrouter.ai/api/v1/");
-        
         using var request = new HttpRequestMessage(HttpMethod.Get, "models");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.OpenRouterApiKey);
         
-        using var response = await httpClient.SendAsync(request, cancellationToken);
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
 
         if (!response.IsSuccessStatusCode)
