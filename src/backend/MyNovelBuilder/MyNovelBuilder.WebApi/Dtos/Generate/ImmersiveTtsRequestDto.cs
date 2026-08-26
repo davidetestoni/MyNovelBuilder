@@ -16,17 +16,17 @@ public class ImmersiveTtsRequestDto
     /// <summary>
     /// The prompt used to plan the speaker chunks.
     /// </summary>
-    public Guid PromptId { get; set; }
+    public required Guid PromptId { get; set; }
 
     /// <summary>
     /// The chapter index to narrate.
     /// </summary>
-    public int ChapterIndex { get; set; }
+    public required int ChapterIndex { get; set; }
 
     /// <summary>
     /// The section index to narrate.
     /// </summary>
-    public int SectionIndex { get; set; }
+    public required int SectionIndex { get; set; }
 
     /// <summary>
     /// Optional TTS provider override.

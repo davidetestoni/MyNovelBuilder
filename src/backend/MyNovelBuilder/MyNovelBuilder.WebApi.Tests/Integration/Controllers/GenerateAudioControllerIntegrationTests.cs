@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -76,6 +77,30 @@ public class GenerateAudioControllerIntegrationTests(
         Assert.True(response.IsSuccessStatusCode);
         Assert.Equal("audio/wav", response.Content.Headers.ContentType?.MediaType);
         Assert.Equal([1, 2, 3, 4], await response.Content.ReadAsByteArrayAsync());
+    }
+
+    [Theory]
+    [InlineData("promptId")]
+    [InlineData("chapterIndex")]
+    [InlineData("sectionIndex")]
+    public async Task DebugImmersiveTts_WithMissingRequiredValue_ReturnsBadRequest(
+        string missingProperty)
+    {
+        using var client = Factory.CreateClient();
+        var request = new Dictionary<string, object>
+        {
+            ["novelId"] = Guid.NewGuid(),
+            ["promptId"] = Guid.NewGuid(),
+            ["chapterIndex"] = 0,
+            ["sectionIndex"] = 0
+        };
+        request.Remove(missingProperty);
+
+        var response = await client.PostAsJsonAsync(
+            "api/generate/audio/tts/immersive/debug",
+            request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     public Task DisposeAsync()
