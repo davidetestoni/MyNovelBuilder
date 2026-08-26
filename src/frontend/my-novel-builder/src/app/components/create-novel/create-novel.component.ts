@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import {
   FormControl,
   FormGroup,
@@ -18,6 +18,15 @@ import { ButtonModule } from 'primeng/button';
 import { FileUploadModule } from 'primeng/fileupload';
 import { readImageFileFromClipboard } from '../../utils/clipboard-image';
 import { finalize, of, switchMap } from 'rxjs';
+import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
+import { CompendiumService } from '../../services/compendium.service';
+import { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
+import { CompendiumRecordOverviewDto } from '../../types/dtos/compendium-record/compendium-record-overview.dto';
+import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
+import { SpacedPipe } from '../../pipes/spaced.pipe';
+import { CompendiumOptionPreviewComponent } from '../compendium-option-preview/compendium-option-preview.component';
+import { OptionPreviewComponent } from '../option-preview/option-preview.component';
 
 @Component({
   selector: 'app-create-novel',
@@ -30,18 +39,40 @@ import { finalize, of, switchMap } from 'rxjs';
     TextareaModule,
     ButtonModule,
     FileUploadModule,
+    SelectModule,
+    MultiSelectModule,
+    SpacedPipe,
+    CompendiumOptionPreviewComponent,
+    OptionPreviewComponent,
   ],
   templateUrl: './create-novel.component.html',
   styleUrl: './create-novel.component.scss',
 })
-export class CreateNovelComponent {
+export class CreateNovelComponent implements OnInit {
   private dialogRef = inject(DynamicDialogRef);
   private toastr = inject(ToastrService);
 
   imagePreview: string | ArrayBuffer | null = null;
   imageFile: File | null = null;
   isCreating = false;
+  compendia: CompendiumDto[] = [];
   readonly novelService: NovelService = inject(NovelService);
+  readonly compendiumService: CompendiumService = inject(CompendiumService);
+
+  readonly writingTenses = [WritingTense.Past, WritingTense.Present];
+  readonly writingPovs = [
+    WritingPov.FirstPerson,
+    WritingPov.ThirdPersonLimited,
+    WritingPov.ThirdPersonOmniscient,
+  ];
+  readonly writingLanguages = [
+    WritingLanguage.English,
+    WritingLanguage.Italian,
+    WritingLanguage.French,
+    WritingLanguage.Spanish,
+    WritingLanguage.German,
+    WritingLanguage.Russian,
+  ];
 
   formGroup = new FormGroup({
     title: new FormControl('', [
@@ -62,8 +93,40 @@ export class CreateNovelComponent {
       Validators.required,
       Validators.pattern(Object.values(WritingLanguage).join('|')),
     ]),
-    // TODO: Add compendia and main character id
+    compendiumIds: new FormControl<string[]>([], { nonNullable: true }),
+    mainCharacterId: new FormControl<string | null>(null),
   });
+
+  ngOnInit(): void {
+    this.compendiumService.getCompendia().subscribe((compendia) => {
+      this.compendia = [...compendia].sort(
+        (a, b) =>
+          this.getCompendiumTimestamp(b) - this.getCompendiumTimestamp(a),
+      );
+    });
+  }
+
+  getAvailableCharacters(): CompendiumRecordOverviewDto[] {
+    const selectedCompendiumIds = this.formGroup.controls.compendiumIds.value;
+
+    return this.compendia
+      .filter((compendium) => selectedCompendiumIds.includes(compendium.id))
+      .flatMap((compendium) => compendium.records)
+      .filter((record) => record.type === CompendiumRecordType.Character)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  onCompendiaChange(): void {
+    const mainCharacterId = this.formGroup.controls.mainCharacterId.value;
+    if (
+      mainCharacterId !== null &&
+      !this.getAvailableCharacters().some(
+        (record) => record.id === mainCharacterId,
+      )
+    ) {
+      this.formGroup.controls.mainCharacterId.setValue(null);
+    }
+  }
 
   createNovel(): void {
     if (this.formGroup.invalid || this.isCreating) {
@@ -97,7 +160,8 @@ export class CreateNovelComponent {
         pov,
         language,
         rpgMode: false,
-        mainCharacterId: null,
+        mainCharacterId: this.formGroup.controls.mainCharacterId.value,
+        compendiumIds: this.formGroup.controls.compendiumIds.value,
       })
       .pipe(
         switchMap((novel) =>
@@ -154,5 +218,10 @@ export class CreateNovelComponent {
     };
 
     reader.readAsDataURL(file);
+  }
+
+  private getCompendiumTimestamp(compendium: CompendiumDto): number {
+    const timestamp = Date.parse(compendium.updatedAt || compendium.createdAt);
+    return Number.isNaN(timestamp) ? 0 : timestamp;
   }
 }

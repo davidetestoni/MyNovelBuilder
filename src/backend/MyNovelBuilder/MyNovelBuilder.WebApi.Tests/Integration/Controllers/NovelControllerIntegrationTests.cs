@@ -105,6 +105,17 @@ public class NovelControllerIntegrationTests(
     {
         // Arrange
         using var client = Factory.CreateClient();
+        var compendium = new Compendium { Name = "Characters" };
+        UnitOfWork.Compendia.Add(compendium);
+        var mainCharacter = new CompendiumRecord
+        {
+            Name = "Main Character",
+            Type = CompendiumRecordType.Character,
+            Compendium = compendium
+        };
+        UnitOfWork.CompendiumRecords.Add(mainCharacter);
+        await UnitOfWork.SaveChangesAsync();
+
         var createDto = new CreateNovelDto
         {
             Title = "New Novel",
@@ -113,7 +124,9 @@ public class NovelControllerIntegrationTests(
             Tense = WritingTense.Past,
             Pov = WritingPov.FirstPerson,
             Language = WritingLanguage.English,
-            RpgMode = false
+            RpgMode = false,
+            CompendiumIds = [compendium.Id],
+            MainCharacterId = mainCharacter.Id
         };
 
         // Act
@@ -125,6 +138,37 @@ public class NovelControllerIntegrationTests(
         var novelDto = result.Value;
         Assert.Equal(createDto.Title, novelDto.Title);
         Assert.Equal(createDto.Author, novelDto.Author);
+        Assert.Equal([compendium.Id], novelDto.CompendiumIds);
+        Assert.Equal(mainCharacter.Id, novelDto.MainCharacterId);
+    }
+
+    [Fact]
+    public async Task CreateNovel_RejectsMainCharacterOutsideSelectedCompendia()
+    {
+        using var client = Factory.CreateClient();
+        var selectedCompendium = new Compendium { Name = "Selected" };
+        var otherCompendium = new Compendium { Name = "Other" };
+        UnitOfWork.Compendia.Add(selectedCompendium);
+        UnitOfWork.Compendia.Add(otherCompendium);
+        var mainCharacter = new CompendiumRecord
+        {
+            Name = "Main Character",
+            Type = CompendiumRecordType.Character,
+            Compendium = otherCompendium
+        };
+        UnitOfWork.CompendiumRecords.Add(mainCharacter);
+        await UnitOfWork.SaveChangesAsync();
+
+        var result = await PostJsonAsync<NovelDto>(client, "api/novel", new CreateNovelDto
+        {
+            Title = "New Novel",
+            RpgMode = false,
+            CompendiumIds = [selectedCompendium.Id],
+            MainCharacterId = mainCharacter.Id
+        });
+
+        Assert.False(result.IsOk);
+        Assert.Equal(HttpStatusCode.BadRequest, result.Error.Response.StatusCode);
     }
 
     [Fact]

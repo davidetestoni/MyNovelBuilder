@@ -126,7 +126,11 @@ describe('NovelsComponent workflows', () => {
 
     expect(dialogService.open).toHaveBeenCalledOnceWith(CreateNovelComponent, {
       header: 'Create a novel',
-      width: '50vw',
+      width: '65rem',
+      breakpoints: {
+        '1100px': '90vw',
+        '700px': '96vw',
+      },
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
       modal: true,

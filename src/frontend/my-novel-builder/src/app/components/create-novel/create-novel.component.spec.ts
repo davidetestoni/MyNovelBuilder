@@ -3,7 +3,10 @@ import { DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ToastrService } from 'ngx-toastr';
 import { of, Subject, throwError } from 'rxjs';
 import { NovelService } from '../../services/novel.service';
+import { CompendiumService } from '../../services/compendium.service';
+import type { CompendiumDto } from '../../types/dtos/compendium/compendium.dto';
 import type { NovelDto } from '../../types/dtos/novel/novel.dto';
+import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { WritingLanguage } from '../../types/enums/writing-language';
 import { WritingPov } from '../../types/enums/writing-pov';
 import { WritingTense } from '../../types/enums/writing-tense';
@@ -12,6 +15,7 @@ import { CreateNovelComponent } from './create-novel.component';
 describe('CreateNovelComponent workflow', () => {
   let component: CreateNovelComponent;
   let novelService: jasmine.SpyObj<NovelService>;
+  let compendiumService: jasmine.SpyObj<CompendiumService>;
   let dialogRef: jasmine.SpyObj<DynamicDialogRef>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let fileReader: jasmine.SpyObj<FileReader>;
@@ -33,6 +37,45 @@ describe('CreateNovelComponent workflow', () => {
     compendiumIds: [],
   });
 
+  const compendia: CompendiumDto[] = [
+    {
+      id: 'older-compendium',
+      createdAt: '2026-07-01T12:00:00Z',
+      updatedAt: '2026-07-02T12:00:00Z',
+      name: 'Older',
+      description: '',
+      records: [
+        {
+          id: 'zara',
+          name: 'Zara',
+          type: CompendiumRecordType.Character,
+          imageUrl: null,
+        },
+      ],
+    },
+    {
+      id: 'newer-compendium',
+      createdAt: '2026-07-03T12:00:00Z',
+      updatedAt: '2026-07-04T12:00:00Z',
+      name: 'Newer',
+      description: '',
+      records: [
+        {
+          id: 'place',
+          name: 'A place',
+          type: CompendiumRecordType.Place,
+          imageUrl: null,
+        },
+        {
+          id: 'alice',
+          name: 'Alice',
+          type: CompendiumRecordType.Character,
+          imageUrl: null,
+        },
+      ],
+    },
+  ];
+
   const setValidForm = (): void => {
     component.formGroup.setValue({
       title: 'The Novel',
@@ -41,6 +84,8 @@ describe('CreateNovelComponent workflow', () => {
       tense: WritingTense.Past,
       pov: WritingPov.ThirdPersonLimited,
       language: WritingLanguage.Italian,
+      compendiumIds: ['newer-compendium'],
+      mainCharacterId: 'alice',
     });
   };
 
@@ -60,6 +105,10 @@ describe('CreateNovelComponent workflow', () => {
       'createNovel',
       'uploadNovelCoverImage',
     ]);
+    compendiumService = jasmine.createSpyObj<CompendiumService>(
+      'CompendiumService',
+      ['getCompendia'],
+    );
     dialogRef = jasmine.createSpyObj<DynamicDialogRef>('DynamicDialogRef', [
       'close',
     ]);
@@ -83,10 +132,12 @@ describe('CreateNovelComponent workflow', () => {
 
     novelService.createNovel.and.returnValue(of(createdNovel()));
     novelService.uploadNovelCoverImage.and.returnValue(of(undefined));
+    compendiumService.getCompendia.and.returnValue(of(compendia));
 
     TestBed.configureTestingModule({
       providers: [
         { provide: NovelService, useValue: novelService },
+        { provide: CompendiumService, useValue: compendiumService },
         { provide: DynamicDialogRef, useValue: dialogRef },
         { provide: ToastrService, useValue: toastr },
       ],
@@ -117,6 +168,8 @@ describe('CreateNovelComponent workflow', () => {
       tense: WritingTense.Present,
       pov: WritingPov.FirstPerson,
       language: WritingLanguage.English,
+      compendiumIds: [],
+      mainCharacterId: null,
     });
     expect(component.formGroup.invalid).toBeTrue();
     expect(component.formGroup.get('title')?.hasError('required')).toBeTrue();
@@ -168,7 +221,8 @@ describe('CreateNovelComponent workflow', () => {
       pov: WritingPov.ThirdPersonLimited,
       language: WritingLanguage.Italian,
       rpgMode: false,
-      mainCharacterId: null,
+      mainCharacterId: 'alice',
+      compendiumIds: ['newer-compendium'],
     });
     expect(novelService.uploadNovelCoverImage).not.toHaveBeenCalled();
     expect(toastr.success).toHaveBeenCalledOnceWith(
@@ -176,6 +230,41 @@ describe('CreateNovelComponent workflow', () => {
     );
     expect(dialogRef.close).toHaveBeenCalledOnceWith(true);
     expect(component.isCreating).toBeFalse();
+  });
+
+  it('loads compendia newest first', () => {
+    component.ngOnInit();
+
+    expect(compendiumService.getCompendia).toHaveBeenCalledTimes(1);
+    expect(component.compendia.map((compendium) => compendium.id)).toEqual([
+      'newer-compendium',
+      'older-compendium',
+    ]);
+  });
+
+  it('offers only characters from selected compendia, sorted by name', () => {
+    component.compendia = compendia;
+    component.formGroup.controls.compendiumIds.setValue([
+      'older-compendium',
+      'newer-compendium',
+    ]);
+
+    expect(
+      component.getAvailableCharacters().map((record) => record.id),
+    ).toEqual(['alice', 'zara']);
+  });
+
+  it('clears the main character when its compendium is deselected', () => {
+    component.compendia = compendia;
+    component.formGroup.patchValue({
+      compendiumIds: ['newer-compendium'],
+      mainCharacterId: 'alice',
+    });
+
+    component.formGroup.controls.compendiumIds.setValue([]);
+    component.onCompendiaChange();
+
+    expect(component.formGroup.controls.mainCharacterId.value).toBeNull();
   });
 
   it('normalizes nullable optional text fields to empty strings', () => {

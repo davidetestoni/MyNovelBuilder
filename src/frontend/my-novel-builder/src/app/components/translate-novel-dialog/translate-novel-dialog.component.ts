@@ -318,6 +318,7 @@ export class TranslateNovelDialogComponent implements OnDestroy {
           language: targetLanguage,
           rpgMode: this.data.novel.rpgMode,
           mainCharacterId: this.data.novel.mainCharacterId,
+          compendiumIds: this.data.novel.compendiumIds,
         }),
       );
 

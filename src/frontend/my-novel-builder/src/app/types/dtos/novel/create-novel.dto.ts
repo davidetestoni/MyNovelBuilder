@@ -11,4 +11,5 @@ export interface CreateNovelDto {
   language: WritingLanguage;
   rpgMode: boolean;
   mainCharacterId: string | null;
+  compendiumIds: string[];
 }

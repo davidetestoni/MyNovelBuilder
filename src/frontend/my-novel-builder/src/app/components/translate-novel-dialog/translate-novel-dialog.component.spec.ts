@@ -775,6 +775,7 @@ describe('TranslateNovelDialogComponent workflow', () => {
       language: WritingLanguage.Italian,
       rpgMode: true,
       mainCharacterId: 'hero',
+      compendiumIds: ['world', 'characters'],
     });
     expect(novelService.updateNovel).toHaveBeenCalledOnceWith({
       id: 'translated-novel',

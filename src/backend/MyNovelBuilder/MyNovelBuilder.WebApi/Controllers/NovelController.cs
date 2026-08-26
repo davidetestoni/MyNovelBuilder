@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Novel;
+using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.Novels;
 using MyNovelBuilder.WebApi.Services;
@@ -81,6 +82,11 @@ public class NovelController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var novel = createNovelDto.Adapt<Novel>();
+        await SetNovelReferencesAsync(
+            novel,
+            createNovelDto.CompendiumIds,
+            createNovelDto.MainCharacterId,
+            cancellationToken);
         await _novelService.CreateAsync(novel, cancellationToken);
         
         var dto = novel.Adapt<NovelDto>();
@@ -99,30 +105,11 @@ public class NovelController : ControllerBase
     {
         var novel = await _novelService.GetByIdAsync(updateNovelDto.Id, cancellationToken);
         updateNovelDto.Adapt(novel);
-        
-        // For each compendium id, asynchronously get the
-        // compendium and check if it exists,
-        // then add it to the novel's compendia.
-        novel.Compendia = await Task.WhenAll(updateNovelDto.CompendiumIds
-            .Select(id => _compendiumService.GetByIdAsync(id, cancellationToken)));
-
-        // If the main character ID is not null, get the
-        // compendium record and set it as the main character.
-        if (updateNovelDto.MainCharacterId is not null)
-        {
-            novel.MainCharacter = await _compendiumRecordService.GetByIdAsync(
-                updateNovelDto.MainCharacterId.Value,
-                cancellationToken);
-            
-            // The main character must be part of a compendium that
-            // is in the novel's compendia.
-            if (novel.Compendia.All(c => c.Id != novel.MainCharacter.Compendium.Id))
-            {
-                throw new ApiException(
-                    ErrorCodes.BadRequest,
-                    "The main character must be part of the novel's compendia.");
-            }
-        }
+        await SetNovelReferencesAsync(
+            novel,
+            updateNovelDto.CompendiumIds,
+            updateNovelDto.MainCharacterId,
+            cancellationToken);
         
         await _novelService.UpdateAsync(novel, cancellationToken);
         
@@ -130,6 +117,43 @@ public class NovelController : ControllerBase
         AddCoverImageUrl(dto);
         
         return dto;
+    }
+
+    private async Task SetNovelReferencesAsync(
+        Novel novel,
+        IEnumerable<Guid> compendiumIds,
+        Guid? mainCharacterId,
+        CancellationToken cancellationToken)
+    {
+        novel.Compendia = await Task.WhenAll(compendiumIds
+            .Distinct()
+            .Select(id => _compendiumService.GetByIdAsync(id, cancellationToken)));
+        novel.MainCharacter = null;
+
+        if (mainCharacterId is null)
+        {
+            return;
+        }
+
+        var mainCharacter = await _compendiumRecordService.GetByIdAsync(
+            mainCharacterId.Value,
+            cancellationToken);
+
+        if (mainCharacter.Type != CompendiumRecordType.Character)
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                "The main character must be a character record.");
+        }
+
+        if (novel.Compendia.All(c => c.Id != mainCharacter.Compendium.Id))
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                "The main character must be part of the novel's compendia.");
+        }
+
+        novel.MainCharacter = mainCharacter;
     }
     
     /// <summary>

@@ -33,7 +33,112 @@
               rows="5"
             ></textarea>
           </div>
-          <!-- TODO: Add remaining fields (tense, pov, language, MC) -->
+          <div class="writing-settings">
+            <div class="form-field">
+              <label for="tense" class="form-field-label">Tense *</label>
+              <p-select
+                inputId="tense"
+                formControlName="tense"
+                [options]="writingTenses"
+                [style]="{ width: '100%' }"
+                appendTo="body"
+              >
+                <ng-template #item let-tense>{{ tense | spaced }}</ng-template>
+                <ng-template #selectedItem let-tense>
+                  {{ tense | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+            <div class="form-field">
+              <label for="pov" class="form-field-label">Point of view *</label>
+              <p-select
+                inputId="pov"
+                formControlName="pov"
+                [options]="writingPovs"
+                [style]="{ width: '100%' }"
+                appendTo="body"
+              >
+                <ng-template #item let-pov>{{ pov | spaced }}</ng-template>
+                <ng-template #selectedItem let-pov>
+                  {{ pov | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+            <div class="form-field">
+              <label for="language" class="form-field-label">Language *</label>
+              <p-select
+                inputId="language"
+                formControlName="language"
+                [options]="writingLanguages"
+                [style]="{ width: '100%' }"
+                appendTo="body"
+              >
+                <ng-template #item let-language>{{ language | spaced }}</ng-template>
+                <ng-template #selectedItem let-language>
+                  {{ language | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="compendia" class="form-field-label">Compendia</label>
+            <p-multiSelect
+              inputId="compendia"
+              formControlName="compendiumIds"
+              [options]="compendia"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select optional compendia"
+              [style]="{ width: '100%' }"
+              display="chip"
+              [filter]="true"
+              filterBy="name,description"
+              filterPlaceholder="Search compendia"
+              appendTo="body"
+              (onChange)="onCompendiaChange()"
+            >
+              <ng-template #item let-compendium>
+                <app-compendium-option-preview [compendium]="compendium" />
+              </ng-template>
+            </p-multiSelect>
+          </div>
+          <div class="form-field">
+            <label for="main-character" class="form-field-label">
+              Main character
+            </label>
+            <p-select
+              inputId="main-character"
+              formControlName="mainCharacterId"
+              [options]="getAvailableCharacters()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select an optional main character"
+              [style]="{ width: '100%' }"
+              [showClear]="true"
+              [filter]="true"
+              filterBy="name"
+              filterPlaceholder="Search characters"
+              appendTo="body"
+            >
+              <ng-template #item let-record>
+                <app-option-preview
+                  [label]="record.name"
+                  [imageUrl]="record.imageUrl"
+                />
+              </ng-template>
+              <ng-template #selectedItem let-record>
+                @if (record) {
+                  <app-option-preview
+                    [label]="record.name"
+                    [imageUrl]="record.imageUrl"
+                  />
+                }
+              </ng-template>
+            </p-select>
+            <small class="field-help">
+              Characters come from the selected compendia.
+            </small>
+          </div>
         </div>
         <div class="form-column">
           <div class="form-field">
@@ -63,6 +168,7 @@
         <div class="form-buttons-container">
           <p-button
             label="Create"
+            type="button"
             (click)="createNovel()"
             [disabled]="
               formGroup.invalid || formGroup.pristine || isCreating
