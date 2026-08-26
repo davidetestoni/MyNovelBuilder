@@ -161,4 +161,6 @@ public class IntegrationsConfig
     /// Global pause in milliseconds between immersive TTS chunks.
     /// </summary>
     public int TtsImmersivePauseMs { get; set; } = 150;
+
+    internal IntegrationsConfig Copy() => (IntegrationsConfig)MemberwiseClone();
 }

@@ -11,6 +11,9 @@ namespace MyNovelBuilder.WebApi.Services;
 /// </summary>
 public class IntegrationsService : IIntegrationsService
 {
+    private const string ConfigFileName = "integrations.json";
+
+    private readonly SemaphoreSlim _configLock = new(1, 1);
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly string _dataFolder;
     private IntegrationsConfig? _cachedConfig;
@@ -25,39 +28,101 @@ public class IntegrationsService : IIntegrationsService
     /// <inheritdoc />
     public async ValueTask<IntegrationsConfig> GetConfigAsync(CancellationToken cancellationToken = default)
     {
-        if (_cachedConfig is not null)
+        var cachedConfig = Volatile.Read(ref _cachedConfig);
+        if (cachedConfig is not null)
         {
-            return _cachedConfig;
+            return cachedConfig.Copy();
         }
-        
-        var path = Path.Combine(_dataFolder, "integrations.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
-        string configJson;
-
-        if (!File.Exists(path))
+        await _configLock.WaitAsync(cancellationToken);
+        try
         {
-            var defaultConfig = new IntegrationsConfig();
-            configJson = JsonSerializer.Serialize(defaultConfig, _jsonSerializerOptions);
-            await File.WriteAllTextAsync(path, configJson, cancellationToken);
-            _cachedConfig = defaultConfig;
-            return defaultConfig;
+            cachedConfig = Volatile.Read(ref _cachedConfig);
+            if (cachedConfig is not null)
+            {
+                return cachedConfig.Copy();
+            }
+
+            var path = GetConfigPath();
+            Directory.CreateDirectory(_dataFolder);
+
+            IntegrationsConfig config;
+            if (!File.Exists(path))
+            {
+                config = new IntegrationsConfig();
+                await WriteConfigAtomicallyAsync(path, config, cancellationToken);
+            }
+            else
+            {
+                var configJson = await File.ReadAllTextAsync(path, cancellationToken);
+                config = JsonSerializer.Deserialize<IntegrationsConfig>(
+                    configJson,
+                    _jsonSerializerOptions)!;
+            }
+
+            Volatile.Write(ref _cachedConfig, config);
+            return config.Copy();
         }
-        
-        configJson = await File.ReadAllTextAsync(path, cancellationToken);
-        var config = JsonSerializer.Deserialize<IntegrationsConfig>(configJson, _jsonSerializerOptions)!;
-        _cachedConfig = config;
-        return config;
+        finally
+        {
+            _configLock.Release();
+        }
     }
 
     /// <inheritdoc />
     public async Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default)
     {
-        var path = Path.Combine(_dataFolder, "integrations.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        
-        var configJson = JsonSerializer.Serialize(config, _jsonSerializerOptions);
-        await File.WriteAllTextAsync(path, configJson, cancellationToken);
-        _cachedConfig = config;
+        var configSnapshot = config.Copy();
+        await _configLock.WaitAsync(cancellationToken);
+        try
+        {
+            Directory.CreateDirectory(_dataFolder);
+            await WriteConfigAtomicallyAsync(GetConfigPath(), configSnapshot, cancellationToken);
+            Volatile.Write(ref _cachedConfig, configSnapshot);
+        }
+        finally
+        {
+            _configLock.Release();
+        }
+    }
+
+    private string GetConfigPath() => Path.Combine(_dataFolder, ConfigFileName);
+
+    private async Task WriteConfigAtomicallyAsync(
+        string path,
+        IntegrationsConfig config,
+        CancellationToken cancellationToken)
+    {
+        var tempPath = Path.Combine(
+            _dataFolder,
+            $".{ConfigFileName}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            await using (var stream = new FileStream(
+                             tempPath,
+                             new FileStreamOptions
+                             {
+                                 Mode = FileMode.CreateNew,
+                                 Access = FileAccess.Write,
+                                 Share = FileShare.None,
+                                 Options = FileOptions.Asynchronous | FileOptions.WriteThrough
+                             }))
+            {
+                await JsonSerializer.SerializeAsync(
+                    stream,
+                    config,
+                    _jsonSerializerOptions,
+                    cancellationToken);
+                await stream.FlushAsync(cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            File.Move(tempPath, path, overwrite: true);
+        }
+        finally
+        {
+            File.Delete(tempPath);
+        }
     }
 }
