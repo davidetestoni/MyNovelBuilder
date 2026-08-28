@@ -1,0 +1,18 @@
+{
+  "$schema": "../sample-novel.schema.json#/$defs/manifest",
+  "schemaVersion": 1,
+  "title": "The Cartographer of Rain — Sample Novel",
+  "author": "MyNovelBuilder Sample",
+  "brief": "A compact original fantasy mystery included to demonstrate prose planning, story events, compendia, context aliases, and changing character state. This example is ordinary user data and may be edited or deleted.",
+  "tense": "past",
+  "pov": "thirdPersonLimited",
+  "language": "english",
+  "rpgMode": true,
+  "mainCharacterKey": "mira-vey",
+  "proseFile": "prose.json",
+  "compendiumFiles": [
+    "compendia/characters.json",
+    "compendia/places.json",
+    "compendia/lore.json"
+  ]
+}

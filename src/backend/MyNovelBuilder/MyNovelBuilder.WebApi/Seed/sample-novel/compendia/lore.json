@@ -1,0 +1,44 @@
+{
+  "$schema": "../../sample-novel.schema.json#/$defs/compendiumFile",
+  "compendia": [
+    {
+      "seedKey": "lore-and-artifacts",
+      "name": "Lore & Artifacts",
+      "description": "Weather lore, historical events, objects, and useful background details.",
+      "records": [
+        {
+          "seedKey": "rain-atlas",
+          "name": "The Rain Atlas",
+          "aliases": "atlas; storm atlas; singing map",
+          "type": "object",
+          "context": "A folio of translucent pages held in a salt-darkened brass frame. Silver lines bloom across each page when rain falls nearby. Cartographers believe the lines forecast a storm's route. In truth, annotations made with blue chalk can gently divert the mapped weather, though every change creates an unpredictable echo elsewhere.",
+          "alwaysIncluded": false
+        },
+        {
+          "seedKey": "glass-tide",
+          "name": "The Glass Tide",
+          "aliases": "glass rain; the clear storm; tide of glass",
+          "type": "event",
+          "context": "A rare storm in which raindrops flatten into clear, sharp-edged sheets just before impact. The phenomenon begins at sea as a silent silver wall. Glass rain damages crops and rigging but shatters harmlessly when exposed to a correctly tuned bell. The present Glass Tide is arriving six weeks earlier than any recorded instance.",
+          "alwaysIncluded": true
+        },
+        {
+          "seedKey": "tidemarking",
+          "name": "Tidemarking",
+          "aliases": "storm notation; rain cartography; weather-writing",
+          "type": "concept",
+          "context": "The craft of mapping weather through sound. Practitioners stretch paper over resonant glass, scatter mineral powder on it, and let nearby rainfall arrange the powder into contour lines. Maps are read from the coast inward. Blue chalk marks uncertainty; red thread marks danger to people rather than property.",
+          "alwaysIncluded": false
+        },
+        {
+          "seedKey": "seven-bell-signal",
+          "name": "Seven-Bell Signal",
+          "aliases": "seven bells; harbor warning; glass alarm",
+          "type": "other",
+          "context": "Lumenport's emergency signal for glass rain: seven low bell strikes, a pause, then seven high strikes. Citizens shelter beneath canvas rather than glass. Harbor crews tune the sea-wall bells to break incoming sheets of rain before they reach crowded streets.",
+          "alwaysIncluded": false
+        }
+      ]
+    }
+  ]
+}

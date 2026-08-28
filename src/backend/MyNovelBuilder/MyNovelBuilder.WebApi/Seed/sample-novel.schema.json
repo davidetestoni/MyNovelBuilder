@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/davidetestoni/MyNovelBuilder/blob/main/src/backend/MyNovelBuilder/MyNovelBuilder.WebApi/Seed/sample-novel.schema.json",
+  "title": "MyNovelBuilder sample novel seed fixture",
+  "$defs": {
+    "manifest": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "title",
+        "author",
+        "brief",
+        "tense",
+        "pov",
+        "language",
+        "rpgMode",
+        "mainCharacterKey",
+        "proseFile",
+        "compendiumFiles"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "schemaVersion": { "const": 1 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "author": { "type": "string", "maxLength": 100 },
+        "brief": { "type": "string", "maxLength": 500 },
+        "tense": { "enum": ["past", "present"] },
+        "pov": {
+          "enum": ["firstPerson", "thirdPersonLimited", "thirdPersonOmniscient"]
+        },
+        "language": {
+          "enum": ["english", "italian", "french", "spanish", "german", "russian"]
+        },
+        "rpgMode": { "type": "boolean" },
+        "mainCharacterKey": { "$ref": "#/$defs/seedKey" },
+        "proseFile": { "$ref": "#/$defs/relativePath" },
+        "compendiumFiles": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/relativePath" }
+        }
+      }
+    },
+    "compendiumFile": {
+      "type": "object",
+      "required": ["compendia"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "compendia": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/compendium" }
+        }
+      }
+    },
+    "compendium": {
+      "type": "object",
+      "required": ["seedKey", "name", "description", "records"],
+      "additionalProperties": false,
+      "properties": {
+        "seedKey": { "$ref": "#/$defs/seedKey" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 500 },
+        "records": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/record" }
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "required": [
+        "seedKey",
+        "name",
+        "aliases",
+        "type",
+        "context",
+        "alwaysIncluded"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "seedKey": { "$ref": "#/$defs/seedKey" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "aliases": { "type": "string", "maxLength": 500 },
+        "type": {
+          "enum": ["character", "place", "object", "event", "concept", "other"]
+        },
+        "context": { "type": "string", "minLength": 1, "maxLength": 10000 },
+        "alwaysIncluded": { "type": "boolean" }
+      }
+    },
+    "prose": {
+      "type": "object",
+      "required": ["chapters"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "chapters": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/chapter" }
+        }
+      }
+    },
+    "chapter": {
+      "type": "object",
+      "required": ["title", "sections", "storyEvents"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/section" }
+        },
+        "storyEvents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/storyEvent" }
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "required": ["summary", "text", "images", "recordOverrides"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string", "minLength": 1, "maxLength": 10000 },
+        "text": { "type": "string", "minLength": 1, "maxLength": 100000 },
+        "images": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "recordOverrides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/recordOverride" }
+        }
+      }
+    },
+    "storyEvent": {
+      "type": "object",
+      "required": ["title", "date", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "date": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "recordOverride": {
+      "type": "object",
+      "required": ["recordKey", "keyword", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "recordKey": { "$ref": "#/$defs/seedKey" },
+        "keyword": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 10000 }
+      }
+    },
+    "seedKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    }
+  }
+}

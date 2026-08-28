@@ -1,0 +1,36 @@
+{
+  "$schema": "../../sample-novel.schema.json#/$defs/compendiumFile",
+  "compendia": [
+    {
+      "seedKey": "characters",
+      "name": "Characters",
+      "description": "The people at the heart of The Cartographer of Rain.",
+      "records": [
+        {
+          "seedKey": "mira-vey",
+          "name": "Mira Vey",
+          "aliases": "Mira; apprentice; rain cartographer",
+          "type": "character",
+          "context": "Age: 24\nAppearance: Wiry, dark curls cropped at the jaw, amber raincoat patched at both elbows.\nRole: Apprentice cartographer who maps storms by listening to rain strike tuned glass.\nPersonality: Observant, stubbornly kind, uneasy with authority, prone to describing emotions as weather.\nGoal: Prove that the unnatural Glass Tide is being directed toward Lumenport.\nFear: Repeating the mistake that cost her mentor his hearing.\nSpeech: Precise when nervous; dry humor when she trusts someone.\nEquipment: Brass listening fork, waterproof field journal, blue chalk.",
+          "alwaysIncluded": false
+        },
+        {
+          "seedKey": "orin-vale",
+          "name": "Orin Vale",
+          "aliases": "Orin; Keeper Vale; archive keeper",
+          "type": "character",
+          "context": "Age: 61\nAppearance: Broad-shouldered, silver beard, spectacles connected by a red cord.\nRole: Keeper of the Archive of Tides and Mira's former teacher.\nPersonality: Patient, theatrical, protective of dangerous knowledge.\nSecret: He removed one page from the Rain Atlas after discovering it could influence storms, not merely predict them.\nSpeech: Fond of nautical proverbs that he often invents on the spot.",
+          "alwaysIncluded": false
+        },
+        {
+          "seedKey": "captain-seln",
+          "name": "Captain Ilyra Seln",
+          "aliases": "Ilyra; Captain Seln; harbor captain",
+          "type": "character",
+          "context": "Age: 39\nAppearance: Tall, close-shaved hair, green harbor uniform with a copper whistle.\nRole: Captain responsible for Lumenport's sea walls and evacuation routes.\nPersonality: Decisive, skeptical of folklore, fiercely loyal to dockworkers.\nGoal: Keep the harbor open long enough for the outer islands to evacuate.\nSpeech: Short sentences and direct questions; never raises her voice.",
+          "alwaysIncluded": false
+        }
+      ]
+    }
+  ]
+}
