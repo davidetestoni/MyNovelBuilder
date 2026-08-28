@@ -6,6 +6,7 @@ using FluentValidation.AspNetCore;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,12 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (string.IsNullOrWhiteSpace(
+        builder.Configuration[WebHostDefaults.ServerUrlsKey]))
+{
+    builder.WebHost.UseUrls("http://127.0.0.1:5113");
+}
 
 var dataPathResolver = new AppDataPathResolver();
 var dataFolder = dataPathResolver.Resolve(args, builder.Configuration);
@@ -55,14 +62,17 @@ builder.Services.AddControllers()
         opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
     });
     
-// Add utilities to easily navigate the APIs via swagger, generating
-// the file from the XML documentation around classes, methods and such.
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(config =>
+if (builder.Environment.IsDevelopment())
 {
-    config.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory,
-        $"{Assembly.GetExecutingAssembly().GetName().Name}.xml"));
-});
+    // Add utilities to navigate the APIs during development, generating
+    // documentation from the XML comments around classes and methods.
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(config =>
+    {
+        config.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory,
+            $"{Assembly.GetExecutingAssembly().GetName().Name}.xml"));
+    });
+}
 
 // Add routing and use lowercase URLs like /api/test instead of
 // /api/Test.
@@ -187,15 +197,11 @@ app.Logger.LogInformation("Using application data directory: {DataFolder}", data
 
 app.UseResponseCompression();
 
-app.UseCors(b => b
-    .AllowAnyOrigin()
-    .AllowAnyMethod()
-    .AllowAnyHeader()
-    .WithExposedHeaders("Content-Disposition"));
-
-// Enable swagger
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 // Automatically apply migrations
 using var scope = app.Services.CreateScope();
@@ -221,12 +227,7 @@ Directory.CreateDirectory(staticFilesRoot);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(staticFilesRoot),
-    RequestPath = "/static",
-    OnPrepareResponse = ctx =>
-    {
-        ctx.Context.Response.Headers.Append(
-            "Access-Control-Allow-Origin", "*");
-    }
+    RequestPath = "/static"
 });
 
 // Production publishes place the Angular application in wwwroot. Default

@@ -71,6 +71,7 @@ public sealed class SpaHostingIntegrationTests : IDisposable,
         response.EnsureSuccessStatusCode();
         Assert.Equal("User-owned static content", await response.Content.ReadAsStringAsync());
         Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+        Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
     }
 
     public void Dispose()
