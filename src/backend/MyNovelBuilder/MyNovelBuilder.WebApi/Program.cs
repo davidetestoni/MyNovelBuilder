@@ -23,17 +23,18 @@ using MyNovelBuilder.WebApi.Services.ImageGeneration;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
 using MyNovelBuilder.WebApi.Services.Tts;
 using MyNovelBuilder.WebApi.Services.VideoGeneration;
+using MyNovelBuilder.WebApi.Storage;
 using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var dataFolder = Path.GetFullPath(
-    builder.Configuration[AppStorageOptions.DataFolderKey]
-    ?? Path.Combine(AppContext.BaseDirectory, "AppData"));
+var dataPathResolver = new AppDataPathResolver();
+var dataFolder = dataPathResolver.Resolve(args, builder.Configuration);
 var staticFilesRoot = Path.Combine(dataFolder, "static");
 Directory.CreateDirectory(dataFolder);
 
+builder.Services.AddSingleton<IAppDataPathResolver>(dataPathResolver);
 builder.Services.AddOptions<AppStorageOptions>()
     .Configure(options => options.DataFolder = dataFolder);
 
@@ -177,6 +178,8 @@ builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 var app = builder.Build();
+
+app.Logger.LogInformation("Using application data directory: {DataFolder}", dataFolder);
 
 app.UseResponseCompression();
 

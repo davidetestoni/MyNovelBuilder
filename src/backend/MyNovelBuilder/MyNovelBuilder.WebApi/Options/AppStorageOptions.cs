@@ -16,7 +16,7 @@ public class AppStorageOptions
     /// Root path where application data is stored.
     /// </summary>
     [Required]
-    public string DataFolder { get; set; } = Path.Combine(AppContext.BaseDirectory, "AppData");
+    public string DataFolder { get; set; } = string.Empty;
 
     /// <summary>
     /// Root path where static files are stored.
