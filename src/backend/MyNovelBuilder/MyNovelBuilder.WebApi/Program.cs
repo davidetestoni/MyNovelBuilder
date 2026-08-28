@@ -197,8 +197,6 @@ await dbContext.Database.MigrateAsync();
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseRouting();
-
 Directory.CreateDirectory(staticFilesRoot);
 
 // User-owned files are served from the persistent data directory. Register
@@ -219,6 +217,8 @@ app.UseStaticFiles(new StaticFileOptions
 // browser refresh.
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+app.UseRouting();
 
 app.Services.EnsurePostPutInputValidatorsAreRegistered();
 

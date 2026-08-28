@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using MyNovelBuilder.WebApi.Options;
 using MyNovelBuilder.WebApi.Tests.Factories;
 
 namespace MyNovelBuilder.WebApi.Tests.Integration;
@@ -11,6 +14,7 @@ public sealed class SpaHostingIntegrationTests : IDisposable,
 
     private readonly string webRoot;
     private readonly WebApplicationFactory<Program> factory;
+    private readonly string staticTestFile;
 
     public SpaHostingIntegrationTests(TestWebApplicationFactory<Program> baseFactory)
     {
@@ -19,6 +23,13 @@ public sealed class SpaHostingIntegrationTests : IDisposable,
         File.WriteAllText(Path.Combine(webRoot, "index.html"), IndexContents);
 
         factory = baseFactory.WithWebHostBuilder(builder => builder.UseWebRoot(webRoot));
+
+        var storageOptions = factory.Services
+            .GetRequiredService<IOptions<AppStorageOptions>>()
+            .Value;
+        Directory.CreateDirectory(storageOptions.StaticFilesRoot);
+        staticTestFile = Path.Combine(storageOptions.StaticFilesRoot, "hosting-smoke.txt");
+        File.WriteAllText(staticTestFile, "User-owned static content");
     }
 
     [Theory]
@@ -50,9 +61,22 @@ public sealed class SpaHostingIntegrationTests : IDisposable,
         Assert.NotEqual(IndexContents, await response.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public async Task StaticRouteServesUserOwnedFile()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/static/hosting-smoke.txt");
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("User-owned static content", await response.Content.ReadAsStringAsync());
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
+    }
+
     public void Dispose()
     {
         factory.Dispose();
+        File.Delete(staticTestFile);
         Directory.Delete(webRoot, recursive: true);
     }
 }
