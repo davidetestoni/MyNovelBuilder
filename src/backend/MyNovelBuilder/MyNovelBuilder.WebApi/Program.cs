@@ -31,10 +31,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 var dataPathResolver = new AppDataPathResolver();
 var dataFolder = dataPathResolver.Resolve(args, builder.Configuration);
+var dataDirectoryInitializer = new AppDataDirectoryInitializer();
+dataDirectoryInitializer.Initialize(dataFolder);
 var staticFilesRoot = Path.Combine(dataFolder, "static");
-Directory.CreateDirectory(dataFolder);
 
 builder.Services.AddSingleton<IAppDataPathResolver>(dataPathResolver);
+builder.Services.AddSingleton<IAppDataDirectoryInitializer>(dataDirectoryInitializer);
 builder.Services.AddOptions<AppStorageOptions>()
     .Configure(options => options.DataFolder = dataFolder);
 
