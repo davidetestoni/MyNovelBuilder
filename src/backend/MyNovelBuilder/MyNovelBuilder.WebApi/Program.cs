@@ -5,6 +5,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Mapster;
 using MapsterMapper;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Data.Repositories;
 using MyNovelBuilder.WebApi.Middleware;
 using MyNovelBuilder.WebApi.Extensions;
+using MyNovelBuilder.WebApi.HealthChecks;
 using MyNovelBuilder.WebApi.Models.Errors;
 using MyNovelBuilder.WebApi.Options;
 using MyNovelBuilder.WebApi.Services;
@@ -171,6 +173,8 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 
 builder.Services.AddHybridCache();
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
 var app = builder.Build();
 
@@ -219,6 +223,14 @@ app.UseStaticFiles();
 app.Services.EnsurePostPutInputValidatorsAreRegistered();
 
 app.MapControllers();
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready")
+});
 
 // Missing backend and user-file routes must remain 404s instead of returning
 // the SPA shell. These more-specific fallbacks win over the general SPA one.
