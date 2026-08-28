@@ -4,7 +4,6 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/.." && pwd)"
-solution="$repo_root/src/backend/MyNovelBuilder/MyNovelBuilder.sln"
 project="$repo_root/src/backend/MyNovelBuilder/MyNovelBuilder.WebApi/MyNovelBuilder.WebApi.csproj"
 port="${MYNOVELBUILDER_SMOKE_PORT:-15113}"
 base_url="http://127.0.0.1:$port"
@@ -66,7 +65,7 @@ mkdir -p "$publish_dir" "$data_dir/static" "$responses_dir"
 printf 'MyNovelBuilder static smoke test\n' >"$data_dir/static/smoke.txt"
 
 printf 'Restoring locked .NET dependencies...\n'
-dotnet restore "$solution" --locked-mode
+dotnet restore "$project" --locked-mode
 
 printf 'Publishing the combined ASP.NET Core and Angular application...\n'
 dotnet publish "$project" \
