@@ -55,7 +55,9 @@
       <Folder Include="Interfaces\" />
     </ItemGroup>
 
-    <Target Name="PublishAngular" AfterTargets="ComputeFilesToPublish">
+    <Target Name="PublishAngular"
+            AfterTargets="ComputeFilesToPublish"
+            Condition="'$(BuildAngular)' != 'false'">
       <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
       <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
 
