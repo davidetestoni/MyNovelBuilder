@@ -19,6 +19,11 @@ public class AppStorageOptions
     public string DataFolder { get; set; } = string.Empty;
 
     /// <summary>
+    /// Path to the application SQLite database.
+    /// </summary>
+    public string DatabasePath => Path.Combine(DataFolder, "app.db");
+
+    /// <summary>
     /// Root path where static files are stored.
     /// </summary>
     public string StaticFilesRoot => Path.Combine(DataFolder, "static");

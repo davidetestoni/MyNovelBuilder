@@ -37,6 +37,8 @@ var staticFilesRoot = Path.Combine(dataFolder, "static");
 
 builder.Services.AddSingleton<IAppDataPathResolver>(dataPathResolver);
 builder.Services.AddSingleton<IAppDataDirectoryInitializer>(dataDirectoryInitializer);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IDatabaseBackupService, DatabaseBackupService>();
 builder.Services.AddOptions<AppStorageOptions>()
     .Configure(options => options.DataFolder = dataFolder);
 
@@ -198,7 +200,17 @@ app.UseSwaggerUI();
 // Automatically apply migrations
 using var scope = app.Services.CreateScope();
 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-await dbContext.Database.MigrateAsync();
+var databaseExisted = File.Exists(Path.Combine(dataFolder, "app.db"));
+var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToArray();
+if (pendingMigrations.Length > 0)
+{
+    if (databaseExisted)
+    {
+        scope.ServiceProvider.GetRequiredService<IDatabaseBackupService>().CreateBackup();
+    }
+
+    await dbContext.Database.MigrateAsync();
+}
 
 app.UseMiddleware<ExceptionMiddleware>();
 
