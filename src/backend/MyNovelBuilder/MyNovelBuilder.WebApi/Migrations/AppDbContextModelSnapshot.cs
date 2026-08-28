@@ -112,6 +112,20 @@ namespace MyNovelBuilder.WebApi.Migrations
                     b.ToTable("CompendiumRecords");
                 });
 
+            modelBuilder.Entity("MyNovelBuilder.WebApi.Data.Entities.InitializationMarker", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("InitializationMarkers");
+                });
+
             modelBuilder.Entity("MyNovelBuilder.WebApi.Data.Entities.MediaFolder", b =>
                 {
                     b.Property<Guid>("Id")

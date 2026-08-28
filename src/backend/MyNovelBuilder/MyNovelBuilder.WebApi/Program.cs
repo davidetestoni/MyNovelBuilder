@@ -19,6 +19,7 @@ using MyNovelBuilder.WebApi.Extensions;
 using MyNovelBuilder.WebApi.HealthChecks;
 using MyNovelBuilder.WebApi.Models.Errors;
 using MyNovelBuilder.WebApi.Options;
+using MyNovelBuilder.WebApi.Seeding;
 using MyNovelBuilder.WebApi.Services;
 using MyNovelBuilder.WebApi.Services.ImageGeneration;
 using MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -152,6 +153,7 @@ builder.Services.AddScoped<IVoiceService, VoiceService>();
 builder.Services.AddScoped<IMediaFolderService, MediaFolderService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IWorldBuildingSessionService, WorldBuildingSessionService>();
+builder.Services.AddScoped<InitialPromptSeeder>();
 builder.Services.AddScoped<INovelExportService, NovelExportService>();
 builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationServiceResolver>();
 builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
@@ -217,6 +219,10 @@ if (pendingMigrations.Length > 0)
 
     await dbContext.Database.MigrateAsync();
 }
+
+await scope.ServiceProvider
+    .GetRequiredService<InitialPromptSeeder>()
+    .SeedAsync();
 
 app.UseMiddleware<ExceptionMiddleware>();
 

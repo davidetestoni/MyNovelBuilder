@@ -37,6 +37,11 @@ public class AppDbContext : DbContext
     /// The prompts in the database.
     /// </summary>
     public DbSet<Prompt> Prompts { get; init; }
+
+    /// <summary>
+    /// The completed one-time database initialization steps.
+    /// </summary>
+    public DbSet<InitializationMarker> InitializationMarkers { get; init; }
     
     /// <summary>
     /// The voices in the database.
