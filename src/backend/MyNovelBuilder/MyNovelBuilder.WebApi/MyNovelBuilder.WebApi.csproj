@@ -7,6 +7,7 @@
         <InvariantGlobalization>true</InvariantGlobalization>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <SpaRoot>$(MSBuildThisFileDirectory)../../../frontend/my-novel-builder/</SpaRoot>
     </PropertyGroup>
 
     <ItemGroup>
@@ -53,5 +54,20 @@
     <ItemGroup>
       <Folder Include="Interfaces\" />
     </ItemGroup>
+
+    <Target Name="PublishAngular" AfterTargets="ComputeFilesToPublish">
+      <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
+      <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+
+      <ItemGroup>
+        <AngularDistFiles Include="$(SpaRoot)dist/my-novel-builder/browser/**" />
+        <ResolvedFileToPublish Include="@(AngularDistFiles-&gt;'%(FullPath)')"
+                               Exclude="@(ResolvedFileToPublish)">
+          <RelativePath>wwwroot/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        </ResolvedFileToPublish>
+      </ItemGroup>
+    </Target>
 
 </Project>

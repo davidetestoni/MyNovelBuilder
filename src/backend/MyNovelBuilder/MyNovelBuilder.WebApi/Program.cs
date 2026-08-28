@@ -197,6 +197,8 @@ app.UseRouting();
 
 Directory.CreateDirectory(staticFilesRoot);
 
+// User-owned files are served from the persistent data directory. Register
+// this before the bundled SPA so /static always refers to user content.
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(staticFilesRoot),
@@ -208,9 +210,22 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
+// Production publishes place the Angular application in wwwroot. Default
+// files serve index.html at /, while the fallback supports Angular routes on
+// browser refresh.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.Services.EnsurePostPutInputValidatorsAreRegistered();
 
 app.MapControllers();
+
+// Missing backend and user-file routes must remain 404s instead of returning
+// the SPA shell. These more-specific fallbacks win over the general SPA one.
+app.MapFallback("/api/{**path}", () => Results.NotFound());
+app.MapFallback("/static/{**path}", () => Results.NotFound());
+app.MapFallback("/health/{**path}", () => Results.NotFound());
+app.MapFallbackToFile("index.html");
 
 await app.RunAsync();
 
