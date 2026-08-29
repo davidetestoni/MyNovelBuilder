@@ -113,7 +113,7 @@ public class PromptBuilderTests
     }
 
     [Fact]
-    public void ApplyContextOverrides_ReplacesKeywordBlocks()
+    public void ApplyContextOverrides_PreservesBlockAndAppliesLatestOverride()
     {
         var record = new CompendiumRecord 
         { 
@@ -140,6 +140,18 @@ public class PromptBuilderTests
                                 {
                                     CompendiumRecordId = record.Id,
                                     Keyword = "status",
+                                    Description = "engaged"
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            RecordOverrides =
+                            [
+                                new RecordOverride
+                                {
+                                    CompendiumRecordId = record.Id,
+                                    Keyword = "status",
                                     Description = "married"
                                 }
                             ]
@@ -151,8 +163,9 @@ public class PromptBuilderTests
 
         var result = TestPromptBuilder.CreateCompendiumRecordsString([record], prose, null, null);
         
-        Assert.Contains("Vera is married.", result);
+        Assert.Contains("Vera is [status]married[/status].", result);
         Assert.DoesNotContain("single", result);
+        Assert.DoesNotContain("engaged", result);
     }
 
     [Theory]

@@ -275,10 +275,16 @@ public static class PromptBuilderUtils
                 continue;
             }
 
+            var escapedKeyword = Regex.Escape(recordOverride.Keyword);
             var keywordRegionPattern =
-                $@"\[{Regex.Escape(recordOverride.Keyword)}\](?:.|\n)*?\[\/{Regex.Escape(recordOverride.Keyword)}\]";
-            var regex = new Regex(keywordRegionPattern);
-            recordContext = regex.Replace(recordContext, recordOverride.Description);
+                $@"(\[{escapedKeyword}\])(?:.|\n)*?(\[\/{escapedKeyword}\])";
+            var regex = new Regex(keywordRegionPattern, RegexOptions.CultureInvariant);
+            recordContext = regex.Replace(
+                recordContext,
+                match => string.Concat(
+                    match.Groups[1].Value,
+                    recordOverride.Description,
+                    match.Groups[2].Value));
         }
 
         return recordContext;
