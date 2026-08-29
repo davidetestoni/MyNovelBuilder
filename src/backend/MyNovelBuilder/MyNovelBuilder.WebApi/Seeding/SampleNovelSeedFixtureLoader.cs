@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Helpers;
@@ -50,6 +51,7 @@ internal static class SampleNovelSeedFixtureLoader
 
         var fixture = new SampleNovelSeedFixture
         {
+            RootPath = Path.GetFullPath(fixtureRoot),
             Manifest = manifest,
             Compendia = compendia,
             Prose = prose
@@ -111,6 +113,11 @@ internal static class SampleNovelSeedFixtureLoader
         if (manifest.CompendiumFiles.Any(string.IsNullOrWhiteSpace))
         {
             throw InvalidFixture(manifestPath, "compendiumFiles must not contain blank paths");
+        }
+
+        if (manifest.Assets is null || manifest.Assets.Count == 0)
+        {
+            throw InvalidFixture(manifestPath, "assets must contain at least one item");
         }
     }
 
@@ -188,12 +195,130 @@ internal static class SampleNovelSeedFixtureLoader
             throw InvalidFixture(fixtureRoot, "mainCharacterKey must reference a character");
         }
 
-        ValidateProse(fixture.Prose, recordKeys, fixtureRoot);
+        var proseImageKeys = ValidateAssets(fixture, recordKeys, fixtureRoot);
+        ValidateProse(fixture.Prose, recordKeys, proseImageKeys, fixtureRoot);
+    }
+
+    private static IReadOnlySet<string> ValidateAssets(
+        SampleNovelSeedFixture fixture,
+        IReadOnlySet<string> recordKeys,
+        string fixtureRoot)
+    {
+        var assetKeys = new HashSet<string>(StringComparer.Ordinal);
+        var assetFiles = new HashSet<string>(StringComparer.Ordinal);
+        var recordImageKeys = new HashSet<string>(StringComparer.Ordinal);
+        var proseImageKeys = new HashSet<string>(StringComparer.Ordinal);
+        var coverCount = 0;
+
+        for (var index = 0; index < fixture.Manifest.Assets.Count; index++)
+        {
+            var asset = fixture.Manifest.Assets[index];
+            var location = $"assets[{index}]";
+            if (asset is null)
+            {
+                throw InvalidFixture(fixtureRoot, $"{location} must be an object");
+            }
+
+            ValidateUniqueKey(asset.SeedKey, assetKeys, location, fixtureRoot);
+            ValidateText(asset.File, 500, $"{location}.file", fixtureRoot);
+            ValidateText(asset.Sha256, 64, $"{location}.sha256", fixtureRoot);
+            if (asset.Sha256.Length != 64 || asset.Sha256.Any(character => !Uri.IsHexDigit(character)))
+            {
+                throw InvalidFixture(fixtureRoot, $"{location}.sha256 must be a 64-character hexadecimal digest");
+            }
+
+            if (!Enum.IsDefined(asset.Kind))
+            {
+                throw InvalidFixture(fixtureRoot, $"{location}.kind is not supported");
+            }
+
+            var assetPath = ResolveFixturePath(fixtureRoot, asset.File, fixtureRoot);
+            if (!assetFiles.Add(assetPath))
+            {
+                throw InvalidFixture(fixtureRoot, $"asset file '{asset.File}' is referenced more than once");
+            }
+
+            ValidateAssetDigest(assetPath, asset.Sha256, fixtureRoot);
+
+            switch (asset.Kind)
+            {
+                case SampleNovelSeedAssetKind.Cover:
+                    coverCount++;
+                    ValidateNoRecordKey(asset, location, fixtureRoot);
+                    break;
+                case SampleNovelSeedAssetKind.RecordImage:
+                    if (string.IsNullOrWhiteSpace(asset.RecordKey) || !recordKeys.Contains(asset.RecordKey))
+                    {
+                        throw InvalidFixture(
+                            fixtureRoot,
+                            $"{location}.recordKey must reference an existing record");
+                    }
+
+                    if (!recordImageKeys.Add(asset.RecordKey))
+                    {
+                        throw InvalidFixture(
+                            fixtureRoot,
+                            $"recordKey '{asset.RecordKey}' has more than one record image");
+                    }
+
+                    break;
+                case SampleNovelSeedAssetKind.ProseImage:
+                    ValidateNoRecordKey(asset, location, fixtureRoot);
+                    proseImageKeys.Add(asset.SeedKey);
+                    break;
+                default:
+                    throw InvalidFixture(fixtureRoot, $"{location}.kind is not supported");
+            }
+        }
+
+        if (coverCount != 1)
+        {
+            throw InvalidFixture(fixtureRoot, "assets must contain exactly one cover");
+        }
+
+        return proseImageKeys;
+    }
+
+    private static void ValidateAssetDigest(
+        string assetPath,
+        string expectedDigest,
+        string fixtureRoot)
+    {
+        if (!File.Exists(assetPath))
+        {
+            throw InvalidFixture(fixtureRoot, $"asset file '{assetPath}' does not exist");
+        }
+
+        try
+        {
+            using var stream = File.OpenRead(assetPath);
+            var actualDigest = Convert.ToHexString(SHA256.HashData(stream));
+            if (!actualDigest.Equals(expectedDigest, StringComparison.OrdinalIgnoreCase))
+            {
+                throw InvalidFixture(fixtureRoot, $"asset file '{assetPath}' does not match its sha256 digest");
+            }
+        }
+        catch (IOException exception)
+        {
+            throw InvalidFixture(fixtureRoot, $"asset file '{assetPath}' could not be read", exception);
+        }
+    }
+
+    private static void ValidateNoRecordKey(
+        SampleNovelSeedAssetDefinition asset,
+        string location,
+        string fixtureRoot)
+    {
+        if (asset.RecordKey is not null)
+        {
+            throw InvalidFixture(fixtureRoot, $"{location}.recordKey is only valid for record images");
+        }
     }
 
     private static void ValidateProse(
         SampleProseSeedDefinition prose,
         IReadOnlySet<string> recordKeys,
+        IReadOnlySet<string> proseImageKeys,
         string fixtureRoot)
     {
         if (prose.Chapters is null || prose.Chapters.Count == 0)
@@ -258,6 +383,13 @@ internal static class SampleNovelSeedFixtureLoader
                     throw InvalidFixture(
                         fixtureRoot,
                         $"{location}.sections images and recordOverrides must be arrays");
+                }
+
+                if (section.Images.Any(imageKey => !proseImageKeys.Contains(imageKey)))
+                {
+                    throw InvalidFixture(
+                        fixtureRoot,
+                        $"{location} contains an image that does not reference a prose image asset");
                 }
 
                 foreach (var recordOverride in section.RecordOverrides)

@@ -16,7 +16,8 @@
         "rpgMode",
         "mainCharacterKey",
         "proseFile",
-        "compendiumFiles"
+        "compendiumFiles",
+        "assets"
       ],
       "additionalProperties": false,
       "properties": {
@@ -39,7 +40,27 @@
           "type": "array",
           "minItems": 1,
           "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "assets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/asset" }
         }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "required": ["seedKey", "file", "sha256", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "seedKey": { "$ref": "#/$defs/seedKey" },
+        "file": { "$ref": "#/$defs/relativePath" },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        },
+        "kind": { "enum": ["cover", "recordImage", "proseImage"] },
+        "recordKey": { "$ref": "#/$defs/seedKey" }
       }
     },
     "compendiumFile": {
@@ -131,7 +152,7 @@
         "text": { "type": "string", "minLength": 1, "maxLength": 100000 },
         "images": {
           "type": "array",
-          "items": { "$ref": "#/$defs/relativePath" }
+          "items": { "$ref": "#/$defs/seedKey" }
         },
         "recordOverrides": {
           "type": "array",

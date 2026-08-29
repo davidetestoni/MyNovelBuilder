@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Seeding;
 
@@ -18,6 +20,17 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
         Assert.Contains("Sample Novel", fixture.Manifest.Title);
         Assert.True(fixture.Manifest.RpgMode);
         Assert.Equal(3, fixture.Compendia.Count);
+        Assert.Equal(8, fixture.Manifest.Assets.Count);
+        Assert.Single(
+            fixture.Manifest.Assets,
+            asset => asset.Kind == SampleNovelSeedAssetKind.Cover);
+        Assert.Equal(
+            6,
+            fixture.Manifest.Assets.Count(
+                asset => asset.Kind == SampleNovelSeedAssetKind.RecordImage));
+        Assert.Single(
+            fixture.Manifest.Assets,
+            asset => asset.Kind == SampleNovelSeedAssetKind.ProseImage);
 
         var records = fixture.Compendia.SelectMany(compendium => compendium.Records).ToList();
         Assert.Equal(10, records.Count);
@@ -38,6 +51,9 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
             fixture.Prose.Chapters
                 .SelectMany(chapter => chapter.Sections)
                 .Sum(section => section.RecordOverrides.Count));
+        Assert.Contains(
+            fixture.Prose.Chapters.SelectMany(chapter => chapter.Sections),
+            section => section.Images.Contains("bellwater-glass-rain"));
     }
 
     [Fact]
@@ -85,6 +101,33 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
         Assert.Contains("leaves the fixture directory", exception.Message);
     }
 
+    [Fact]
+    public async Task LoadAsync_RejectsAssetWithMismatchedDigest()
+    {
+        var root = WriteValidFixture();
+        await File.AppendAllTextAsync(Path.Combine(root, "cover.webp"), "tampered");
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => SampleNovelSeedFixtureLoader.LoadAsync(root));
+
+        Assert.Contains("does not match its sha256 digest", exception.Message);
+    }
+
+    [Fact]
+    public async Task LoadAsync_RejectsUnknownProseImageAsset()
+    {
+        var root = WriteValidFixture();
+        var prosePath = Path.Combine(root, "prose.json");
+        var contents = (await File.ReadAllTextAsync(prosePath))
+            .Replace("\"images\": []", "\"images\": [\"missing-image\"]");
+        await File.WriteAllTextAsync(prosePath, contents);
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => SampleNovelSeedFixtureLoader.LoadAsync(root));
+
+        Assert.Contains("does not reference a prose image asset", exception.Message);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(testRoot))
@@ -97,6 +140,11 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
     {
         var root = Path.Combine(testRoot, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
+        const string coverContents = "fixture cover";
+        File.WriteAllText(Path.Combine(root, "cover.webp"), coverContents);
+        var coverDigest = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(coverContents)))
+            .ToLowerInvariant();
 
         File.WriteAllText(
             Path.Combine(root, "manifest.json"),
@@ -112,9 +160,17 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
               "rpgMode": true,
               "mainCharacterKey": "main-character",
               "proseFile": "prose.json",
-              "compendiumFiles": ["compendia.json"]
+              "compendiumFiles": ["compendia.json"],
+              "assets": [
+                {
+                  "seedKey": "cover",
+                  "file": "cover.webp",
+                  "sha256": "__COVER_DIGEST__",
+                  "kind": "cover"
+                }
+              ]
             }
-            """);
+            """.Replace("__COVER_DIGEST__", coverDigest));
         File.WriteAllText(
             Path.Combine(root, "compendia.json"),
             """

@@ -4,6 +4,8 @@ namespace MyNovelBuilder.WebApi.Seeding;
 
 internal sealed class SampleNovelSeedFixture
 {
+    public required string RootPath { get; init; }
+
     public required SampleNovelSeedManifest Manifest { get; init; }
 
     public required IReadOnlyList<SampleCompendiumSeedDefinition> Compendia { get; init; }
@@ -34,6 +36,28 @@ internal sealed class SampleNovelSeedManifest
     public required string ProseFile { get; init; }
 
     public required IReadOnlyList<string> CompendiumFiles { get; init; }
+
+    public required IReadOnlyList<SampleNovelSeedAssetDefinition> Assets { get; init; }
+}
+
+internal sealed class SampleNovelSeedAssetDefinition
+{
+    public required string SeedKey { get; init; }
+
+    public required string File { get; init; }
+
+    public required string Sha256 { get; init; }
+
+    public required SampleNovelSeedAssetKind Kind { get; init; }
+
+    public string? RecordKey { get; init; }
+}
+
+internal enum SampleNovelSeedAssetKind
+{
+    Cover,
+    RecordImage,
+    ProseImage
 }
 
 internal sealed class SampleCompendiumSeedFile
