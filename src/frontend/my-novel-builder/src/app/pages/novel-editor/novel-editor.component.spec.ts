@@ -149,8 +149,8 @@ describe('NovelEditorComponent workflows', () => {
     expect(component.prose()).toEqual(createProse());
     expect(component.selectedChapterIndex).toBe(1);
     expect(component.chapters()).toEqual([
-      { label: 'Chapter 1', value: 0 },
-      { label: 'Chapter 2', value: 1 },
+      { label: '1. Chapter 1', value: 0 },
+      { label: '2. Chapter 2', value: 1 },
     ]);
     expect(component.compendia).toEqual([compendium('included-compendium')]);
     expect(compendiumService.getNovelCompendia).toHaveBeenCalledOnceWith(

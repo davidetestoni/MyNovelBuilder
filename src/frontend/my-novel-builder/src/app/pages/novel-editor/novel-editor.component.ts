@@ -57,7 +57,7 @@ export class NovelEditorComponent {
       return [];
     }
     return prose.chapters.map((chapter, index) => ({
-      label: chapter.title,
+      label: `${index + 1}. ${chapter.title}`,
       value: index,
     }));
   });
