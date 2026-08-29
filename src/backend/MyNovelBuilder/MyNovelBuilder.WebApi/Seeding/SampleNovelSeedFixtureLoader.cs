@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Helpers;
 
@@ -133,6 +134,7 @@ internal static class SampleNovelSeedFixtureLoader
         var compendiumKeys = new HashSet<string>(StringComparer.Ordinal);
         var recordKeys = new HashSet<string>(StringComparer.Ordinal);
         var recordTypes = new Dictionary<string, CompendiumRecordType>(StringComparer.Ordinal);
+        var recordContexts = new Dictionary<string, string>(StringComparer.Ordinal);
 
         for (var compendiumIndex = 0; compendiumIndex < fixture.Compendia.Count; compendiumIndex++)
         {
@@ -182,6 +184,7 @@ internal static class SampleNovelSeedFixtureLoader
                 }
 
                 recordTypes.Add(record.SeedKey, record.Type);
+                recordContexts.Add(record.SeedKey, record.Context);
             }
         }
 
@@ -196,7 +199,12 @@ internal static class SampleNovelSeedFixtureLoader
         }
 
         var proseImageKeys = ValidateAssets(fixture, recordKeys, fixtureRoot);
-        ValidateProse(fixture.Prose, recordKeys, proseImageKeys, fixtureRoot);
+        ValidateProse(
+            fixture.Prose,
+            recordKeys,
+            recordContexts,
+            proseImageKeys,
+            fixtureRoot);
     }
 
     private static IReadOnlySet<string> ValidateAssets(
@@ -318,6 +326,7 @@ internal static class SampleNovelSeedFixtureLoader
     private static void ValidateProse(
         SampleProseSeedDefinition prose,
         IReadOnlySet<string> recordKeys,
+        IReadOnlyDictionary<string, string> recordContexts,
         IReadOnlySet<string> proseImageKeys,
         string fixtureRoot)
     {
@@ -402,6 +411,15 @@ internal static class SampleNovelSeedFixtureLoader
                     }
 
                     ValidateText(recordOverride.Keyword, 200, "override.keyword", fixtureRoot);
+                    if (!HasTaggedRegion(
+                            recordContexts[recordOverride.RecordKey],
+                            recordOverride.Keyword))
+                    {
+                        throw InvalidFixture(
+                            fixtureRoot,
+                            $"override keyword '{recordOverride.Keyword}' does not reference a tagged region in record '{recordOverride.RecordKey}'");
+                    }
+
                     ValidateText(
                         recordOverride.Description,
                         20000,
@@ -411,6 +429,15 @@ internal static class SampleNovelSeedFixtureLoader
                 }
             }
         }
+    }
+
+    private static bool HasTaggedRegion(string context, string keyword)
+    {
+        var escapedKeyword = Regex.Escape(keyword);
+        return Regex.IsMatch(
+            context,
+            $@"\[{escapedKeyword}\](?:.|\n)*?\[\/{escapedKeyword}\]",
+            RegexOptions.CultureInvariant);
     }
 
     private static string ResolveFixturePath(

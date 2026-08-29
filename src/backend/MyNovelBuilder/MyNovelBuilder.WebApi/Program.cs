@@ -49,6 +49,8 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IDatabaseBackupService, DatabaseBackupService>();
 builder.Services.AddOptions<AppStorageOptions>()
     .Configure(options => options.DataFolder = dataFolder);
+builder.Services.AddOptions<SeedOptions>()
+    .BindConfiguration(SeedOptions.SectionName);
 
 builder.Services.AddHttpContextAccessor();
 
@@ -154,6 +156,7 @@ builder.Services.AddScoped<IMediaFolderService, MediaFolderService>();
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<IWorldBuildingSessionService, WorldBuildingSessionService>();
 builder.Services.AddScoped<InitialPromptSeeder>();
+builder.Services.AddScoped<SampleNovelSeeder>();
 builder.Services.AddScoped<INovelExportService, NovelExportService>();
 builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationServiceResolver>();
 builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
@@ -222,6 +225,9 @@ if (pendingMigrations.Length > 0)
 
 await scope.ServiceProvider
     .GetRequiredService<InitialPromptSeeder>()
+    .SeedAsync();
+await scope.ServiceProvider
+    .GetRequiredService<SampleNovelSeeder>()
     .SeedAsync();
 
 app.UseMiddleware<ExceptionMiddleware>();

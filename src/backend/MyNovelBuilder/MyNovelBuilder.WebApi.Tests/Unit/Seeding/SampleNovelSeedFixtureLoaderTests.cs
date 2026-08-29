@@ -18,7 +18,7 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
 
         Assert.Equal(1, fixture.Manifest.SchemaVersion);
         Assert.Contains("Sample Novel", fixture.Manifest.Title);
-        Assert.True(fixture.Manifest.RpgMode);
+        Assert.False(fixture.Manifest.RpgMode);
         Assert.Equal(3, fixture.Compendia.Count);
         Assert.Equal(8, fixture.Manifest.Assets.Count);
         Assert.Single(
@@ -44,6 +44,9 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
         Assert.Equal(CompendiumRecordType.Character, mainCharacter.Type);
 
         Assert.Equal(3, fixture.Prose.Chapters.Count);
+        Assert.Equal(
+            ["A Map That Listened Back", "Seven Bells at Bellwater", "The Weather We Choose"],
+            fixture.Prose.Chapters.Select(chapter => chapter.Title));
         Assert.Equal(6, fixture.Prose.Chapters.Sum(chapter => chapter.Sections.Count));
         Assert.Equal(6, fixture.Prose.Chapters.Sum(chapter => chapter.StoryEvents.Count));
         Assert.Equal(
@@ -84,6 +87,23 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
             () => SampleNovelSeedFixtureLoader.LoadAsync(root));
 
         Assert.Contains("override for an unknown recordKey", exception.Message);
+    }
+
+    [Fact]
+    public async Task LoadAsync_RejectsOverrideWithoutMatchingTaggedRegion()
+    {
+        var root = WriteValidFixture();
+        var prosePath = Path.Combine(root, "prose.json");
+        var contents = (await File.ReadAllTextAsync(prosePath))
+            .Replace("\"keyword\": \"goal\"", "\"keyword\": \"missing\"");
+        await File.WriteAllTextAsync(prosePath, contents);
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => SampleNovelSeedFixtureLoader.LoadAsync(root));
+
+        Assert.Contains(
+            "override keyword 'missing' does not reference a tagged region",
+            exception.Message);
     }
 
     [Fact]
@@ -186,7 +206,7 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
                       "name": "Main Character",
                       "aliases": "hero",
                       "type": "character",
-                      "context": "The protagonist.",
+                      "context": "[goal]The protagonist succeeds.[/goal]",
                       "alwaysIncluded": true
                     },
                     {

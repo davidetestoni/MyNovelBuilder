@@ -11,7 +11,7 @@
           "name": "Mira Vey",
           "aliases": "Mira; apprentice; rain cartographer",
           "type": "character",
-          "context": "Age: 24\nAppearance: Wiry, dark curls cropped at the jaw, amber raincoat patched at both elbows.\nRole: Apprentice cartographer who maps storms by listening to rain strike tuned glass.\nPersonality: Observant, stubbornly kind, uneasy with authority, prone to describing emotions as weather.\nGoal: Prove that the unnatural Glass Tide is being directed toward Lumenport.\nFear: Repeating the mistake that cost her mentor his hearing.\nSpeech: Precise when nervous; dry humor when she trusts someone.\nEquipment: Brass listening fork, waterproof field journal, blue chalk.",
+          "context": "[age]24[/age]\n[appearance]Wiry, dark curls cropped at the jaw, amber raincoat patched at both elbows.[/appearance]\n[role]Apprentice cartographer who maps storms by listening to rain strike tuned glass.[/role]\n[personality]Observant, stubbornly kind, uneasy with authority, prone to describing emotions as weather.[/personality]\n[goal]Prove that the unnatural Glass Tide is being directed toward Lumenport.[/goal]\n[fear]Repeating the mistake that cost her mentor his hearing.[/fear]\n[speech]Precise when nervous; dry humor when she trusts someone.[/speech]\n[equipment]Brass listening fork, waterproof field journal, blue chalk.[/equipment]",
           "alwaysIncluded": false
         },
         {
@@ -19,7 +19,7 @@
           "name": "Orin Vale",
           "aliases": "Orin; Keeper Vale; archive keeper",
           "type": "character",
-          "context": "Age: 61\nAppearance: Broad-shouldered, silver beard, spectacles connected by a red cord.\nRole: Keeper of the Archive of Tides and Mira's former teacher.\nPersonality: Patient, theatrical, protective of dangerous knowledge.\nSecret: He removed one page from the Rain Atlas after discovering it could influence storms, not merely predict them.\nSpeech: Fond of nautical proverbs that he often invents on the spot.",
+          "context": "[age]61[/age]\n[appearance]Broad-shouldered, silver beard, spectacles connected by a red cord.[/appearance]\n[role]Keeper of the Archive of Tides and Mira's former teacher.[/role]\n[personality]Patient, theatrical, protective of dangerous knowledge.[/personality]\n[secret]He removed one page from the Rain Atlas after discovering it could influence storms, not merely predict them.[/secret]\n[speech]Fond of nautical proverbs that he often invents on the spot.[/speech]",
           "alwaysIncluded": false
         },
         {
@@ -27,7 +27,7 @@
           "name": "Captain Ilyra Seln",
           "aliases": "Ilyra; Captain Seln; harbor captain",
           "type": "character",
-          "context": "Age: 39\nAppearance: Tall, close-shaved hair, green harbor uniform with a copper whistle.\nRole: Captain responsible for Lumenport's sea walls and evacuation routes.\nPersonality: Decisive, skeptical of folklore, fiercely loyal to dockworkers.\nGoal: Keep the harbor open long enough for the outer islands to evacuate.\nSpeech: Short sentences and direct questions; never raises her voice.",
+          "context": "[age]39[/age]\n[appearance]Tall, close-shaved hair, green harbor uniform with a copper whistle.[/appearance]\n[role]Captain responsible for Lumenport's sea walls and evacuation routes.[/role]\n[personality]Decisive, skeptical of folklore, fiercely loyal to dockworkers.[/personality]\n[goal]Keep the harbor open long enough for the outer islands to evacuate.[/goal]\n[attitude toward Mira]Skeptical of Mira's warning and unwilling to disrupt the harbor without evidence.[/attitude toward Mira]\n[speech]Short sentences and direct questions; never raises her voice.[/speech]",
           "alwaysIncluded": false
         }
       ]

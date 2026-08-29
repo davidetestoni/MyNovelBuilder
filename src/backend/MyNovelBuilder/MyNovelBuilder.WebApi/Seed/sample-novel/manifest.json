@@ -7,7 +7,7 @@
   "tense": "past",
   "pov": "thirdPersonLimited",
   "language": "english",
-  "rpgMode": true,
+  "rpgMode": false,
   "mainCharacterKey": "mira-vey",
   "proseFile": "prose.json",
   "compendiumFiles": [
