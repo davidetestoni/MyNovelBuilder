@@ -23,6 +23,10 @@ const webApiProject = resolve(
 const publishDirectory = resolve(repositoryRoot, 'artifacts/publish/web');
 const desktopDevelopmentRoot = resolve(repositoryRoot, 'artifacts/desktop/dev');
 const desktopPackageRoot = resolve(repositoryRoot, 'artifacts/desktop/packages');
+const desktopShellTest = resolve(
+  repositoryRoot,
+  'scripts/tests/electron-custom-main.test.cjs',
+);
 const supportedDesktopRuntimes = new Set([
   'win-x64',
   'win-arm64',
@@ -214,6 +218,7 @@ function validateDesktopPackageRuntime(runtime) {
 
 async function testApplication() {
   await restoreDependencies();
+  await run('node', ['--test', desktopShellTest]);
   await run('dotnet', [
     'test',
     solution,

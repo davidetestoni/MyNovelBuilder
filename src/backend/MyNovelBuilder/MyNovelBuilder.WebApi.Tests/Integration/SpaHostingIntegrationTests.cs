@@ -45,6 +45,15 @@ public sealed class SpaHostingIntegrationTests : IDisposable,
         response.EnsureSuccessStatusCode();
         Assert.Equal(IndexContents, await response.Content.ReadAsStringAsync());
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(
+            "default-src 'self'; base-uri 'self'; object-src 'none'; " +
+            "frame-ancestors 'none'; frame-src 'none'; form-action 'self'; " +
+            "script-src 'self'; style-src 'self' 'unsafe-inline' " +
+            "https://fonts.googleapis.com; font-src 'self' data: " +
+            "https://fonts.gstatic.com; img-src 'self' data: blob:; " +
+            "media-src 'self' blob:; connect-src 'self'; " +
+            "worker-src 'self' blob:; manifest-src 'self'",
+            response.Headers.GetValues("Content-Security-Policy").Single());
     }
 
     [Theory]

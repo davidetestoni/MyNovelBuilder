@@ -235,6 +235,7 @@ await scope.ServiceProvider
     .SeedAsync();
 
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<ContentSecurityPolicyMiddleware>();
 
 Directory.CreateDirectory(staticFilesRoot);
 

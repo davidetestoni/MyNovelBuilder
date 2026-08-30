@@ -69,6 +69,14 @@
       <None Remove="packages.electron.lock.json" />
       <Content Remove="Properties\electron-builder.json" />
       <None Remove="Properties\electron-builder.json" />
+      <Content Remove="Desktop\electron-custom-main.cjs" />
+      <None Remove="Desktop\electron-custom-main.cjs" />
+      <Content Include="Desktop\electron-custom-main.cjs"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>.electron/custom_main.js</TargetPath>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
       <Content Include="Properties\electron-after-pack.cjs"
                Condition="'$(ElectronDesktopBuild)' == 'true'">
         <TargetPath>electron-after-pack.cjs</TargetPath>
