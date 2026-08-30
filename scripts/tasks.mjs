@@ -349,6 +349,13 @@ async function packageDesktopApplication(runtime) {
     );
   }
 
+  await Promise.all(
+    expectedPackages.map((file) => rm(
+      resolve(outputDirectory, `${file}.blockmap`),
+      { force: true },
+    )),
+  );
+
   const checksumFiles = [];
   for (const file of expectedPackages) {
     checksumFiles.push(await writeSha256Checksum(resolve(outputDirectory, file)));
