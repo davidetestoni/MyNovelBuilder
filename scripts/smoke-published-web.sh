@@ -73,6 +73,9 @@ dotnet publish "$project" \
   --no-restore \
   --output "$publish_dir"
 
+[[ ! -e "$publish_dir/AppData" ]] \
+  || fail "the publish contains local application data"
+
 printf 'Starting published application at %s...\n' "$base_url"
 (
   cd -- "$publish_dir"

@@ -30,3 +30,20 @@ persistent-data details, and connecting to TTS servers running on the host.
 See the [changelog](CHANGELOG.md) for user-visible changes. Maintainer-facing
 versioning and release conventions are documented in the
 [release guide](docs/releases.md).
+
+## Repository tasks
+
+The cross-platform task runner keeps local development and future CI on the
+same commands:
+
+```shell
+node scripts/tasks.mjs restore
+node scripts/tasks.mjs test
+node scripts/tasks.mjs build
+node scripts/tasks.mjs publish-web
+node scripts/tasks.mjs dev
+```
+
+Run `node scripts/tasks.mjs --help` for details. `publish-web` creates the
+complete ASP.NET Core and Angular application under `artifacts/publish/web`;
+generated files in `artifacts` are ignored by Git.
