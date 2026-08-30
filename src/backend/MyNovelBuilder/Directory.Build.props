@@ -6,4 +6,10 @@
     <InformationalVersion>$(Version)</InformationalVersion>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ElectronDesktopBuild)' == 'true'">
+    <BaseIntermediateOutputPath>obj\electron\</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**</DefaultItemExcludes>
+  </PropertyGroup>
 </Project>

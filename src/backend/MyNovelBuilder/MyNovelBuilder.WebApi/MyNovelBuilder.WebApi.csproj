@@ -10,7 +10,24 @@
         <SpaRoot>$(MSBuildThisFileDirectory)../../../frontend/my-novel-builder/</SpaRoot>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <DefineConstants>$(DefineConstants);ELECTRON_DESKTOP</DefineConstants>
+        <NuGetLockFilePath>packages.electron.lock.json</NuGetLockFilePath>
+        <ElectronPackageId>io.github.davidetestoni.mynovelbuilder</ElectronPackageId>
+        <ElectronVersion>43.4.1</ElectronVersion>
+        <ElectronSingleInstance>true</ElectronSingleInstance>
+        <Title>MyNovelBuilder</Title>
+        <Description>An AI-assisted workspace for planning and writing novels.</Description>
+        <Company>Davide Testoni</Company>
+        <License>GPL-3.0-only</License>
+        <ProjectUrl>https://github.com/davidetestoni/MyNovelBuilder</ProjectUrl>
+    </PropertyGroup>
+
     <ItemGroup>
+        <PackageReference Include="ElectronNET.Core" Version="0.5.1"
+                          Condition="'$(ElectronDesktopBuild)' == 'true'" />
+        <PackageReference Include="ElectronNET.Core.AspNet" Version="0.5.1"
+                          Condition="'$(ElectronDesktopBuild)' == 'true'" />
         <PackageReference Include="ElevenLabs-DotNet" Version="3.7.1" />
         <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
         <PackageReference Include="Google.GenAI" Version="0.14.0" />
@@ -48,6 +65,8 @@
     <ItemGroup>
       <Content Remove="AppData/**/*" />
       <None Remove="AppData/**/*" />
+      <Content Remove="packages.electron.lock.json" />
+      <None Remove="packages.electron.lock.json" />
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>

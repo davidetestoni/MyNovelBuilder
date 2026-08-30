@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using MyNovelBuilder.WebApi.Data;
+using MyNovelBuilder.WebApi.Desktop;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Data.Repositories;
 using MyNovelBuilder.WebApi.Middleware;
@@ -30,12 +31,15 @@ using Serilog;
 using Serilog.Events;
 
 var builder = WebApplication.CreateBuilder(args);
+var electronMode = ElectronDesktop.IsRequested(args);
 
-if (string.IsNullOrWhiteSpace(
+if (!electronMode && string.IsNullOrWhiteSpace(
         builder.Configuration[WebHostDefaults.ServerUrlsKey]))
 {
     builder.WebHost.UseUrls("http://127.0.0.1:5113");
 }
+
+ElectronDesktop.Configure(builder, args);
 
 var dataPathResolver = new AppDataPathResolver();
 var dataFolder = dataPathResolver.Resolve(args, builder.Configuration);
