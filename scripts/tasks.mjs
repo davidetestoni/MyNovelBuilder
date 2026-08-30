@@ -22,11 +22,20 @@ const webApiProject = resolve(
 );
 const publishDirectory = resolve(repositoryRoot, 'artifacts/publish/web');
 const desktopDevelopmentRoot = resolve(repositoryRoot, 'artifacts/desktop/dev');
+const desktopPackageRoot = resolve(repositoryRoot, 'artifacts/desktop/packages');
+const supportedDesktopRuntimes = new Set([
+  'win-x64',
+  'win-arm64',
+  'osx-x64',
+  'osx-arm64',
+  'linux-x64',
+  'linux-arm64',
+]);
 
 const help = `MyNovelBuilder repository tasks
 
 Usage:
-  node scripts/tasks.mjs <command>
+  node scripts/tasks.mjs <command> [arguments]
 
 Commands:
   restore      Install locked frontend and backend dependencies
@@ -35,6 +44,8 @@ Commands:
   publish-web  Create a runnable ASP.NET Core + Angular publish in artifacts/publish/web
   dev          Restore dependencies and run the backend and Angular development servers
   desktop-dev  Build and run the application in an Electron window
+  package-desktop <rid>
+               Build unsigned desktop packages for win/osx/linux, x64 or arm64
   help         Show this help
 `;
 
@@ -167,6 +178,40 @@ function currentDesktopRuntime() {
   return `${platform}-${architecture}`;
 }
 
+function hostDesktopPlatform() {
+  const platform = {
+    darwin: 'osx',
+    linux: 'linux',
+    win32: 'win',
+  }[process.platform];
+
+  if (!platform) {
+    throw new Error(`Desktop packaging is not supported on ${process.platform}.`);
+  }
+
+  return platform;
+}
+
+function validateDesktopPackageRuntime(runtime) {
+  if (!supportedDesktopRuntimes.has(runtime)) {
+    throw new Error(
+      `Unsupported desktop runtime '${runtime}'. Expected one of: ${[
+        ...supportedDesktopRuntimes,
+      ].join(', ')}.`,
+    );
+  }
+
+  const targetPlatform = runtime.slice(0, runtime.lastIndexOf('-'));
+  const hostPlatform = hostDesktopPlatform();
+  if (targetPlatform !== hostPlatform) {
+    throw new Error(
+      `Cannot package ${runtime} on ${process.platform}. Electron packages must `
+      + `be built on their target OS; choose a ${hostPlatform}-x64 or `
+      + `${hostPlatform}-arm64 runtime on this machine.`,
+    );
+  }
+}
+
 async function testApplication() {
   await restoreDependencies();
   await run('dotnet', [
@@ -228,6 +273,85 @@ async function publishWebApplication() {
   }
 
   console.log(`\nPublished application: ${displayPath(publishDirectory)}`);
+}
+
+async function packageDesktopApplication(runtime) {
+  validateDesktopPackageRuntime(runtime);
+
+  const outputDirectory = resolve(desktopPackageRoot, runtime);
+  const publishProfile = `Desktop-${runtime}`;
+  const architecture = runtime.endsWith('-arm64') ? 'arm64' : 'x64';
+  const packageEnvironment = {
+    ...process.env,
+    CSC_IDENTITY_AUTO_DISCOVERY: 'false',
+    GH_TOKEN: '',
+    GITHUB_TOKEN: '',
+    MNB_DESKTOP_ARCH: architecture,
+  };
+  const desktopProperties = [
+    '/p:ElectronDesktopBuild=true',
+    `/p:PublishProfile=${publishProfile}`,
+  ];
+
+  await rm(outputDirectory, { recursive: true, force: true });
+  await run('dotnet', [
+    'restore',
+    webApiProject,
+    '--locked-mode',
+    '--runtime',
+    runtime,
+    ...desktopProperties,
+  ], { env: packageEnvironment });
+  await run('dotnet', [
+    'publish',
+    webApiProject,
+    '--configuration',
+    'Release',
+    '--no-restore',
+    '--runtime',
+    runtime,
+    ...desktopProperties,
+  ], { env: packageEnvironment });
+
+  const expectedPackages = runtime.startsWith('win-')
+    ? [`MyNovelBuilder-Windows-${architecture}-Setup.exe`]
+    : runtime.startsWith('osx-')
+      ? [`MyNovelBuilder-macOS-${architecture}.dmg`]
+      : [
+        `MyNovelBuilder-Linux-${architecture}.AppImage`,
+        `MyNovelBuilder-Linux-${architecture}.deb`,
+      ];
+  const missingPackages = expectedPackages.filter(
+    (file) => !existsSync(resolve(outputDirectory, file)),
+  );
+  if (missingPackages.length > 0) {
+    throw new Error(
+      `Desktop packaging completed without producing: ${missingPackages.join(', ')}.`,
+    );
+  }
+
+  const unpackedDirectory = runtime.startsWith('win-')
+    ? `${runtime === 'win-arm64' ? 'win-arm64' : 'win'}-unpacked`
+    : runtime.startsWith('osx-')
+      ? runtime === 'osx-arm64' ? 'mac-arm64' : 'mac'
+      : `${runtime === 'linux-arm64' ? 'linux-arm64' : 'linux'}-unpacked`;
+  await rm(resolve(outputDirectory, unpackedDirectory), {
+    recursive: true,
+    force: true,
+  });
+  await rm(resolve(outputDirectory, 'builder-debug.yml'), { force: true });
+
+  // electron-builder stages another complete copy under the project's bin
+  // tree. The distributables are self-contained, so retain only those outputs.
+  await rm(
+    resolve(dirname(webApiProject), 'bin', 'Release', 'net10.0', runtime),
+    { recursive: true, force: true },
+  );
+
+  console.log(`\nDesktop packages: ${displayPath(outputDirectory)}`);
+  for (const file of expectedPackages) {
+    console.log(`  ${file}`);
+  }
 }
 
 async function runDesktopDevelopment() {
@@ -462,10 +586,6 @@ async function main() {
     console.log(help);
     return;
   }
-  if (extraArguments.length > 0) {
-    throw new Error(`Unexpected arguments: ${extraArguments.join(' ')}`);
-  }
-
   const tasks = {
     restore: restoreDependencies,
     test: testApplication,
@@ -473,13 +593,24 @@ async function main() {
     'publish-web': publishWebApplication,
     dev: runDevelopmentServers,
     'desktop-dev': runDesktopDevelopment,
+    'package-desktop': packageDesktopApplication,
   };
   const task = tasks[command];
   if (!task) {
     throw new Error(`Unknown command '${command}'. Run with --help to list commands.`);
   }
 
-  await task();
+  if (command === 'package-desktop') {
+    if (extraArguments.length !== 1) {
+      throw new Error(
+        'package-desktop requires exactly one runtime, for example linux-x64.',
+      );
+    }
+  } else if (extraArguments.length > 0) {
+    throw new Error(`Unexpected arguments: ${extraArguments.join(' ')}`);
+  }
+
+  await task(...extraArguments);
 }
 
 main().catch((error) => {

@@ -178,6 +178,11 @@ publish/
 *.pubxml
 *.publishproj
 
+# Desktop profiles contain only public runtime/build settings and are required
+# by the release task on each operating system.
+!MyNovelBuilder.WebApi/Properties/PublishProfiles/
+!MyNovelBuilder.WebApi/Properties/PublishProfiles/Desktop-*.pubxml
+
 # Microsoft Azure Web App publish settings. Comment the next line if you want to
 # checkin your Azure Web App publish settings, but sensitive information contained
 # in these scripts will be unencrypted

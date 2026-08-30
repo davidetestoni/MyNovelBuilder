@@ -43,6 +43,7 @@ node scripts/tasks.mjs build
 node scripts/tasks.mjs publish-web
 node scripts/tasks.mjs dev
 node scripts/tasks.mjs desktop-dev
+node scripts/tasks.mjs package-desktop linux-x64
 ```
 
 Run `node scripts/tasks.mjs --help` for details. `publish-web` creates the
@@ -52,3 +53,12 @@ production SPA and opens it in Electron on the current x64 or arm64 machine;
 close the window or press Ctrl+C to stop the desktop host. On Linux this local,
 unpackaged command prints and uses `--no-sandbox` because its npm-installed
 Chromium helper cannot be setuid root; release packages must remain sandboxed.
+
+`package-desktop` accepts `win-x64`, `win-arm64`, `osx-x64`, `osx-arm64`,
+`linux-x64`, or `linux-arm64`. Electron packages must be built on their target
+operating system, although either architecture can be selected there. The
+unsigned packages are written to `artifacts/desktop/packages/<rid>`.
+On Ubuntu systems that restrict unprivileged user namespaces, prefer the DEB:
+its installation configures Chromium's setuid sandbox. The portable AppImage
+requires user namespaces on those systems; the application does not silently
+disable its sandbox.

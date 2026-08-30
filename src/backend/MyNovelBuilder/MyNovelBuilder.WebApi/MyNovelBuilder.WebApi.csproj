@@ -67,6 +67,13 @@
       <None Remove="AppData/**/*" />
       <Content Remove="packages.electron.lock.json" />
       <None Remove="packages.electron.lock.json" />
+      <Content Remove="Properties\electron-builder.json" />
+      <None Remove="Properties\electron-builder.json" />
+      <Content Include="Properties\electron-after-pack.cjs"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>electron-after-pack.cjs</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
