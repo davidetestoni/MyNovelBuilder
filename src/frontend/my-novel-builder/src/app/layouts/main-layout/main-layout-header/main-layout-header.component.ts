@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { appReleaseLabel, appVersion } from '../../../app-metadata';
 
 @Component({
   selector: 'app-main-layout-header',
@@ -8,4 +9,7 @@ import { RouterModule } from '@angular/router';
   templateUrl: './main-layout-header.component.html',
   styleUrl: './main-layout-header.component.scss',
 })
-export class MainLayoutHeaderComponent {}
+export class MainLayoutHeaderComponent {
+  readonly version = appVersion;
+  readonly releaseLabel = appReleaseLabel;
+}

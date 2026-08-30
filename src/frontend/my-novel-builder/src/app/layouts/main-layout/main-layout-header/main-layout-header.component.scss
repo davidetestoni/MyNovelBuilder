@@ -28,6 +28,24 @@
     }
   }
 
+  .version-badge {
+    margin-left: 10px;
+    padding: 3px 7px;
+    border: 1px solid $grey7;
+    border-radius: 999px;
+    color: $grey12;
+    font-size: 0.65rem;
+    font-weight: 400;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover {
+      border-color: $grey10;
+      color: $grey15;
+    }
+  }
+
   .navigation {
     display: flex;
     gap: 10px;

@@ -1,8 +1,16 @@
 {
   "name": "my-novel-builder",
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davidetestoni/MyNovelBuilder.git"
+  },
   "scripts": {
     "ng": "ng",
+    "check-version": "node ../../../scripts/check-version.mjs",
+    "prebuild": "npm run check-version",
+    "pretest": "npm run check-version",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",

@@ -44,7 +44,7 @@ describe('application layouts', () => {
       fixture.nativeElement.querySelectorAll('a'),
     ) as HTMLAnchorElement[];
 
-    expect(links.length).toBe(8);
+    expect(links.length).toBe(9);
     expect(links.every((link) => link.hasAttribute('href'))).toBeTrue();
     expect(
       fixture.nativeElement.querySelectorAll('.navigation .nav-item').length,
@@ -60,6 +60,7 @@ describe('application layouts', () => {
 
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/',
+      '/about',
       '/novels',
       '/chat',
       '/world-builder',
@@ -68,8 +69,11 @@ describe('application layouts', () => {
       '/media-library',
       '/integrations',
     ]);
-    expect(links.map((link) => link.textContent?.trim())).toEqual([
-      'My Novel Builder',
+    expect(links[0].textContent).toContain('My Novel Builder');
+    expect(links[1].textContent?.trim()).toBe(
+      `v${fixture.componentInstance.version} ${fixture.componentInstance.releaseLabel}`,
+    );
+    expect(links.slice(2).map((link) => link.textContent?.trim())).toEqual([
       'Novels',
       'Chat',
       'World Builder',
@@ -78,6 +82,16 @@ describe('application layouts', () => {
       'Media',
       'Integrations',
     ]);
+  });
+
+  it('shows the current version beside the logo', () => {
+    const fixture = TestBed.createComponent(MainLayoutHeaderComponent);
+    fixture.detectChanges();
+    const badge = fixture.nativeElement.querySelector('.version-badge');
+
+    expect(badge.textContent.trim()).toBe(
+      `v${fixture.componentInstance.version} ${fixture.componentInstance.releaseLabel}`,
+    );
   });
 
   it('provides descriptive alternative text for the logo image', () => {

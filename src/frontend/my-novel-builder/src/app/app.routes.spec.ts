@@ -32,6 +32,7 @@ describe('application routes', () => {
       'media-library',
       'integrations',
       'voices',
+      'about',
     ]);
     expect(new Set(paths).size).toBe(paths.length);
   });

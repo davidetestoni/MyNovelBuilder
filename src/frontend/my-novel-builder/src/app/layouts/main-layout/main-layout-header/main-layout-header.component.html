@@ -6,6 +6,13 @@
     />
     <div class="logo-text">My Novel Builder</div>
   </a>
+  <a
+    class="version-badge"
+    [routerLink]="['/about']"
+    title="About this version"
+  >
+    v{{ version }} {{ releaseLabel }}
+  </a>
   <nav class="navigation">
     <a
       class="nav-item"

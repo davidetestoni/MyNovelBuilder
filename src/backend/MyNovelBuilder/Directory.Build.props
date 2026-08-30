@@ -1,5 +1,9 @@
 <Project>
   <PropertyGroup>
+    <VersionFile>$(MSBuildThisFileDirectory)..\..\..\VERSION</VersionFile>
+    <Version>$([System.IO.File]::ReadAllText('$(VersionFile)').Trim())</Version>
+    <PackageVersion>$(Version)</PackageVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
 </Project>

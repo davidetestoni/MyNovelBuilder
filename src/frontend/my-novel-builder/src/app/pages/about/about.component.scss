@@ -1,0 +1,59 @@
+.about-container {
+  display: flex;
+  justify-content: center;
+  padding: 64px 24px;
+}
+
+.about-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+  width: min(720px, 100%);
+  padding: 32px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 12px;
+  background: var(--p-content-background);
+
+  h1 {
+    margin: 0;
+  }
+
+  p {
+    line-height: 1.6;
+  }
+}
+
+.about-logo {
+  width: 112px;
+  height: 112px;
+}
+
+.version,
+.license {
+  color: var(--p-text-muted-color);
+}
+
+.version {
+  margin-top: 4px;
+}
+
+.about-links {
+  display: flex;
+  gap: 20px;
+
+  a {
+    color: var(--p-primary-color);
+  }
+}
+
+@media (max-width: 600px) {
+  .about-card {
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .about-links {
+    justify-content: center;
+  }
+}

@@ -124,4 +124,10 @@ export const routes: Routes = [
       import('./pages/voices/voices.component').then((m) => m.VoicesComponent),
     data: mainLayoutData,
   },
+  {
+    path: 'about',
+    loadComponent: () =>
+      import('./pages/about/about.component').then((m) => m.AboutComponent),
+    data: mainLayoutData,
+  },
 ];
