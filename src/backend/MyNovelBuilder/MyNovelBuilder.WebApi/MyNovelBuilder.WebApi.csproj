@@ -97,4 +97,18 @@
       </ItemGroup>
     </Target>
 
+    <Target Name="CopyAngularToElectronDevelopmentOutput"
+            AfterTargets="Build"
+            Condition="'$(ElectronDesktopBuild)' == 'true' and '$(ElectronDevelopmentBuild)' == 'true'">
+      <ItemGroup>
+        <ElectronAngularDistFiles Include="$(SpaRoot)dist/my-novel-builder/browser/**" />
+      </ItemGroup>
+
+      <Error Condition="'@(ElectronAngularDistFiles)' == ''"
+             Text="The Angular production build is missing. Run npm run build before the Electron development build." />
+      <RemoveDir Directories="$(TargetDir)wwwroot" />
+      <Copy SourceFiles="@(ElectronAngularDistFiles)"
+            DestinationFiles="@(ElectronAngularDistFiles-&gt;'$(TargetDir)wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" />
+    </Target>
+
 </Project>

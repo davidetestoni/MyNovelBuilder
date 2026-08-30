@@ -42,8 +42,13 @@ node scripts/tasks.mjs test
 node scripts/tasks.mjs build
 node scripts/tasks.mjs publish-web
 node scripts/tasks.mjs dev
+node scripts/tasks.mjs desktop-dev
 ```
 
 Run `node scripts/tasks.mjs --help` for details. `publish-web` creates the
 complete ASP.NET Core and Angular application under `artifacts/publish/web`;
-generated files in `artifacts` are ignored by Git.
+generated files in `artifacts` are ignored by Git. `desktop-dev` builds the
+production SPA and opens it in Electron on the current x64 or arm64 machine;
+close the window or press Ctrl+C to stop the desktop host. On Linux this local,
+unpackaged command prints and uses `--no-sandbox` because its npm-installed
+Chromium helper cannot be setuid root; release packages must remain sandboxed.

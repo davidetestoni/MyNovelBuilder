@@ -21,6 +21,7 @@ const webApiProject = resolve(
   'src/backend/MyNovelBuilder/MyNovelBuilder.WebApi/MyNovelBuilder.WebApi.csproj',
 );
 const publishDirectory = resolve(repositoryRoot, 'artifacts/publish/web');
+const desktopDevelopmentRoot = resolve(repositoryRoot, 'artifacts/desktop/dev');
 
 const help = `MyNovelBuilder repository tasks
 
@@ -33,6 +34,7 @@ Commands:
   build        Restore dependencies and build the frontend and backend in Release mode
   publish-web  Create a runnable ASP.NET Core + Angular publish in artifacts/publish/web
   dev          Restore dependencies and run the backend and Angular development servers
+  desktop-dev  Build and run the application in an Electron window
   help         Show this help
 `;
 
@@ -145,6 +147,26 @@ function dotnetWatchEnvironment() {
   return { ...process.env, DOTNET_USE_POLLING_FILE_WATCHER: '1' };
 }
 
+function currentDesktopRuntime() {
+  const platform = {
+    darwin: 'osx',
+    linux: 'linux',
+    win32: 'win',
+  }[process.platform];
+  const architecture = {
+    arm64: 'arm64',
+    x64: 'x64',
+  }[process.arch];
+
+  if (!platform || !architecture) {
+    throw new Error(
+      `Electron development is not supported on ${process.platform}-${process.arch}.`,
+    );
+  }
+
+  return `${platform}-${architecture}`;
+}
+
 async function testApplication() {
   await restoreDependencies();
   await run('dotnet', [
@@ -206,6 +228,135 @@ async function publishWebApplication() {
   }
 
   console.log(`\nPublished application: ${displayPath(publishDirectory)}`);
+}
+
+async function runDesktopDevelopment() {
+  const runtime = currentDesktopRuntime();
+  const outputDirectory = resolve(desktopDevelopmentRoot, runtime);
+  const developmentDataDirectory = resolve(
+    dirname(webApiProject),
+    'AppData',
+  );
+  const executable = resolve(
+    outputDirectory,
+    process.platform === 'win32'
+      ? 'MyNovelBuilder.WebApi.exe'
+      : 'MyNovelBuilder.WebApi',
+  );
+  const electronExecutable = process.platform === 'win32'
+    ? resolve(outputDirectory, '.electron/node_modules/electron/dist/electron.exe')
+    : process.platform === 'darwin'
+      ? resolve(
+        outputDirectory,
+        '.electron/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron',
+      )
+      : resolve(outputDirectory, '.electron/node_modules/electron/dist/electron');
+  const desktopProperties = [
+    '/p:ElectronDesktopBuild=true',
+    '/p:ElectronDevelopmentBuild=true',
+  ];
+
+  await runNpm(['ci'], { cwd: frontendDirectory });
+  await runNpm(['run', 'build'], { cwd: frontendDirectory });
+  if (existsSync(outputDirectory) && !existsSync(electronExecutable)) {
+    // Recover from a previously interrupted Electron npm installation. A
+    // complete host is kept as a local cache because it is several hundred MB.
+    await rm(outputDirectory, { recursive: true, force: true });
+  }
+  await run('dotnet', [
+    'restore',
+    webApiProject,
+    '--locked-mode',
+    '--runtime',
+    runtime,
+    ...desktopProperties,
+  ]);
+  await run('dotnet', [
+    'build',
+    webApiProject,
+    '--configuration',
+    'Debug',
+    '--no-restore',
+    '--runtime',
+    runtime,
+    '--output',
+    outputDirectory,
+    ...desktopProperties,
+  ]);
+
+  const requiredFiles = [
+    executable,
+    electronExecutable,
+    resolve(outputDirectory, 'wwwroot/index.html'),
+    resolve(outputDirectory, '.electron/package.json'),
+  ];
+  const missingFiles = requiredFiles.filter((path) => !existsSync(path));
+  if (missingFiles.length > 0) {
+    throw new Error(
+      `Desktop development build is missing: ${missingFiles
+        .map(displayPath)
+        .join(', ')}.`,
+    );
+  }
+
+  console.log(`\nStarting the ${runtime} Electron application.`);
+  if (process.platform === 'linux') {
+    console.log(
+      'The unpackaged Linux host uses --no-sandbox; packaged releases must not.',
+    );
+  }
+  console.log('Close its window or press Ctrl+C to stop it.');
+  const electronArguments = ['-unpackeddotnet'];
+  if (process.platform === 'linux') {
+    // Ubuntu AppArmor blocks the user-namespace fallback and an unpackaged
+    // npm install cannot provide a root-owned setuid Chromium helper. This is
+    // strictly a local development escape hatch, never a packaging setting.
+    electronArguments.push('--no-sandbox');
+  }
+  const detached = process.platform !== 'win32';
+  const desktop = start(executable, electronArguments, {
+    cwd: outputDirectory,
+    detached,
+    env: {
+      ...process.env,
+      ASPNETCORE_ENVIRONMENT:
+        process.env.ASPNETCORE_ENVIRONMENT ?? 'Development',
+      MYNOVELBUILDER_DATA_DIR:
+        process.env.MYNOVELBUILDER_DATA_DIR ?? developmentDataDirectory,
+    },
+  });
+
+  let resolveSignal;
+  const interrupted = new Promise((resolveInterruption) => {
+    resolveSignal = resolveInterruption;
+  });
+  const onInterrupt = () => resolveSignal('SIGINT');
+  const onTerminate = () => resolveSignal('SIGTERM');
+  process.once('SIGINT', onInterrupt);
+  process.once('SIGTERM', onTerminate);
+
+  const outcome = await Promise.race([
+    desktop.completion.then((result) => ({ type: 'exit', result })),
+    interrupted.then((signal) => ({ type: 'signal', signal })),
+  ]);
+  process.removeListener('SIGINT', onInterrupt);
+  process.removeListener('SIGTERM', onTerminate);
+
+  if (outcome.type === 'signal') {
+    await terminateDevelopmentProcess(desktop.child, outcome.signal);
+    await desktop.completion;
+    process.exitCode = outcome.signal === 'SIGINT' ? 130 : 143;
+    return;
+  }
+  if (outcome.result.error) {
+    throw outcome.result.error;
+  }
+  if (outcome.result.code !== 0) {
+    const reason = outcome.result.signal
+      ? `signal ${outcome.result.signal}`
+      : `exit code ${outcome.result.code}`;
+    throw new Error(`${desktop.renderedCommand} failed with ${reason}.`);
+  }
 }
 
 async function terminateDevelopmentProcess(child, signal) {
@@ -321,6 +472,7 @@ async function main() {
     build: buildApplication,
     'publish-web': publishWebApplication,
     dev: runDevelopmentServers,
+    'desktop-dev': runDesktopDevelopment,
   };
   const task = tasks[command];
   if (!task) {
