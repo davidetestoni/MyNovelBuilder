@@ -32,7 +32,7 @@ public sealed class SampleNovelSeederTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SeedAsync_AddsBundledSampleWithoutChangingExistingData()
+    public async Task SeedAsync_AddsBundledSampleToExistingUnmarkedDatabaseWithoutChangingData()
     {
         var existingNovel = new Novel { Title = "Existing novel" };
         dbContext.Novels.Add(existingNovel);
@@ -85,6 +85,31 @@ public sealed class SampleNovelSeederTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SeedAsync_DoesNotReloadOrOverwriteEditedSampleOnRepeatStartup()
+    {
+        var fixtureLoadCount = 0;
+        var seeder = CreateSeeder(async cancellationToken =>
+        {
+            fixtureLoadCount++;
+            return await SampleNovelSeedFixtureLoader.LoadBundledAsync(cancellationToken);
+        });
+        await seeder.SeedAsync();
+        var sample = await dbContext.Novels.SingleAsync();
+        dbContext.Entry(sample).Property(novel => novel.Title).CurrentValue =
+            "My edited example";
+        await dbContext.SaveChangesAsync();
+
+        await seeder.SeedAsync();
+
+        Assert.Equal(1, fixtureLoadCount);
+        Assert.Equal("My edited example", (await dbContext.Novels.SingleAsync()).Title);
+        Assert.Equal(
+            1,
+            await dbContext.InitializationMarkers.CountAsync(
+                marker => marker.Key == SampleNovelSeeder.MarkerKey));
+    }
+
+    [Fact]
     public async Task SeedAsync_DoesNotRestoreDeletedSample()
     {
         var seeder = CreateSeeder();
@@ -124,6 +149,28 @@ public sealed class SampleNovelSeederTests : IAsyncDisposable
         Assert.Empty(Directory.EnumerateFileSystemEntries(dataFolder));
     }
 
+    [Fact]
+    public async Task SeedAsync_MissingAssetDuringStagingRollsBackDatabaseAndFiles()
+    {
+        var existingNovel = new Novel { Title = "Existing novel" };
+        dbContext.Novels.Add(existingNovel);
+        await dbContext.SaveChangesAsync();
+        var fixture = await CopyAndLoadBundledFixtureAsync();
+        File.Delete(Path.Combine(
+            fixture.RootPath,
+            fixture.Manifest.Assets[0].File));
+        var seeder = CreateSeeder(_ => Task.FromResult(fixture));
+
+        await Assert.ThrowsAnyAsync<IOException>(() => seeder.SeedAsync());
+
+        var preservedNovel = await dbContext.Novels.SingleAsync();
+        Assert.Equal(existingNovel.Id, preservedNovel.Id);
+        Assert.Empty(await dbContext.InitializationMarkers.ToListAsync());
+        Assert.False(Directory.Exists(Path.Combine(dataFolder, "novels")));
+        Assert.False(Directory.Exists(Path.Combine(dataFolder, "static")));
+        Assert.False(Directory.Exists(Path.Combine(dataFolder, ".seed-staging")));
+    }
+
     public async ValueTask DisposeAsync()
     {
         await dbContext.DisposeAsync();
@@ -147,6 +194,28 @@ public sealed class SampleNovelSeederTests : IAsyncDisposable
                 new DateTimeOffset(2026, 8, 29, 12, 0, 0, TimeSpan.Zero)),
             NullLogger<SampleNovelSeeder>.Instance,
             loadFixtureAsync ?? SampleNovelSeedFixtureLoader.LoadBundledAsync);
+    }
+
+    private async Task<SampleNovelSeedFixture> CopyAndLoadBundledFixtureAsync()
+    {
+        var sourceRoot = Path.Combine(
+            AppContext.BaseDirectory,
+            SampleNovelSeedFixtureLoader.BundledFixtureRelativePath);
+        var fixtureRoot = Path.Combine(dataFolder, "fixture-source");
+
+        foreach (var sourcePath in Directory.GetFiles(
+                     sourceRoot,
+                     "*",
+                     SearchOption.AllDirectories))
+        {
+            var destinationPath = Path.Combine(
+                fixtureRoot,
+                Path.GetRelativePath(sourceRoot, sourcePath));
+            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
+            File.Copy(sourcePath, destinationPath);
+        }
+
+        return await SampleNovelSeedFixtureLoader.LoadAsync(fixtureRoot);
     }
 
     private sealed class FakeTokenizerService : ITokenizerService

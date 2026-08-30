@@ -134,6 +134,18 @@ public sealed class SampleNovelSeedFixtureLoaderTests : IDisposable
     }
 
     [Fact]
+    public async Task LoadAsync_RejectsMissingAsset()
+    {
+        var root = WriteValidFixture();
+        File.Delete(Path.Combine(root, "cover.webp"));
+
+        var exception = await Assert.ThrowsAsync<InvalidDataException>(
+            () => SampleNovelSeedFixtureLoader.LoadAsync(root));
+
+        Assert.Contains("does not exist", exception.Message);
+    }
+
+    [Fact]
     public async Task LoadAsync_RejectsUnknownProseImageAsset()
     {
         var root = WriteValidFixture();
