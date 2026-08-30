@@ -1,0 +1,228 @@
+name: Docker release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing desktop release tag to publish (for example v0.1.0-preview.6)
+        required: true
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-release-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+env:
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+  IMAGE_NAME: davidetestoni/mynovelbuilder
+
+jobs:
+  prepare:
+    name: Validate release tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      build_date: ${{ steps.release.outputs.build_date }}
+      primary_tag: ${{ steps.release.outputs.primary_tag }}
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      source_sha: ${{ steps.release.outputs.source_sha }}
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+      - name: Check out source and tags
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Validate release source
+        id: release
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            release_tag="${GITHUB_REF_NAME}"
+          else
+            release_tag="${REQUESTED_TAG}"
+          fi
+
+          if [[ ! "${release_tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid SemVer release tag: ${release_tag}" >&2
+            exit 1
+          fi
+          if ! git show-ref --tags --verify --quiet "refs/tags/${release_tag}"; then
+            echo "Release tag ${release_tag} does not exist." >&2
+            exit 1
+          fi
+
+          source_sha="$(git rev-list -n 1 "${release_tag}")"
+          version="$(git show "${source_sha}:VERSION" | tr -d '[:space:]')"
+          primary_tag="${release_tag#v}"
+
+          if [[ "${primary_tag}" != "${version}" && "${primary_tag}" != "${version}-"* ]]; then
+            echo "Release tag ${release_tag} does not match VERSION ${version}." >&2
+            exit 1
+          fi
+          if [[ "${{ github.event_name }}" == "push" && "${source_sha}" != "${GITHUB_SHA}" ]]; then
+            echo "Tag ${release_tag} resolves to ${source_sha}, not ${GITHUB_SHA}." >&2
+            exit 1
+          fi
+
+          if [[ "${release_tag}" == "v${version}" ]]; then
+            git fetch origin main
+            if [[ "$(git rev-parse origin/main)" != "${source_sha}" ]]; then
+              echo "The final ${release_tag} image must be built from the current main commit." >&2
+              exit 1
+            fi
+          fi
+
+          echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "${GITHUB_OUTPUT}"
+          echo "primary_tag=${primary_tag}" >> "${GITHUB_OUTPUT}"
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+          echo "source_sha=${source_sha}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+  build:
+    name: Build and test ${{ matrix.platform }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            architecture: amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            architecture: arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build native image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          push: false
+          provenance: false
+          sbom: false
+          tags: ${{ env.IMAGE_NAME }}:sha-${{ needs.prepare.outputs.source_sha }}-${{ matrix.architecture }}
+          build-args: |
+            APP_VERSION=${{ needs.prepare.outputs.version }}
+            BUILD_DATE=${{ needs.prepare.outputs.build_date }}
+            VCS_REF=${{ needs.prepare.outputs.source_sha }}
+
+      - name: Smoke-test native image and persistent data
+        run: >-
+          ./scripts/smoke-docker-image.sh
+          "${IMAGE_NAME}:sha-${{ needs.prepare.outputs.source_sha }}-${{ matrix.architecture }}"
+
+      - name: Push tested architecture image
+        run: >-
+          docker push
+          "${IMAGE_NAME}:sha-${{ needs.prepare.outputs.source_sha }}-${{ matrix.architecture }}"
+
+  publish-manifest:
+    name: Publish and verify multi-architecture image
+    needs:
+      - prepare
+      - build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.prepare.outputs.source_sha }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Assemble release tags
+        shell: bash
+        env:
+          PRIMARY_TAG: ${{ needs.prepare.outputs.primary_tag }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          sources=(
+            "${IMAGE_NAME}:sha-${SOURCE_SHA}-amd64"
+            "${IMAGE_NAME}:sha-${SOURCE_SHA}-arm64"
+          )
+          tags=(
+            --tag "${IMAGE_NAME}:${PRIMARY_TAG}"
+            --tag "${IMAGE_NAME}:sha-${SOURCE_SHA}"
+          )
+
+          if [[ "${RELEASE_TAG}" == "v${VERSION}" ]]; then
+            IFS=. read -r major minor _patch <<< "${VERSION}"
+            tags+=(
+              --tag "${IMAGE_NAME}:${major}.${minor}"
+              --tag "${IMAGE_NAME}:${major}"
+              --tag "${IMAGE_NAME}:latest"
+            )
+          fi
+
+          docker buildx imagetools create "${tags[@]}" "${sources[@]}"
+
+      - name: Verify remote manifest platforms
+        shell: bash
+        env:
+          PRIMARY_TAG: ${{ needs.prepare.outputs.primary_tag }}
+        run: |
+          set -euo pipefail
+
+          docker buildx imagetools inspect \
+            "${IMAGE_NAME}:${PRIMARY_TAG}" \
+            --raw > "${RUNNER_TEMP}/manifest.json"
+          jq -r \
+            '.manifests[].platform | select(.os == "linux") | "\(.os)/\(.architecture)"' \
+            "${RUNNER_TEMP}/manifest.json" \
+            | sort -u > "${RUNNER_TEMP}/actual-platforms"
+          printf '%s\n' linux/amd64 linux/arm64 \
+            | sort > "${RUNNER_TEMP}/expected-platforms"
+          diff -u "${RUNNER_TEMP}/expected-platforms" "${RUNNER_TEMP}/actual-platforms"
+
+      - name: Pull the published image
+        env:
+          PRIMARY_TAG: ${{ needs.prepare.outputs.primary_tag }}
+        run: docker pull --platform linux/amd64 "${IMAGE_NAME}:${PRIMARY_TAG}"
+
+      - name: Final published-image smoke test
+        env:
+          PRIMARY_TAG: ${{ needs.prepare.outputs.primary_tag }}
+        run: ./scripts/smoke-docker-image.sh "${IMAGE_NAME}:${PRIMARY_TAG}"

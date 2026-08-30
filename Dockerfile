@@ -5,7 +5,7 @@ ARG APP_VERSION=0.1.0
 FROM node:22-bookworm-slim AS frontend-build
 WORKDIR /src/src/frontend/my-novel-builder
 
-COPY VERSION /src/VERSION
+COPY VERSION Dockerfile /src/
 COPY scripts/check-version.mjs /src/scripts/check-version.mjs
 COPY src/frontend/my-novel-builder/package.json \
      src/frontend/my-novel-builder/package-lock.json ./

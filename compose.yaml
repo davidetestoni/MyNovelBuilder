@@ -2,7 +2,7 @@ name: mynovelbuilder
 
 services:
   app:
-    image: davidetestoni/my-novel-builder:latest
+    image: davidetestoni/mynovelbuilder:latest
     ports:
       - "127.0.0.1:5113:8080"
     volumes:

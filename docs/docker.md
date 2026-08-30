@@ -75,7 +75,7 @@ container starts.
 To test the current source instead of pulling the published image:
 
 ```shell
-docker build --tag davidetestoni/my-novel-builder:latest .
+docker build --tag davidetestoni/mynovelbuilder:latest .
 docker compose up -d --pull never
 ```
 
