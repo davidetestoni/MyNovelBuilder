@@ -13,6 +13,7 @@
     <PropertyGroup Condition="'$(ElectronDesktopBuild)' == 'true'">
         <DefineConstants>$(DefineConstants);ELECTRON_DESKTOP</DefineConstants>
         <NuGetLockFilePath>packages.electron.lock.json</NuGetLockFilePath>
+        <RuntimeIdentifiers>win-x64;win-arm64;osx-x64;osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
         <ElectronPackageId>io.github.davidetestoni.mynovelbuilder</ElectronPackageId>
         <ElectronVersion>43.4.1</ElectronVersion>
         <ElectronSingleInstance>true</ElectronSingleInstance>

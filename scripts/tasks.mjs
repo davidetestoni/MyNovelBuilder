@@ -319,8 +319,6 @@ async function packageDesktopApplication(runtime) {
     'restore',
     webApiProject,
     '--locked-mode',
-    '--runtime',
-    runtime,
     ...desktopProperties,
   ], { env: packageEnvironment });
   await run('dotnet', [
@@ -420,8 +418,6 @@ async function runDesktopDevelopment() {
     'restore',
     webApiProject,
     '--locked-mode',
-    '--runtime',
-    runtime,
     ...desktopProperties,
   ]);
   await run('dotnet', [
