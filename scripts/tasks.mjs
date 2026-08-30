@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-import { existsSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
-import { dirname, relative, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { createReadStream, existsSync } from 'node:fs';
+import { rm, writeFile } from 'node:fs/promises';
+import { basename, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 
@@ -216,6 +217,21 @@ function validateDesktopPackageRuntime(runtime) {
   }
 }
 
+async function writeSha256Checksum(filePath) {
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(filePath)) {
+    hash.update(chunk);
+  }
+
+  const checksumPath = `${filePath}.sha256`;
+  await writeFile(
+    checksumPath,
+    `${hash.digest('hex')}  ${basename(filePath)}\n`,
+    'utf8',
+  );
+  return checksumPath;
+}
+
 async function testApplication() {
   await restoreDependencies();
   await run('node', ['--test', desktopShellTest]);
@@ -335,6 +351,11 @@ async function packageDesktopApplication(runtime) {
     );
   }
 
+  const checksumFiles = [];
+  for (const file of expectedPackages) {
+    checksumFiles.push(await writeSha256Checksum(resolve(outputDirectory, file)));
+  }
+
   const unpackedDirectory = runtime.startsWith('win-')
     ? `${runtime === 'win-arm64' ? 'win-arm64' : 'win'}-unpacked`
     : runtime.startsWith('osx-')
@@ -354,7 +375,10 @@ async function packageDesktopApplication(runtime) {
   );
 
   console.log(`\nDesktop packages: ${displayPath(outputDirectory)}`);
-  for (const file of expectedPackages) {
+  for (const file of [
+    ...expectedPackages,
+    ...checksumFiles.map((checksum) => basename(checksum)),
+  ]) {
     console.log(`  ${file}`);
   }
 }
