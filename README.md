@@ -24,3 +24,9 @@ volume and survive container replacement and upgrades.
 
 See the [Docker guide](docs/docker.md) for updates, local image builds,
 persistent-data details, and connecting to TTS servers running on the host.
+
+## Release history
+
+See the [changelog](CHANGELOG.md) for user-visible changes. Maintainer-facing
+versioning and release conventions are documented in the
+[release guide](docs/releases.md).
