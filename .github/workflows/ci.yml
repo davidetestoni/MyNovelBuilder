@@ -96,3 +96,28 @@ jobs:
 
       - name: Publish and smoke-test combined application
         run: ./scripts/smoke-published-web.sh
+
+  docker:
+    name: Docker image smoke test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build production image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="$(tr -d '[:space:]' < VERSION)"
+          docker build \
+            --build-arg "APP_VERSION=${version}" \
+            --build-arg "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --build-arg "VCS_REF=${GITHUB_SHA}" \
+            --tag "mynovelbuilder:ci-${GITHUB_SHA}" \
+            .
+
+      - name: Verify startup and persistent data
+        run: ./scripts/smoke-docker-image.sh "mynovelbuilder:ci-${GITHUB_SHA}"
