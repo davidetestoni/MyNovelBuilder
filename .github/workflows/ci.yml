@@ -119,5 +119,8 @@ jobs:
             --tag "mynovelbuilder:ci-${GITHUB_SHA}" \
             .
 
+      - name: Scan final image contents
+        run: ./scripts/verify-release-image.sh "mynovelbuilder:ci-${GITHUB_SHA}"
+
       - name: Verify startup and persistent data
         run: ./scripts/smoke-docker-image.sh "mynovelbuilder:ci-${GITHUB_SHA}"

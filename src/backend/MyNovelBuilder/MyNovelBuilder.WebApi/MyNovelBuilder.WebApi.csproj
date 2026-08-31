@@ -72,6 +72,9 @@
       <None Remove="Properties\electron-builder.json" />
       <Content Remove="Desktop\electron-custom-main.cjs" />
       <None Remove="Desktop\electron-custom-main.cjs" />
+      <Content Update="appsettings.Development.json">
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      </Content>
       <Content Include="Desktop\electron-custom-main.cjs"
                Condition="'$(ElectronDesktopBuild)' == 'true'">
         <TargetPath>.electron/custom_main.js</TargetPath>
