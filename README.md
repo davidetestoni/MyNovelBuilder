@@ -1,6 +1,12 @@
-# MyNovelBuilder
+<p align="center">
+  <img src="src/frontend/my-novel-builder/src/assets/images/logo/mnb_logo.svg" width="112" alt="MyNovelBuilder logo">
+</p>
 
-An AI-powered workspace for novelists to write prose, build worlds, and brainstorm.
+<h1 align="center">MyNovelBuilder</h1>
+
+<p align="center">
+  An AI-powered workspace for novelists to write prose, build worlds, and brainstorm.
+</p>
 
 ## Features
 
@@ -10,6 +16,15 @@ An AI-powered workspace for novelists to write prose, build worlds, and brainsto
 - **Generative Tools**: Built-in support for text generation, AI image creation, and TTS for prose playback.
 - **Prompt Library**: Save and manage prompts for consistent creative assistance.
 - **Integrations**: Centralized management for AI providers and API keys.
+
+## Screenshots
+
+<p align="center">
+  <a href="docs/assets/screenshots/writing-and-ai.png"><img src="docs/assets/screenshots/writing-and-ai.png" width="49%" alt="Novel library, novel creation, AI prompt preview, and writing assistant chat"></a>
+  <a href="docs/assets/screenshots/worldbuilding-and-setup.png"><img src="docs/assets/screenshots/worldbuilding-and-setup.png" width="49%" alt="Compendium, prompt library, integrations, and AI world builder"></a>
+</p>
+
+<p align="center"><sub>Writing and AI, plus worldbuilding and setup. Click either image to inspect it at full resolution.</sub></p>
 
 ## Documentation
 
