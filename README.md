@@ -5,26 +5,58 @@
 <h1 align="center">MyNovelBuilder</h1>
 
 <p align="center">
-  An AI-powered workspace for novelists to write prose, build worlds, and brainstorm.
+  A place to write a novel, keep its reference material close, and bring in AI when it is useful.
 </p>
 
-## Features
+MyNovelBuilder is the writing program I wanted for myself. It keeps the
+manuscript, story structure, notes, prompts, chats, and generated media in one
+local workspace. There is no hosted service or bundled AI subscription. You
+can write and organize a novel without an API key, then connect your own
+providers or local servers for the optional AI features.
 
-- **Prose Editor**: A clean writing environment with integrated image support.
-- **Compendia**: Structured world-building for characters, locations, and lore.
-- **AI Chat**: Dedicated brainstorming interface using OpenRouter.
-- **Generative Tools**: Built-in support for text generation, AI image creation, and TTS for prose playback.
-- **Prompt Library**: Save and manage prompts for consistent creative assistance.
-- **Integrations**: Centralized management for AI providers and API keys.
+This is a beta passion project built around my own writing workflow. Keep
+backups of work you care about. Suggestions are welcome, but feature requests
+and pull requests will be evaluated against the direction of the project.
+
+## Download
+
+[Download the latest release](https://github.com/davidetestoni/MyNovelBuilder/releases/latest)
+
+Desktop packages are available for Windows, macOS, and Linux on x64 and arm64.
+They are not code-signed, so your operating system may warn you before running
+them. The releases page will remain empty until the first public release is
+published.
+
+Docker and source installation instructions are available in the
+[documentation](docs/index.md).
+
+## What it does
+
+A manuscript is split into chapters and sections. You can write in the prose
+editor, rearrange the book on a planning board, keep section summaries, and
+track story events alongside the draft. Finished work can be exported as
+Markdown, HTML, or PDF.
+
+Reference material lives in reusable compendia. Characters, places, objects,
+events, concepts, and other records can be attached to a novel and included in
+AI requests when they are relevant. Record overrides let those details change
+at a particular point in the story without rewriting the original record.
+
+AI is optional and uses your own provider credentials. It can help draft or
+revise prose, summarize sections, discuss the manuscript in a context-aware
+chat, propose world-building records for review, generate images or video, and
+read prose aloud. Prompts are visible and editable, and prompt previews show
+what context will be sent before a request is made.
 
 ## Screenshots
 
-<p align="center">
-  <a href="docs/assets/screenshots/writing-and-ai.png"><img src="docs/assets/screenshots/writing-and-ai.png" width="49%" alt="Novel library, novel creation, AI prompt preview, and writing assistant chat"></a>
-  <a href="docs/assets/screenshots/worldbuilding-and-setup.png"><img src="docs/assets/screenshots/worldbuilding-and-setup.png" width="49%" alt="Compendium, prompt library, integrations, and AI world builder"></a>
-</p>
+[![Novel library, novel creation, AI prompt preview, and writing assistant chat](docs/assets/screenshots/writing-and-ai.png)](docs/assets/screenshots/writing-and-ai.png)
 
-<p align="center"><sub>Writing and AI, plus worldbuilding and setup. Click either image to inspect it at full resolution.</sub></p>
+*Writing and AI. Click the image to inspect it at full resolution.*
+
+[![Compendium, prompt library, integrations, and AI world builder](docs/assets/screenshots/worldbuilding-and-setup.png)](docs/assets/screenshots/worldbuilding-and-setup.png)
+
+*Worldbuilding and setup. Click the image to inspect it at full resolution.*
 
 ## Documentation
 
@@ -83,3 +115,9 @@ On Ubuntu systems that restrict unprivileged user namespaces, prefer the DEB:
 its installation configures Chromium's setuid sandbox. The portable AppImage
 requires user namespaces on those systems; the application does not silently
 disable its sandbox.
+
+## License
+
+MyNovelBuilder is released under the
+[GNU General Public License v3.0 only](LICENSE). Third-party libraries and
+assets remain subject to their own licenses.
