@@ -11,6 +11,12 @@ An AI-powered workspace for novelists to write prose, build worlds, and brainsto
 - **Prompt Library**: Save and manage prompts for consistent creative assistance.
 - **Integrations**: Centralized management for AI providers and API keys.
 
+## Documentation
+
+Start with the [documentation hub](docs/index.md) to choose between Docker and
+a source checkout. The [developer setup guide](docs/development.md) covers a
+clean clone, isolated development data, tests, and production-style publishing.
+
 ## Run with Docker
 
 From a directory containing `compose.yaml`:
