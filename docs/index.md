@@ -18,6 +18,16 @@ Feature requests and contributions will be considered, but acceptance is not gua
 
 Desktop packages are unsigned.
 
+## Use the application
+
+- [First run](getting-started.md): understand the sample novel and take a
+  short tour without configuring an AI provider.
+- [Writing workflow](features/writing.md): create a novel, write and organize
+  prose, plan story events, use RPG mode, and import or export a manuscript.
+- [Compendia and AI tools](features/context-and-ai.md): manage reusable story
+  context, customize prompts, chat about a novel, and review world-building
+  proposals.
+
 ## Data and privacy at a glance
 
 Novel data, media, prompts, chats, voices, and integration settings remain in
