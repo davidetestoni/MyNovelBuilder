@@ -1,0 +1,56 @@
+name: Feature request
+description: Discuss a proposed change before investing time in a pull request
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please discuss a proposed change here before creating a pull request.
+
+        MyNovelBuilder is a passion project built first and foremost around my own writing workflow, preferences, and creative direction. Feature requests are welcome for consideration, but acceptance is not guaranteed. I will evaluate proposals for fit with the project's direction, scope, user experience, and ongoing maintenance burden.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or workflow
+      description: What writing problem would this solve? Concrete examples are more useful than a feature name alone.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe how you think it should work from a user's perspective.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Explain any existing workflow or smaller solution you considered.
+
+  - type: textarea
+    id: project-fit
+    attributes:
+      label: Fit with MyNovelBuilder
+      description: Why does this belong in the core application rather than a provider, external tool, or modified deployment?
+    validations:
+      required: true
+
+  - type: textarea
+    id: maintenance
+    attributes:
+      label: Maintenance considerations
+      description: Note new dependencies, provider-specific behavior, platform differences, migrations, or ongoing maintenance you anticipate.
+
+  - type: checkboxes
+    id: discussion-first
+    attributes:
+      label: Pull-request expectations
+      options:
+        - label: I understand that approval of the idea and approach should happen in this issue before I create a pull request.
+          required: true
+        - label: I understand that a feature request may be declined even if I am willing to implement it.
+          required: true
