@@ -28,8 +28,7 @@ later release.
 
 Desktop packages are available for Windows, macOS, and Linux on x64 and arm64.
 They are not code-signed, so your operating system may warn you before running
-them. The releases page will remain empty until the first public release is
-published.
+them.
 
 See the [desktop installation guide](docs/desktop.md) for choosing the correct
 package and handling unsigned-application warnings. Docker and source
