@@ -62,6 +62,10 @@ what context will be sent before a request is made.
 
 *Worldbuilding and setup. Click the image to inspect it at full resolution.*
 
+[![Prose editor, story events, chapter plan, and novel settings](docs/assets/screenshots/drafting-and-planning.png)](docs/assets/screenshots/drafting-and-planning.png)
+
+*Drafting and planning. Click the image to inspect it at full resolution.*
+
 ## Documentation
 
 Start with the [documentation hub](docs/index.md) to choose between Docker and
