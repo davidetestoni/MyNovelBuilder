@@ -63,13 +63,6 @@ const primeNgTheme = definePreset(Nora, {
       900: '{stone.900}',
       950: '{stone.950}',
     },
-    colorScheme: {
-      dark: {
-        formField: {
-          background: '{surface.800}',
-        },
-      },
-    },
   },
 });
 

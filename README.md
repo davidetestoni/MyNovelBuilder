@@ -18,6 +18,10 @@ This is a beta passion project built around my own writing workflow. Keep
 backups of work you care about. Suggestions are welcome, but feature requests
 and pull requests will be evaluated against the direction of the project.
 
+The frontend currently targets desktop-sized windows. It is not yet responsive
+and will not look good on narrow screens. Responsive layouts are planned for a
+later release.
+
 ## Download
 
 [Download the latest release](https://github.com/davidetestoni/MyNovelBuilder/releases/latest)
