@@ -1,0 +1,75 @@
+<div class="header">
+  <a class="logo" [routerLink]="['/']">
+    <img
+      src="../../../assets/images/logo/mnb_logo.svg"
+      alt="My Novel Builder Logo"
+    />
+    <div class="logo-text">My Novel Builder</div>
+  </a>
+  <a
+    class="version-badge"
+    [routerLink]="['/about']"
+    title="About this version"
+  >
+    v{{ version }} {{ releaseLabel }}
+  </a>
+  <nav class="navigation">
+    <a
+      class="nav-item"
+      [routerLink]="['/novels']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-novels"></i>
+      <span>Novels</span>
+    </a>
+    <a
+      class="nav-item"
+      [routerLink]="['/chat']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-chats"></i>
+      <span>Chat</span>
+    </a>
+
+    <a
+      class="nav-item"
+      [routerLink]="['/world-builder']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-world"></i>
+      <span>World Builder</span>
+    </a>
+    <a
+      class="nav-item"
+      [routerLink]="['/compendia']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-compendium"></i>
+      <span>Compendia</span>
+    </a>
+    <a
+      class="nav-item"
+      [routerLink]="['/prompts']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-prompt"></i>
+      <span>Prompts</span>
+    </a>
+    <a
+      class="nav-item"
+      [routerLink]="['/media-library']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-media"></i>
+      <span>Media</span>
+    </a>
+    <a
+      class="nav-item"
+      [routerLink]="['/integrations']"
+      [routerLinkActive]="['active']"
+    >
+      <i class="icon icon-integration"></i>
+      <span>Integrations</span>
+    </a>
+  </nav>
+</div>

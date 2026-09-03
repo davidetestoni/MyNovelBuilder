@@ -1,0 +1,66 @@
+<p-confirmDialog></p-confirmDialog>
+
+<div class="chats-container">
+  @if (chats === null) {
+    <p>Loading...</p>
+  } @else {
+    <div class="chats-sidebar">
+      <div class="chats-list">
+        <div class="add-chat-card" (click)="openCreateChatDialog()">
+          <i class="icon icon-plus"></i>
+          <span>New Chat</span>
+        </div>
+        @for (chat of chats; track chat.id) {
+          <div
+            class="chat-item"
+            [class.selected]="chat.id === currentChatId"
+            (click)="selectChat(chat.id)"
+          >
+            <div class="chat-item-image">
+              @if (getChatNovelCover(chat); as novelCover) {
+                <img
+                  class="chat-image"
+                  [src]="novelCover"
+                  [alt]="(chat.name ?? 'Chat') + ' novel cover'"
+                />
+              } @else {
+                <div class="no-image">
+                  <i class="icon icon-ai"></i>
+                </div>
+              }
+            </div>
+            <div class="chat-item-content">
+              <div class="chat-item-name">
+                {{ chat.name ?? "New chat" }}
+              </div>
+              <div class="chat-item-date">
+                {{ getLastUpdated(chat) }}
+              </div>
+            </div>
+            <button
+              class="delete-btn"
+              (click)="$event.stopPropagation(); deleteChat(chat.id)"
+              pTooltip="Delete chat"
+              tooltipPosition="top"
+            >
+              <i class="pi pi-trash"></i>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+    <div class="chat-content-area">
+      @if (currentChat !== null) {
+        <app-chat
+          [currentChatId]="currentChatId!"
+          [currentChat]="currentChat"
+          (onChatUpdated)="updateLocalChatMetadata()"
+        ></app-chat>
+      } @else {
+        <div class="empty-state">
+          <p>Please select a chat to view its contents.</p>
+        </div>
+      }
+    </div>
+  }
+</div>

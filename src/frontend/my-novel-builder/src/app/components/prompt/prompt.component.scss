@@ -1,0 +1,128 @@
+@use "../../../styles/colors" as *;
+
+.prompt-container {
+  padding: 0px 20px;
+
+  .prompt-editor {
+    display: flex;
+    flex-direction: row;
+
+    .prompt {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+
+      .prompt-name {
+        width: 300px;
+
+        .label {
+          color: $grey13;
+          margin-bottom: 5px;
+        }
+
+        input {
+          width: 100%;
+        }
+      }
+
+      .prompt-type {
+        margin-top: 20px;
+
+        .label {
+          color: $grey13;
+          margin-bottom: 5px;
+        }
+      }
+
+      .prompt-keywords {
+        margin-top: 20px;
+
+        .label {
+          color: $grey13;
+          margin-bottom: 5px;
+        }
+
+        .keywords-list {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          padding: 10px;
+          background-color: $grey2;
+          border-radius: 5px;
+
+          .keyword-item {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+
+            .keyword {
+              font-family: monospace;
+              color: $grey13;
+              font-weight: bold;
+              min-width: 200px;
+            }
+
+            .description {
+              color: $grey8;
+              font-size: 0.9em;
+            }
+          }
+        }
+      }
+    }
+
+    .prompt-messages-title {
+      margin-top: 20px;
+    }
+
+    .prompt-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      .prompt-message {
+        width: 100%;
+
+        .label {
+          color: $grey13;
+          margin-bottom: 5px;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 5px;
+
+          i {
+            width: 15px;
+            height: 15px;
+            filter: $grey5filter;
+            cursor: pointer;
+          }
+        }
+
+        app-code-editor {
+          height: 200px;
+          width: 100%;
+        }
+      }
+    }
+
+    .prompt-actions-container {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+
+      .prompt-actions {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+      }
+
+      .prompt-messages-actions {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+      }
+    }
+  }
+}

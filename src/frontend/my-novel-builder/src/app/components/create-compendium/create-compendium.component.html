@@ -1,0 +1,61 @@
+<div class="compendium-container">
+  <div class="compendium-editor">
+    <form [formGroup]="formGroup" class="compendium-form">
+      <!-- Name Field -->
+      <div class="compendium-name">
+        <label class="label" for="name">
+          <span>Name *</span>
+        </label>
+        <input
+          pInputText
+          id="name"
+          type="text"
+          formControlName="name"
+          placeholder="My new compendium"
+          class="w-full"
+        />
+      </div>
+
+      <!-- Description Field -->
+      <div class="compendium-context">
+        <label class="label" for="description">
+          <span>Description</span>
+        </label>
+        <textarea
+          pTextarea
+          id="description"
+          formControlName="description"
+          placeholder="This compendium contains information regarding..."
+          [autoResize]="true"
+          rows="5"
+          class="w-full"
+        ></textarea>
+      </div>
+
+      <!-- Action Buttons -->
+      <div
+        class="compendium-actions"
+        style="
+          margin-top: 2rem;
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+        "
+      >
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          (click)="cancel()"
+        />
+        <p-button
+          label="Create"
+          (click)="createCompendium()"
+          [disabled]="
+            formGroup.invalid || formGroup.pristine || isCreating
+          "
+        />
+      </div>
+    </form>
+  </div>
+</div>

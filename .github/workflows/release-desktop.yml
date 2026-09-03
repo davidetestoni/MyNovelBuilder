@@ -1,0 +1,224 @@
+name: Desktop release draft
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Leave blank for an isolated v0.1.0-preview.<run> draft
+        required: false
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ github.workflow }}-${{ github.ref }}-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  prepare:
+    name: Create draft release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      release_tag: ${{ steps.release.outputs.release_tag }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Validate version and create draft
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          version="$(tr -d '[:space:]' < VERSION)"
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            release_tag="${GITHUB_REF_NAME}"
+          elif [[ -n "${REQUESTED_TAG}" ]]; then
+            release_tag="${REQUESTED_TAG}"
+          else
+            release_tag="v${version}-preview.${GITHUB_RUN_NUMBER}"
+          fi
+
+          if [[ ! "${release_tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid SemVer release tag: ${release_tag}" >&2
+            exit 1
+          fi
+          if [[ "${release_tag#v}" != "${version}" && "${release_tag#v}" != "${version}-"* ]]; then
+            echo "Release tag ${release_tag} does not match VERSION ${version}." >&2
+            exit 1
+          fi
+
+          if [[ "${release_tag}" == "v${version}" ]]; then
+            git fetch origin main
+            if [[ "$(git rev-parse origin/main)" != "${GITHUB_SHA}" ]]; then
+              echo "The final ${release_tag} draft must target the current main commit." >&2
+              exit 1
+            fi
+          fi
+
+          if git show-ref --tags --verify --quiet "refs/tags/${release_tag}"; then
+            tag_commit="$(git rev-list -n 1 "${release_tag}")"
+            if [[ "${tag_commit}" != "${GITHUB_SHA}" ]]; then
+              echo "Tag ${release_tag} already points to ${tag_commit}, not ${GITHUB_SHA}." >&2
+              exit 1
+            fi
+          fi
+
+          echo "release_tag=${release_tag}" >> "${GITHUB_OUTPUT}"
+
+          if gh release view "${release_tag}" \
+            --json isDraft \
+            --jq '.isDraft' > "${RUNNER_TEMP}/existing-draft" 2>/dev/null; then
+            if [[ "$(< "${RUNNER_TEMP}/existing-draft")" != "true" ]]; then
+              echo "Release ${release_tag} already exists and is not a draft." >&2
+              exit 1
+            fi
+            echo "Reusing existing draft release ${release_tag}."
+            exit 0
+          fi
+
+          printf '%s\n' \
+            "Automated unsigned desktop-package preview for MyNovelBuilder ${version} Beta." \
+            "" \
+            "Source commit: ${GITHUB_SHA}" \
+            "" \
+            "This is a draft for validation only. Do not publish it until all platform smoke tests and release documentation are complete." \
+            > "${RUNNER_TEMP}/desktop-release-notes.md"
+
+          gh release create "${release_tag}" \
+            --draft \
+            --latest=false \
+            --target "${GITHUB_SHA}" \
+            --title "MyNovelBuilder ${version} Beta (${release_tag})" \
+            --notes-file "${RUNNER_TEMP}/desktop-release-notes.md"
+
+  package:
+    name: Package ${{ matrix.rid }}
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            runner: ubuntu-24.04
+          - rid: linux-arm64
+            runner: ubuntu-24.04-arm
+          - rid: win-x64
+            runner: windows-2025
+          - rid: win-arm64
+            runner: windows-11-arm
+          - rid: osx-x64
+            runner: macos-15-intel
+          - rid: osx-arm64
+            runner: macos-15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Build unsigned desktop packages
+        run: node scripts/tasks.mjs package-desktop ${{ matrix.rid }}
+
+      - name: Upload packages directly to draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+          RID: ${{ matrix.rid }}
+        run: >-
+          gh release upload "${RELEASE_TAG}"
+          artifacts/desktop/packages/${RID}/*
+          --clobber
+
+  verify:
+    name: Verify draft assets
+    needs:
+      - prepare
+      - package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: >-
+          gh release download "${RELEASE_TAG}"
+          --dir release-assets
+
+      - name: Verify complete asset set
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          printf '%s\n' \
+            MyNovelBuilder-Windows-x64-Setup.exe \
+            MyNovelBuilder-Windows-x64-Setup.exe.sha256 \
+            MyNovelBuilder-Windows-arm64-Setup.exe \
+            MyNovelBuilder-Windows-arm64-Setup.exe.sha256 \
+            MyNovelBuilder-macOS-x64.dmg \
+            MyNovelBuilder-macOS-x64.dmg.sha256 \
+            MyNovelBuilder-macOS-arm64.dmg \
+            MyNovelBuilder-macOS-arm64.dmg.sha256 \
+            MyNovelBuilder-Linux-x64.AppImage \
+            MyNovelBuilder-Linux-x64.AppImage.sha256 \
+            MyNovelBuilder-Linux-x64.deb \
+            MyNovelBuilder-Linux-x64.deb.sha256 \
+            MyNovelBuilder-Linux-arm64.AppImage \
+            MyNovelBuilder-Linux-arm64.AppImage.sha256 \
+            MyNovelBuilder-Linux-arm64.deb \
+            MyNovelBuilder-Linux-arm64.deb.sha256 \
+            | sort > "${RUNNER_TEMP}/expected-assets"
+
+          find release-assets -maxdepth 1 -type f -printf '%f\n' \
+            | sort > "${RUNNER_TEMP}/actual-assets"
+          diff -u "${RUNNER_TEMP}/expected-assets" "${RUNNER_TEMP}/actual-assets"
+
+      - name: Verify SHA-256 checksums
+        working-directory: release-assets
+        run: sha256sum --check *.sha256
+
+      - name: Report draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
+        run: >-
+          gh release view "${RELEASE_TAG}"
+          --json name,tagName,isDraft,url,assets

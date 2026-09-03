@@ -1,0 +1,111 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="chapter" class="form-field-label">Chapter</label>
+        <p-select
+          id="chapter"
+          formControlName="chapterIndex"
+          [options]="data.chapters"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="promptId" class="form-field-label">Prompt *</label>
+        <app-prompt-select
+          id="promptId"
+          formControlName="promptId"
+          [prompts]="data.prompts"
+          [promptType]="PromptType.CreateStoryEvents"
+          [storagePromptType]="PromptType.CreateStoryEvents"
+          (optionsChanged)="onPromptOptionsChanged($event)"
+          placeholder="Select a prompt"
+          width="100%"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="model" class="form-field-label">Model *</label>
+        <app-model-select
+          id="model"
+          formControlName="model"
+          capability="structuredOutput"
+          placeholder="Select a model"
+          width="100%"
+        />
+        <small class="model-help-text">
+          Only models that support structured outputs are shown.
+        </small>
+      </div>
+
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <p-button
+            label="Preview"
+            variant="text"
+            (click)="previewPrompt()"
+            [disabled]="formGroup.invalid || isGenerating || promptCount === 0"
+          />
+          <p-button
+            label="Generate"
+            variant="text"
+            (click)="generate()"
+            [disabled]="formGroup.invalid || isGenerating || promptCount === 0"
+          />
+          @if (generatedPreviews.length > 0) {
+            <p-button
+              label="Accept"
+              (click)="accept()"
+              [disabled]="!canAccept"
+            />
+          }
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+@if (isGenerating) {
+  <div class="generation-status">Generating story events...</div>
+}
+
+@if (generationError) {
+  <div class="generation-error">{{ generationError }}</div>
+}
+
+@if (generatedPreviews.length > 0) {
+  <div class="generated-results">
+    @for (preview of generatedPreviews; track preview.chapterIndex) {
+      <div class="generated-chapter">
+        <div class="generated-chapter-title">{{ preview.chapterTitle }}</div>
+
+        @if (preview.error) {
+          <div class="generation-error">{{ preview.error }}</div>
+          @if (preview.rawOutput) {
+            <pre class="generation-raw-output">{{ preview.rawOutput }}</pre>
+          }
+        } @else {
+          <div class="story-event-grid">
+            @for (event of preview.storyEvents; track $index) {
+              <div class="story-event-card">
+                <div class="story-event-card-header">
+                  <div class="story-event-title">{{ event.title }}</div>
+                  @if (event.date) {
+                    <div class="story-event-date">{{ event.date }}</div>
+                  }
+                </div>
+                <div class="story-event-description">
+                  {{ event.description }}
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+}

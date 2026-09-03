@@ -1,0 +1,240 @@
+<div id="prose-editor">
+  <div class="chapters">
+    @for (chapter of prose.chapters; let chapterIndex = $index; track chapter) {
+      @if (
+        selectedChapterIndex === null || selectedChapterIndex === chapterIndex
+      ) {
+        <div class="chapter">
+          <div class="chapter-heading">
+            @let chapterWordCount = getChapterWordCount(chapter);
+            @let chapterReadingTimeMinutes = getReadingTimeMinutes(chapterWordCount);
+            <div class="chapter-heading-main">
+              <div class="chapter-meta chapter-index">CHAPTER {{ chapterIndex + 1 }}</div>
+              <h2
+                contenteditable="true"
+                (keydown)="preventReturnKey($event)"
+                (blur)="updateChapterTitle(chapterIndex, $event)"
+                spellcheck="false"
+              >
+                {{ chapter.title }}
+              </h2>
+              <div class="chapter-meta chapter-sections">
+                {{ chapter.sections.length }}
+                {{ chapter.sections.length === 1 ? 'SECTION' : 'SECTIONS' }}
+                <span class="chapter-meta-separator">•</span>
+                {{ chapterWordCount | number }}
+                {{ chapterWordCount === 1 ? 'WORD' : 'WORDS' }}
+                <span class="chapter-meta-separator">•</span>
+                {{ chapterReadingTimeMinutes }}
+                {{ chapterReadingTimeMinutes === 1 ? 'MIN' : 'MINS' }}
+                READ
+              </div>
+            </div>
+            <div class="remove-chapter-button-placeholder"></div>
+            <i
+              class="icon icon-close"
+              (click)="removeChapter(chapterIndex)"
+            ></i>
+          </div>
+          <div class="sections">
+            @for (
+              section of chapter.sections;
+              let sectionIndex = $index;
+              track section
+            ) {
+              <div class="section">
+                <div class="section-body">
+                  <div class="section-text">
+                    <quill-editor
+                      [styles]="{
+                        width: '100%',
+                        textIndent: '3rem',
+                        fontSize: '1.2rem',
+                        fontWeight: '300',
+                        fontFamily: 'Source Serif 4, sans-serif',
+                        letterSpacing: '0.05rem',
+                      }"
+                      (onEditorCreated)="editorInit($event, chapterIndex, sectionIndex)"
+                      (onEditorChanged)="
+                        editorChange($event, chapterIndex, sectionIndex)
+                      "
+                      (onBlur)="updateSectionText(section, $event)"
+                      [ngModel]="normalizeQuillHtmlWhitespace(section.text)"
+                      spellcheck="false"
+                    ></quill-editor>
+                  </div>
+                  <div class="section-images-grid">
+                    @for (
+                      image of chapter.sections[sectionIndex].images;
+                      track image
+                    ) {
+                      <div class="section-image">
+                        <img
+                          [src]="getImageUrl(image)"
+                          alt="Section Image"
+                          (click)="proseImageClicked.emit(getImageUrl(image))"
+                        />
+                        <i
+                          class="section-image-remove icon icon-close"
+                          (click)="
+                            removeProseImage(chapterIndex, sectionIndex, image)
+                          "
+                        ></i>
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="section-summary">
+                  <div class="section-summary-title">
+                    <span>SUMMARY</span>
+                  </div>
+                  <div
+                    class="section-summary-content"
+                    contenteditable="true"
+                    spellcheck="false"
+                    (keydown)="preventReturnKey($event)"
+                    (blur)="updateSectionSummary(section, $event)"
+                  >
+                    <div>
+                      {{ section.summary }}
+                    </div>
+                  </div>
+                  <div class="section-actions">
+                    <div class="section-action">
+                      <i
+                        pTooltip="Generate Summary"
+                        tooltipPosition="bottom"
+                        class="icon icon-ai"
+                        (click)="
+                          openGenerateSectionSummaryDialog(
+                            chapterIndex,
+                            sectionIndex
+                          )
+                        "
+                      ></i>
+                    </div>
+                    <div class="section-action">
+                      <i
+                        pTooltip="Text to Speech"
+                        tooltipPosition="bottom"
+                        class="icon icon-headphones"
+                        (click)="textToSpeech(chapterIndex, sectionIndex)"
+                      ></i>
+                    </div>
+                    <div class="section-action">
+                      <i
+                        pTooltip="Add Image"
+                        tooltipPosition="bottom"
+                        class="pi pi-image"
+                        (click)="addProseImage(chapterIndex, sectionIndex)"
+                      ></i>
+                    </div>
+                    <div
+                      class="section-action"
+                      [class.has-overrides]="
+                        (section.recordOverrides.length || 0) > 0
+                      "
+                    >
+                      <i
+                        [pTooltip]="
+                          (section.recordOverrides.length || 0) > 0
+                            ? section.recordOverrides.length +
+                              ' Record Override' +
+                              (section.recordOverrides.length === 1 ? '' : 's')
+                            : 'Record Overrides'
+                        "
+                        tooltipPosition="bottom"
+                        class="pi pi-tags"
+                        (click)="
+                          openRecordOverridesDialog(chapterIndex, sectionIndex)
+                        "
+                      ></i>
+                    </div>
+                    <div class="section-action">
+                      <i
+                        pTooltip="Remove Section"
+                        tooltipPosition="bottom"
+                        class="icon icon-close"
+                        (click)="removeSection(chapterIndex, sectionIndex)"
+                      ></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+            <!-- Fake section for padding -->
+            <div class="add-section-card-wrapper">
+              <div class="add-block-card" (click)="addSection(chapterIndex)">
+                <i class="icon icon-plus"></i>
+                <span>Add Section</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    }
+    @if (selectedChapterIndex === null) {
+      <div class="add-chapter-card-wrapper">
+        <div class="add-block-card" (click)="addChapter()">
+          <i class="icon icon-plus"></i>
+          <span>Add Chapter</span>
+        </div>
+      </div>
+    }
+  </div>
+  <app-prose-rpg-panel
+    #rpgPanel
+    [visible]="rpgMode"
+    [prompts]="prompts"
+    [isGenerating]="isRpgGenerating"
+    [isLastChapterSelected]="
+      selectedChapterIndex === null ||
+      selectedChapterIndex === prose.chapters.length - 1
+    "
+    (promptSubmitted)="sendRpgPrompt($event, rpgPanel)"
+    (promptPreviewed)="previewRpgPrompt($event)"
+  />
+  @if (showEditorControls) {
+    <div
+      class="tooltip-controls"
+      [ngStyle]="{
+        left: editorControlsPosition.x + 'px',
+        top: editorControlsPosition.y + 'px',
+      }"
+    >
+      <div class="tooltip-control" (mousedown)="openGenerateTextDialog()">
+        <i class="icon icon-ai"> </i>
+        <span>Generate</span>
+      </div>
+      @if (lastSelection != null && lastSelection.range.length === 0) {
+        <div
+          pTooltip="Suggestions"
+          tooltipPosition="bottom"
+          class="tooltip-control icon-only"
+          (mousedown)="openGenerateStorySuggestionsDialog()"
+        >
+          <i class="pi pi-lightbulb"> </i>
+        </div>
+      }
+      @if (lastSelection != null && lastSelection.range.length > 0) {
+        <div
+          pTooltip="Replace"
+          tooltipPosition="bottom"
+          class="tooltip-control"
+          (mousedown)="openReplaceTextDialog()"
+        >
+          <i class="pi pi-refresh"> </i>
+        </div>
+        <div
+          pTooltip="New record"
+          tooltipPosition="bottom"
+          class="tooltip-control"
+          (mousedown)="openCreateCompendiumRecordDialog()"
+        >
+          <i class="pi pi-user-plus"> </i>
+        </div>
+      }
+    </div>
+  }
+</div>
+<p-confirmdialog />

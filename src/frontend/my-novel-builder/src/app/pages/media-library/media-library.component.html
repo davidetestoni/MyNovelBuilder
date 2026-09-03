@@ -1,0 +1,96 @@
+<div class="media-library-page">
+  <p-confirmdialog />
+
+  <div class="media-library-header">
+    <h1>Media</h1>
+  </div>
+
+  <section class="folder-toolbar">
+    <div class="folder-toolbar-title">Linked Folders</div>
+
+    <div class="folder-toolbar-controls">
+      @if (folders === null) {
+        <span class="folder-toolbar-status">Loading folders...</span>
+      } @else {
+        <p-select
+          [(ngModel)]="selectedFolderId"
+          [options]="folderOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select a linked folder"
+          [disabled]="folders.length === 0"
+          [style]="{ width: '100%' }"
+          (ngModelChange)="selectFolder($event)"
+        >
+          <ng-template let-selectedOption pTemplate="selectedItem">
+            @if (selectedOption) {
+              <div class="folder-select-line">
+                <span class="folder-select-name">{{ selectedOption.label }}</span>
+                <span class="folder-select-path">({{ selectedOption.path }})</span>
+              </div>
+            } @else {
+              <span>Select a linked folder</span>
+            }
+          </ng-template>
+
+          <ng-template let-option pTemplate="item">
+            <div class="folder-select-line">
+              <span class="folder-select-name">{{ option.label }}</span>
+              <span class="folder-select-path">({{ option.path }})</span>
+            </div>
+          </ng-template>
+        </p-select>
+
+        <p-button
+          label="Add"
+          severity="secondary"
+          [loading]="creatingFolder"
+          (onClick)="openAddFolderDialog()"
+        />
+
+        <p-button
+          icon="pi pi-trash"
+          [text]="true"
+          [rounded]="true"
+          [disabled]="selectedFolder === null"
+          (onClick)="confirmDeleteSelectedFolder()"
+        />
+
+        @if (folders.length === 0) {
+          <span class="folder-toolbar-status">No media folders linked yet.</span>
+        }
+      }
+    </div>
+  </section>
+
+  <div class="media-library-layout-toggle">
+    <p-selectbutton
+      [(ngModel)]="selectedLayout"
+      [options]="layoutOptions"
+      optionLabel="label"
+      optionValue="value"
+      ariaLabel="Media library layout"
+    />
+  </div>
+
+  <section
+    class="media-panel"
+    [class.media-panel-two-column]="isMediaGenerationStudioVisible && selectedFolder !== null"
+  >
+    <div class="media-panel-content">
+      <app-media-folder
+        [folder]="selectedFolder"
+        [refreshVersion]="mediaFolderRefreshVersion"
+      />
+    </div>
+
+    @if (isMediaGenerationStudioVisible && selectedFolder !== null) {
+      <div class="media-panel-content media-panel-studio">
+        <app-media-generation-studio
+          [folder]="selectedFolder"
+          (mediaSaved)="onStudioMediaSaved()"
+        />
+      </div>
+    }
+  </section>
+</div>

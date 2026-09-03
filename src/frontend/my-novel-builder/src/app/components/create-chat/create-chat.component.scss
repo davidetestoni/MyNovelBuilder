@@ -1,0 +1,23 @@
+@use "../../../styles/variables" as *;
+@use "../../../styles/colors" as *;
+
+.create-chat-container {
+  padding: 1rem;
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+
+    label {
+      font-weight: 500;
+      color: $grey13;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}

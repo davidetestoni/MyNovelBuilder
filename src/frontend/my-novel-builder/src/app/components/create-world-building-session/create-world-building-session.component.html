@@ -1,0 +1,57 @@
+<div class="create-world-building-session">
+  <label>
+    <span>Name</span>
+    <input
+      type="text"
+      [(ngModel)]="name"
+      placeholder="New world"
+    />
+  </label>
+
+  <label>
+    <span>Premise</span>
+    <textarea
+      pInputTextarea
+      [(ngModel)]="freeformPremise"
+      placeholder="A rough idea, setting seed, or constraints..."
+      rows="5"
+    ></textarea>
+  </label>
+
+  <label>
+    <span>Novel Context</span>
+    <p-select
+      [(ngModel)]="novelId"
+      [options]="novels"
+      optionLabel="title"
+      optionValue="id"
+      placeholder="No novel"
+      [showClear]="true"
+      appendTo="body"
+    />
+  </label>
+
+  <label>
+    <span>Compendia</span>
+    <p-multiSelect
+      [(ngModel)]="compendiumIds"
+      [options]="compendia"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Optional compendia"
+      appendTo="body"
+    />
+  </label>
+
+  <div class="actions">
+    <button type="button" class="secondary" (click)="cancel()">Cancel</button>
+    <button type="button" (click)="createSession()" [disabled]="isCreating">
+      @if (isCreating) {
+        <i class="pi pi-spin pi-spinner"></i>
+      } @else {
+        <i class="pi pi-plus"></i>
+      }
+      <span>Create</span>
+    </button>
+  </div>
+</div>

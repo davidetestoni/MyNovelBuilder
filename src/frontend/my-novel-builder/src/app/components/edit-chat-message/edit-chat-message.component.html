@@ -1,0 +1,19 @@
+<div class="edit-message-container">
+  <div class="form-field">
+    <textarea
+      pInputTextarea
+      [(ngModel)]="messageText"
+      rows="10"
+      autoResize="false"
+      [style]="{ width: '100%' }"
+    ></textarea>
+  </div>
+  <div class="form-actions">
+    <p-button
+      label="Cancel"
+      (click)="cancel()"
+      styleClass="p-button-text"
+    ></p-button>
+    <p-button label="Save" (click)="save()"></p-button>
+  </div>
+</div>

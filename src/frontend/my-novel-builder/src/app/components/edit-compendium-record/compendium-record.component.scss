@@ -1,0 +1,343 @@
+@use "../../../styles/colors" as *;
+
+.compendium-record-container {
+  padding: 0px 20px;
+
+  .compendium-record-editor {
+    display: flex;
+    flex-direction: row;
+
+    .compendium-record {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+
+      .compendium-record-name {
+        width: 300px;
+
+        .label {
+          color: $grey13;
+          margin-bottom: 5px;
+        }
+      }
+
+      .compendium-record-type {
+        margin-top: 20px;
+
+        .label {
+          color: $grey13;
+          margin-bottom: 5px;
+        }
+      }
+
+      .compendium-record-aliases {
+        width: 300px;
+
+        .label {
+          color: $grey13;
+          margin-bottom: 5px;
+        }
+      }
+    }
+
+    .compendium-record-always-included {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        font-size: 0.8em;
+      }
+
+      input {
+        margin-left: 10px;
+      }
+    }
+
+    .compendium-record-context {
+      width: 100%;
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      .context-token-count {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: $grey13;
+        font-size: 0.85rem;
+        margin: 8px 0px;
+
+        .pi-info-circle {
+          font-size: 0.8rem;
+        }
+      }
+
+      app-code-editor {
+        height: 300px;
+        width: 100%;
+      }
+    }
+
+    .compendium-record-character-voices {
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      .compendium-record-character-voices-editor {
+        display: flex;
+        align-items: stretch;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .voice-editor-field {
+        flex: 1 1 220px;
+        min-width: 0;
+      }
+
+      .voice-editor-field-provider {
+        flex: 0 1 180px;
+      }
+
+      .voice-editor-field-model {
+        flex: 0 1 200px;
+      }
+
+      .voice-editor-field-voice {
+        flex: 2 1 320px;
+      }
+
+      .voice-selector-with-action {
+        display: flex;
+        gap: 12px;
+        align-items: stretch;
+        flex-wrap: nowrap;
+        min-width: 0;
+
+        p-select {
+          flex: 1 1 0;
+          min-width: 0;
+        }
+
+        :deep(.p-select) {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        :deep(.p-select-label) {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .voice-save-button {
+        flex: 0 0 auto;
+        align-self: stretch;
+      }
+
+      .compendium-record-character-voice-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .compendium-record-character-voice-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 1px solid $grey5;
+        border-radius: 8px;
+        background: $grey2;
+      }
+
+      .compendium-record-character-voice-item-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        align-items: flex-start;
+      }
+
+      .character-voice-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 140px;
+      }
+
+      .character-voice-detail-label {
+        color: $grey13;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .compendium-record-character-voice-item-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      small {
+        display: block;
+        margin-top: 12px;
+        color: $grey13;
+      }
+    }
+
+    .compendium-record-media-container {
+      margin-top: 20px;
+
+      .label {
+        color: $grey13;
+        margin-bottom: 5px;
+      }
+
+      .compendium-record-media-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-gap: 10px;
+
+        &:has(.place-media) {
+          grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        }
+
+        .compendium-record-media {
+          width: 200px;
+          height: 300px;
+          overflow: hidden;
+          border-radius: 5px;
+          position: relative;
+
+          &.place-media {
+            width: 400px;
+            height: 250px;
+          }
+
+          img,
+          video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          img {
+            cursor: pointer;
+          }
+
+          &.current {
+            border: 1px solid $grey18;
+          }
+
+          .compendium-record-media-edit {
+            position: absolute;
+            top: 10px;
+            right: 35px;
+            border: none;
+            padding: 0;
+            margin: 0;
+            opacity: 30%;
+            font-size: 0.8rem;
+            transition: opacity 0.3s;
+            filter: $grey13filter;
+            cursor: pointer;
+
+            &:hover {
+              opacity: 100%;
+              filter: $blackfilter;
+            }
+          }
+
+          .compendium-record-media-remove {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            border: none;
+            padding: 0;
+            margin: 0;
+            opacity: 30%;
+            font-size: 0.8rem;
+            transition: opacity 0.3s;
+            filter: $grey13filter;
+            cursor: pointer;
+
+            &:hover {
+              opacity: 100%;
+              filter: $blackfilter;
+            }
+          }
+        }
+
+        .add-compendium-record-media {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          width: 200px;
+          height: 300px;
+          color: $grey13;
+          border: 2px dashed $grey13;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: 0.3s;
+          user-select: none;
+
+          &.place-media {
+            width: 400px;
+            height: 250px;
+          }
+
+          i {
+            width: 50px;
+            height: 50px;
+            filter: $grey13filter;
+            margin-bottom: 10px;
+          }
+
+          &:hover {
+            border-color: $grey18;
+            color: $grey18;
+          }
+        }
+      }
+    }
+
+    .compendium-record-actions {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .compendium-record-container {
+    .compendium-record-editor {
+      .compendium-record-character-voices {
+        .compendium-record-character-voice-item {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .compendium-record-character-voice-item-actions {
+          align-self: flex-end;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,150 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <SpaRoot>$(MSBuildThisFileDirectory)../../../frontend/my-novel-builder/</SpaRoot>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <DefineConstants>$(DefineConstants);ELECTRON_DESKTOP</DefineConstants>
+        <NuGetLockFilePath>packages.electron.lock.json</NuGetLockFilePath>
+        <RuntimeIdentifiers>win-x64;win-arm64;osx-x64;osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
+        <ElectronPackageId>io.github.davidetestoni.mynovelbuilder</ElectronPackageId>
+        <ElectronVersion>43.4.1</ElectronVersion>
+        <ElectronSingleInstance>true</ElectronSingleInstance>
+        <Title>MyNovelBuilder</Title>
+        <Description>An AI-assisted workspace for planning and writing novels.</Description>
+        <Company>Davide Testoni</Company>
+        <License>GPL-3.0-only</License>
+        <ProjectUrl>https://github.com/davidetestoni/MyNovelBuilder</ProjectUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ElectronNET.Core" Version="0.5.1"
+                          Condition="'$(ElectronDesktopBuild)' == 'true'" />
+        <PackageReference Include="ElectronNET.Core.AspNet" Version="0.5.1"
+                          Condition="'$(ElectronDesktopBuild)' == 'true'" />
+        <PackageReference Include="ElevenLabs-DotNet" Version="3.7.1" />
+        <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+        <PackageReference Include="Google.GenAI" Version="0.14.0" />
+        <PackageReference Include="Markdig" Version="0.37.0" />
+        <PackageReference Include="KokoroSharp.CPU" Version="0.6.4" />
+        <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.1">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Design" Version="1.1.6" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.2.0" />
+        <PackageReference Include="Microsoft.ML.Tokenizers" Version="1.0.1" />
+        <PackageReference Include="Microsoft.ML.Tokenizers.Data.O200kBase" Version="1.0.1" />
+        <PackageReference Include="Microsoft.OpenApi" Version="2.7.5" />
+        <PackageReference Include="NLayer.NAudioSupport" Version="1.4.0" />
+        <PackageReference Include="OpenAI" Version="2.0.0" />
+        <PackageReference Include="QuestPDF" Version="2025.7.4" />
+        <PackageReference Include="Serilog" Version="4.3.0" />
+        <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+        <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+        <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+        <PackageReference Include="SonarAnalyzer.CSharp" Version="10.18.0.131500">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Remove="AppData/**/*" />
+      <None Remove="AppData/**/*" />
+      <Content Remove="packages.electron.lock.json" />
+      <None Remove="packages.electron.lock.json" />
+      <Content Remove="Properties\electron-builder.json" />
+      <None Remove="Properties\electron-builder.json" />
+      <Content Remove="Properties\desktop-icons\**\*" />
+      <None Remove="Properties\desktop-icons\**\*" />
+      <Content Remove="Desktop\electron-custom-main.cjs" />
+      <None Remove="Desktop\electron-custom-main.cjs" />
+      <Content Update="appsettings.Development.json">
+        <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Desktop\electron-custom-main.cjs"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>.electron/custom_main.js</TargetPath>
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Properties\electron-after-pack.cjs"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>electron-after-pack.cjs</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Properties\desktop-icons\icon.ico"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>desktop-icons/icon.ico</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Properties\desktop-icons\icon.icns"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>desktop-icons/icon.icns</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Properties\desktop-icons\icon.png"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>desktop-icons/icon.png</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+      <None Update="Seed/**/*">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Interfaces\" />
+    </ItemGroup>
+
+    <Target Name="PublishAngular"
+            AfterTargets="ComputeFilesToPublish"
+            Condition="'$(BuildAngular)' != 'false'">
+      <Exec WorkingDirectory="$(SpaRoot)" Command="npm ci" />
+      <Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
+
+      <ItemGroup>
+        <AngularDistFiles Include="$(SpaRoot)dist/my-novel-builder/browser/**" />
+        <ResolvedFileToPublish Include="@(AngularDistFiles-&gt;'%(FullPath)')"
+                               Exclude="@(ResolvedFileToPublish)">
+          <RelativePath>wwwroot/%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+          <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+          <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+        </ResolvedFileToPublish>
+      </ItemGroup>
+    </Target>
+
+    <Target Name="CopyAngularToElectronDevelopmentOutput"
+            AfterTargets="Build"
+            Condition="'$(ElectronDesktopBuild)' == 'true' and '$(ElectronDevelopmentBuild)' == 'true'">
+      <ItemGroup>
+        <ElectronAngularDistFiles Include="$(SpaRoot)dist/my-novel-builder/browser/**" />
+      </ItemGroup>
+
+      <Error Condition="'@(ElectronAngularDistFiles)' == ''"
+             Text="The Angular production build is missing. Run npm run build before the Electron development build." />
+      <RemoveDir Directories="$(TargetDir)wwwroot" />
+      <Copy SourceFiles="@(ElectronAngularDistFiles)"
+            DestinationFiles="@(ElectronAngularDistFiles-&gt;'$(TargetDir)wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" />
+    </Target>
+
+</Project>

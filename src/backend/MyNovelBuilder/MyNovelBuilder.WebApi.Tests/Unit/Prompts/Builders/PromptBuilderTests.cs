@@ -1,0 +1,376 @@
+using MyNovelBuilder.WebApi.Data.Entities;
+using MyNovelBuilder.WebApi.Dtos.Generate;
+using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Novels;
+using MyNovelBuilder.WebApi.Prompts.Builders;
+
+namespace MyNovelBuilder.WebApi.Tests.Unit.Prompts.Builders;
+
+public class PromptBuilderTests
+{
+    private class TestPromptBuilder(string prompt)
+        : NovelPromptBuilder<TestTextGenerationContextInfoDto>(prompt)
+    {
+        public static HashSet<CompendiumRecord> FilterRecordsInContext(
+            IList<CompendiumRecord> records, string context)
+        {
+            return PromptBuilderUtils.FilterRecordsInContext(records, context);
+        }
+
+        public static string CreateCompendiumRecordsString(
+            IList<CompendiumRecord> records, Prose prose, int? chapterIndex, int? sectionIndex)
+        {
+            return PromptBuilderUtils.CreateCompendiumRecordsString(
+                records, (prose, chapterIndex, sectionIndex));
+        }
+    }
+
+    private sealed class TestTranslateNovelPromptBuilder(string prompt)
+        : TranslateNovelPromptBuilder(prompt)
+    {
+    }
+    
+    private class TestTextGenerationContextInfoDto : NovelTextGenerationContextInfoDto
+    {
+        
+    }
+
+    [Theory]
+    [InlineData("Vera", "Vera was there.", true)]
+    [InlineData("Vera", "average", false)]
+    [InlineData("Vera", "Vera-like", false)]
+    [InlineData("summer", "mid-summer", false)]
+    [InlineData("Vera", "Vera.", true)]
+    [InlineData("Vera", "Vera, she said", true)]
+    [InlineData("Vera", "Is it Vera?", true)]
+    [InlineData("Vera", "2Vera", false)]
+    [InlineData("Vera", "Vera123", false)]
+    public void IsRecordInContext_IdentifiesCorrectRecords(string name, string context, bool expected)
+    {
+        var record = new CompendiumRecord { Name = name, Aliases = "", Type = CompendiumRecordType.Character };
+        var records = new List<CompendiumRecord> { record };
+        
+        var result = TestPromptBuilder.FilterRecordsInContext(records, context);
+        
+        if (expected) Assert.Contains(record, result);
+        else Assert.DoesNotContain(record, result);
+    }
+
+    [Fact]
+    public void IsRecordInContext_WorksWithAliases()
+    {
+        var record = new CompendiumRecord { Name = "Vera", Aliases = "V, Vee", Type = CompendiumRecordType.Character };
+        var records = new List<CompendiumRecord> { record };
+        
+        var result1 = TestPromptBuilder.FilterRecordsInContext(records, "V was there.");
+        var result2 = TestPromptBuilder.FilterRecordsInContext(records, "Vee was there.");
+        
+        Assert.Contains(record, result1);
+        Assert.Contains(record, result2);
+    }
+
+    [Fact]
+    public void FilterRecordsInContext_RecursiveDiscovery()
+    {
+        var recordB = new CompendiumRecord
+        {
+            Name = "RecordB",
+            Aliases = "",
+            Context = "Nothing here",
+            Type = CompendiumRecordType.Character
+        };
+        var recordA = new CompendiumRecord
+        {
+            Name = "RecordA",
+            Aliases = "",
+            Context = "Mentioning RecordB here.",
+            Type = CompendiumRecordType.Character
+        };
+        var records = new List<CompendiumRecord> { recordA, recordB };
+        
+        const string context = "Start with RecordA.";
+        var result = TestPromptBuilder.FilterRecordsInContext(records, context);
+        
+        Assert.Contains(recordA, result);
+        Assert.Contains(recordB, result);
+    }
+
+    [Fact]
+    public void FilterRecordsInContext_IncludesAlwaysIncludedRecords()
+    {
+        var record = new CompendiumRecord
+        {
+            Name = "World",
+            Aliases = "",
+            AlwaysIncluded = true,
+            Type = CompendiumRecordType.Place
+        };
+        var records = new List<CompendiumRecord> { record };
+        
+        var result = TestPromptBuilder.FilterRecordsInContext(records, "Some context that doesn't mention it.");
+        
+        Assert.Contains(record, result);
+    }
+
+    [Fact]
+    public void ApplyContextOverrides_PreservesBlockAndAppliesLatestOverride()
+    {
+        var record = new CompendiumRecord 
+        { 
+            Name = "Vera", 
+            Context = "Vera is [status]single[/status].",
+            Type = CompendiumRecordType.Character,
+            Id = Guid.NewGuid()
+        };
+        
+        var prose = new Prose
+        {
+            Chapters = new List<Chapter>
+            {
+                new()
+                {
+                    Title = "Chapter 1",
+                    Sections = new List<Section>
+                    {
+                        new()
+                        {
+                            RecordOverrides =
+                            [
+                                new RecordOverride
+                                {
+                                    CompendiumRecordId = record.Id,
+                                    Keyword = "status",
+                                    Description = "engaged"
+                                }
+                            ]
+                        },
+                        new()
+                        {
+                            RecordOverrides =
+                            [
+                                new RecordOverride
+                                {
+                                    CompendiumRecordId = record.Id,
+                                    Keyword = "status",
+                                    Description = "married"
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        };
+
+        var result = TestPromptBuilder.CreateCompendiumRecordsString([record], prose, null, null);
+        
+        Assert.Contains("Vera is [status]married[/status].", result);
+        Assert.DoesNotContain("single", result);
+        Assert.DoesNotContain("engaged", result);
+    }
+
+    [Theory]
+    [InlineData(WritingPov.FirstPerson, "The novel is written in first person")]
+    [InlineData(WritingPov.ThirdPersonLimited, "The novel is written in third person (limited perspective)")]
+    [InlineData(WritingPov.ThirdPersonOmniscient, "The novel is written in third person (omniscient)")]
+    public void ReplacePlaceholders_GeneratesCorrectPovString(WritingPov pov, string expectedPart)
+    {
+        var novel = new Novel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test", 
+            Pov = pov, 
+            Language = WritingLanguage.English,
+            Tense = WritingTense.Past
+        };
+        
+        var context = new NovelPromptBuilderContext<TestTextGenerationContextInfoDto>
+        {
+            Client = new TestTextGenerationContextInfoDto
+            {
+                NovelId = novel.Id
+            },
+            Novel = novel,
+            Prose = new Prose(),
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+        
+        var builder = new TestPromptBuilder("{{novel.pov}}");
+        builder.ReplacePlaceholders(context);
+        
+        Assert.Contains(expectedPart, builder.ToString());
+    }
+
+    [Fact]
+    public void ReplacePlaceholders_IncludesMainCharacterInPov()
+    {
+        var novel = new Novel 
+        { 
+            Id = Guid.NewGuid(),
+            Title = "Test",
+            Pov = WritingPov.ThirdPersonLimited, 
+            Language = WritingLanguage.English, 
+            Tense = WritingTense.Past,
+            MainCharacter = new CompendiumRecord
+            {
+                Name = "John",
+                Type = CompendiumRecordType.Character
+            }
+        };
+        var context = new NovelPromptBuilderContext<TestTextGenerationContextInfoDto>
+        {
+            Client = new TestTextGenerationContextInfoDto
+            {
+                NovelId = novel.Id
+            },
+            Novel = novel,
+            Prose = new Prose(),
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+        
+        var builder = new TestPromptBuilder("{{novel.pov}}");
+        builder.ReplacePlaceholders(context);
+        
+        Assert.Contains("from the perspective of John", builder.ToString());
+    }
+
+    [Fact]
+    public void ReplacePlaceholders_GeneratesCorrectTenseString()
+    {
+        var novel = new Novel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test",
+            Tense = WritingTense.Past,
+            Language = WritingLanguage.English
+        };
+        var context = new NovelPromptBuilderContext<TestTextGenerationContextInfoDto>
+        {
+            Client = new TestTextGenerationContextInfoDto
+            {
+                NovelId = novel.Id
+            },
+            Novel = novel,
+            Prose = new Prose(),
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+        
+        var builder = new TestPromptBuilder("{{novel.tense}}");
+        builder.ReplacePlaceholders(context);
+        
+        Assert.Equal("Past tense", builder.ToString());
+    }
+
+    [Fact]
+    public void TranslateNovelPromptBuilder_NormalizesHtmlEntities_AndStripsInlineBase64Images()
+    {
+        var novel = new Novel
+        {
+            Id = Guid.NewGuid(),
+            Title = "Test",
+            Tense = WritingTense.Past,
+            Pov = WritingPov.FirstPerson,
+            Language = WritingLanguage.English
+        };
+
+        var prose = new Prose
+        {
+            Chapters = new List<Chapter>
+            {
+                new()
+                {
+                    Title = "Chapter &amp; One",
+                    StoryEvents =
+                    [
+                        new StoryEvent
+                        {
+                            Title = "Meet&nbsp;up",
+                            Date = "Day&nbsp;1",
+                            Description = "Client&#39;s meeting"
+                        }
+                    ],
+                    Sections = new List<Section>
+                    {
+                        new()
+                        {
+                            Summary = "Another&nbsp;meeting",
+                            Text = "<p>Hello&nbsp;world &#39;test&#39;.</p><p><img src=\"data:image/png;base64,AAAA\" /></p>"
+                        }
+                    }
+                }
+            }
+        };
+
+        var context = new NovelPromptBuilderContext<TranslateNovelContextInfoDto>
+        {
+            Client = new TranslateNovelContextInfoDto
+            {
+                NovelId = novel.Id,
+                ChapterIndex = 0,
+                TargetLanguage = WritingLanguage.Italian
+            },
+            Novel = novel,
+            Prose = prose,
+            CompendiumRecords = new List<CompendiumRecord>(),
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+
+        var builder = new TestTranslateNovelPromptBuilder("{{context}}");
+        builder.ReplacePlaceholders(context);
+
+        var prompt = builder.ToString();
+        Assert.Contains("Chapter & One", prompt);
+        Assert.Contains("Meet up", prompt);
+        Assert.Contains("Day 1", prompt);
+        Assert.Contains("Client's meeting", prompt);
+        Assert.Contains("Another meeting", prompt);
+        Assert.Contains("<p>Hello world 'test'.</p>", prompt);
+        Assert.Contains("embedded image omitted", prompt);
+        Assert.DoesNotContain("data:image/png;base64", prompt);
+        Assert.DoesNotContain(@"\u0026nbsp", prompt);
+        Assert.DoesNotContain(@"\u003C", prompt);
+    }
+
+    [Fact]
+    public void WorldBuildingAgentPromptBuilder_PreservesStructuredAssistantHistory()
+    {
+        const string structuredOutput = """
+                                        {"assistantMessage":"I proposed a city.","proposals":[{"kind":"createCompendiumRecord","name":"Veyra","context":"A city of glass."}]}
+                                        """;
+        var context = new WorldBuildingAgentPromptBuilderContext
+        {
+            Client = new WorldBuildingAgentContextInfoDto
+            {
+                UserMessage = "Continue",
+                PreviousMessages =
+                [
+                    new ChatMessageDto
+                    {
+                        Role = ChatMessageRole.User,
+                        TextContent = "Create a city"
+                    },
+                    new ChatMessageDto
+                    {
+                        Role = ChatMessageRole.Assistant,
+                        TextContent = "I proposed a city.",
+                        StructuredContent = structuredOutput
+                    }
+                ]
+            },
+            Compendia = [],
+            CompendiumRecords = [],
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+
+        var prompt = new WorldBuildingAgentPromptBuilder("{{chatHistory}}")
+            .ReplacePlaceholders(context)
+            .ToString();
+
+        Assert.Contains("User: Create a city", prompt);
+        Assert.Contains($"Assistant: {structuredOutput}", prompt);
+        Assert.Contains("createCompendiumRecord", prompt);
+        Assert.Contains("A city of glass.", prompt);
+    }
+}

@@ -1,0 +1,148 @@
+@if (folder === null) {
+  <div class="studio-empty-state">Select a linked folder to use the studio.</div>
+} @else {
+  <div class="studio">
+    <div class="studio-header">
+      <h2>Media Generation Studio</h2>
+    </div>
+
+    <form class="studio-form" [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="studioMode" class="form-field-label">Output *</label>
+        <p-select
+          inputId="studioMode"
+          formControlName="mode"
+          [options]="generationModeOptions"
+          optionLabel="label"
+          optionValue="value"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="studioModel" class="form-field-label">Model *</label>
+        <app-model-select
+          id="studioModel"
+          formControlName="model"
+          [capability]="selectedCapability"
+          placeholder="Select a model"
+          width="100%"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-field grow">
+          <label for="studioPrompt" class="form-field-label">Prompt</label>
+          <textarea
+            pTextarea
+            id="studioPrompt"
+            formControlName="prompt"
+            [placeholder]="promptPlaceholder"
+            [autoResize]="true"
+            rows="5"
+          ></textarea>
+        </div>
+
+        @if (shouldShowBatchSize) {
+          <div class="form-field batch-size-field">
+            <label for="studioBatchSize" class="form-field-label">Images</label>
+            <p-select
+              inputId="studioBatchSize"
+              formControlName="batchSize"
+              [options]="batchSizeOptions"
+              optionLabel="label"
+              optionValue="value"
+              [style]="{ width: '100%' }"
+            />
+          </div>
+        }
+      </div>
+
+      @if (selectedMode === 'imageToVideo') {
+        <div class="form-field">
+          <label for="studioSourceImage" class="form-field-label"
+            >Source image *</label
+          >
+          <input
+            id="studioSourceImage"
+            type="file"
+            accept="image/*"
+            (change)="onSourceImageSelected($event)"
+          />
+          <div class="source-image-actions">
+            <p-button
+              type="button"
+              label="Paste from Clipboard"
+              size="small"
+              variant="text"
+              (onClick)="pasteSourceImageFromClipboard()"
+              [loading]="isPastingSourceImage"
+            />
+          </div>
+        </div>
+
+        @if (sourceImagePreview !== null) {
+          <div class="source-image-preview">
+            <div class="preview-header">
+              <span>Source image</span>
+              <p-button
+                type="button"
+                label="Clear"
+                size="small"
+                variant="text"
+                (onClick)="clearSelectedSourceImage()"
+              />
+            </div>
+            <img [src]="sourceImagePreview" alt="Source image" />
+          </div>
+        }
+      }
+
+      <div class="form-actions">
+        <p-button
+          type="button"
+          [label]="generateButtonLabel"
+          (onClick)="generateMedia()"
+          [disabled]="isGenerating || formGroup.invalid"
+          [loading]="isGenerating"
+        />
+
+        @if (generationStatusLabel; as statusLabel) {
+          <span class="generation-status">{{ statusLabel }}</span>
+        }
+      </div>
+    </form>
+
+    @if (generatedAssets.length > 0) {
+      <div class="generated-images-grid">
+        @for (asset of generatedAssets; track asset.id; let index = $index) {
+          <div class="generated-image-card">
+            <div class="generated-image-frame">
+              @if (!isVideoAsset(asset)) {
+                <img [src]="asset.previewUrl" [alt]="'Generated image ' + (index + 1)" />
+              } @else {
+                <video
+                  [src]="asset.previewUrl"
+                  controls
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                ></video>
+              }
+            </div>
+
+            <p-button
+              type="button"
+              class="save-button"
+              [label]="asset.isSaved ? 'Saved' : 'Save to Folder'"
+              [disabled]="asset.isSaved"
+              [loading]="asset.isSaving"
+              (onClick)="saveGeneratedImage(asset, index)"
+            />
+          </div>
+        }
+      </div>
+    }
+  </div>
+}

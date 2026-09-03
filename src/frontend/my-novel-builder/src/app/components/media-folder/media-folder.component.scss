@@ -1,0 +1,237 @@
+@use "../../../styles/colors" as *;
+
+.media-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.media-panel-title {
+  min-width: 0;
+}
+
+.media-paginator-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  margin-bottom: 16px;
+
+  @media (max-width: 720px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.media-paginator-summary {
+  color: $grey11;
+  font-size: 0.9rem;
+}
+
+.media-paginator {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+
+  @media (max-width: 720px) {
+    margin-left: 0;
+  }
+}
+
+:host ::ng-deep .media-paginator.p-paginator {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+:host ::ng-deep .media-paginator .p-paginator-content {
+  gap: 0.25rem;
+}
+
+.selected-folder-path {
+  color: $grey11;
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+
+.empty-state {
+  color: $grey11;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.media-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.media-preview {
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: 5px;
+  position: relative;
+  background-color: $grey3;
+  cursor: pointer;
+
+  img,
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 20%;
+  }
+}
+
+.media-preview-unavailable {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: $grey11;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.media-card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.media-card-action {
+  opacity: 30%;
+  font-size: 0.8rem;
+  transition: opacity 0.3s;
+  filter: $grey13filter;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 100%;
+    filter: $blackfilter;
+  }
+}
+
+.media-card-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.media-file-name {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.media-file-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: $grey11;
+  font-size: 0.85rem;
+}
+
+.zoomed-media-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100dvw;
+  height: 100dvh;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.zoomed-media {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 90dvw;
+
+  img,
+  video {
+    max-width: 80dvw;
+    max-height: 80dvh;
+    object-fit: contain;
+  }
+}
+
+.zoomed-media-details {
+  position: absolute;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  width: min(1000px, calc(100dvw - 2rem));
+  background-color: rgba($grey0, 0.9);
+  border: 1px solid rgba($grey21, 0.14);
+  border-radius: 10px;
+  padding: 0.75rem;
+  color: $grey21;
+}
+
+.zoomed-media-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.78rem;
+  opacity: 0.95;
+}
+
+.zoomed-media-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid rgba($grey21, 0.2);
+    background: rgba($grey21, 0.06);
+    color: $grey21;
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+
+    &:hover {
+      background: rgba($grey21, 0.14);
+    }
+
+    &.danger:hover {
+      background: rgba(255, 84, 84, 0.16);
+      border-color: rgba(255, 84, 84, 0.3);
+    }
+  }
+}
+
+.zoomed-media-details-section {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.55rem;
+}
+
+.zoomed-media-details-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}

@@ -1,0 +1,118 @@
+<div class="compendium-record-container">
+  <div class="compendium-record-editor">
+    <form [formGroup]="formGroup" class="compendium-record-form">
+      <!-- Compendium Selection -->
+      <div class="compendium-record-name">
+        <label class="label">
+          <span>Compendium *</span>
+        </label>
+        <p-select
+          formControlName="compendiumId"
+          [options]="compendia"
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Select a compendium"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template #item let-compendium>
+            <app-compendium-option-preview [compendium]="compendium" />
+          </ng-template>
+          <ng-template #selectedItem let-compendium>
+            @if (compendium) {
+              <app-compendium-option-preview [compendium]="compendium" />
+            }
+          </ng-template>
+        </p-select>
+      </div>
+
+      <!-- Name Input -->
+      <div class="compendium-record-name">
+        <label class="label">
+          <span>Name *</span>
+        </label>
+        <input
+          pInputText
+          type="text"
+          formControlName="name"
+          placeholder="My new record"
+        />
+      </div>
+
+      <!-- Type Selection -->
+      <div class="compendium-record-type">
+        <label class="label">
+          <span>Type *</span>
+        </label>
+        <p-select
+          formControlName="type"
+          [options]="recordTypes"
+          placeholder="Select a type"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template #selectedItem let-selectedOption>
+            {{ selectedOption | titlecase }}
+          </ng-template>
+          <ng-template #item let-type>
+            {{ type | titlecase }}
+          </ng-template>
+        </p-select>
+      </div>
+
+      <!-- Aliases Input -->
+      <div class="compendium-record-aliases">
+        <label class="label">
+          <span>Aliases</span>
+        </label>
+        <input
+          pInputText
+          type="text"
+          formControlName="aliases"
+          placeholder="Awesome record, Best record ever"
+        />
+        <app-alias-suggestions
+          [name]="formGroup.get('name')?.value || ''"
+          [currentAliases]="formGroup.get('aliases')?.value || ''"
+          (aliasAdded)="addAlias($event)"
+        />
+      </div>
+
+      <!-- Context Readonly Textarea -->
+      <div class="compendium-record-context">
+        <label class="label">
+          <span>Context (Generated)</span>
+        </label>
+        <textarea
+          pTextarea
+          formControlName="context"
+          [readonly]="true"
+          [autoResize]="true"
+          rows="5"
+        ></textarea>
+      </div>
+
+      <!-- Action Buttons -->
+      <div
+        class="compendium-record-actions"
+        style="
+          margin-top: 2rem;
+          display: flex;
+          gap: 1rem;
+          justify-content: flex-end;
+        "
+      >
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          (click)="cancel()"
+        />
+        <p-button
+          label="Create Record"
+          (click)="accept()"
+          [disabled]="formGroup.invalid || isLoadingCompendia || isCreating"
+          [loading]="isCreating"
+        />
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,106 @@
+<p-confirmDialog></p-confirmDialog>
+
+<div class="compendium-container">
+  <h1>
+    Compendium
+    <i class="icon icon-close" (click)="deleteCompendium()"></i>
+  </h1>
+  @if (compendium === null) {
+    <p>Loading...</p>
+  } @else {
+    <div class="compendium-editor">
+      <div class="compendium">
+        <div class="compendium-metadata">
+          <div class="compendium-name">
+            <label class="label">
+              <span>Name</span>
+            </label>
+            <input
+              pInputText
+              type="text"
+              [(ngModel)]="compendium.name"
+              (blur)="updateCompendium()"
+            />
+          </div>
+          <div class="compendium-description">
+            <label class="label">
+              <span>Description</span>
+            </label>
+            <textarea
+              pTextarea
+              [(ngModel)]="compendium.description"
+              (blur)="updateCompendium()"
+              [autoResize]="true"
+            ></textarea>
+          </div>
+        </div>
+        @if (records !== null) {
+          <div class="compendium-records">
+            <div class="compendium-records-actions">
+              <input
+                pInputText
+                type="text"
+                placeholder="Search records..."
+                [(ngModel)]="filter"
+                class="records-filter"
+              />
+              <p-button
+                label="Add Record"
+                (click)="openCreateRecordDialog()"
+                styleClass="add-record"
+              />
+            </div>
+            @for (type of compendiumRecordTypes; track type) {
+              @if (getRecordsOfType(type).length > 0) {
+                <div class="compendium-records-type">
+                  <div class="compendium-records-type-name">
+                    <span
+                      >{{ type | titlecase }}s ({{
+                        getRecordsOfType(type).length
+                      }})</span
+                    >
+                  </div>
+                  <div class="compendium-records-grid">
+                    @for (record of getRecordsOfType(type); track record.id) {
+                      <div
+                        class="compendium-record"
+                        (click)="setCurrentRecord(record)"
+                        [class.selected]="currentRecord === record"
+                      >
+                        <div class="compendium-record-image">
+                          @if (getRecordImage(record) !== null) {
+                            <img
+                              src="{{ getRecordImage(record) }}"
+                              alt="{{ record.name }}"
+                            />
+                          } @else {
+                            <div class="no-image">
+                              <i class="icon icon-compendium"></i>
+                            </div>
+                          }
+                        </div>
+                        <div class="compendium-record-name">
+                          <span>{{ record.name }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+      @if (currentRecord !== null) {
+        <div class="compendium-record">
+          <app-compendium-record
+            [record]="currentRecord"
+            [compendiumId]="compendiumId"
+            (updateRecord)="updateRecord($event)"
+            (deleteRecord)="deleteRecord($event)"
+          />
+        </div>
+      }
+    </div>
+  }
+</div>

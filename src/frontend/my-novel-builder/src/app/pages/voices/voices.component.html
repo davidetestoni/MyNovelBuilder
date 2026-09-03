@@ -1,0 +1,64 @@
+<div class="voices-container">
+  <div class="voices-header">
+    <h1>Voices</h1>
+    <p-button
+      type="button"
+      icon="pi pi-plus"
+      label="Add Voice"
+      severity="secondary"
+      (onClick)="openCreateVoiceDialog()"
+    />
+  </div>
+  @if (voices === null) {
+    <p>Loading...</p>
+  } @else {
+    <div class="voices-grid">
+      @for (voice of voices; track voice.id) {
+        <div class="voice-card">
+          <div class="voice-card-header">
+            <div class="voice-name">{{ voice.name }}</div>
+            <div class="voice-actions">
+              <i
+                class="voice-action voice-action-edit icon icon-edit"
+                role="button"
+                tabindex="0"
+                title="Edit voice"
+                aria-label="Edit voice"
+                (click)="openEditVoiceDialog(voice, $event)"
+                (keydown.enter)="openEditVoiceDialog(voice, $event)"
+                (keydown.space)="openEditVoiceDialog(voice, $event)"
+              ></i>
+              <i
+                class="voice-action voice-action-remove icon icon-close"
+                role="button"
+                tabindex="0"
+                title="Delete voice"
+                aria-label="Delete voice"
+                (click)="deleteVoice(voice, $event)"
+                (keydown.enter)="deleteVoice(voice, $event)"
+                (keydown.space)="deleteVoice(voice, $event)"
+              ></i>
+            </div>
+          </div>
+          <div class="voice-meta voice-meta-gender">
+            <span class="meta-value">{{ getGenderLabel(voice.voiceGender) }}</span>
+          </div>
+          <div class="voice-meta">
+            <span class="meta-value">{{ voice.language | titlecase }}</span>
+          </div>
+          <p-button
+            class="voice-preview-button"
+            type="button"
+            icon="pi pi-play"
+            label="Preview"
+            severity="secondary"
+            [loading]="previewingVoiceId === voice.id"
+            [disabled]="previewingVoiceId !== null"
+            (onClick)="previewVoice(voice.id)"
+          />
+        </div>
+      }
+    </div>
+  }
+</div>
+<p-confirmdialog />

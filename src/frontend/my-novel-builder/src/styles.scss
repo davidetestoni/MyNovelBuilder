@@ -1,0 +1,200 @@
+@use "./styles/colors" as *;
+@use "./styles/icons" as *;
+@use "./styles/overrides" as *;
+@import "primeicons/primeicons.css";
+
+/* Reset */
+body {
+  background-color: $grey1;
+  color: $grey17;
+  padding: 0;
+  margin: 0;
+  font-family: Poppins, sans-serif;
+}
+
+* {
+  font-family: Poppins, sans-serif;
+  box-sizing: border-box;
+}
+
+/* Global */
+h1 {
+  font-weight: 400;
+}
+
+h2 {
+  margin: 0;
+}
+
+/* Modals */
+.modal-container {
+  padding: 20px;
+}
+
+/* Forms */
+.form-container {
+  display: flex;
+  width: 100%;
+
+  form {
+    width: 100%;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .form-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .form-buttons-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .form-field-label {
+    margin-bottom: 5px;
+    font-size: 0.9em;
+  }
+
+  .form-field {
+    margin: 5px 0;
+  }
+}
+
+.p-inputtext,
+.p-textarea,
+.p-select,
+.p-multiselect,
+.p-calendar input {
+  background: var(--p-surface-800) !important;
+}
+
+/* When p-checkbox is near a label, add some margin */
+label + .p-checkbox {
+  margin-left: 10px;
+}
+.p-checkbox + label {
+  margin-left: 10px;
+}
+
+/* Scrollbar (thin and dark) */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: $grey2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $grey6;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: $grey8;
+}
+
+/* Quill */
+quill-editor {
+  width: 100%;
+
+  .ql-toolbar {
+    display: none;
+  }
+
+  .ql-container {
+    border: none !important;
+    width: 100%;
+
+    .ql-editor {
+      outline: none;
+      line-height: 1.6;
+
+      &.ql-blank::before {
+        width: 100%;
+        font-size: 1.2rem;
+        color: $grey13;
+      }
+    }
+  }
+}
+
+/* Novel saved feedback */
+.subtle-save-toast {
+  width: 42px !important;
+  min-height: 42px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: $grey6 !important;
+  background-image: none !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  &::before {
+    content: "\e909";
+    font-family: "primeicons";
+    color: $grey16;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .toast-title,
+  .toast-message {
+    display: none !important;
+  }
+}
+
+@keyframes tts-toast-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tts-loading-toast {
+  min-width: 220px !important;
+  min-height: 52px !important;
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+  background: $grey6 !important;
+  background-image: none !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28) !important;
+  display: flex !important;
+  align-items: center !important;
+
+  &::before {
+    content: "";
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.24);
+    border-top-color: $grey16;
+    border-radius: 50%;
+    animation: tts-toast-spin 0.8s linear infinite;
+    flex: 0 0 auto;
+  }
+
+  .toast-title {
+    display: none !important;
+  }
+
+  .toast-message {
+    color: $grey16 !important;
+    font-size: 0.95rem;
+    line-height: 1.3;
+  }
+}

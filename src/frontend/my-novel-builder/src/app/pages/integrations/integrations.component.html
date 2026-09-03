@@ -1,0 +1,560 @@
+<div class="integrations-container">
+  <div class="page-header">
+    <h2>Integrations</h2>
+    <p>Configure each generation pipeline independently.</p>
+  </div>
+
+  <form
+    [formGroup]="integrationsForm"
+    (ngSubmit)="onSubmit()"
+    class="integration-form"
+  >
+    <section class="integration-card">
+      <div class="card-header">
+        <h3>Text Generation</h3>
+      </div>
+
+      <div class="form-group">
+        <label for="textGenerationProvider"
+          >Select Text Generation Provider:</label
+        >
+        <p-select
+          id="textGenerationProvider"
+          [options]="textGenerationProviderOptions"
+          formControlName="textGenerationProvider"
+          placeholder="Select a Text Generation provider"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      @if (
+        integrationsForm.value.textGenerationProvider ===
+        TextGenerationProvider.OpenRouter
+      ) {
+        <h4>OpenRouter Configuration</h4>
+
+        @if (hasOpenRouterApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>An OpenRouter API key is currently configured.</span>
+          </div>
+        } @else {
+          <p>No OpenRouter API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="openRouterApiKey">Enter New OpenRouter API Key:</label>
+          <p-password
+            id="openRouterApiKey"
+            formControlName="openRouterApiKey"
+            placeholder="sk-or-..."
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+
+        @if (textGenerationModelOptions.length > 0) {
+          <div class="form-group">
+            <label for="textGenerationModelId"
+              >Default Text Generation Model:</label
+            >
+            <p class="field-help">
+              Used as the default structured-output model for immersive TTS and
+              for TTS text emphasis.
+            </p>
+            <p-select
+              id="textGenerationModelId"
+              [options]="textGenerationModelOptions"
+              formControlName="textGenerationModelId"
+              placeholder="Select a text generation model"
+              [style]="{ width: '100%' }"
+              [filter]="true"
+            />
+          </div>
+        }
+      }
+
+      @if (
+        integrationsForm.value.textGenerationProvider ===
+        TextGenerationProvider.GoogleGenAi
+      ) {
+        <h4>Google GenAI Configuration</h4>
+
+        @if (hasGoogleGenAiApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>A Google GenAI API key is currently configured.</span>
+          </div>
+        } @else {
+          <p>No Google GenAI API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="googleGenAiApiKey">Enter New Google GenAI API Key:</label>
+          <p-password
+            id="googleGenAiApiKey"
+            formControlName="googleGenAiApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+    </section>
+
+    <section class="integration-card">
+      <div class="card-header">
+        <h3>Text-to-Speech</h3>
+      </div>
+
+      <div class="form-group">
+        <label for="ttsProvider">Select TTS Provider:</label>
+        <p-select
+          id="ttsProvider"
+          [options]="ttsProviderOptions"
+          formControlName="ttsProvider"
+          placeholder="Select a TTS provider"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      @if (integrationsForm.value.ttsProvider === TtsProvider.ElevenLabs) {
+        <h4>ElevenLabs Configuration</h4>
+
+        @if (hasElevenLabsApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>An ElevenLabs API key is currently configured.</span>
+          </div>
+        } @else {
+          <p>No ElevenLabs API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="elevenLabsApiKey">Enter New ElevenLabs API Key:</label>
+          <p-password
+            id="elevenLabsApiKey"
+            formControlName="elevenLabsApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
+      @if (integrationsForm.value.ttsProvider === TtsProvider.UnrealSpeech) {
+        <h4>UnrealSpeech Configuration</h4>
+
+        @if (hasUnrealSpeechApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>An UnrealSpeech API key is currently configured.</span>
+          </div>
+        } @else {
+          <p>No UnrealSpeech API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="unrealSpeechApiKey">Enter New UnrealSpeech API Key:</label>
+          <p-password
+            id="unrealSpeechApiKey"
+            formControlName="unrealSpeechApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
+      @if (integrationsForm.value.ttsProvider === TtsProvider.NanoGpt) {
+        <h4>NanoGPT Configuration</h4>
+
+        @if (hasNanoGptApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>A NanoGPT API key is currently configured.</span>
+          </div>
+
+          @if (isLoadingNanoGptBalance) {
+            <p>Loading USD balance...</p>
+          } @else if (nanoGptBalanceUsd !== null) {
+            <p>USD balance: {{ formatUsdBalance(nanoGptBalanceUsd) }}</p>
+          }
+        } @else {
+          <p>No NanoGPT API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="nanoGptApiKey">Enter New NanoGPT API Key:</label>
+          <p-password
+            id="nanoGptApiKey"
+            formControlName="nanoGptApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
+      @if (integrationsForm.value.ttsProvider === TtsProvider.DeApi) {
+        <h4>DeAPI Configuration</h4>
+
+        @if (hasDeApiApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>A DeAPI API key is currently configured.</span>
+          </div>
+
+          @if (isLoadingDeApiBalance) {
+            <p>Loading USD balance...</p>
+          } @else if (deApiBalanceUsd !== null) {
+            <p>USD balance: {{ formatUsdBalance(deApiBalanceUsd) }}</p>
+          }
+        } @else {
+          <p>No DeAPI API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="deApiApiKeyTts">Enter New DeAPI API Key:</label>
+          <p-password
+            id="deApiApiKeyTts"
+            formControlName="deApiApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
+      @if (integrationsForm.value.ttsProvider === TtsProvider.OpenRouter) {
+        <h4>OpenRouter Configuration</h4>
+
+        @if (hasOpenRouterApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>An OpenRouter API key is currently configured.</span>
+          </div>
+        } @else {
+          <p>No OpenRouter API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="openRouterApiKeyTts">Enter New OpenRouter API Key:</label>
+          <p-password
+            id="openRouterApiKeyTts"
+            [formControl]="integrationsForm.controls.openRouterApiKey"
+            placeholder="sk-or-..."
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
+      @if (selectedTtsProviderBaseUrlControl; as ttsProviderBaseUrlControl) {
+        <div class="form-group">
+          <label for="ttsProviderBaseUrl"
+            >{{ selectedTtsProviderBaseUrlLabel }} Base URL:</label
+          >
+          <p class="field-help">
+            Override the endpoint used for this self-hosted TTS provider.
+            Clear the field and save to restore the default local URL.
+          </p>
+          <input
+            id="ttsProviderBaseUrl"
+            pInputText
+            [formControl]="ttsProviderBaseUrlControl"
+            [placeholder]="selectedTtsProviderBaseUrlPlaceholder"
+          />
+        </div>
+      }
+
+      @if (ttsModelOptions.length > 0) {
+        <div class="form-group">
+          <label for="ttsModelId">Select TTS Model:</label>
+          <p-select
+            id="ttsModelId"
+            [options]="ttsModelOptions"
+            formControlName="ttsModelId"
+            placeholder="Select a TTS model"
+            [style]="{ width: '100%' }"
+          />
+        </div>
+      }
+
+      @if (supportsSelectedTtsModelTextEmphasis) {
+        <div class="form-group">
+          <div class="tts-emphasis-toggle">
+            <p-checkbox
+              inputId="ttsEnableTextEmphasis"
+              formControlName="ttsEnableTextEmphasis"
+              [binary]="true"
+            />
+            <label class="tts-emphasis-toggle-label" for="ttsEnableTextEmphasis">
+              Emphasize text with speech tags
+            </label>
+          </div>
+          <p class="field-help field-help-toggle">
+            Uses the default text generation model to add speech-oriented
+            emphasis markup before TTS synthesis.
+          </p>
+        </div>
+      }
+
+      <div class="form-group">
+        <div class="tts-emphasis-toggle">
+          <p-checkbox
+            inputId="ttsEnableImmersive"
+            formControlName="ttsEnableImmersive"
+            [binary]="true"
+          />
+          <label class="tts-emphasis-toggle-label" for="ttsEnableImmersive">
+            Enable immersive multi-speaker TTS
+          </label>
+        </div>
+        <p class="field-help field-help-toggle">
+          When enabled, prose playback will use narrator and character voices
+          when an immersive TTS prompt is configured.
+        </p>
+      </div>
+
+      <div class="form-group">
+        <label for="ttsImmersivePauseMs">Immersive chunk pause:</label>
+        <p class="field-help">
+          Applied between narrator and character chunks.
+        </p>
+        <p-inputgroup class="pause-input-group">
+          <input
+            id="ttsImmersivePauseMs"
+            pInputText
+            type="number"
+            min="0"
+            max="10000"
+            formControlName="ttsImmersivePauseMs"
+          />
+          <p-inputgroup-addon>ms</p-inputgroup-addon>
+        </p-inputgroup>
+      </div>
+
+      @if (ttsVoiceOptions.length > 0) {
+        <div class="form-group">
+          <label for="ttsVoiceId">Select TTS Voice:</label>
+          <div class="tts-voice-controls">
+            <p-select
+              id="ttsVoiceId"
+              [options]="ttsVoiceOptions"
+              formControlName="ttsVoiceId"
+              placeholder="Select a TTS voice"
+              [style]="{ width: '100%' }"
+              [filter]="true"
+            />
+
+            <p-button
+              type="button"
+              label="Preview"
+              variant="outlined"
+              icon="pi pi-play"
+              [loading]="isPreviewingTtsVoice"
+              [disabled]="
+                !integrationsForm.value.ttsVoiceId || isPreviewingTtsVoice
+              "
+              (onClick)="previewTtsVoice()"
+            />
+          </div>
+        </div>
+      }
+
+      <div class="form-group">
+        <a
+          pButton
+          href="/voices"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="p-button p-component p-button-outlined manage-custom-voices-btn"
+        >
+          <span class="p-button-icon p-button-icon-left pi pi-cog"></span>
+          <span class="p-button-label">Manage custom voices</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="integration-card">
+      <div class="card-header">
+        <h3>Image Generation</h3>
+      </div>
+
+      <div class="form-group">
+        <label for="imageGenerationProvider"
+          >Select Image Generation Provider:</label
+        >
+        <p-select
+          id="imageGenerationProvider"
+          [options]="imageGenerationProviderOptions"
+          formControlName="imageGenerationProvider"
+          placeholder="Select an Image Generation provider"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      @if (
+        integrationsForm.value.imageGenerationProvider ===
+        ImageGenerationProvider.DeApi
+      ) {
+        <h4>DeAPI Configuration</h4>
+        <p class="field-help">
+          DeAPI supports text-to-image, image-to-image, text-to-video, and
+          image-to-video here. Video requests reuse the same portrait and
+          landscape aspect ratios already used for image generation.
+        </p>
+
+        @if (hasDeApiApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>A DeAPI API key is currently configured.</span>
+          </div>
+
+          @if (isLoadingDeApiBalance) {
+            <p>Loading USD balance...</p>
+          } @else if (deApiBalanceUsd !== null) {
+            <p>USD balance: {{ formatUsdBalance(deApiBalanceUsd) }}</p>
+          }
+        } @else {
+          <p>No DeAPI API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="deApiApiKey">Enter New DeAPI API Key:</label>
+          <p-password
+            id="deApiApiKey"
+            formControlName="deApiApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
+      @if (
+        integrationsForm.value.imageGenerationProvider ===
+        ImageGenerationProvider.NanoGpt
+      ) {
+        <h4>NanoGPT Configuration</h4>
+
+        @if (hasNanoGptApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>A NanoGPT API key is currently configured.</span>
+          </div>
+
+          @if (isLoadingNanoGptBalance) {
+            <p>Loading USD balance...</p>
+          } @else if (nanoGptBalanceUsd !== null) {
+            <p>USD balance: {{ formatUsdBalance(nanoGptBalanceUsd) }}</p>
+          }
+        } @else {
+          <p>No NanoGPT API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="nanoGptApiKeyImageGen">Enter New NanoGPT API Key:</label>
+          <p-password
+            id="nanoGptApiKeyImageGen"
+            formControlName="nanoGptApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+
+      @if (
+        integrationsForm.value.imageGenerationProvider ===
+        ImageGenerationProvider.OpenRouter
+      ) {
+        <h4>OpenRouter Configuration</h4>
+
+        @if (hasOpenRouterApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>An OpenRouter API key is currently configured.</span>
+          </div>
+        } @else {
+          <p>No OpenRouter API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="openRouterApiKeyImageGen"
+            >Enter New OpenRouter API Key:</label
+          >
+          <p-password
+            id="openRouterApiKeyImageGen"
+            [formControl]="integrationsForm.controls.openRouterApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+    </section>
+
+    <section class="integration-card">
+      <div class="card-header">
+        <h3>Video Generation</h3>
+      </div>
+
+      <div class="form-group">
+        <label for="videoGenerationProvider"
+          >Select Video Generation Provider:</label
+        >
+        <p-select
+          id="videoGenerationProvider"
+          [options]="videoGenerationProviderOptions"
+          formControlName="videoGenerationProvider"
+          placeholder="Select a Video Generation provider"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      @if (
+        integrationsForm.value.videoGenerationProvider ===
+        VideoGenerationProvider.DeApi
+      ) {
+        <h4>DeAPI Configuration</h4>
+
+        @if (hasDeApiApiKey) {
+          <div class="api-key-status">
+            <i class="pi pi-check-circle success-icon"></i>
+            <span>A DeAPI API key is currently configured.</span>
+          </div>
+
+          @if (isLoadingDeApiBalance) {
+            <p>Loading USD balance...</p>
+          } @else if (deApiBalanceUsd !== null) {
+            <p>USD balance: {{ formatUsdBalance(deApiBalanceUsd) }}</p>
+          }
+        } @else {
+          <p>No DeAPI API key is configured.</p>
+        }
+
+        <div class="form-group">
+          <label for="deApiApiKeyVideo">Enter New DeAPI API Key:</label>
+          <p-password
+            id="deApiApiKeyVideo"
+            formControlName="deApiApiKey"
+            placeholder="Enter API Key"
+            [feedback]="false"
+            [toggleMask]="true"
+          />
+        </div>
+      }
+    </section>
+
+    <div class="form-actions">
+      <p-button
+        class="save-button"
+        type="submit"
+        label="Save"
+        [disabled]="!integrationsForm.valid"
+      />
+    </div>
+  </form>
+</div>

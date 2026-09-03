@@ -1,0 +1,74 @@
+{
+  "$schema": "../sample-novel.schema.json#/$defs/manifest",
+  "schemaVersion": 1,
+  "title": "The Cartographer of Rain — Sample Novel",
+  "author": "MyNovelBuilder Sample",
+  "brief": "A compact original fantasy mystery included to demonstrate prose planning, story events, compendia, context aliases, and changing character state. This example is ordinary user data and may be edited or deleted.",
+  "tense": "past",
+  "pov": "thirdPersonLimited",
+  "language": "english",
+  "rpgMode": false,
+  "mainCharacterKey": "mira-vey",
+  "proseFile": "prose.json",
+  "compendiumFiles": [
+    "compendia/characters.json",
+    "compendia/places.json",
+    "compendia/lore.json"
+  ],
+  "assets": [
+    {
+      "seedKey": "cover",
+      "file": "images/cover.webp",
+      "sha256": "fdcb437b84ef9f60f89330fefe7444ccd5d69df31db6e0f528461e6771b82f0c",
+      "kind": "cover"
+    },
+    {
+      "seedKey": "mira-vey-portrait",
+      "file": "images/mira-vey.webp",
+      "sha256": "dd347648ac1437764b3e59a302739c646fd12c1c41217fc2d8ff989cb74d5dc8",
+      "kind": "recordImage",
+      "recordKey": "mira-vey"
+    },
+    {
+      "seedKey": "orin-vale-portrait",
+      "file": "images/orin-vale.webp",
+      "sha256": "d7edbf845801d77a5c57372670b3cb6695c82ee03a7e115a638494532e3a9598",
+      "kind": "recordImage",
+      "recordKey": "orin-vale"
+    },
+    {
+      "seedKey": "captain-seln-portrait",
+      "file": "images/captain-seln.webp",
+      "sha256": "f1a36f73797249a135c7a6e0c2783f6acbec8011f429064f70a0c364c9f667e1",
+      "kind": "recordImage",
+      "recordKey": "captain-seln"
+    },
+    {
+      "seedKey": "lumenport-view",
+      "file": "images/lumenport.webp",
+      "sha256": "1aa6f3c27ec695f41bf980b94b891328315bbf45665fc9ac5d0584438b59e357",
+      "kind": "recordImage",
+      "recordKey": "lumenport"
+    },
+    {
+      "seedKey": "archive-of-tides-view",
+      "file": "images/archive-of-tides.webp",
+      "sha256": "7719bb54410e56f06c8d805cf39f73c687d2dc03d6f676697ba962e567d80839",
+      "kind": "recordImage",
+      "recordKey": "archive-of-tides"
+    },
+    {
+      "seedKey": "rain-atlas-illustration",
+      "file": "images/rain-atlas.webp",
+      "sha256": "d900f883f6009514c472de7f8c4c1be5e235d99e86ddff291f9400c8a6a84381",
+      "kind": "recordImage",
+      "recordKey": "rain-atlas"
+    },
+    {
+      "seedKey": "bellwater-glass-rain",
+      "file": "images/bellwater-glass-rain.webp",
+      "sha256": "76bd034ab743f3230e12b1215eeacf582552959cb1cbfe9bee81d8e2491b6c9d",
+      "kind": "proseImage"
+    }
+  ]
+}

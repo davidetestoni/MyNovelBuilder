@@ -1,0 +1,53 @@
+@use "../../../styles/colors" as *;
+
+.prompts-container {
+  padding: 20px;
+
+  .prompts-editor {
+    display: flex;
+    flex-direction: row;
+
+    .prompts {
+      display: flex;
+      flex-direction: column;
+      flex: 0.25;
+
+      .prompts-filters {
+        margin-top: 20px;
+      }
+
+      .prompts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+
+        .prompt {
+          display: flex;
+          flex-direction: column;
+          cursor: pointer;
+          padding: 10px;
+          border-radius: 5px;
+          max-width: 500px;
+          user-select: none;
+          font-size: 0.9rem;
+          font-weight: 500;
+
+          &:hover {
+            background-color: $grey5;
+          }
+
+          &.selected {
+            background-color: $grey5;
+          }
+        }
+      }
+    }
+
+    .prompt {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+  }
+}

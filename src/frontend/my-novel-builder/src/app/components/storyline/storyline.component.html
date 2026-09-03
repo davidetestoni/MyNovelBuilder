@@ -1,0 +1,136 @@
+<div class="storyline">
+  @if (!canCreateStoryEvent) {
+    <div class="storyline-empty">No story events yet. Add a chapter first.</div>
+  } @else {
+    <div class="storyline-scroll">
+      <div class="storyline-track" role="list">
+        @for (chapter of chapterGroups; track chapter.chapterIndex) {
+          <div class="storyline-item storyline-item-chip" role="listitem">
+            <div class="storyline-connector"></div>
+            <button
+              class="storyline-chapter-chip"
+              type="button"
+              role="button"
+              (click)="selectChapterByIndex(chapter.chapterIndex)"
+            >
+              {{ chapter.chapterTitle || "Chapter " + (chapter.chapterIndex + 1) }}
+            </button>
+          </div>
+
+          <div
+            class="storyline-chapter-events"
+            [class.storyline-chapter-events-empty]="chapter.events.length === 0"
+            cdkDropList
+            cdkDropListOrientation="horizontal"
+            [id]="getDropListId(chapter.chapterIndex)"
+            [cdkDropListConnectedTo]="getDropListIds()"
+            [cdkDropListData]="chapter.events"
+            (cdkDropListDropped)="onStoryEventDrop($event, chapter.chapterIndex)"
+          >
+            @for (event of chapter.events; track event.storyEventIndex) {
+              <div class="storyline-item" role="listitem" cdkDrag [cdkDragData]="event">
+                <div class="storyline-connector"></div>
+                <div
+                  class="storyline-card"
+                  role="button"
+                  tabindex="0"
+                  (click)="selectChapter(event)"
+                  (keydown)="selectChapterFromKeyboard(event, $event)"
+                >
+                  <div class="storyline-card-header">
+                    <div class="storyline-meta">
+                      <i
+                        class="storyline-drag-handle pi pi-bars"
+                        cdkDragHandle
+                        role="button"
+                        tabindex="0"
+                        title="Reorder event"
+                        aria-label="Reorder event"
+                        (click)="$event.stopPropagation()"
+                        (keydown.enter)="$event.preventDefault(); $event.stopPropagation()"
+                        (keydown.space)="$event.preventDefault(); $event.stopPropagation()"
+                      ></i>
+                      @if (event.date) {
+                        <div class="storyline-date">{{ event.date }}</div>
+                      }
+                    </div>
+                    <div class="storyline-actions">
+                      <i
+                        class="storyline-edit icon icon-edit"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Edit story event"
+                        title="Edit story event"
+                        (click)="openEditStoryEventDialog(event, $event)"
+                        (keydown.enter)="openEditStoryEventDialog(event, $event)"
+                        (keydown.space)="openEditStoryEventDialog(event, $event)"
+                      ></i>
+                      <i
+                        class="storyline-remove icon icon-close"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Remove story event"
+                        title="Remove story event"
+                        (click)="removeStoryEvent(event, $event)"
+                        (keydown.enter)="removeStoryEvent(event, $event)"
+                        (keydown.space)="removeStoryEvent(event, $event)"
+                      ></i>
+                    </div>
+                  </div>
+                  <div class="storyline-body">
+                    <div class="storyline-title">{{ event.title }}</div>
+                    @if (event.description) {
+                      <div class="storyline-description">
+                        {{ event.description }}
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (chapter.events.length === 0) {
+              <div class="storyline-item" role="listitem">
+                <div class="storyline-connector"></div>
+                <div class="storyline-empty-drop-zone">
+                  <span>Drop story events here</span>
+                </div>
+              </div>
+            }
+          </div>
+        }
+        @if (canCreateStoryEvent) {
+          <div class="storyline-item storyline-item-add" role="listitem">
+            <div class="storyline-connector"></div>
+            <div
+              class="add-story-event-card"
+              role="button"
+              tabindex="0"
+              (click)="openCreateStoryEventDialog($event)"
+              (keydown.enter)="openCreateStoryEventDialog($event)"
+              (keydown.space)="openCreateStoryEventDialog($event)"
+            >
+              <i class="icon icon-plus"></i>
+              <span>Add Story Event</span>
+            </div>
+          </div>
+          <div class="storyline-item storyline-item-add" role="listitem">
+            <div class="storyline-connector"></div>
+            <div
+              class="generate-story-events-card"
+              role="button"
+              tabindex="0"
+              (click)="openGenerateStoryEventsDialog($event)"
+              (keydown.enter)="openGenerateStoryEventsDialog($event)"
+              (keydown.space)="openGenerateStoryEventsDialog($event)"
+            >
+              <i class="pi pi-bolt"></i>
+              <span>Generate Story Events</span>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
+<p-confirmdialog />

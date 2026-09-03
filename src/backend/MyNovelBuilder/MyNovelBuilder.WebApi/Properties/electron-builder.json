@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/refs/heads/master/packages/app-builder-lib/scheme.json",
+  "asar": true,
+  "compression": "maximum",
+  "afterPack": "bin/electron-after-pack.cjs",
+  "publish": null,
+  "win": {
+    "icon": "bin/desktop-icons/icon.ico",
+    "target": [
+      "nsis"
+    ],
+    "artifactName": "MyNovelBuilder-Windows-${env.MNB_DESKTOP_ARCH}-Setup.${ext}"
+  },
+  "mac": {
+    "icon": "bin/desktop-icons/icon.icns",
+    "target": [
+      "dmg"
+    ],
+    "artifactName": "MyNovelBuilder-macOS-${env.MNB_DESKTOP_ARCH}.${ext}"
+  },
+  "linux": {
+    "icon": "bin/desktop-icons/icon.png",
+    "target": [
+      "AppImage",
+      "deb"
+    ],
+    "artifactName": "MyNovelBuilder-Linux-${env.MNB_DESKTOP_ARCH}.${ext}",
+    "category": "Office",
+    "maintainer": "Davide Testoni <davidetestoni@users.noreply.github.com>"
+  }
+}

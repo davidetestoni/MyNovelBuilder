@@ -1,0 +1,61 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="chapter" class="form-field-label">Chapter</label>
+        <p-select
+          id="chapter"
+          formControlName="chapterIndex"
+          [options]="data.chapters"
+          placeholder="Select chapter"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+          [disabled]="data.mode === 'edit'"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="date" class="form-field-label">Date</label>
+        <input
+          pInputText
+          type="text"
+          id="date"
+          formControlName="date"
+          placeholder="Spring 1324, Day 4, Two weeks later..."
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="title" class="form-field-label">Title</label>
+        <input
+          pInputText
+          type="text"
+          id="title"
+          formControlName="title"
+          placeholder="Story event title"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="description" class="form-field-label">Description</label>
+        <textarea
+          pTextarea
+          id="description"
+          formControlName="description"
+          placeholder="Describe what happens in this event..."
+          [autoResize]="true"
+          rows="6"
+        ></textarea>
+      </div>
+
+      <div class="form-buttons-container">
+        <p-button
+          [label]="data.mode === 'edit' ? 'Save' : 'Create'"
+          type="button"
+          (onClick)="submit()"
+          [disabled]="formGroup.invalid || formGroup.pristine"
+        />
+      </div>
+    </form>
+  </div>
+</div>

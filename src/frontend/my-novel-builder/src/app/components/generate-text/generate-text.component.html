@@ -1,0 +1,62 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="promptId" class="form-field-label">Prompt *</label>
+        <app-prompt-select
+          id="promptId"
+          formControlName="promptId"
+          [prompts]="data.prompts"
+          [promptType]="data.prompts[0].type"
+          [storagePromptType]="data.prompts[0].type"
+          placeholder="Select a prompt"
+          width="100%"
+        />
+      </div>
+      @if (showInstructions) {
+        <div class="form-field">
+          <label for="instructions" class="form-field-label">
+            Instructions
+            @if (instructionsRequired) {
+              *
+            }
+          </label>
+          <textarea
+            pTextarea
+            id="instructions"
+            formControlName="instructions"
+            placeholder="The instructions to follow..."
+            [autoResize]="true"
+            rows="5"
+          ></textarea>
+        </div>
+      }
+      <div class="form-field">
+        <label for="model" class="form-field-label">Model *</label>
+        <app-model-select
+          id="model"
+          formControlName="model"
+          capability="text"
+          [storageContext]="storageContext"
+          placeholder="Select a model"
+          width="100%"
+        />
+      </div>
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <p-button
+            label="Preview"
+            (click)="openPreviewDialog()"
+            [disabled]="formGroup.invalid"
+            variant="text"
+          />
+          <p-button
+            label="Generate"
+            (click)="accept()"
+            [disabled]="formGroup.invalid"
+          />
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

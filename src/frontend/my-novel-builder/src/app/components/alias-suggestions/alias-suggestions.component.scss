@@ -1,0 +1,37 @@
+.suggestions-container {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+
+  .suggestions-label {
+    font-size: 0.75rem;
+    color: var(--text-color-secondary);
+    white-space: nowrap;
+  }
+
+  .suggestions-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+
+    .suggestion-chip {
+      cursor: pointer;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.7rem;
+      min-height: 1.25rem;
+      background-color: var(--p-content-background);
+      border: 1px solid var(--p-content-border-color);
+
+      &:hover {
+        background-color: var(--p-primary-color);
+        color: var(--p-primary-contrast-color);
+      }
+
+      ::ng-deep .p-chip-label {
+        margin: 0;
+      }
+    }
+  }
+}

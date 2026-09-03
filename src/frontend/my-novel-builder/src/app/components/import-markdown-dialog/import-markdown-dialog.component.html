@@ -1,0 +1,45 @@
+<div class="import-markdown-dialog">
+  <p>
+    Choose a Markdown novel to replace the current chapters and prose.
+    This permanently removes the current chapter and section structure.
+    Everything else on the novel remains unchanged.
+  </p>
+
+  <div class="file-field">
+    <label for="markdown-file">Load a Markdown file</label>
+    <input
+      #markdownFileInput
+      id="markdown-file"
+      type="file"
+      accept=".md,.markdown,text/markdown,text/plain"
+      (change)="onFileSelected($event)"
+    />
+    @if (selectedFile !== null) {
+      <span class="selected-file">{{ selectedFile.name }}</span>
+    }
+  </div>
+
+  <div class="source-divider"><span>or</span></div>
+
+  <div class="paste-field">
+    <label for="pasted-markdown">Paste Markdown</label>
+    <textarea
+      id="pasted-markdown"
+      pTextarea
+      rows="18"
+      [placeholder]="markdownPlaceholder"
+      [ngModel]="pastedMarkdown"
+      (ngModelChange)="onPastedMarkdownChange($event)"
+    ></textarea>
+  </div>
+
+  <div class="dialog-actions">
+    <p-button
+      label="Replace prose"
+      severity="danger"
+      [loading]="isImporting"
+      [disabled]="!hasMarkdownSource || isImporting"
+      (onClick)="importMarkdown()"
+    />
+  </div>
+</div>

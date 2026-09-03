@@ -1,0 +1,136 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-row">
+        <div class="form-column left-column">
+          <div class="form-field">
+            <label for="mode" class="form-field-label">Output *</label>
+            <p-select
+              inputId="mode"
+              formControlName="mode"
+              [options]="generationModeOptions"
+              optionLabel="label"
+              optionValue="value"
+              [style]="{ width: '100%' }"
+            />
+          </div>
+          <div class="form-field">
+            <label for="model" class="form-field-label">Model *</label>
+            <app-model-select
+              id="model"
+              formControlName="model"
+              [capability]="selectedCapability"
+              placeholder="Select a model"
+              width="100%"
+            />
+          </div>
+          <div class="form-field">
+            <label for="prompt" class="form-field-label">Prompt</label>
+            <textarea
+              pTextarea
+              id="prompt"
+              formControlName="prompt"
+              [placeholder]="promptPlaceholder"
+              [autoResize]="true"
+              rows="5"
+            ></textarea>
+          </div>
+
+          @if (selectedMode === 'imageToVideo') {
+            <div class="form-field">
+              <label for="sourceImage" class="form-field-label"
+                >Source image *</label
+              >
+              <input
+                id="sourceImage"
+                type="file"
+                accept="image/*"
+                (change)="onSourceImageSelected($event)"
+              />
+              <div class="source-image-actions">
+                <p-button
+                  type="button"
+                  label="Paste from Clipboard"
+                  size="small"
+                  variant="text"
+                  (onClick)="pasteSourceImageFromClipboard()"
+                  [loading]="isPastingSourceImage"
+                />
+              </div>
+            </div>
+
+            @if (sourceImagePreview !== null) {
+              <div class="preview-panel source-preview">
+                <div class="preview-panel-header">
+                  <span>Source image</span>
+                  <p-button
+                    type="button"
+                    label="Clear"
+                    variant="text"
+                    size="small"
+                    (onClick)="clearSelectedSourceImage()"
+                  />
+                </div>
+                <img [src]="sourceImagePreview" alt="Source image" />
+              </div>
+            }
+          }
+        </div>
+
+        @if (generatedPreview !== null) {
+          <div class="form-column">
+            <div class="preview-panel generated-preview">
+              <div class="preview-panel-header">
+                <span>Generated {{ outputLabel }}</span>
+              </div>
+              @if (!hasGeneratedVideo) {
+                <img [src]="generatedPreview" alt="Generated media" />
+              } @else {
+                <video
+                  [src]="generatedPreview"
+                  controls
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                ></video>
+              }
+            </div>
+          </div>
+        }
+      </div>
+      <div class="form-buttons-container">
+        @if (isPromptGenerationEnabled()) {
+          <p-button
+            label="Generate prompt"
+            (click)="openGeneratePromptDialog()"
+            [disabled]="
+              isGenerating ||
+              isLoadingPromptGenerationPrompts ||
+              !canGeneratePrompt()
+            "
+            variant="text"
+          />
+        }
+        <p-button
+          label="{{ generateButtonLabel }}"
+          type="button"
+          (onClick)="generateMedia()"
+          [disabled]="isGenerating || formGroup.invalid"
+          [loading]="isGenerating"
+          variant="text"
+        />
+        @if (generationStatusLabel; as statusLabel) {
+          <span class="generation-status">{{ statusLabel }}</span>
+        }
+        @if (generatedBlob !== null) {
+          <p-button
+            label="Accept"
+            (click)="accept()"
+            [disabled]="generatedBlob === null"
+          />
+        }
+      </div>
+    </form>
+  </div>
+</div>

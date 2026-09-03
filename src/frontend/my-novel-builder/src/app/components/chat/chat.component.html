@@ -1,0 +1,230 @@
+<div class="chat-wrapper">
+  @if (novelNotFound()) {
+    <div class="chat-header">
+      <div class="chat-title">
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="currentChat.name"
+          (blur)="updateChatName(currentChat.name ?? '')"
+          (keyup.enter)="updateChatName(currentChat.name ?? '')"
+          placeholder="New chat"
+        />
+      </div>
+    </div>
+    <div class="chat-messages error-state">
+      <div class="error-container">
+        <i class="pi pi-exclamation-circle"></i>
+        <h2>Novel Not Found</h2>
+        <p>
+          The novel associated with this chat could not be found. It may have
+          been deleted.
+        </p>
+      </div>
+    </div>
+  } @else {
+    <div class="chat-header">
+      <div class="chat-title">
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="currentChat.name"
+          (blur)="updateChatName(currentChat.name ?? '')"
+          (keyup.enter)="updateChatName(currentChat.name ?? '')"
+          placeholder="New chat"
+        />
+      </div>
+      <div class="chat-context-header">
+        @if (novel(); as n) {
+          <div class="novel-context">
+            @if (n.coverImageUrl) {
+              <img
+                [src]="n.coverImageUrl"
+                [alt]="n.title"
+                class="novel-image"
+                [routerLink]="['/novel', n.id]"
+              />
+            }
+            <span class="novel-title" [routerLink]="['/novel', n.id]">{{
+              n.title
+            }}</span>
+          </div>
+        }
+
+        <div class="context-actions">
+          @if (compendia(); as c) {
+            <p-multiSelect
+              [(ngModel)]="currentChat.context.compendiumIds"
+              [options]="c"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="All Compendia"
+              (onChange)="onCompendiaChange($event)"
+              [maxSelectedLabels]="1"
+              size="small"
+              [style]="{ width: '180px' }"
+            >
+              <ng-template #item let-comp>
+                <app-compendium-option-preview [compendium]="comp" />
+              </ng-template>
+            </p-multiSelect>
+          }
+
+          @if (allAvailableRecords(); as r) {
+            <p-multiSelect
+              [(ngModel)]="currentChat.context.compendiumRecordIds"
+              [options]="r"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="All Records"
+              (onChange)="onRecordsChange($event)"
+              [maxSelectedLabels]="1"
+              size="small"
+              [style]="{ width: '180px' }"
+            >
+              <ng-template #item let-record>
+                <app-option-preview
+                  [label]="record.name"
+                  [imageUrl]="record.imageUrl"
+                />
+              </ng-template>
+            </p-multiSelect>
+          }
+
+          @if (prose(); as p) {
+            <p-select
+              [(ngModel)]="currentChat.context.chapterIndex"
+              [options]="chapters()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="All Chapters"
+              [style]="{ width: '180px' }"
+              [showClear]="true"
+              (onChange)="updateChatChapter($event.value)"
+              size="small"
+            />
+          }
+
+          <app-model-select
+            [(ngModel)]="selectedModel"
+            capability="text"
+            placeholder="Select Model"
+            width="200px"
+            size="small"
+          />
+
+          @if (promptCount !== 0) {
+            <app-prompt-select
+              [(ngModel)]="selectedPromptId"
+              [promptType]="PromptType.SendChatMessage"
+              [storagePromptType]="PromptType.SendChatMessage"
+              (optionsChanged)="onPromptOptionsChanged($event)"
+              placeholder="Select Prompt"
+              width="180px"
+              size="small"
+            />
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-messages" #chatContainer>
+      @for (
+        message of currentChat.messages;
+        track message.id;
+        let last = $last
+      ) {
+        <div
+          class="message-container"
+          [class.user-message]="message.role === ChatMessageRole.User"
+          [class.assistant-message]="message.role === ChatMessageRole.Assistant"
+        >
+          <div class="message-wrapper">
+            <div class="message-bubble">
+              <div class="message-content">
+                <markdown [data]="message.textContent"></markdown>
+              </div>
+            </div>
+            @if (!isGenerating || !last) {
+              <div class="message-actions">
+                @if (canResend(message)) {
+                  <button class="action-btn" (click)="resendMessage(message)">
+                    <i class="pi pi-refresh"></i>
+                  </button>
+                }
+                <button
+                  class="action-btn"
+                  (click)="copyMessage(message.textContent)"
+                >
+                  <i class="pi pi-copy"></i>
+                </button>
+                <button class="action-btn" (click)="editMessage(message)">
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  class="action-btn delete"
+                  (click)="deleteMessage(message.id)"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <p-confirmDialog></p-confirmDialog>
+
+    @if (promptCount === 0) {
+      <div class="chat-input error">
+        <div class="error-message">
+          <i class="pi pi-exclamation-triangle"></i>
+          <span
+            >No chat prompts found. Please create a "Send Chat Message" prompt
+            in the Prompts page to start chatting.</span
+          >
+        </div>
+      </div>
+    } @else {
+      <div class="chat-input">
+        <div class="input-wrapper" [class.disabled]="isGenerating">
+          <textarea
+            pInputTextarea
+            placeholder="Type a message..."
+            rows="1"
+            style="max-height: 150px; overflow-y: auto"
+            [(ngModel)]="userInput"
+            (keydown.enter)="$event.preventDefault(); sendMessage()"
+            [disabled]="isGenerating"
+            [autoResize]="true"
+          ></textarea>
+          <button
+            type="button"
+            class="input-action-btn"
+            (click)="previewMessage()"
+            [disabled]="!canSendMessage()"
+            aria-label="Preview prompt"
+            title="Preview prompt"
+          >
+            <i class="pi pi-eye"></i>
+          </button>
+          <button
+            type="button"
+            class="input-action-btn"
+            (click)="sendMessage()"
+            [disabled]="!canSendMessage()"
+            aria-label="Send message"
+            title="Send message"
+          >
+            @if (isGenerating) {
+              <i class="pi pi-spin pi-spinner"></i>
+            } @else {
+              <i class="pi pi-send"></i>
+            }
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

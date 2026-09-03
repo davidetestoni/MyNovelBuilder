@@ -1,0 +1,126 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-row">
+        <div class="form-column">
+          <div class="form-field">
+            <label for="type" class="form-field-label">Type *</label>
+            <p-select
+              id="type"
+              formControlName="type"
+              [options]="recordTypes"
+              placeholder="Select a type"
+              [style]="{ width: '100%' }"
+              appendTo="body"
+            >
+              <ng-template let-type pTemplate="item">
+                {{ type | titlecase }}
+              </ng-template>
+              <ng-template let-type pTemplate="selectedItem">
+                {{ type | titlecase }}
+              </ng-template>
+            </p-select>
+          </div>
+          <div class="form-field">
+            <label for="name" class="form-field-label">Name *</label>
+            <input
+              pInputText
+              type="text"
+              id="name"
+              formControlName="name"
+              placeholder="My new record"
+            />
+          </div>
+          <div class="form-field">
+            <label for="aliases" class="form-field-label">Aliases</label>
+            <input
+              pInputText
+              type="text"
+              id="aliases"
+              formControlName="aliases"
+              placeholder="Awesome record, Best record ever"
+            />
+            <app-alias-suggestions
+              [name]="formGroup.get('name')?.value || ''"
+              [currentAliases]="formGroup.get('aliases')?.value || ''"
+              (aliasAdded)="addAlias($event)"
+            />
+          </div>
+          <div class="form-field">
+            <div class="form-field-label">
+              <label for="alwaysIncluded">Always Included</label>
+              <p-checkbox
+                id="alwaysIncluded"
+                formControlName="alwaysIncluded"
+                [binary]="true"
+              />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="context" class="form-field-label">Context</label>
+            <textarea
+              pTextarea
+              id="context"
+              formControlName="context"
+              placeholder="This record is about..."
+              [autoResize]="true"
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="form-field">
+            <div
+              [pTooltip]="
+                imageFile === null
+                  ? 'You should first upload an image.'
+                  : ''
+              "
+              tooltipPosition="top"
+            >
+              <p-button
+                label="Generate from image"
+                type="button"
+                [outlined]="true"
+                (click)="generateContextFromImage()"
+                [disabled]="imageFile === null"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="form-column">
+          <div class="form-field">
+            <div class="form-field-label">Image</div>
+            @if (imagePreview !== null) {
+              <div class="record-image">
+                <img [src]="imagePreview" alt="Record Image" />
+              </div>
+            }
+            <input
+              type="file"
+              (change)="onImageChange($event)"
+              accept="image/*"
+            />
+            <div class="clipboard-image-button">
+              <p-button
+                label="Paste from clipboard"
+                type="button"
+                variant="text"
+                (click)="readImageFromClipboard()"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <p-button
+            label="Create"
+            (click)="createRecord()"
+            [disabled]="
+              formGroup.invalid || formGroup.pristine || isCreating
+            "
+          />
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

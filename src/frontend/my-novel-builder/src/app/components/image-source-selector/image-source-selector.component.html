@@ -1,0 +1,21 @@
+<div class="image-source-selector">
+  <p-button
+    [label]="uploadLabel"
+    icon="pi pi-upload"
+    (onClick)="select('upload')"
+  ></p-button>
+  <div class="divider">OR</div>
+  <p-button
+    [label]="generateLabel"
+    icon="icon icon-ai"
+    (onClick)="select('generate')"
+    variant="outlined"
+  ></p-button>
+  <div class="divider">OR</div>
+  <p-button
+    [label]="clipboardLabel"
+    icon="pi pi-clipboard"
+    (onClick)="select('clipboard')"
+    variant="outlined"
+  ></p-button>
+</div>

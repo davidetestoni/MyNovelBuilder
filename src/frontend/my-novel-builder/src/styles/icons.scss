@@ -1,0 +1,58 @@
+.icon {
+  display: inline-block;
+  width: 1.3rem;
+  height: 1.3rem;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: brightness(0) invert(1); // Turn to white
+}
+
+/* Icons from https://www.svgrepo.com/ */
+
+.icon-novels {
+  background-image: url("../assets/images/icons/novels.svg");
+}
+
+.icon-compendium {
+  background-image: url("../assets/images/icons/compendium.svg");
+}
+
+.icon-world {
+  background-image: url("../assets/images/icons/world.svg");
+}
+
+.icon-prompt {
+  background-image: url("../assets/images/icons/prompt.svg");
+}
+
+.icon-integration {
+  background-image: url("../assets/images/icons/integration.svg");
+}
+
+.icon-plus {
+  background-image: url("../assets/images/icons/plus.svg");
+}
+
+.icon-edit {
+  background-image: url("../assets/images/icons/edit.svg");
+}
+
+.icon-close {
+  background-image: url("../assets/images/icons/close.svg");
+}
+
+.icon-ai {
+  background-image: url("../assets/images/icons/ai.svg");
+}
+
+.icon-headphones {
+  background-image: url("../assets/images/icons/headphones.svg");
+}
+
+.icon-chats {
+  background-image: url("../assets/images/icons/chats.svg");
+}
+
+.icon-media {
+  background-image: url("../assets/images/icons/media.svg");
+}

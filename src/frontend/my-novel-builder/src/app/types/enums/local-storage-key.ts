@@ -1,0 +1,15 @@
+export enum LocalStorageKey {
+    RecentInstructions = 'recentInstructions',
+    RecentPrompts = 'recentPrompts',
+    LastImagePrompt = 'lastImagePrompt',
+    LastImageModel = 'lastImageModel',
+    LastImagePromptByContext = 'lastImagePromptByContext',
+    LastImageModelByContext = 'lastImageModelByContext',
+    LastVideoPrompt = 'lastVideoPrompt',
+    LastVideoModel = 'lastVideoModel',
+    LastVideoPromptByContext = 'lastVideoPromptByContext',
+    LastVideoModelByContext = 'lastVideoModelByContext',
+    RecentTextModelsByContext = 'recentTextModelsByContext',
+    MediaFolderRowsPerPage = 'mediaFolderRowsPerPage',
+    VoiceDesignDraft = 'voiceDesignDraft',
+}

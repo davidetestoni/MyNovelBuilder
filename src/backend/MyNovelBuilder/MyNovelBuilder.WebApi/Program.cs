@@ -1,0 +1,286 @@
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Mapster;
+using MapsterMapper;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using MyNovelBuilder.WebApi.Data;
+using MyNovelBuilder.WebApi.Desktop;
+using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Data.Repositories;
+using MyNovelBuilder.WebApi.Middleware;
+using MyNovelBuilder.WebApi.Extensions;
+using MyNovelBuilder.WebApi.HealthChecks;
+using MyNovelBuilder.WebApi.Models.Errors;
+using MyNovelBuilder.WebApi.Options;
+using MyNovelBuilder.WebApi.Seeding;
+using MyNovelBuilder.WebApi.Services;
+using MyNovelBuilder.WebApi.Services.ImageGeneration;
+using MyNovelBuilder.WebApi.Services.TextGeneration;
+using MyNovelBuilder.WebApi.Services.Tts;
+using MyNovelBuilder.WebApi.Services.VideoGeneration;
+using MyNovelBuilder.WebApi.Storage;
+using Serilog;
+using Serilog.Events;
+
+var builder = WebApplication.CreateBuilder(args);
+var electronMode = ElectronDesktop.IsRequested(args);
+
+if (!electronMode && string.IsNullOrWhiteSpace(
+        builder.Configuration[WebHostDefaults.ServerUrlsKey]))
+{
+    builder.WebHost.UseUrls("http://127.0.0.1:5113");
+}
+
+ElectronDesktop.Configure(builder, args);
+
+var dataPathResolver = new AppDataPathResolver();
+var dataFolder = dataPathResolver.Resolve(args, builder.Configuration);
+var dataDirectoryInitializer = new AppDataDirectoryInitializer();
+dataDirectoryInitializer.Initialize(dataFolder);
+var staticFilesRoot = Path.Combine(dataFolder, "static");
+
+builder.Services.AddSingleton<IAppDataPathResolver>(dataPathResolver);
+builder.Services.AddSingleton<IAppDataDirectoryInitializer>(dataDirectoryInitializer);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<IDatabaseBackupService, DatabaseBackupService>();
+builder.Services.AddOptions<AppStorageOptions>()
+    .Configure(options => options.DataFolder = dataFolder);
+builder.Services.AddOptions<SeedOptions>()
+    .BindConfiguration(SeedOptions.SectionName);
+
+builder.Services.AddHttpContextAccessor();
+
+// Add the controllers that contain the HTTP endpoints, and also configure
+// the json serializer to use camelCase strings instead of integers for enums.
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+    {
+        // Serialize enums to strings instead of integers
+        var enumConverter = new JsonStringEnumConverter(JsonNamingPolicy.CamelCase);
+        opts.JsonSerializerOptions.Converters.Add(enumConverter);
+        opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+    });
+    
+if (builder.Environment.IsDevelopment())
+{
+    // Add utilities to navigate the APIs during development, generating
+    // documentation from the XML comments around classes and methods.
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(config =>
+    {
+        config.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory,
+            $"{Assembly.GetExecutingAssembly().GetName().Name}.xml"));
+    });
+}
+
+// Add routing and use lowercase URLs like /api/test instead of
+// /api/Test.
+builder.Services.AddRouting(options => options.LowercaseUrls = true);
+
+// Compress responses with brotli or gzip (if not supported).
+// By default, they use the fastest compression mode.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+
+// Add logging through serilog
+var configuredDefaultLogLevel = builder.Configuration
+    .GetValue<Microsoft.Extensions.Logging.LogLevel?>("Logging:LogLevel:Default")
+    ?? Microsoft.Extensions.Logging.LogLevel.Information;
+var defaultLogLevel = configuredDefaultLogLevel switch
+{
+    Microsoft.Extensions.Logging.LogLevel.Trace => LogEventLevel.Verbose,
+    Microsoft.Extensions.Logging.LogLevel.Debug => LogEventLevel.Debug,
+    Microsoft.Extensions.Logging.LogLevel.Information => LogEventLevel.Information,
+    Microsoft.Extensions.Logging.LogLevel.Warning => LogEventLevel.Warning,
+    Microsoft.Extensions.Logging.LogLevel.Error => LogEventLevel.Error,
+    Microsoft.Extensions.Logging.LogLevel.Critical => LogEventLevel.Fatal,
+    Microsoft.Extensions.Logging.LogLevel.None => LogEventLevel.Fatal,
+    _ => LogEventLevel.Information
+};
+
+builder.Host.UseSerilog((_, options) =>
+{
+    // Keep the default concise. Full prompts, generated text, and provider
+    // response bodies are logged at Debug and are only emitted when this
+    // configured level is Debug (or Trace).
+    options.MinimumLevel.Is(defaultLogLevel);
+
+    // This will destructure JsonDocument and JsonElement when passed
+    // as structured logs argument
+    options.Destructure.With<JsonDestructuringPolicy>();
+
+    // Do not log full request data
+    options.MinimumLevel.Override("Microsoft.AspNetCore",
+        LogEventLevel.Warning);
+
+    // Log to the console sink, more sinks can be added here if needed
+    options.WriteTo.Console();
+});
+
+// Configure the API error handler to return a JSON response with the
+// error code and message upon validation errors, to make it
+// consistent.
+builder.Services.Configure<ApiBehaviorOptions>(x =>
+{
+    x.SuppressModelStateInvalidFilter = false;
+    x.InvalidModelStateResponseFactory = ctx => new ApiErrorResult();
+});
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseSqlite($"Data Source={dataFolder}/app.db");
+});
+
+builder.Services.AddScoped<INovelRepository, NovelRepository>();
+builder.Services.AddScoped<ICompendiumRepository, CompendiumRepository>();
+builder.Services.AddScoped<ICompendiumRecordRepository, CompendiumRecordRepository>();
+builder.Services.AddScoped<IPromptRepository, PromptRepository>();
+builder.Services.AddScoped<IVoiceRepository, VoiceRepository>();
+builder.Services.AddScoped<IMediaFolderRepository, MediaFolderRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<INovelService, NovelService>();
+builder.Services.AddScoped<INovelImportService, NovelImportService>();
+builder.Services.AddScoped<ICompendiumService, CompendiumService>();
+builder.Services.AddScoped<ICompendiumRecordService, CompendiumRecordService>();
+builder.Services.AddScoped<IPromptService, PromptService>();
+builder.Services.AddScoped<IVoiceService, VoiceService>();
+builder.Services.AddScoped<IMediaFolderService, MediaFolderService>();
+builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IWorldBuildingSessionService, WorldBuildingSessionService>();
+builder.Services.AddScoped<InitialPromptSeeder>();
+builder.Services.AddScoped<SampleNovelSeeder>();
+builder.Services.AddScoped<INovelExportService, NovelExportService>();
+builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationServiceResolver>();
+builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
+builder.Services.AddScoped<IImmersiveTtsService, ImmersiveTtsService>();
+builder.Services.AddSingleton<IAudioRepository, FileSystemWaveAudioRepository>();
+builder.Services.AddSingleton<ITokenizerService, TokenizerService>();
+
+builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();
+builder.Services.AddSingleton<INovelPromptCreatorService, NovelPromptCreatorService>();
+builder.Services.AddSingleton<ICompendiumPromptCreatorService, CompendiumPromptCreatorService>();
+builder.Services.AddSingleton<IGenericPromptCreatorService, GenericPromptCreatorService>();
+builder.Services.AddSingleton<IWorldBuildingPromptCreatorService, WorldBuildingPromptCreatorService>();
+
+// Text generation services
+builder.Services.RegisterKeyedServicesFromAssembly<ITextGenerationService>();
+
+// TTS services
+builder.Services.RegisterKeyedServicesFromAssembly<ITtsService>();
+
+// Image generation services
+builder.Services.RegisterKeyedServicesFromAssembly<IImageGenerationService>();
+
+// Video generation services
+builder.Services.RegisterKeyedServicesFromAssembly<IVideoGenerationService>();
+
+// Mapster configuration
+var config = new TypeAdapterConfig();
+TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
+builder.Services.AddSingleton(config);
+builder.Services.AddScoped<IMapper, ServiceMapper>();
+
+// FluentValidation configuration
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
+
+builder.Services.AddHybridCache();
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
+
+var app = builder.Build();
+
+app.Logger.LogInformation("Using application data directory: {DataFolder}", dataFolder);
+
+app.UseResponseCompression();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// Automatically apply migrations
+using var scope = app.Services.CreateScope();
+var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+var databaseExisted = File.Exists(Path.Combine(dataFolder, "app.db"));
+var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToArray();
+if (pendingMigrations.Length > 0)
+{
+    if (databaseExisted)
+    {
+        scope.ServiceProvider.GetRequiredService<IDatabaseBackupService>().CreateBackup();
+    }
+
+    await dbContext.Database.MigrateAsync();
+}
+
+await scope.ServiceProvider
+    .GetRequiredService<InitialPromptSeeder>()
+    .SeedAsync();
+await scope.ServiceProvider
+    .GetRequiredService<SampleNovelSeeder>()
+    .SeedAsync();
+
+app.UseMiddleware<ExceptionMiddleware>();
+app.UseMiddleware<ContentSecurityPolicyMiddleware>();
+
+Directory.CreateDirectory(staticFilesRoot);
+
+// User-owned files are served from the persistent data directory. Register
+// this before the bundled SPA so /static always refers to user content.
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(staticFilesRoot),
+    RequestPath = "/static"
+});
+
+// Production publishes place the Angular application in wwwroot. Default
+// files serve index.html at /, while the fallback supports Angular routes on
+// browser refresh.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.Services.EnsurePostPutInputValidatorsAreRegistered();
+
+app.MapControllers();
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = registration => registration.Tags.Contains("ready")
+});
+
+// Missing backend and user-file routes must remain 404s instead of returning
+// the SPA shell. These more-specific fallbacks win over the general SPA one.
+app.MapFallback("/api/{**path}", () => Results.NotFound());
+app.MapFallback("/static/{**path}", () => Results.NotFound());
+app.MapFallback("/health/{**path}", () => Results.NotFound());
+app.MapFallbackToFile("index.html");
+
+await app.RunAsync();
+
+// This makes Program.cs visible to the test project, so we can use it
+// with the WebApplicationFactory.
+/// <summary></summary>
+#pragma warning disable S1118
+public partial class Program
+{
+}
+#pragma warning restore S1118

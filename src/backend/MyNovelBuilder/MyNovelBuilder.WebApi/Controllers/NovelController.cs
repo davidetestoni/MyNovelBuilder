@@ -1,0 +1,276 @@
+﻿using Mapster;
+using Microsoft.AspNetCore.Mvc;
+using MyNovelBuilder.WebApi.Data.Entities;
+using MyNovelBuilder.WebApi.Dtos.Novel;
+using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Models.Novels;
+using MyNovelBuilder.WebApi.Services;
+
+namespace MyNovelBuilder.WebApi.Controllers;
+
+/// <summary>
+/// Controller for novels.
+/// </summary>
+[Route("api/novel")]
+[ApiController]
+public class NovelController : ControllerBase
+{
+    private readonly INovelService _novelService;
+    private readonly INovelImportService _novelImportService;
+    private readonly ICompendiumService _compendiumService;
+    private readonly ICompendiumRecordService _compendiumRecordService;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    /// <summary></summary>
+    public NovelController(INovelService novelService,
+        INovelImportService novelImportService,
+        ICompendiumService compendiumService,
+        ICompendiumRecordService compendiumRecordService,
+        IHttpContextAccessor httpContextAccessor)
+    {
+        _novelService = novelService;
+        _novelImportService = novelImportService;
+        _compendiumService = compendiumService;
+        _compendiumRecordService = compendiumRecordService;
+        _httpContextAccessor = httpContextAccessor;
+    }
+    
+    /// <summary>
+    /// Get a novel by its ID.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    public async Task<NovelDto> GetNovelById(Guid id, CancellationToken cancellationToken = default)
+    {
+        var novel = await _novelService.GetByIdAsync(id, cancellationToken);
+        var dto = novel.Adapt<NovelDto>();
+        AddCoverImageUrl(dto);
+        
+        return dto;
+    }
+    
+    /// <summary>
+    /// Get the prose of a novel by its ID.
+    /// </summary>
+    [HttpGet("{id:guid}/prose")]
+    public async Task<Prose> GetNovelProse(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _novelService.GetProseAsync(id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Get all novels.
+    /// </summary>
+    [HttpGet("/api/novels")]
+    public async Task<IEnumerable<NovelDto>> GetAllNovels(CancellationToken cancellationToken = default)
+    {
+        var novels = await _novelService.GetAllAsync(cancellationToken);
+        return novels.Adapt<IEnumerable<NovelDto>>()
+            .Select(dto =>
+            {
+                AddCoverImageUrl(dto);
+                return dto;
+            });
+    }
+    
+    /// <summary>
+    /// Create a novel.
+    /// </summary>
+    [HttpPost]
+    public async Task<NovelDto> CreateNovel(
+        CreateNovelDto createNovelDto,
+        CancellationToken cancellationToken = default)
+    {
+        var novel = createNovelDto.Adapt<Novel>();
+        await SetNovelReferencesAsync(
+            novel,
+            createNovelDto.CompendiumIds,
+            createNovelDto.MainCharacterId,
+            cancellationToken);
+        await _novelService.CreateAsync(novel, cancellationToken);
+        
+        var dto = novel.Adapt<NovelDto>();
+        AddCoverImageUrl(dto);
+        
+        return dto;
+    }
+
+    /// <summary>
+    /// Update a novel.
+    /// </summary>
+    [HttpPut]
+    public async Task<NovelDto> UpdateNovel(
+        UpdateNovelDto updateNovelDto,
+        CancellationToken cancellationToken = default)
+    {
+        var novel = await _novelService.GetByIdAsync(updateNovelDto.Id, cancellationToken);
+        updateNovelDto.Adapt(novel);
+        await SetNovelReferencesAsync(
+            novel,
+            updateNovelDto.CompendiumIds,
+            updateNovelDto.MainCharacterId,
+            cancellationToken);
+        
+        await _novelService.UpdateAsync(novel, cancellationToken);
+        
+        var dto = novel.Adapt<NovelDto>();
+        AddCoverImageUrl(dto);
+        
+        return dto;
+    }
+
+    private async Task SetNovelReferencesAsync(
+        Novel novel,
+        IEnumerable<Guid> compendiumIds,
+        Guid? mainCharacterId,
+        CancellationToken cancellationToken)
+    {
+        novel.Compendia = await Task.WhenAll(compendiumIds
+            .Distinct()
+            .Select(id => _compendiumService.GetByIdAsync(id, cancellationToken)));
+        novel.MainCharacter = null;
+
+        if (mainCharacterId is null)
+        {
+            return;
+        }
+
+        var mainCharacter = await _compendiumRecordService.GetByIdAsync(
+            mainCharacterId.Value,
+            cancellationToken);
+
+        if (mainCharacter.Type != CompendiumRecordType.Character)
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                "The main character must be a character record.");
+        }
+
+        if (novel.Compendia.All(c => c.Id != mainCharacter.Compendium.Id))
+        {
+            throw new ApiException(
+                ErrorCodes.BadRequest,
+                "The main character must be part of the novel's compendia.");
+        }
+
+        novel.MainCharacter = mainCharacter;
+    }
+    
+    /// <summary>
+    /// Update the prose of a novel.
+    /// </summary>
+    [HttpPut("{id:guid}/prose")]
+    public async Task UpdateNovelProse(Guid id, Prose prose, CancellationToken cancellationToken = default)
+    {
+        await _novelService.UpdateProseAsync(id, prose, cancellationToken);
+        
+        // Also update the novel's updated at time.
+        var novel = await _novelService.GetByIdAsync(id, cancellationToken);
+        await _novelService.UpdateAsync(novel, cancellationToken);
+    }
+
+    /// <summary>
+    /// Replace a novel's prose with chapters imported from a Markdown file.
+    /// Novel metadata and settings are left unchanged.
+    /// </summary>
+    [HttpPut("{id:guid}/prose/import/markdown")]
+    public async Task ImportNovelProseFromMarkdown(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        var novel = await _novelService.GetByIdAsync(id, cancellationToken);
+        var prose = _novelImportService.ImportFromMarkdown(
+            await ReadMarkdownFileAsync(file, cancellationToken));
+
+        await _novelService.UpdateProseAsync(id, prose, cancellationToken);
+        await _novelService.UpdateAsync(novel, cancellationToken);
+    }
+    
+    /// <summary>
+    /// Delete a novel by its ID.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    public async Task DeleteNovel(Guid id, CancellationToken cancellationToken = default)
+    {
+        await _novelService.DeleteAsync(id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Upload a new cover image for a novel.
+    /// </summary>
+    [HttpPost("{id:guid}/cover-image")]
+    public async Task UploadCoverImage(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        await _novelService.UploadCoverImageAsync(id, file, cancellationToken);
+    }
+
+    /// <summary>
+    /// Upload new prose media for a novel.
+    /// </summary>
+    [HttpPost("{id:guid}/prose-image")]
+    public async Task<IActionResult> UploadProseImage(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        var location = await _novelService.UploadProseImageAsync(id, file, cancellationToken);
+        return new JsonResult(location);
+    }
+
+    /// <summary>
+    /// Delete prose media for a novel.
+    /// </summary>
+    [HttpDelete("{id:guid}/prose-image/{fileName}")]
+    public async Task DeleteProseImage(
+        Guid id,
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        await _novelService.DeleteProseImageAsync(id, fileName, cancellationToken);
+    }
+
+    private void AddCoverImageUrl(NovelDto dto)
+    {
+        var urlPath = _novelService.GetCoverImageLocation(dto.Id);
+        
+        if (urlPath is null)
+        {
+            dto.CoverImageUrl = null;
+            return;
+        }
+        
+        var request = _httpContextAccessor.HttpContext!.Request;
+        var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+        dto.CoverImageUrl = $"{baseUrl}/{urlPath.Replace(Path.DirectorySeparatorChar, '/')}";
+    }
+
+    private static async Task<string> ReadMarkdownFileAsync(
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        const long maximumFileSize = 5 * 1024 * 1024;
+        if (file.Length == 0)
+        {
+            throw new ApiException(ErrorCodes.InvalidFile, "The Markdown file is empty.");
+        }
+
+        if (file.Length > maximumFileSize)
+        {
+            throw new ApiException(ErrorCodes.InvalidFile, "The Markdown file cannot exceed 5 MB.");
+        }
+
+        var extension = Path.GetExtension(file.FileName);
+        if (!extension.Equals(".md", StringComparison.OrdinalIgnoreCase) &&
+            !extension.Equals(".markdown", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ApiException(ErrorCodes.InvalidFile, "Only .md and .markdown files can be imported.");
+        }
+
+        using var reader = new StreamReader(file.OpenReadStream());
+        return await reader.ReadToEndAsync(cancellationToken);
+    }
+}

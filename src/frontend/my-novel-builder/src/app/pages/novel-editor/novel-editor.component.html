@@ -1,0 +1,316 @@
+<div class="novel-editor">
+  @if (novel === null || compendia === null || prompts === null) {
+    <p>Loading...</p>
+  } @else {
+    <div class="novel-editor-header">
+      @if (novel.coverImageUrl !== null) {
+        <div class="novel-editor-header-cover">
+          <img
+            [routerLink]="['/novel', novel.id]"
+            src="{{ novel.coverImageUrl }}"
+            alt="{{ novel.title }}"
+          />
+        </div>
+      }
+      <div class="novel-editor-header-title">
+        <span (click)="goToProse()">{{ novel.title }}</span>
+      </div>
+      <div class="novel-editor-header-actions">
+        @if (prose() !== null) {
+          <p-select
+            [(ngModel)]="selectedChapterIndex"
+            (ngModelChange)="onChapterSelectionChange($event)"
+            [options]="chapters()"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="All Chapters"
+            [style]="{ width: '300px', border: 'none' }"
+            [showClear]="true"
+            size="small"
+          />
+        }
+        <p-button
+          label="Plan"
+          [routerLink]="['/novel', novel.id, 'planner']"
+          variant="text"
+          icon="pi pi-sitemap"
+        />
+        <p-button
+          label="Settings"
+          [routerLink]="['/novel', novel.id, 'settings']"
+          variant="text"
+          icon="pi pi-cog"
+        />
+      </div>
+    </div>
+    <div class="novel-editor-body">
+      <div
+        class="compendia-sidebar"
+        [class.is-collapsed]="isLeftSidebarCollapsed()"
+      >
+        <button
+          type="button"
+          class="compendia-sidebar-toggle"
+          (click)="toggleLeftSidebar()"
+          [attr.aria-label]="
+            isLeftSidebarCollapsed()
+              ? 'Expand compendium sidebar'
+              : 'Collapse compendium sidebar'
+          "
+          [attr.aria-expanded]="!isLeftSidebarCollapsed()"
+        >
+          <i
+            class="pi"
+            [class.pi-chevron-right]="isLeftSidebarCollapsed()"
+            [class.pi-chevron-left]="!isLeftSidebarCollapsed()"
+          ></i>
+        </button>
+        <div class="compendia-sidebar-content">
+          <div class="compendium-filters">
+            <p-select
+              [(ngModel)]="selectedCompendium"
+              [options]="compendia"
+              optionLabel="name"
+              placeholder="All Compendia"
+              [showClear]="true"
+              [style]="{ width: '100%' }"
+            >
+              <ng-template #item let-compendium>
+                <app-compendium-option-preview [compendium]="compendium" />
+              </ng-template>
+              <ng-template #selectedItem let-compendium>
+                @if (compendium) {
+                  <app-compendium-option-preview [compendium]="compendium" />
+                }
+              </ng-template>
+            </p-select>
+            <input
+              pInputText
+              type="text"
+              placeholder="Search records..."
+              [(ngModel)]="recordsFilter"
+            />
+          </div>
+          <div class="compendium-records">
+            @for (type of compendiumRecordTypes; track type) {
+              @if (getCompendiumRecordsByType(type).length > 0) {
+                <div class="compendium-records-type">
+                  <div class="compendium-records-type-name">
+                    <span>{{ type | spaced }}s</span>
+                  </div>
+                  <div class="compendium-records-list">
+                    @for (
+                      record of getCompendiumRecordsByType(type);
+                      track record.id
+                    ) {
+                      <div
+                        class="compendium-record"
+                        [class.selected]="selectedRecordOverview === record"
+                        (click)="selectRecord(record)"
+                      >
+                        <div class="compendium-record-image">
+                          @if (record.imageUrl !== null) {
+                            <img
+                              src="{{ record.imageUrl }}"
+                              alt="{{ record.name }}"
+                            />
+                          } @else {
+                            <div class="no-image">
+                              <i class="icon icon-compendium"></i>
+                            </div>
+                          }
+                        </div>
+                        <div class="compendium-record-name">
+                          <span>{{ record.name }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+      @if (selectedRecord !== null) {
+        <div class="record-sidebar">
+          <div class="record-header">
+            <div class="record-name">
+              <span>{{ selectedRecord.name }}</span>
+            </div>
+            <div class="record-type">
+              <span>{{ selectedRecord.type | spaced }}</span>
+            </div>
+            @if (selectedRecord.aliases.length > 0) {
+              <div class="record-aliases">
+                <span>Aliases: {{ selectedRecord.aliases }}</span>
+              </div>
+            }
+            @if (selectedRecord.alwaysIncluded) {
+              <div class="record-always-included">
+                <span>Always included</span>
+              </div>
+            }
+            <a
+              class="external-link"
+              [routerLink]="[
+                '/compendium',
+                selectedRecord.compendiumId,
+                'record',
+                selectedRecord.id
+              ]"
+              target="_blank"
+            >
+              <i class="pi pi-external-link"></i>
+            </a>
+          </div>
+          @if (selectedRecord.media.length > 0) {
+            <div class="record-media-grid">
+              @for (media of selectedRecord.media; track media.id) {
+                <div
+                  (click)="floatMedia(media)"
+                  class="record-media"
+                  [class.place-media]="
+                    selectedRecord.type === CompendiumRecordType.Place
+                  "
+                  [class.floated]="isFloatedMedia(media)"
+                >
+                  @if (!media.isVideo) {
+                    <img src="{{ media.url }}" alt="{{ media.id }}" />
+                  } @else {
+                    <video
+                      autoplay
+                      muted
+                      [muted]="true"
+                      loop
+                      playsinline
+                      src="{{ media.url }}"
+                    ></video>
+                  }
+                </div>
+              }
+            </div>
+          }
+          <div class="record-context">
+            <p>{{ selectedRecord.context }}</p>
+            <div class="record-context-token-count">
+              <span>{{ selectedRecord.contextTokenCount }} tokens</span>
+            </div>
+          </div>
+        </div>
+      }
+      <div class="prose-editor-wrapper">
+        @if (prose() !== null) {
+          <app-prose-editor
+            [novelId]="novelId"
+            [prose]="prose()!"
+            [prompts]="prompts"
+            [compendia]="compendia"
+            [selectedChapterIndex]="selectedChapterIndex"
+            [rpgMode]="novel.rpgMode"
+            (proseChange)="updateProse($event)"
+            (recordsChange)="getCompendia()"
+            (proseImageClicked)="onProseImageClicked($event)"
+          ></app-prose-editor>
+        }
+      </div>
+      @if (floatedMedia.length > 0) {
+        <div class="floating-media-sidebar">
+          @for (media of floatedMedia; track media.id) {
+            <div
+              class="floating-media"
+              (mouseenter)="lastHoveredFloatingMediaId = media.id"
+              [class.last-hovered]="lastHoveredFloatingMediaId === media.id"
+            >
+              @if (!media.isVideo) {
+                <img
+                  src="{{ media.url }}"
+                  alt="{{ media.id }}"
+                  (click)="zoomMedia(media)"
+                />
+              } @else {
+                <video
+                  autoplay
+                  muted
+                  [muted]="true"
+                  loop
+                  playsinline
+                  src="{{ media.url }}"
+                  (click)="zoomMedia(media)"
+                ></video>
+              }
+              @if (media.id === lastHoveredFloatingMediaId) {
+                <i
+                  class="floating-media-remove icon icon-close"
+                  (click)="floatMedia(media)"
+                ></i>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+    <div class="story-timeline" [class.is-open]="isStoryTimelineOpen()">
+      <div class="story-timeline-handle">
+        <p-button
+          label="Storyline"
+          [icon]="isStoryTimelineOpen() ? 'pi pi-chevron-down' : 'pi pi-chevron-up'"
+          iconPos="right"
+          variant="text"
+          size="small"
+          (onClick)="toggleStoryTimeline()"
+        />
+      </div>
+      <div class="story-timeline-panel">
+        @if (isStoryTimelineOpen()) {
+          <div class="story-timeline-body">
+            <app-storyline
+              [prose]="prose()"
+              [selectedChapterIndex]="selectedChapterIndex"
+              [prompts]="prompts"
+              [novelId]="novelId"
+              (chapterSelected)="selectedChapterIndex = $event"
+              (storyEventCreated)="createStoryEvent($event)"
+              (storyEventUpdated)="updateStoryEvent($event)"
+              (storyEventsReordered)="reorderStoryEvents($event)"
+              (storyEventRemoved)="removeStoryEvent($event)"
+              (storyEventsGenerated)="addGeneratedStoryEvents($event)"
+            ></app-storyline>
+          </div>
+        }
+      </div>
+    </div>
+    @if (zoomedMedia !== null) {
+      <div class="zoomed-media-overlay" (click)="unzoomMedia()">
+        <div class="zoomed-media" (click)="$event.stopPropagation()">
+          @if (!zoomedMedia.isVideo) {
+            <img src="{{ zoomedMedia.url }}" alt="{{ zoomedMedia.id }}" />
+          } @else {
+            <video
+              autoplay
+              muted
+              [muted]="true"
+              loop
+              playsinline
+              src="{{ zoomedMedia.url }}"
+            ></video>
+          }
+        </div>
+        @if (!zoomedMedia.isVideo && zoomedMediaPrompt) {
+          <div class="zoomed-media-prompt" (click)="$event.stopPropagation()">
+            <div class="zoomed-media-prompt-header">
+              <span>Original prompt</span>
+              <button type="button" (click)="copyZoomedMediaPrompt()">
+                <i class="pi pi-copy"></i>
+                <span>Copy</span>
+              </button>
+            </div>
+            <div class="zoomed-media-prompt-text">
+              <span>{{ zoomedMediaPrompt }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

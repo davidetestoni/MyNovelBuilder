@@ -1,0 +1,36 @@
+{
+  "$schema": "../../sample-novel.schema.json#/$defs/compendiumFile",
+  "compendia": [
+    {
+      "seedKey": "places",
+      "name": "Places",
+      "description": "Locations in and around the rain-battered port city.",
+      "records": [
+        {
+          "seedKey": "lumenport",
+          "name": "Lumenport",
+          "aliases": "the lantern city; the port; city of a hundred gutters",
+          "type": "place",
+          "context": "A steep coastal city built from black stone and sea glass. Copper gutters cross above the streets like musical staves and channel rain into public cisterns. The lower harbor floods at ordinary high tide, while the upper terraces house observatories, archives, and wind gardens. At night, blue lanterns make the wet streets look submerged.",
+          "alwaysIncluded": true
+        },
+        {
+          "seedKey": "archive-of-tides",
+          "name": "Archive of Tides",
+          "aliases": "the Archive; old tidehouse; western observatory",
+          "type": "place",
+          "context": "A circular observatory on Lumenport's western cliff. Its reading room is ringed with rain gauges, brass orreries, and cabinets of storm maps. Beneath it lies the Echo Vault, where dangerous maps are stored between felt-lined panes so vibration cannot wake their ink.",
+          "alwaysIncluded": false
+        },
+        {
+          "seedKey": "bellwater-market",
+          "name": "Bellwater Market",
+          "aliases": "Bellwater; gutter market; the covered market",
+          "type": "place",
+          "context": "A covered market beneath seven enormous copper gutters. Vendors identify incoming weather by the gutters' notes and adjust their prices before storms. During emergencies, the stalls fold into cots and the central auction platform becomes a relief station.",
+          "alwaysIncluded": false
+        }
+      ]
+    }
+  ]
+}

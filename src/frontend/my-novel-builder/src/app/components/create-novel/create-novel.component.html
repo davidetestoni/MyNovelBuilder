@@ -1,0 +1,181 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-row">
+        <div class="form-column">
+          <div class="form-field">
+            <label for="title" class="form-field-label">Title *</label>
+            <input
+              pInputText
+              type="text"
+              id="title"
+              formControlName="title"
+              placeholder="My new novel"
+            />
+          </div>
+          <div class="form-field">
+            <label for="author" class="form-field-label">Author</label>
+            <input
+              pInputText
+              type="text"
+              id="author"
+              formControlName="author"
+              placeholder="John Doe"
+            />
+          </div>
+          <div class="form-field">
+            <label for="brief" class="form-field-label">Brief</label>
+            <textarea
+              pInputTextarea
+              id="brief"
+              formControlName="brief"
+              placeholder="This story is about..."
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="writing-settings">
+            <div class="form-field">
+              <label for="tense" class="form-field-label">Tense *</label>
+              <p-select
+                inputId="tense"
+                formControlName="tense"
+                [options]="writingTenses"
+                [style]="{ width: '100%' }"
+                appendTo="body"
+              >
+                <ng-template #item let-tense>{{ tense | spaced }}</ng-template>
+                <ng-template #selectedItem let-tense>
+                  {{ tense | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+            <div class="form-field">
+              <label for="pov" class="form-field-label">Point of view *</label>
+              <p-select
+                inputId="pov"
+                formControlName="pov"
+                [options]="writingPovs"
+                [style]="{ width: '100%' }"
+                appendTo="body"
+              >
+                <ng-template #item let-pov>{{ pov | spaced }}</ng-template>
+                <ng-template #selectedItem let-pov>
+                  {{ pov | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+            <div class="form-field">
+              <label for="language" class="form-field-label">Language *</label>
+              <p-select
+                inputId="language"
+                formControlName="language"
+                [options]="writingLanguages"
+                [style]="{ width: '100%' }"
+                appendTo="body"
+              >
+                <ng-template #item let-language>{{ language | spaced }}</ng-template>
+                <ng-template #selectedItem let-language>
+                  {{ language | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="compendia" class="form-field-label">Compendia</label>
+            <p-multiSelect
+              inputId="compendia"
+              formControlName="compendiumIds"
+              [options]="compendia"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select optional compendia"
+              [style]="{ width: '100%' }"
+              display="chip"
+              [filter]="true"
+              filterBy="name,description"
+              filterPlaceholder="Search compendia"
+              appendTo="body"
+              (onChange)="onCompendiaChange()"
+            >
+              <ng-template #item let-compendium>
+                <app-compendium-option-preview [compendium]="compendium" />
+              </ng-template>
+            </p-multiSelect>
+          </div>
+          <div class="form-field">
+            <label for="main-character" class="form-field-label">
+              Main character
+            </label>
+            <p-select
+              inputId="main-character"
+              formControlName="mainCharacterId"
+              [options]="getAvailableCharacters()"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select an optional main character"
+              [style]="{ width: '100%' }"
+              [showClear]="true"
+              [filter]="true"
+              filterBy="name"
+              filterPlaceholder="Search characters"
+              appendTo="body"
+            >
+              <ng-template #item let-record>
+                <app-option-preview
+                  [label]="record.name"
+                  [imageUrl]="record.imageUrl"
+                />
+              </ng-template>
+              <ng-template #selectedItem let-record>
+                @if (record) {
+                  <app-option-preview
+                    [label]="record.name"
+                    [imageUrl]="record.imageUrl"
+                  />
+                }
+              </ng-template>
+            </p-select>
+            <small class="field-help">
+              Characters come from the selected compendia.
+            </small>
+          </div>
+        </div>
+        <div class="form-column">
+          <div class="form-field">
+            <div class="form-field-label">Cover</div>
+            @if (imagePreview !== null) {
+              <div class="novel-cover">
+                <img [src]="imagePreview" alt="Cover Image" />
+              </div>
+            }
+            <input
+              type="file"
+              (change)="onCoverChange($event)"
+              accept="image/*"
+            />
+            <div class="clipboard-image-button">
+              <p-button
+                label="Paste from clipboard"
+                type="button"
+                variant="text"
+                (click)="readImageFromClipboard()"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-field">
+        <div class="form-buttons-container">
+          <p-button
+            label="Create"
+            type="button"
+            (click)="createNovel()"
+            [disabled]="
+              formGroup.invalid || formGroup.pristine || isCreating
+            "
+          />
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

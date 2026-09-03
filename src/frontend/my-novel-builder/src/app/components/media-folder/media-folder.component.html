@@ -1,0 +1,166 @@
+@if (folder === null) {
+  <div class="empty-state">Select a linked folder to inspect its media.</div>
+} @else {
+  <div #mediaFolderContent class="media-folder-content">
+    <div class="media-panel-header">
+      <div class="media-panel-title">
+        <h2>{{ folder.name }}</h2>
+        <div class="selected-folder-path">{{ folder.path }}</div>
+      </div>
+      <p-button
+        label="Add Media"
+        severity="secondary"
+        [loading]="uploadingMedia"
+        (onClick)="openAddMediaDialog()"
+      />
+    </div>
+
+    @if (shouldShowPaginator) {
+      <div class="media-paginator-toolbar">
+        <div class="media-paginator-summary">
+          Showing {{ showingMediaStart }}-{{ showingMediaEnd }} of {{ allMediaFiles.length }}
+        </div>
+
+        <p-paginator
+          class="media-paginator"
+          [first]="currentPageFirst"
+          [rows]="currentPageSize"
+          [totalRecords]="allMediaFiles.length"
+          [rowsPerPageOptions]="rowsPerPageOptions"
+          (onPageChange)="onPageChange($event)"
+        />
+      </div>
+    }
+
+    @if (mediaPreviews === null) {
+      <p>Loading media...</p>
+    } @else if (mediaPreviews.length === 0) {
+      <p>No media files found in this folder.</p>
+    } @else {
+      <div class="media-grid">
+        @for (media of mediaPreviews; track media.fileName) {
+          <div class="media-card">
+            <div class="media-preview" (click)="zoomMedia(media)">
+              @if (media.url !== null) {
+                @if (!media.isVideo) {
+                  <img [src]="media.url" [alt]="media.fileName" />
+                } @else {
+                  <video
+                    autoplay
+                    muted
+                    [defaultMuted]="true"
+                    [muted]="true"
+                    loop
+                    playsinline
+                    [src]="media.url"
+                    (loadedmetadata)="ensureVideoPlayback($event)"
+                    (canplay)="ensureVideoPlayback($event)"
+                  ></video>
+                }
+              } @else {
+                <div class="media-preview-unavailable">Preview unavailable</div>
+              }
+
+              <div class="media-card-actions" (click)="$event.stopPropagation()">
+                @if (!media.isVideo) {
+                  <i class="media-card-action icon icon-edit" (click)="editImage(media)"></i>
+                }
+                <i
+                  class="media-card-action icon icon-close"
+                  (click)="confirmDeleteMedia(media.fileName)"
+                ></i>
+              </div>
+            </div>
+
+            <div class="media-card-meta">
+              <div class="media-file-name" [title]="media.fileName">
+                {{ media.fileName }}
+              </div>
+              <div class="media-file-details">
+                <span>{{ media.sizeBytes | fileSize }}</span>
+                <span>{{ media.lastModifiedAt | date: 'mediumDate' }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  @if (zoomedMedia !== null && zoomedMedia.url !== null) {
+    <div class="zoomed-media-overlay" (click)="unzoomMedia()">
+      <div class="zoomed-media" (click)="$event.stopPropagation()">
+        @if (!zoomedMedia.isVideo) {
+          <img [src]="zoomedMedia.url" [alt]="zoomedMedia.fileName" />
+        } @else {
+          <video
+            autoplay
+            loop
+            playsinline
+            [src]="zoomedMedia.url"
+            controls
+            (loadedmetadata)="ensureOverlayVideoPlayback($event)"
+            (canplay)="ensureOverlayVideoPlayback($event)"
+          ></video>
+        }
+      </div>
+
+      @if (!zoomedMedia.isVideo) {
+        <div class="zoomed-media-details" (click)="$event.stopPropagation()">
+          <div class="zoomed-media-details-header">
+            <span>Image details</span>
+            <div class="zoomed-media-details-actions">
+              <button type="button" (click)="editZoomedMedia()">
+                <i class="icon icon-edit"></i>
+                <span>Edit</span>
+              </button>
+
+              <button type="button" class="danger" (click)="deleteZoomedMedia()">
+                <i class="icon icon-close"></i>
+                <span>Delete</span>
+              </button>
+
+              @if (zoomedMediaPrompt || zoomedMediaDescription) {
+                <button type="button" (click)="copyZoomedMediaPrompt()">
+                  <i class="pi pi-copy"></i>
+                  <span>Copy text</span>
+                </button>
+              }
+
+              @if (!isZoomedMediaPromptLoading && !zoomedMediaPrompt) {
+                <button type="button" (click)="describeZoomedMedia()">
+                  <i class="pi pi-eye"></i>
+                  <span>{{ zoomedMediaDescription ? 'Describe again' : 'Describe image' }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <div class="zoomed-media-details-section">
+            <span class="zoomed-media-details-label">Name</span>
+            <span>{{ zoomedMedia.fileName }}</span>
+          </div>
+
+          @if (isZoomedMediaPromptLoading) {
+            <div class="zoomed-media-details-section">
+              <span class="zoomed-media-details-label">Prompt</span>
+              <span>Loading...</span>
+            </div>
+          } @else if (zoomedMediaPrompt) {
+            <div class="zoomed-media-details-section">
+              <span class="zoomed-media-details-label">Prompt</span>
+              <span>{{ zoomedMediaPrompt }}</span>
+            </div>
+          }
+
+          @if (zoomedMediaDescription) {
+            <div class="zoomed-media-details-section">
+              <span class="zoomed-media-details-label">Description</span>
+              <span>{{ zoomedMediaDescription }}</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+}

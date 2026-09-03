@@ -1,0 +1,96 @@
+name: Bug report
+description: Report a reproducible problem with MyNovelBuilder
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. MyNovelBuilder is a passion project built around my own writing workflow, so fixes and changes will be evaluated for fit with the project's direction and maintenance burden.
+
+        Never include API keys, `integrations.json`, private prose, or other sensitive application data.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown beside the MyNovelBuilder logo and on the About page.
+      placeholder: 0.1.0 Beta
+    validations:
+      required: true
+
+  - type: dropdown
+    id: run-mode
+    attributes:
+      label: Run mode
+      options:
+        - Desktop application
+        - Docker
+        - Source/development
+    validations:
+      required: true
+
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating system
+      options:
+        - Windows x64
+        - Windows arm64
+        - macOS x64
+        - macOS arm64
+        - Linux x64
+        - Linux arm64
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Explain the actual behavior and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider-status
+    attributes:
+      label: Provider or local-server status
+      description: If the problem involves AI generation or TTS, check the provider or separate local server first.
+      options:
+        - Not related to an AI provider or local server
+        - I checked and the provider or local server is working
+        - I have not confirmed the provider or local server is working
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste only the smallest useful, redacted excerpt. Remove credentials, private prose, personal paths, and provider request or response content.
+      render: text
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add screenshots or other details if they help, after checking them for sensitive information.
+
+  - type: checkboxes
+    id: sensitive-data
+    attributes:
+      label: Sensitive-data check
+      options:
+        - label: I checked this report and its attachments for API keys, private writing, and other sensitive data.
+          required: true

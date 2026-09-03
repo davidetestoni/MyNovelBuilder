@@ -1,0 +1,17 @@
+textarea {
+  height: 100px;
+  width: 100%;
+
+  /* Remove the handle */
+  resize: none;
+}
+
+input:not([type="checkbox"]) {
+  width: 100%;
+}
+
+.compendium-record-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

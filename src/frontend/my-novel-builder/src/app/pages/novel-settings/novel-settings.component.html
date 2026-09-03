@@ -1,0 +1,273 @@
+<p-confirmdialog />
+
+<div class="novel-settings">
+  @if (novel === null || compendia === null) {
+    <p>Loading...</p>
+  } @else {
+    <div class="novel-settings-header">
+      @if (novel.coverImageUrl !== null) {
+        <div class="novel-settings-header-cover">
+          <img
+            [routerLink]="['/novel', novel.id]"
+            src="{{ novel.coverImageUrl }}"
+            alt="{{ novel.title }}"
+          />
+        </div>
+      }
+      <div class="novel-settings-header-title">
+        <span (click)="goToProse()">{{ novel.title }}</span>
+      </div>
+      <div class="novel-settings-header-actions">
+        <p-button
+          label="Plan"
+          [routerLink]="['/novel', novel.id, 'planner']"
+          variant="text"
+          icon="pi pi-sitemap"
+        />
+        <p-button
+          label="Prose"
+          [routerLink]="['/novel', novel.id]"
+          variant="text"
+          icon="pi pi-pencil"
+        />
+      </div>
+    </div>
+    <div class="novel-settings-body">
+      <div class="novel-settings-section">
+        <div class="label">Settings</div>
+      </div>
+      <div class="novel-settings-grid">
+        <div class="novel-settings-main">
+          <div class="novel-identity">
+            <div class="novel-title">
+              <label class="label">
+                <span>Title</span>
+              </label>
+              <input
+                pInputText
+                type="text"
+                [(ngModel)]="novel.title"
+                (blur)="onBlur()"
+              />
+            </div>
+            <div class="novel-author">
+              <label class="label">
+                <span>Author</span>
+              </label>
+              <input
+                pInputText
+                type="text"
+                [(ngModel)]="novel.author"
+                (blur)="onBlur()"
+              />
+            </div>
+          </div>
+
+          <div class="novel-brief">
+            <label class="label">
+              <span>Brief</span>
+            </label>
+            <textarea
+              pInputTextarea
+              [(ngModel)]="novel.brief"
+              (blur)="onBlur()"
+              [autoResize]="true"
+            ></textarea>
+          </div>
+
+          <div class="novel-meta-row">
+            <div class="novel-tense">
+              <label class="label">
+                <span>Tense</span>
+              </label>
+              <p-select
+                [(ngModel)]="novel.tense"
+                [options]="writingTenses"
+                placeholder="Select a tense"
+                (onChange)="onBlur()"
+                [style]="{ width: '100%' }"
+              >
+                <ng-template let-tense pTemplate="item">
+                  {{ tense | spaced }}
+                </ng-template>
+                <ng-template let-tense pTemplate="selectedItem">
+                  {{ tense | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+
+            <div class="novel-pov">
+              <label class="label">
+                <span>Point of view</span>
+              </label>
+              <p-select
+                [(ngModel)]="novel.pov"
+                [options]="writingPovs"
+                placeholder="Select a point of view"
+                (onChange)="onBlur()"
+                [style]="{ width: '100%' }"
+              >
+                <ng-template let-pov pTemplate="item">
+                  {{ pov | spaced }}
+                </ng-template>
+                <ng-template let-pov pTemplate="selectedItem">
+                  {{ pov | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+
+            <div class="novel-language">
+              <label class="label">
+                <span>Language</span>
+              </label>
+              <p-select
+                [(ngModel)]="novel.language"
+                [options]="writingLanguages"
+                placeholder="Select a language"
+                (onChange)="onBlur()"
+                [style]="{ width: '100%' }"
+              >
+                <ng-template let-language pTemplate="item">
+                  {{ language | spaced }}
+                </ng-template>
+                <ng-template let-language pTemplate="selectedItem">
+                  {{ language | spaced }}
+                </ng-template>
+              </p-select>
+            </div>
+          </div>
+
+          <div class="novel-mode-row">
+            <div class="novel-rpg-mode">
+              <label class="label" for="rpgMode">
+                <span>RPG mode</span>
+              </label>
+              <div class="novel-rpg-mode-control">
+                <p-checkbox
+                  id="rpgMode"
+                  [(ngModel)]="novel.rpgMode"
+                  [binary]="true"
+                  (onChange)="onBlur()"
+                />
+                <span>Show RPG controls in the prose editor</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="novel-reference-row">
+            <div class="novel-compendia">
+              <label class="label">
+                <span>Compendia</span>
+              </label>
+              <p-multiSelect
+                [(ngModel)]="novel.compendiumIds"
+                [options]="compendia"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select compendia"
+                (onChange)="onBlur()"
+                [style]="{ width: '100%' }"
+                display="chip"
+                [filter]="true"
+                filterBy="name,description"
+                filterPlaceholder="Search compendia"
+              >
+                <ng-template #item let-compendium>
+                  <app-compendium-option-preview [compendium]="compendium" />
+                </ng-template>
+              </p-multiSelect>
+            </div>
+
+            <div class="novel-mc">
+              <label class="label">
+                <span>Main character</span>
+              </label>
+              <p-select
+                [(ngModel)]="novel.mainCharacterId"
+                [options]="getAvailableCharacters()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Select a main character"
+                (onChange)="onBlur()"
+                [style]="{ width: '100%' }"
+                [showClear]="true"
+                [filter]="true"
+                filterBy="name"
+                filterPlaceholder="Search records"
+              >
+                <ng-template #item let-record>
+                  <app-option-preview
+                    [label]="record.name"
+                    [imageUrl]="record.imageUrl"
+                  />
+                </ng-template>
+                <ng-template #selectedItem let-record>
+                  @if (record) {
+                    <app-option-preview
+                      [label]="record.name"
+                      [imageUrl]="record.imageUrl"
+                    />
+                  }
+                </ng-template>
+              </p-select>
+            </div>
+          </div>
+        </div>
+
+        <div class="novel-settings-side">
+          <div class="novel-cover">
+            <div class="label">Cover</div>
+            <div class="novel-cover-image">
+              <img [src]="novel.coverImageUrl" alt="Cover Image" />
+            </div>
+            <input
+              type="file"
+              (change)="updateNovelCoverImage($event)"
+              accept="image/*"
+            />
+            <div class="clipboard-image-button">
+              <p-button
+                label="Paste from clipboard"
+                type="button"
+                variant="text"
+                (onClick)="readCoverImageFromClipboard()"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="novel-settings-actions">
+        <p-menu #exportMenu [model]="exportFormatMenuItems" [popup]="true" appendTo="body" />
+        <div class="novel-settings-actions-buttons">
+          <p-button
+            label="Export as..."
+            icon="pi pi-download"
+            variant="outlined"
+            (onClick)="exportMenu.toggle($event)"
+          />
+          <p-button
+            label="Translate"
+            icon="pi pi-language"
+            variant="outlined"
+            (onClick)="openTranslateDialog()"
+          />
+          <p-button
+            label="Replace prose from Markdown"
+            icon="pi pi-upload"
+            severity="danger"
+            variant="outlined"
+            (onClick)="confirmReplaceProseFromMarkdown()"
+          />
+          <p-button
+            label="Delete novel"
+            icon="pi pi-trash"
+            variant="outlined"
+            severity="danger"
+            (onClick)="confirmDeleteNovel()"
+          />
+        </div>
+      </div>
+    </div>
+  }
+</div>

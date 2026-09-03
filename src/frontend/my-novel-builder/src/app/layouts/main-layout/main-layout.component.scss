@@ -1,0 +1,16 @@
+@use "../../../styles/variables" as *;
+
+.main-layout-container {
+  width: 100%;
+
+  main-layout-header {
+    position: fixed;
+    width: 100%;
+    z-index: 10;
+  }
+
+  .page-content {
+    padding-top: calc($mainLayoutHeaderHeight);
+    width: 100%;
+  }
+}

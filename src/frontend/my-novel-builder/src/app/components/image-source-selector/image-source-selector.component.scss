@@ -1,0 +1,15 @@
+.image-source-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: center;
+
+  .divider {
+    font-size: 0.8rem;
+  }
+
+  ::ng-deep .p-button {
+    justify-content: center;
+  }
+}

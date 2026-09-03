@@ -1,0 +1,383 @@
+@use "../../../styles/colors" as *;
+
+.world-builder-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: $grey1;
+
+  .session-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background-color: $grey0;
+    border-bottom: 1px solid $grey4;
+
+    .session-title input {
+      width: 100%;
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: transparent;
+      border: none;
+      color: $grey19;
+      padding: 0;
+
+      &:focus {
+        outline: none;
+        border-bottom: 1px solid $grey6;
+      }
+    }
+
+    .context-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .premise {
+      width: 100%;
+      background-color: $grey2;
+      border: 1px solid $grey5;
+      border-radius: 5px;
+      color: $grey19;
+      padding: 0.65rem;
+      resize: vertical;
+      font: inherit;
+    }
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    scroll-behavior: smooth;
+
+    .empty-state {
+      margin: auto;
+      color: $grey11;
+      font-size: 1rem;
+    }
+
+    .message-container {
+      display: flex;
+      width: 100%;
+
+      .message-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-width: 86%;
+      }
+
+      .message-bubble {
+        word-break: break-word;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+      }
+
+      &.user-message {
+        justify-content: flex-end;
+
+        .message-bubble {
+          background-color: $grey3;
+          color: $grey19;
+        }
+
+        &.failed-message .message-bubble {
+          border: 1px solid $invalid;
+        }
+      }
+
+      &.assistant-message {
+        justify-content: flex-start;
+
+        .message-wrapper {
+          width: 100%;
+          max-width: 100%;
+        }
+
+        .message-bubble {
+          background-color: transparent;
+          color: $grey19;
+          padding-left: 0;
+        }
+      }
+    }
+
+    .message-actions {
+      display: flex;
+      justify-content: flex-end;
+
+      .action-btn {
+        background: transparent !important;
+        border: none;
+        color: $grey11;
+        cursor: pointer;
+        padding: 0.25rem;
+
+        &:hover {
+          color: $grey18;
+        }
+
+        &.delete:hover {
+          color: $invalid;
+        }
+
+        &.retry {
+          gap: 0.3rem;
+          color: $invalid;
+
+          span {
+            font-size: 0.8rem;
+          }
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+      }
+    }
+
+    .failed-note {
+      align-self: flex-end;
+      color: $invalid;
+      font-size: 0.8rem;
+      padding-right: 0.5rem;
+    }
+  }
+
+  .proposal-card {
+    border: 1px solid $grey5;
+    border-radius: 6px;
+    background-color: $grey0;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+
+    &.applied {
+      opacity: 0.72;
+    }
+
+    &.collapsed {
+      gap: 0;
+    }
+
+    .proposal-card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+
+      .proposal-heading {
+        min-width: 0;
+      }
+
+      h3 {
+        margin: 0.2rem 0 0;
+        color: $grey19;
+        font-size: 1.05rem;
+        overflow-wrap: anywhere;
+      }
+
+      .proposal-kind,
+      .proposal-status {
+        color: $grey11;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+      }
+
+      .proposal-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+      }
+
+      .collapse-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.75rem;
+        height: 1.75rem;
+        border: none;
+        border-radius: 5px;
+        background-color: transparent;
+        color: $grey11;
+        cursor: pointer;
+
+        &:hover {
+          color: $grey18;
+          background-color: $grey3;
+        }
+      }
+    }
+
+    .proposal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .proposal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      color: $grey14;
+      font-size: 0.85rem;
+      font-weight: 500;
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        background-color: $grey2;
+        border: 1px solid $grey5;
+        border-radius: 5px;
+        color: $grey19;
+        padding: 0.55rem;
+        font: inherit;
+      }
+
+      textarea {
+        resize: vertical;
+        line-height: 1.45;
+      }
+    }
+
+    .block-field {
+      width: 100%;
+    }
+
+    .checkbox-field {
+      flex-direction: row;
+      align-items: center;
+
+      input {
+        width: auto;
+      }
+    }
+
+    .proposal-rationale {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      color: $grey13;
+      font-size: 0.9rem;
+
+      span {
+        color: $grey11;
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      p {
+        margin: 0;
+        line-height: 1.45;
+      }
+    }
+
+    .proposal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border: 1px solid $grey6;
+        border-radius: 5px;
+        background-color: $grey18;
+        color: $grey0;
+        padding: 0.5rem 0.75rem;
+        cursor: pointer;
+
+        &.secondary {
+          background-color: transparent;
+          color: $grey16;
+        }
+      }
+    }
+
+    .applied-note {
+      color: $grey11;
+      font-size: 0.85rem;
+    }
+  }
+
+  .input-footer {
+    padding: 1rem;
+    background-color: $grey0;
+    border-top: 1px solid $grey4;
+
+    &.error {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      color: $invalid;
+      font-weight: 500;
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      background-color: $grey2;
+      border: 1px solid $grey5;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+
+      &.disabled {
+        opacity: 0.6;
+      }
+
+      textarea {
+        flex: 1;
+        background: transparent !important;
+        border: none;
+        resize: none;
+        color: $grey19;
+        padding: 0.5rem;
+        font: inherit;
+
+        &:focus {
+          outline: none;
+        }
+      }
+
+      .input-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: transparent;
+        border: none;
+        color: $grey11;
+        padding: 0.5rem;
+        cursor: pointer;
+
+        &:hover {
+          color: $grey18;
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+      }
+    }
+  }
+}

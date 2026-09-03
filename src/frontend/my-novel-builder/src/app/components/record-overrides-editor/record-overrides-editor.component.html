@@ -1,0 +1,110 @@
+<div class="record-overrides-editor">
+  <div class="overrides-list">
+    @for (override of overrides; track $index; let i = $index) {
+      <div class="override-item" [class.collapsed]="!override.isExpanded">
+        <div class="override-item-header" (click)="toggleExpand(i)">
+          <div class="header-content">
+            <span class="record-name">{{
+              getRecordName(override.compendiumRecordId)
+            }}</span>
+            @if (override.keyword) {
+              <span class="separator">/</span>
+              <span class="keyword">{{ override.keyword }}</span>
+            }
+          </div>
+          <div class="header-actions">
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              (click)="$event.stopPropagation(); removeOverride(i)"
+              pTooltip="Remove Override"
+              tooltipPosition="left"
+            />
+            <i
+              class="expand-icon pi"
+              [class.pi-chevron-down]="!override.isExpanded"
+              [class.pi-chevron-up]="override.isExpanded"
+            ></i>
+          </div>
+        </div>
+
+        @if (override.isExpanded) {
+          <div class="override-fields">
+            <div class="field-row">
+              <div class="field">
+                <label>Record</label>
+                <p-select
+                  [(ngModel)]="override.compendiumRecordId"
+                  (onChange)="onRecordChange(override)"
+                  [options]="availableRecords"
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="Select Record"
+                  [style]="{ width: '100%' }"
+                  appendTo="body"
+                >
+                  <ng-template #item let-record>
+                    <app-option-preview
+                      [label]="record.name"
+                      [imageUrl]="record.imageUrl"
+                    />
+                  </ng-template>
+                </p-select>
+              </div>
+              <div class="field">
+                <label>Keyword</label>
+                <p-autocomplete
+                  [(ngModel)]="override.keyword"
+                  [dropdown]="true"
+                  [suggestions]="filteredKeywords"
+                  (completeMethod)="searchKeywords($event)"
+                  (ngModelChange)="onKeywordChange()"
+                  style="width: 100%"
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label>Previous Description</label>
+              <div class="previous-description">
+                {{ getPreviousDescriptionMessage(override) }}
+              </div>
+            </div>
+            <div class="field">
+              <label>New Description</label>
+              <textarea
+                pTextarea
+                [(ngModel)]="override.description"
+                (ngModelChange)="onDescriptionChange()"
+                placeholder="New description"
+                [autoResize]="true"
+                rows="3"
+                style="width: 100%"
+              ></textarea>
+            </div>
+          </div>
+        }
+      </div>
+    }
+    @if (overrides.length === 0) {
+      <p class="no-overrides">No record overrides defined for this section.</p>
+    }
+  </div>
+
+  <div class="editor-actions">
+    <p-button
+      label="Add Override"
+      icon="pi pi-plus"
+      (click)="addOverride()"
+      variant="text"
+    />
+    <div class="spacer"></div>
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      (click)="cancel()"
+      variant="text"
+    />
+    <p-button label="Save" (click)="save()" />
+  </div>
+</div>

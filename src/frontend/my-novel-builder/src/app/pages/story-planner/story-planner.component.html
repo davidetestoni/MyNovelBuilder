@@ -1,0 +1,160 @@
+<div class="story-planner">
+  @if (novel === null || prose === null) {
+    <p>Loading...</p>
+  } @else {
+    <div class="story-planner-header">
+      @if (novel.coverImageUrl !== null) {
+        <div class="story-planner-header-cover">
+          <img
+            [routerLink]="['/novel', novel.id]"
+            src="{{ novel.coverImageUrl }}"
+            alt="{{ novel.title }}"
+          />
+        </div>
+      }
+      <div class="story-planner-header-title">
+        <span (click)="goToProse()">{{ novel.title }}</span>
+      </div>
+      <div class="story-planner-header-actions">
+        <p-button
+          label="Prose"
+          [routerLink]="['/novel', novel.id]"
+          variant="text"
+          icon="pi pi-pencil"
+        />
+        <p-button
+          label="Settings"
+          [routerLink]="['/novel', novel.id, 'settings']"
+          variant="text"
+          icon="pi pi-cog"
+        />
+      </div>
+    </div>
+    <div class="story-planner-body">
+      <div
+        class="planner-board"
+        cdkDropList
+        cdkDropListOrientation="horizontal"
+        [cdkDropListData]="prose.chapters"
+        (cdkDropListDropped)="onChapterDrop($event)"
+      >
+        @for (chapter of prose.chapters; track chapter; let chapterIndex = $index) {
+          <div class="planner-column" cdkDrag>
+            <div class="planner-column-header">
+              <div class="planner-column-meta">
+                <span
+                  class="planner-column-handle"
+                  cdkDragHandle
+                  title="Reorder chapter"
+                >
+                  <i class="pi pi-bars"></i>
+                </span>
+                <h3
+                  contenteditable="true"
+                  spellcheck="false"
+                  [textContent]="chapter.title"
+                  (keydown)="preventReturnKey($event)"
+                  (blur)="updateChapterTitle(chapterIndex, $event)"
+                ></h3>
+              </div>
+              <button
+                type="button"
+                class="planner-delete-button"
+                title="Delete chapter"
+                aria-label="Delete chapter"
+                (click)="removeChapter(chapterIndex)"
+              >
+                <i class="icon icon-close"></i>
+              </button>
+            </div>
+
+            <div
+              class="planner-section-list"
+              cdkDropList
+              [id]="getSectionDropListId(chapterIndex)"
+              [cdkDropListData]="chapter.sections"
+              [cdkDropListConnectedTo]="sectionDropListIds"
+              (cdkDropListDropped)="onSectionDrop($event)"
+            >
+              @for (section of chapter.sections; track section; let sectionIndex = $index) {
+                <article
+                  class="planner-card"
+                  [class.planner-card-selected]="isSectionSelected(section)"
+                  cdkDrag
+                >
+                  <div class="planner-card-header">
+                    <div class="planner-card-meta">
+                      <label
+                        class="planner-card-checkbox"
+                        title="Select section for multi-move"
+                        aria-label="Select section for multi-move"
+                      >
+                        <input
+                          type="checkbox"
+                          [checked]="isSectionSelected(section)"
+                          (change)="toggleSectionSelection(section, $event)"
+                        />
+                      </label>
+                      <span class="planner-card-title"
+                        >Section {{ sectionIndex + 1 }}</span
+                      >
+                      <span
+                        class="planner-section-handle"
+                        cdkDragHandle
+                        title="Reorder section"
+                      >
+                        <i class="pi pi-bars"></i>
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      class="planner-delete-button"
+                      title="Delete section"
+                      aria-label="Delete section"
+                      (click)="removeSection(chapterIndex, sectionIndex)"
+                    >
+                      <i class="icon icon-close"></i>
+                    </button>
+                  </div>
+                  <p class="planner-card-preview">
+                    {{ getSectionPreview(section) }}
+                  </p>
+                </article>
+              }
+
+              @if (chapter.sections.length === 0) {
+                <div class="planner-empty-state">
+                  <span>Drop sections here</span>
+                </div>
+              }
+
+              <div
+                class="planner-add-section-card"
+                role="button"
+                tabindex="0"
+                (click)="addSection(chapterIndex)"
+                (keydown.enter)="addSection(chapterIndex)"
+                (keydown.space)="$event.preventDefault(); addSection(chapterIndex)"
+              >
+                <i class="icon icon-plus"></i>
+                <span>Add Section</span>
+              </div>
+            </div>
+          </div>
+        }
+        <div
+          class="planner-add-chapter-column"
+          role="button"
+          tabindex="0"
+          (click)="addChapter()"
+          (keydown.enter)="addChapter()"
+          (keydown.space)="$event.preventDefault(); addChapter()"
+        >
+          <i class="icon icon-plus"></i>
+          <span>Add Chapter</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+<p-confirmdialog />

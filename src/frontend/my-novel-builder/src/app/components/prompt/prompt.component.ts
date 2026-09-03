@@ -1,0 +1,403 @@
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { SpacedPipe } from '../../pipes/spaced.pipe';
+import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
+import { PromptService } from '../../services/prompt.service';
+import { PromptType } from '../../types/enums/prompt-type';
+import { PromptMessageRole } from '../../types/enums/prompt-message-role';
+import { TitleCasePipe } from '@angular/common';
+import { PromptMessageDto } from '../../types/dtos/prompt/prompt-message.dto';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
+import { TextareaModule } from 'primeng/textarea';
+import { CodeEditorComponent } from '../code-editor/code-editor.component';
+
+@Component({
+  selector: 'app-prompt',
+  standalone: true,
+  imports: [
+    FormsModule,
+    TitleCasePipe,
+    SpacedPipe,
+    InputTextModule,
+    TextareaModule,
+    ButtonModule,
+    ConfirmDialogModule,
+    CodeEditorComponent,
+  ],
+  providers: [ConfirmationService],
+  templateUrl: './prompt.component.html',
+  styleUrl: './prompt.component.scss',
+})
+export class PromptComponent {
+  @Input() prompt!: PromptDto;
+  @Output() updatePrompt = new EventEmitter<PromptDto>();
+  @Output() deletePrompt = new EventEmitter<PromptDto>();
+  promptService: PromptService = inject(PromptService);
+  private confirmationService = inject(ConfirmationService);
+
+  promptTypes: PromptType[] = [
+    PromptType.GenerateText,
+    PromptType.SummarizeText,
+    PromptType.ReplaceText,
+    PromptType.CreateCompendiumRecord,
+    PromptType.EditCompendiumRecord,
+    PromptType.SendChatMessage,
+    PromptType.DescribeCompendiumImage,
+    PromptType.DescribeImage,
+    PromptType.CreateCompendiumRecordImageGenerationPrompt,
+    PromptType.CreateStoryEvents,
+    PromptType.SuggestStoryDevelopments,
+    PromptType.TranslateNovel,
+    PromptType.PrepareImmersiveTts,
+    PromptType.WorldBuildingAgent,
+  ];
+
+  promptMessageRoles: PromptMessageRole[] = [
+    PromptMessageRole.System,
+    PromptMessageRole.User,
+    PromptMessageRole.Assistant,
+  ];
+
+  PromptType = PromptType;
+  PromptMessageRole = PromptMessageRole;
+
+  keywordsByPromptType: Record<
+    string,
+    { keyword: string; description: string }[]
+  > = {
+    [PromptType.GenerateText]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content preceding the current position.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'The specific instructions for this generation.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.SummarizeText]: [
+      {
+        keyword: '{{context}}',
+        description: 'The text of the section to be summarized.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.ReplaceText]: [
+      {
+        keyword: '{{textBefore}}',
+        description: 'The story content before the selected text.',
+      },
+      {
+        keyword: '{{textAfter}}',
+        description: 'The story content after the selected text.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'The specific instructions for the replacement.',
+      },
+      {
+        keyword: '{{textToReplace}}',
+        description: 'The actual text that is being replaced.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.CreateCompendiumRecord]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content preceding the selection.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'User instructions for creating the record.',
+      },
+      {
+        keyword: '{{recordDetails}}',
+        description: 'The selected text used to extract record information.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.EditCompendiumRecord]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content preceding the selection.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'User instructions for editing the record.',
+      },
+      {
+        keyword: '{{recordDetails}}',
+        description: 'The selected text used to extract record information.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.SendChatMessage]: [
+      {
+        keyword: '{{context}}',
+        description:
+          'The story content (chapter or entire novel) relevant to the chat.',
+      },
+      {
+        keyword: '{{chatHistory}}',
+        description: 'The previous messages in the current chat session.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: "The user's latest message in the chat.",
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from selected compendium records.',
+      },
+    ],
+    [PromptType.DescribeCompendiumImage]: [
+      {
+        keyword: '{{instructions}}',
+        description: 'Additional instructions for how to describe the image.',
+      },
+      {
+        keyword: '{{records}}',
+        description:
+          "Information from other compendium records in the record's compendium.",
+      },
+    ],
+    [PromptType.DescribeImage]: [
+      {
+        keyword: '{{instructions}}',
+        description: 'Additional instructions for how to describe the image.',
+      },
+    ],
+    [PromptType.CreateCompendiumRecordImageGenerationPrompt]: [
+      {
+        keyword: '{{record}}',
+        description:
+          'The full record context for the selected compendium record.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'Additional instructions for generating the image prompt.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from other compendium records for context.',
+      },
+    ],
+    [PromptType.CreateStoryEvents]: [
+      {
+        keyword: '{{context}}',
+        description: 'The content of the chapter or the whole novel.',
+      },
+      {
+        keyword: '{{previousChapterEvents}}',
+        description:
+          'A JSON array of story events from the previous chapter, if it exists.',
+      },
+      {
+        keyword: '{{nextChapterEvents}}',
+        description:
+          'A JSON array of story events from the next chapter, if it exists.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.SuggestStoryDevelopments]: [
+      {
+        keyword: '{{context}}',
+        description: 'The story content leading up to the current cursor position.',
+      },
+      {
+        keyword: '{{currentChapterTitle}}',
+        description: 'The title of the chapter containing the current cursor.',
+      },
+      {
+        keyword: '{{currentChapterEvents}}',
+        description:
+          'A JSON array of the current chapter story events, if any are defined.',
+      },
+      {
+        keyword: '{{sectionSummary}}',
+        description: 'The summary of the current section, if one exists.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+    [PromptType.TranslateNovel]: [
+      {
+        keyword: '{{targetLanguage}}',
+        description: 'The language to translate the selected chapter into.',
+      },
+      {
+        keyword: '{{context}}',
+        description:
+          'A JSON object containing the source chapter title, story events, and sections.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: 'Optional extra translation instructions.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Information from relevant compendium records.',
+      },
+    ],
+
+    [PromptType.WorldBuildingAgent]: [
+      {
+        keyword: '{{premise}}',
+        description: 'The freeform premise or constraints for the world.',
+      },
+      {
+        keyword: '{{novel}}',
+        description: 'Optional selected novel metadata.',
+      },
+      {
+        keyword: '{{prose}}',
+        description: 'Optional selected novel prose or chapter text.',
+      },
+      {
+        keyword: '{{compendia}}',
+        description: 'Selected compendia names, IDs, and descriptions.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Selected and always-included compendium records.',
+      },
+      {
+        keyword: '{{proposalHistory}}',
+        description: 'Previously accepted, rejected, and pending proposals.',
+      },
+      {
+        keyword: '{{chatHistory}}',
+        description: 'Previous messages in this world-building session.',
+      },
+      {
+        keyword: '{{instructions}}',
+        description: "The user's latest world-building request.",
+      },
+    ],
+    [PromptType.PrepareImmersiveTts]: [
+      {
+        keyword: '{{chapterTitle}}',
+        description: 'The current chapter title.',
+      },
+      {
+        keyword: '{{sectionSummary}}',
+        description: 'The summary of the current section.',
+      },
+      {
+        keyword: '{{sectionText}}',
+        description: 'The plain-text content of the current section.',
+      },
+      {
+        keyword: '{{storySoFar}}',
+        description: 'The story content leading up to the current section.',
+      },
+      {
+        keyword: '{{wholeChapter}}',
+        description: 'The plain-text content of the whole current chapter.',
+      },
+      {
+        keyword: '{{records}}',
+        description: 'Relevant compendium records for speaker attribution.',
+      },
+      {
+        keyword: '{{speakerOptions}}',
+        description:
+          'The narrator plus the characters that have voice assignments for the active provider and model.',
+      },
+    ],
+  };
+
+  novelKeywords = [
+    {
+      keyword: '{{novel.language}}',
+      description: 'The writing language set for the novel.',
+    },
+    {
+      keyword: '{{novel.pov}}',
+      description: 'The point of view and perspective of the novel.',
+    },
+    {
+      keyword: '{{novel.tense}}',
+      description: 'The writing tense of the novel.',
+    },
+  ];
+
+  onBlur(): void {
+    this.updatePrompt.emit(this.prompt);
+  }
+
+  addMessage(role: PromptMessageRole): void {
+    const nextMessageId =
+      this.prompt.messages.reduce(
+        (highestId, message) => Math.max(highestId, message.id),
+        -1,
+      ) + 1;
+
+    this.prompt.messages = [
+      ...this.prompt.messages,
+      {
+        id: nextMessageId,
+        role,
+        message: '',
+      },
+    ];
+    this.onBlur();
+  }
+
+  removeMessage(message: PromptMessageDto): void {
+    this.prompt.messages = this.prompt.messages.filter((m) => m !== message);
+    this.onBlur();
+  }
+
+  removePrompt(): void {
+    this.confirmationService.confirm({
+      message:
+        'Are you sure you want to delete this prompt? You cannot undo this action.',
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.deletePrompt.emit(this.prompt);
+      },
+    });
+  }
+
+  isNovelPrompt(promptType: PromptType): boolean {
+    return [
+      PromptType.GenerateText,
+      PromptType.SummarizeText,
+      PromptType.ReplaceText,
+      PromptType.CreateCompendiumRecord,
+      PromptType.EditCompendiumRecord,
+      PromptType.SendChatMessage,
+      PromptType.CreateStoryEvents,
+      PromptType.SuggestStoryDevelopments,
+      PromptType.TranslateNovel,
+      PromptType.PrepareImmersiveTts,
+    ].includes(promptType);
+  }
+}

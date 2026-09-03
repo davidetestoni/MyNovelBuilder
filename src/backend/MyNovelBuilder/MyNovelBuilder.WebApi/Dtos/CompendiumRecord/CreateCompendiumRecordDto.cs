@@ -1,0 +1,57 @@
+﻿using FluentValidation;
+using MyNovelBuilder.WebApi.Enums;
+
+namespace MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
+
+/// <summary>
+/// Data transfer object for creating a compendium record.
+/// </summary>
+public class CreateCompendiumRecordDto
+{
+    /// <summary>
+    /// The record's name.
+    /// </summary>
+    public required string Name { get; set; }
+    
+    /// <summary>
+    /// The record's aliases, i.e. other names by which it is known.
+    /// </summary>
+    public string Aliases { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The record type.
+    /// </summary>
+    public CompendiumRecordType Type { get; set; }
+    
+    /// <summary>
+    /// The record's context.
+    /// </summary>
+    public string Context { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// The ID of the compendium to which the record belongs.
+    /// </summary>
+    public Guid CompendiumId { get; set; }
+    
+    /// <summary>
+    /// Whether the record should always be included in the prompts.
+    /// </summary>
+    public bool AlwaysIncluded { get; set; }
+
+    /// <summary>
+    /// Character-specific voice assignments remembered per provider/model pair.
+    /// </summary>
+    public IEnumerable<CharacterVoiceAssignmentDto> CharacterVoiceAssignments { get; set; } = Array.Empty<CharacterVoiceAssignmentDto>();
+}
+
+internal class CreateCompendiumRecordDtoValidator : AbstractValidator<CreateCompendiumRecordDto>
+{
+    public CreateCompendiumRecordDtoValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Aliases).MaximumLength(500);
+        RuleFor(x => x.Type).IsInEnum();
+        RuleFor(x => x.CompendiumId).NotEmpty();
+        RuleForEach(x => x.CharacterVoiceAssignments).SetValidator(new CharacterVoiceAssignmentDtoValidator());
+    }
+}

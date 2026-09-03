@@ -1,0 +1,68 @@
+<div class="compendia-container">
+  <div class="compendia-header">
+    <h1>Compendia</h1>
+    <input
+      pInputText
+      type="text"
+      placeholder="Search compendia or records..."
+      [(ngModel)]="filter"
+      class="compendia-filter"
+    />
+  </div>
+  @if (compendia === null) {
+    <p>Loading...</p>
+  } @else {
+    <div class="compendia-list">
+      <div class="add-compendium-card" (click)="openCreateCompendiumDialog()">
+        <i class="icon icon-plus"></i>
+        <span>Add Compendium</span>
+      </div>
+      @for (compendium of filteredCompendia; track compendium) {
+        <div
+          class="compendium-card"
+          [routerLink]="['/compendium', compendium.id]"
+        >
+          <div class="compendium-info">
+            <div class="compendium-name">
+              <span>{{ compendium.name }}</span>
+            </div>
+            <div class="compendium-description">
+              <span>{{ compendium.description }}</span>
+            </div>
+          </div>
+          @for (type of recordTypesToPreview; track type) {
+            <div class="compendium-records">
+              <div class="compendium-records-title">
+                <span>{{ type | titlecase }}s</span>
+              </div>
+              <div class="compendium-records-list">
+                @for (
+                  record of getRecordsOfType(compendium, type);
+                  track record
+                ) {
+                  <div class="compendium-record">
+                    <div class="compendium-record-image">
+                      @if (record.imageUrl !== null) {
+                        <img
+                          src="{{ record.imageUrl }}"
+                          alt="{{ record.name }}"
+                        />
+                      } @else {
+                        <div class="no-image">
+                          <i class="icon icon-compendium"></i>
+                        </div>
+                      }
+                    </div>
+                    <div class="compendium-record-name">
+                      <span>{{ record.name }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

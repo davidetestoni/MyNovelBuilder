@@ -1,0 +1,107 @@
+@use "../../../styles/colors" as *;
+
+:host {
+  display: block;
+}
+
+.form-container {
+  margin-top: 1rem;
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.model-help-text {
+  margin-top: 0.4rem;
+  color: $grey11;
+  font-size: 0.8rem;
+}
+
+.generation-status {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: $grey2;
+  border: 1px solid $grey4;
+  color: $grey18;
+  font-size: 0.9rem;
+}
+
+.generation-error {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: $grey2;
+  border: 1px solid $invalid;
+  color: $invalid;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.generation-raw-output {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: $grey0;
+  border: 1px solid $grey4;
+  color: $grey19;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.generated-results {
+  margin-top: 1.5rem;
+}
+
+.generated-results-title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  color: $grey18;
+}
+
+.story-suggestion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.story-suggestion-card {
+  background: $grey1;
+  border: 1px solid $grey4;
+  border-radius: 10px;
+  padding: 0.75rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    border-color: $grey8;
+    transform: translateY(-1px);
+  }
+}
+
+.story-suggestion-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: $grey18;
+}
+
+.story-suggestion-description {
+  font-size: 0.85rem;
+  color: $grey13;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}

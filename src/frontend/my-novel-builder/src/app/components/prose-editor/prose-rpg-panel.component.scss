@@ -1,0 +1,153 @@
+@use "../../../styles/colors" as *;
+
+:host {
+  --rpg-control-height: 36px;
+
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto auto auto minmax(220px, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  margin: 1rem -20px -20px;
+  background-color: $grey0;
+  border-top: 1px solid $grey4;
+}
+
+:host(.hidden) {
+  display: none;
+}
+
+app-prompt-select,
+app-model-select {
+  display: block;
+  height: var(--rpg-control-height);
+}
+
+:host ::ng-deep app-prompt-select .p-select,
+:host ::ng-deep app-model-select .p-select {
+  height: 100%;
+}
+
+.rpg-action-toggle {
+  display: flex;
+  box-sizing: border-box;
+  height: var(--rpg-control-height);
+  overflow: hidden;
+  border: 1px solid $grey5;
+  border-radius: 0.4rem;
+  background-color: $grey1;
+
+  button {
+    border: none;
+    background-color: transparent;
+    color: $grey13;
+    min-width: 48px;
+    height: 100%;
+    padding: 0 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+
+    &:not(:last-child) {
+      border-right: 1px solid $grey5;
+    }
+
+    &.active {
+      background-color: $grey4;
+      color: $grey18;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+  }
+}
+
+.rpg-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  min-height: var(--rpg-control-height);
+  box-sizing: border-box;
+  background-color: $grey2;
+  border: 1px solid $grey5;
+  border-radius: 0.5rem;
+  padding: 1px 0.35rem 1px 0.6rem;
+
+  &:focus-within:not(.disabled) {
+    border-color: $grey6;
+  }
+
+  &.disabled {
+    opacity: 0.65;
+  }
+
+  textarea {
+    flex: 1;
+    min-width: 0;
+    max-height: 120px;
+    border: none;
+    background: transparent !important;
+    resize: none;
+    color: $grey19;
+    font-family: inherit;
+    line-height: 1.4;
+    padding: 0;
+
+    &:focus {
+      outline: none;
+      box-shadow: none;
+    }
+
+    &::placeholder {
+      color: $grey11;
+    }
+  }
+
+  .rpg-send-btn {
+    border: none;
+    background-color: transparent;
+    color: $grey11;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 0.25rem;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: $grey13;
+      background-color: $grey4;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+  }
+}
+
+@media (max-width: 980px) {
+  :host {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  :host {
+    grid-template-columns: 1fr;
+    padding-right: 0.75rem;
+    padding-bottom: 3.5rem;
+  }
+
+  app-prompt-select,
+  app-model-select {
+    width: 100%;
+  }
+}

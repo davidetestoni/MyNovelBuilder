@@ -1,0 +1,82 @@
+@MyNovelBuilder.WebApi_HostAddress = http://localhost:5113/api
+@NovelId = c8c0eddf-34ae-485e-a236-da71f8345364
+
+# TODO: Update this collection with the new endpoints
+
+# Get a novel by id
+GET {{MyNovelBuilder.WebApi_HostAddress}}/novel/{{NovelId}}
+Accept: application/json
+
+###
+
+# Get all novels
+GET {{MyNovelBuilder.WebApi_HostAddress}}/novels
+Accept: application/json
+
+###
+
+# Create a new novel
+POST {{MyNovelBuilder.WebApi_HostAddress}}/novel
+Content-Type: application/json
+Accept: application/json
+
+{
+  "title": "My First Novel",
+  "author": "John Doe",
+  "brief": "This is my first novel",
+  "tense": "present",
+  "pov": "firstPerson",
+  "language": "english",
+  "mainCharacterId": null
+}
+
+###
+
+# Update a novel
+PUT {{MyNovelBuilder.WebApi_HostAddress}}/novel/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "id": "{{NovelId}}",
+  "title": "My First Novel 2",
+  "author": "John Doe",
+  "brief": "This is my first novel",
+  "tense": "present",
+  "pov": "firstPerson",
+  "language": "english",
+  "mainCharacterId": null
+}
+
+###
+
+# Get cover image
+GET {{MyNovelBuilder.WebApi_HostAddress}}/novel/{{NovelId}}/cover-image
+Accept: application/json
+
+###
+
+# Upload cover image
+POST {{MyNovelBuilder.WebApi_HostAddress}}/novel/{{NovelId}}/cover-image
+Content-Type: multipart/form-data
+Accept: application/json
+
+###
+
+# Get all prompts
+GET {{MyNovelBuilder.WebApi_HostAddress}}/prompts
+Accept: application/json
+
+###
+
+# Generate text (streamed)
+POST {{MyNovelBuilder.WebApi_HostAddress}}/generate/text/streamed
+Content-Type: application/json
+Accept: application/json
+
+{
+  "model": "undi95/toppy-m-7b:free",
+  "instructions": "Hi, how are you?",
+  "promptId": "8359f424-3743-4d34-acb2-680faf8cbdb8",
+  "novelId": "{{NovelId}}"
+}

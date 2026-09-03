@@ -1,0 +1,58 @@
+@use "../../../styles/colors" as *;
+
+input {
+  width: 100%;
+}
+
+textarea {
+  width: 100%;
+}
+
+small {
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.voice-design-action {
+  margin-top: 12px;
+}
+
+.voice-design-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.voice-design-hint {
+  display: block;
+  margin-top: 6px;
+  color: $grey14;
+  font-size: 0.85rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.voice-design-form .form-buttons-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.voice-design-preview {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-design-preview-title {
+  font-weight: 600;
+}
+
+.voice-design-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}

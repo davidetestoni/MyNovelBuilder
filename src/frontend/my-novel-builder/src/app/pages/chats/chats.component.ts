@@ -1,0 +1,166 @@
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import moment from 'moment';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
+import { ReactiveFormsModule } from '@angular/forms';
+import { ChatMetadata } from '../../types/dtos/chats/chat-metadata';
+import { ChatService } from '../../services/chat.service';
+import { Tooltip } from 'primeng/tooltip';
+import { Chat } from '../../types/dtos/chats/chat';
+import { ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ChatComponent } from '../../components/chat/chat.component';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { CreateChatComponent } from '../../components/create-chat/create-chat.component';
+import { NovelService } from '../../services/novel.service';
+
+@Component({
+  selector: 'app-chats',
+  standalone: true,
+  templateUrl: './chats.component.html',
+  styleUrls: ['./chats.component.scss'],
+  imports: [
+    RouterModule,
+    ReactiveFormsModule,
+    Tooltip,
+    ConfirmDialogModule,
+    ChatComponent,
+  ],
+  providers: [ConfirmationService, DialogService],
+})
+export class ChatsComponent implements OnInit, OnDestroy {
+  chats: ChatMetadata[] | null = null;
+  currentChatId: string | null = null;
+  currentChat: Chat | null = null;
+  private novelImageUrlsById: Record<string, string | null> = {};
+  private dialogService = inject(DialogService);
+  private dialogRef: DynamicDialogRef | null = null;
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  readonly chatService = inject(ChatService);
+  readonly novelService = inject(NovelService);
+  readonly confirmationService = inject(ConfirmationService);
+
+  ngOnInit(): void {
+    this.getChats();
+    this.getNovelCovers();
+    this.route.paramMap.subscribe((params) => {
+      const id = params.get('id');
+      if (id) {
+        this.loadChat(id);
+      } else {
+        this.currentChatId = null;
+        this.currentChat = null;
+        this.maybeOpenFirstChat();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    }
+  }
+
+  getChats(): void {
+    this.chatService.getChats().subscribe((chats) => {
+      this.chats = chats;
+      this.maybeOpenFirstChat();
+    });
+  }
+
+  getNovelCovers(): void {
+    this.novelService.getNovels().subscribe((novels) => {
+      this.novelImageUrlsById = Object.fromEntries(
+        novels.map((novel) => [novel.id, novel.coverImageUrl]),
+      );
+    });
+  }
+
+  private maybeOpenFirstChat(): void {
+    if (
+      this.chats &&
+      this.chats.length > 0 &&
+      !this.route.snapshot.paramMap.get('id')
+    ) {
+      this.selectChat(this.chats[0].id);
+    }
+  }
+
+  loadChat(chatId: string): void {
+    if (this.currentChatId !== chatId) {
+      this.chatService.getChat(chatId).subscribe((chat) => {
+        this.currentChat = chat;
+        this.currentChatId = chatId;
+      });
+    }
+  }
+
+  updateLocalChatMetadata(): void {
+    if (
+      this.chats !== null &&
+      this.currentChat !== null &&
+      this.currentChatId !== null
+    ) {
+      const chat = this.chats.find((c) => c.id === this.currentChatId);
+      if (chat !== undefined) {
+        chat.name = this.currentChat.name;
+        chat.updatedAt = new Date().toISOString();
+      }
+    }
+  }
+
+  selectChat(chatId: string): void {
+    this.router.navigate(['/chat', chatId]);
+  }
+
+  deleteChat(chatId: string): void {
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to delete this chat?',
+      header: 'Confirm Delete',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.chatService.deleteChat(chatId).subscribe(() => {
+          this.chats = this.chats?.filter((chat) => chat.id !== chatId) || null;
+          if (this.currentChatId === chatId) {
+            this.router.navigate(['/chat']);
+          }
+        });
+      },
+    });
+  }
+
+  openCreateChatDialog(): void {
+    this.dialogRef = this.dialogService.open(CreateChatComponent, {
+      header: 'Create a chat',
+      width: '400px',
+      modal: true,
+      closable: true,
+      closeOnEscape: true,
+      dismissableMask: true,
+    });
+
+    this.dialogRef?.onClose.subscribe((result: Chat | undefined) => {
+      if (result) {
+        const metadata: ChatMetadata = {
+          id: result.id,
+          novelId: result.context.novelId,
+          name: result.name,
+          createdAt: result.createdAt,
+          updatedAt: result.updatedAt,
+        };
+        this.chats = [metadata, ...(this.chats || [])];
+        this.router.navigate(['/chat', result.id]);
+      }
+    });
+  }
+
+  getLastUpdated(chat: ChatMetadata): string {
+    return moment(chat.updatedAt).fromNow();
+  }
+
+  getChatNovelCover(chat: ChatMetadata): string | null {
+    return this.novelImageUrlsById[chat.novelId] ?? null;
+  }
+}

@@ -1,0 +1,252 @@
+<p-confirmDialog></p-confirmDialog>
+
+<div class="compendium-record-container">
+  <div class="compendium-record-editor">
+    <div class="compendium-record">
+      <div class="compendium-record-name">
+        <label class="label">
+          <span>Name</span>
+        </label>
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="record.name"
+          (blur)="onBlur()"
+        />
+      </div>
+      <!-- The type cannot be changed -->
+      <div class="compendium-record-type">
+        <div class="label">
+          <span>Type: {{ record.type | titlecase }}</span>
+        </div>
+      </div>
+      <div class="compendium-record-aliases">
+        <label class="label">
+          <span>Aliases</span>
+        </label>
+        <input
+          pInputText
+          type="text"
+          [(ngModel)]="record.aliases"
+          (blur)="onBlur()"
+        />
+        <app-alias-suggestions
+          [name]="record.name || ''"
+          [currentAliases]="record.aliases || ''"
+          (aliasAdded)="addAlias($event)"
+        />
+      </div>
+      <div class="compendium-record-always-included">
+        <p-checkbox
+          id="alwaysIncluded"
+          [(ngModel)]="record.alwaysIncluded"
+          (onChange)="onBlur()"
+          [binary]="true"
+        />
+        <label for="alwaysIncluded">Always included</label>
+      </div>
+      <div class="compendium-record-context">
+        <label class="label">
+          <span>Context</span>
+        </label>
+        <div class="context-token-count">
+          <span>{{ record.contextTokenCount }} tokens</span>
+          <i
+            class="pi pi-info-circle"
+            pTooltip="Token count is computed with tiktoken using the gpt-4o encoding."
+            tooltipPosition="top"
+          ></i>
+        </div>
+        <app-code-editor
+          [(ngModel)]="record.context"
+          (blur)="onBlur()"
+          language="compendium"
+        ></app-code-editor>
+      </div>
+      @if (record.type === CompendiumRecordType.Character) {
+        <div class="compendium-record-character-voices">
+          <label class="label">
+            <span>Character Voices</span>
+          </label>
+
+          <div class="compendium-record-character-voices-editor">
+            <div class="voice-editor-field voice-editor-field-provider">
+              <p-select
+                [options]="voiceProviderOptions"
+                [(ngModel)]="selectedVoiceProvider"
+                placeholder="Select TTS provider"
+                [style]="{ width: '100%' }"
+                (ngModelChange)="onVoiceProviderChange()"
+              />
+            </div>
+
+            <div class="voice-editor-field voice-editor-field-model">
+              <p-select
+                [options]="voiceModelOptions"
+                [(ngModel)]="selectedVoiceModelId"
+                placeholder="Select TTS model"
+                [style]="{ width: '100%' }"
+                [filter]="true"
+                [disabled]="voiceModelOptions.length === 0 || isLoadingVoiceModels"
+                (ngModelChange)="onVoiceModelChange()"
+              />
+            </div>
+
+            <div class="voice-editor-field voice-editor-field-voice">
+              <div class="voice-selector-with-action">
+                <p-select
+                  [options]="voiceOptions"
+                  [(ngModel)]="selectedVoiceId"
+                  placeholder="Select voice"
+                  [style]="{ width: '100%' }"
+                  [filter]="true"
+                  [disabled]="voiceOptions.length === 0 || isLoadingVoiceModels"
+                />
+
+                <p-button
+                  label="Preview"
+                  variant="outlined"
+                  icon="pi pi-play"
+                  [loading]="isPreviewingSelectedVoice"
+                  [disabled]="
+                    !selectedVoiceProvider ||
+                    !selectedVoiceModelId ||
+                    !selectedVoiceId ||
+                    isLoadingVoiceModels ||
+                    isPreviewingVoice
+                  "
+                  (onClick)="previewSelectedVoice()"
+                />
+              </div>
+            </div>
+
+            <p-button
+              class="voice-save-button"
+              label="Assign Voice"
+              [disabled]="
+                !selectedVoiceProvider ||
+                !selectedVoiceModelId ||
+                !selectedVoiceId ||
+                isLoadingVoiceModels
+              "
+              (click)="saveCharacterVoiceAssignment()"
+            />
+          </div>
+
+          @if (record.characterVoiceAssignments.length > 0) {
+            <div class="compendium-record-character-voice-list">
+              @for (
+                assignment of record.characterVoiceAssignments;
+                track assignment.provider + '-' + assignment.modelId
+              ) {
+                <div class="compendium-record-character-voice-item">
+                  <div class="compendium-record-character-voice-item-details">
+                    <div class="character-voice-detail">
+                      <span class="character-voice-detail-label">Provider</span>
+                      <strong>{{
+                        formatTtsProviderLabel(assignment.provider)
+                      }}</strong>
+                    </div>
+                    <div class="character-voice-detail">
+                      <span class="character-voice-detail-label">Model</span>
+                      <span>{{ assignment.modelId }}</span>
+                    </div>
+                    <div class="character-voice-detail">
+                      <span class="character-voice-detail-label">Voice</span>
+                      <span>{{ assignment.voiceName || assignment.voiceId }}</span>
+                    </div>
+                  </div>
+                  <div class="compendium-record-character-voice-item-actions">
+                    <p-button
+                      icon="pi pi-play"
+                      [text]="true"
+                      [rounded]="true"
+                      [loading]="isPreviewingAssignment(assignment)"
+                      pTooltip="Preview voice assignment"
+                      tooltipPosition="top"
+                      [disabled]="isPreviewingVoice"
+                      (onClick)="previewCharacterVoiceAssignment(assignment)"
+                    />
+                    <p-button
+                      icon="pi pi-trash"
+                      severity="danger"
+                      [text]="true"
+                      [rounded]="true"
+                      pTooltip="Remove voice assignment"
+                      tooltipPosition="top"
+                      (click)="removeCharacterVoiceAssignment(assignment)"
+                    />
+                  </div>
+                </div>
+              }
+            </div>
+          } @else {
+            <small>
+              Assign a voice per provider/model pair so immersive TTS can switch
+              speakers naturally.
+            </small>
+          }
+        </div>
+      }
+      <div class="compendium-record-media-container">
+        <div class="label">
+          <span>Media</span>
+        </div>
+        <div class="compendium-record-media-grid">
+          @for (media of record.media; track media.id) {
+            <div
+              class="compendium-record-media"
+              [class.current]="media.isCurrent"
+              [class.place-media]="record.type === CompendiumRecordType.Place"
+            >
+              @if (!media.isVideo) {
+                <img
+                  src="{{ media.url }}"
+                  alt="{{ record.name }}"
+                  (click)="setCurrentImage(media.id)"
+                />
+              } @else {
+                <video
+                  autoplay
+                  muted
+                  [muted]="true"
+                  loop
+                  playsinline
+                  src="{{ media.url }}"
+                ></video>
+              }
+
+              @if (!media.isVideo) {
+                <i
+                  class="compendium-record-media-edit icon icon-edit"
+                  (click)="editImage(media)"
+                ></i>
+              }
+
+              <i
+                class="compendium-record-media-remove icon icon-close"
+                (click)="removeMedia(media.id)"
+              ></i>
+            </div>
+          }
+          <div
+            class="add-compendium-record-media"
+            [class.place-media]="record.type === CompendiumRecordType.Place"
+            (click)="openAddMediaDialog()"
+          >
+            <i class="icon icon-plus"></i>
+            <span>Add</span>
+          </div>
+        </div>
+      </div>
+      <div class="compendium-record-actions">
+        <p-button
+          label="Delete Record"
+          (click)="removeRecord()"
+          severity="danger"
+          [outlined]="true"
+        />
+      </div>
+    </div>
+  </div>
+</div>

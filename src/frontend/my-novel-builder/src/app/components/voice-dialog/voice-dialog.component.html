@@ -1,0 +1,222 @@
+<div class="modal-container">
+  <div class="form-container">
+    <form [formGroup]="formGroup">
+      <div class="form-field">
+        <label for="name" class="form-field-label">Name *</label>
+        <input
+          pInputText
+          id="name"
+          type="text"
+          formControlName="name"
+          placeholder="Voice name"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="voiceGender" class="form-field-label">Gender *</label>
+        <p-select
+          id="voiceGender"
+          formControlName="voiceGender"
+          [options]="voiceGenderOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select gender"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="language" class="form-field-label">Language *</label>
+        <p-select
+          id="language"
+          formControlName="language"
+          [options]="languageOptions"
+          placeholder="Select language"
+          appendTo="body"
+          [style]="{ width: '100%' }"
+        >
+          <ng-template let-option #item>
+            {{ option | titlecase }}
+          </ng-template>
+          <ng-template let-option #selectedItem>
+            {{ option | titlecase }}
+          </ng-template>
+        </p-select>
+      </div>
+
+      <div class="form-field">
+        <label for="voiceFile" class="form-field-label">
+          Voice File (.wav){{ data.mode === 'create' ? ' *' : '' }}
+        </label>
+        <input
+          id="voiceFile"
+          type="file"
+          accept=".wav,audio/wav"
+          (change)="onFileSelected($event)"
+        />
+        @if (selectedFileName) {
+          <small>{{ selectedFileName }}</small>
+        } @else if (data.mode === 'edit') {
+          <small>Leave empty to keep the existing WAV file.</small>
+        }
+        @if (voiceDesignProviderOptions.length > 0) {
+          <div class="voice-design-action">
+            <p-button
+              type="button"
+              label="Design Voice"
+              icon="pi pi-sparkles"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="openVoiceDesignDialog()"
+            />
+          </div>
+        }
+      </div>
+
+      <div class="form-field">
+        <label for="transcript" class="form-field-label">Voice Sample Transcript</label>
+        <textarea
+          pInputTextarea
+          id="transcript"
+          formControlName="transcript"
+          rows="5"
+          placeholder="Enter exactly what is spoken in the voice sample"
+        ></textarea>
+        <small>
+          Required by voice-cloning providers such as Audio8. The transcript should
+          match the recording exactly.
+        </small>
+      </div>
+
+      <div class="form-buttons-container">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          type="button"
+          (onClick)="cancel()"
+        />
+        <p-button
+          [label]="data.mode === 'edit' ? 'Save' : 'Create'"
+          type="button"
+          (onClick)="submit()"
+          [disabled]="formGroup.invalid"
+        />
+      </div>
+    </form>
+  </div>
+</div>
+
+<p-dialog
+  header="Design Voice"
+  [(visible)]="isVoiceDesignDialogVisible"
+  [modal]="true"
+  appendTo="body"
+  [closable]="!isGeneratingDesignedVoice"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '40rem', maxWidth: '95vw' }"
+  (onHide)="closeVoiceDesignDialog()"
+>
+  <form [formGroup]="voiceDesignFormGroup" class="voice-design-form">
+    <div class="form-field">
+      <label for="voiceDesignProvider" class="form-field-label">Provider *</label>
+      <p-select
+        id="voiceDesignProvider"
+        formControlName="provider"
+        [options]="voiceDesignProviderOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select provider"
+        appendTo="body"
+        [style]="{ width: '100%' }"
+      />
+    </div>
+
+    <div class="form-field">
+      <label for="voiceDesignLanguage" class="form-field-label">Language *</label>
+      <p-select
+        id="voiceDesignLanguage"
+        formControlName="language"
+        [options]="languageOptions"
+        placeholder="Select language"
+        appendTo="body"
+        [style]="{ width: '100%' }"
+      >
+        <ng-template let-option #item>
+          {{ option | titlecase }}
+        </ng-template>
+        <ng-template let-option #selectedItem>
+          {{ option | titlecase }}
+        </ng-template>
+      </p-select>
+    </div>
+
+    <div class="form-field">
+      <label for="voiceDesignPrompt" class="form-field-label">Prompt To Say *</label>
+      <textarea
+        pInputTextarea
+        id="voiceDesignPrompt"
+        formControlName="prompt"
+        rows="4"
+        placeholder="Enter the phrase the designed voice should say"
+      ></textarea>
+    </div>
+
+    <div class="form-field">
+      <label for="voiceDescription" class="form-field-label">Voice Description *</label>
+      <textarea
+        pInputTextarea
+        id="voiceDescription"
+        formControlName="voiceDescription"
+        rows="5"
+        placeholder="Describe the target voice"
+      ></textarea>
+      @if (currentVoiceDesignHint) {
+        <small class="voice-design-hint">{{ currentVoiceDesignHint }}</small>
+      }
+    </div>
+
+    <div class="form-buttons-container">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        type="button"
+        [disabled]="isGeneratingDesignedVoice"
+        (onClick)="closeVoiceDesignDialog()"
+      />
+      <p-button
+        label="Generate Voice Sample"
+        type="button"
+        [loading]="isGeneratingDesignedVoice"
+        [disabled]="voiceDesignFormGroup.invalid || isGeneratingDesignedVoice"
+        (onClick)="generateDesignedVoice()"
+      />
+    </div>
+
+    @if (generatedVoiceSample) {
+      <div class="voice-design-preview">
+        <div class="voice-design-preview-title">Generated Sample Ready</div>
+        <div class="voice-design-preview-actions">
+          <p-button
+            type="button"
+            label="Play Sample"
+            icon="pi pi-play"
+            severity="secondary"
+            [outlined]="true"
+            [loading]="isPreviewingDesignedVoice"
+            [disabled]="isPreviewingDesignedVoice"
+            (onClick)="previewDesignedVoice()"
+          />
+          <p-button
+            type="button"
+            label="Use This Sample"
+            (onClick)="applyDesignedVoice()"
+          />
+        </div>
+      </div>
+    }
+  </form>
+</p-dialog>

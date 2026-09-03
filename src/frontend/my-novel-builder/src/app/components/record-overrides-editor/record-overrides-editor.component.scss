@@ -1,0 +1,135 @@
+@use "../../../styles/variables" as *;
+@use "../../../styles/colors" as *;
+
+.record-overrides-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: 70vh;
+
+  .overrides-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+
+    .override-item {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid $grey4;
+      border-radius: 0.5rem;
+      background: $grey2;
+      overflow: hidden;
+
+      .override-item-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 1rem;
+        background: $grey3;
+        cursor: pointer;
+        user-select: none;
+        transition: background 0.2s;
+
+        &:hover {
+          background: $grey4;
+        }
+
+        .header-content {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-weight: 600;
+
+          .record-name {
+            color: $grey15;
+          }
+
+          .separator {
+            color: $grey8;
+          }
+
+          .keyword {
+            color: $grey13;
+            font-style: italic;
+          }
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+
+          .expand-icon {
+            color: $grey11;
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+          }
+        }
+      }
+
+      .override-fields {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        border-top: 1px solid $grey4;
+
+        .field-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+
+        .field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+
+          label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: $grey13;
+          }
+
+          .previous-description {
+            min-height: 5.5rem;
+            padding: 0.75rem 0.875rem;
+            border: 1px solid $grey4;
+            border-radius: 0.5rem;
+            background: $grey1;
+            color: $grey12;
+            white-space: pre-wrap;
+            line-height: 1.45;
+          }
+        }
+      }
+
+      &.collapsed {
+        .override-fields {
+          display: none;
+        }
+      }
+    }
+
+    .no-overrides {
+      text-align: center;
+      color: $grey11;
+      padding: 2rem;
+      font-style: italic;
+    }
+  }
+
+  .editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid $grey4;
+
+    .spacer {
+      flex: 1;
+    }
+  }
+}

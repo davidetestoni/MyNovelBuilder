@@ -1,0 +1,169 @@
+@use "../../../styles/colors" as *;
+
+.media-library-page {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: calc(100vh - 88px);
+}
+
+h1 {
+  margin: 0px;
+}
+
+.folder-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background-color: $grey2;
+  border: 1px solid $grey7;
+  border-radius: 8px;
+  padding: 16px;
+
+  @media (max-width: 960px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.folder-toolbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.folder-toolbar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+
+  @media (max-width: 960px) {
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+}
+
+.media-library-layout-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -6px;
+
+  @media (max-width: 960px) {
+    justify-content: stretch;
+    margin-top: 0;
+  }
+}
+
+.media-library-layout-toggle ::ng-deep .p-selectbutton {
+  display: flex;
+  justify-content: flex-end;
+
+  @media (max-width: 960px) {
+    justify-content: stretch;
+  }
+}
+
+.media-library-layout-toggle ::ng-deep .p-selectbutton .p-togglebutton {
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.media-library-layout-toggle
+  ::ng-deep
+  .p-selectbutton
+  .p-togglebutton:first-child {
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+}
+
+.media-library-layout-toggle
+  ::ng-deep
+  .p-selectbutton
+  .p-togglebutton:last-child {
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+}
+
+.media-library-layout-toggle ::ng-deep .p-selectbutton .p-togglebutton,
+.media-library-layout-toggle
+  ::ng-deep
+  .p-selectbutton
+  .p-togglebutton.p-togglebutton-checked {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.folder-toolbar-controls p-select,
+.folder-toolbar-controls ::ng-deep .p-select {
+  min-width: 280px;
+  flex: 1;
+}
+
+.folder-toolbar-status {
+  color: $grey11;
+  font-size: 0.9rem;
+}
+
+.folder-select-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.folder-select-name {
+  min-width: 0;
+}
+
+.folder-select-path {
+  color: $grey11;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-panel {
+  background-color: $grey2;
+  border: 1px solid $grey7;
+  border-radius: 8px;
+  padding: 16px;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.media-panel-two-column {
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr);
+
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.media-panel-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.media-panel-studio {
+  border-left: 1px solid $grey7;
+  padding-left: 16px;
+
+  @media (max-width: 1100px) {
+    border-left: 0;
+    border-top: 1px solid $grey7;
+    padding-left: 0;
+    padding-top: 16px;
+  }
+}

@@ -1,0 +1,64 @@
+@use "../../../styles/colors" as *;
+
+:host {
+  display: block;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.model-help-text {
+  margin-top: 0.4rem;
+  color: $grey11;
+  font-size: 0.8rem;
+}
+
+.generation-status {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: $grey2;
+  border: 1px solid $grey4;
+  color: $grey18;
+  font-size: 0.9rem;
+}
+
+.generation-error {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: $grey2;
+  border: 1px solid $invalid;
+  color: $invalid;
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+}
+
+.generated-results {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.generated-chapter {
+  background: $grey1;
+  border: 1px solid $grey4;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+
+.generated-chapter-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: $grey18;
+}
+
+.progress-copy {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: $grey12;
+}

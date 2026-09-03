@@ -1,0 +1,48 @@
+<div class="create-chat-container">
+  @if (novels === null) {
+    <p>Loading novels...</p>
+  } @else {
+    <form [formGroup]="formGroup" (ngSubmit)="createChat()">
+      <div class="form-field">
+        <label for="novel-select">Select Novel</label>
+        <p-select
+          id="novel-select"
+          [options]="novels"
+          formControlName="novel"
+          optionLabel="title"
+          placeholder="Select a Novel"
+          [filter]="true"
+          filterBy="title,author"
+          filterPlaceholder="Search novels"
+          [style]="{ width: '100%' }"
+          appendTo="body"
+        >
+          <ng-template #item let-novel>
+            <app-option-preview
+              [label]="novel.title"
+              [imageUrl]="novel.coverImageUrl"
+              fallbackIcon="icon-novels"
+            />
+          </ng-template>
+          <ng-template #selectedItem let-novel>
+            @if (novel) {
+              <app-option-preview
+                [label]="novel.title"
+                [imageUrl]="novel.coverImageUrl"
+                fallbackIcon="icon-novels"
+              />
+            }
+          </ng-template>
+        </p-select>
+      </div>
+      <div class="form-actions">
+        <p-button
+          label="Create"
+          type="submit"
+          [disabled]="formGroup.invalid || isCreating"
+          [loading]="isCreating"
+        ></p-button>
+      </div>
+    </form>
+  }
+</div>

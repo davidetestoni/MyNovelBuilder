@@ -1,0 +1,63 @@
+﻿using System.ComponentModel.DataAnnotations;
+using MyNovelBuilder.WebApi.Enums;
+using MyNovelBuilder.WebApi.Models.Tts;
+
+namespace MyNovelBuilder.WebApi.Data.Entities;
+
+/// <summary>
+/// Entity for a compendium record.
+/// </summary>
+public class CompendiumRecord : TimestampedEntity
+{
+    /// <summary>
+    /// The record's name.
+    /// </summary>
+    [Required]
+    [MaxLength(100)]
+    public required string Name { get; init; }
+    
+    /// <summary>
+    /// The record's aliases, i.e. other names by which it is known.
+    /// </summary>
+    [Required]
+    [MaxLength(500)]
+    public string Aliases { get; init; } = string.Empty;
+    
+    /// <summary>
+    /// The record type.
+    /// </summary>
+    [Required]
+    public CompendiumRecordType Type { get; init; }
+    
+    /// <summary>
+    /// The record's context.
+    /// </summary>
+    [Required]
+    [MaxLength(10000)]
+    public string Context { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Cached token count for <see cref="Context"/>.
+    /// </summary>
+    public int ContextTokenCount { get; set; }
+    
+    /// <summary>
+    /// The current image ID.
+    /// </summary>
+    public Guid? CurrentImageId { get; set; }
+    
+    /// <summary>
+    /// The compendium to which the record belongs.
+    /// </summary>
+    public Compendium Compendium { get; set; } = null!;
+    
+    /// <summary>
+    /// Whether the record should always be included in the prompts.
+    /// </summary>
+    public bool AlwaysIncluded { get; set; }
+
+    /// <summary>
+    /// The character voice assignments remembered per TTS provider/model combination.
+    /// </summary>
+    public IEnumerable<CharacterVoiceAssignment> CharacterVoiceAssignments { get; set; } = [];
+}
