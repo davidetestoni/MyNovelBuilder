@@ -27,8 +27,9 @@ They are not code-signed, so your operating system may warn you before running
 them. The releases page will remain empty until the first public release is
 published.
 
-Docker and source installation instructions are available in the
-[documentation](docs/index.md).
+See the [desktop installation guide](docs/desktop.md) for choosing the correct
+package and handling unsigned-application warnings. Docker and source
+installation instructions are available in the [documentation](docs/index.md).
 
 ## What it does
 

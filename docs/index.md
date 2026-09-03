@@ -12,7 +12,7 @@ Feature requests and contributions will be considered, but acceptance is not gua
 
 | Option | Best for | Guide |
 | --- | --- | --- |
-| Desktop package | Writers who want a normal application | Desktop installation guide (coming soon) |
+| Desktop package | Writers who want a normal application | [Desktop installation](desktop.md) |
 | Docker | A reproducible local installation with persistent data | [Docker](docker.md) |
 | Source | Contributors and developers | [Development setup](development.md) |
 

@@ -70,6 +70,8 @@
       <None Remove="packages.electron.lock.json" />
       <Content Remove="Properties\electron-builder.json" />
       <None Remove="Properties\electron-builder.json" />
+      <Content Remove="Properties\desktop-icons\**\*" />
+      <None Remove="Properties\desktop-icons\**\*" />
       <Content Remove="Desktop\electron-custom-main.cjs" />
       <None Remove="Desktop\electron-custom-main.cjs" />
       <Content Update="appsettings.Development.json">
@@ -84,6 +86,21 @@
       <Content Include="Properties\electron-after-pack.cjs"
                Condition="'$(ElectronDesktopBuild)' == 'true'">
         <TargetPath>electron-after-pack.cjs</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Properties\desktop-icons\icon.ico"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>desktop-icons/icon.ico</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Properties\desktop-icons\icon.icns"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>desktop-icons/icon.icns</TargetPath>
+        <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      </Content>
+      <Content Include="Properties\desktop-icons\icon.png"
+               Condition="'$(ElectronDesktopBuild)' == 'true'">
+        <TargetPath>desktop-icons/icon.png</TargetPath>
         <CopyToPublishDirectory>Always</CopyToPublishDirectory>
       </Content>
       <Content Include="..\.dockerignore">

@@ -17,4 +17,12 @@ module.exports = async function afterPack(context) {
   await rm(path.join(resourcesDirectory, 'bin', 'electron-after-pack.cjs'), {
     force: true,
   });
+
+  // ElectronNET stages the complete build output rather than only files in
+  // the ASP.NET Core publish manifest. Keep development-only configuration
+  // out of every distributable even if it remains in an incremental bin tree.
+  await rm(
+    path.join(resourcesDirectory, 'bin', 'appsettings.Development.json'),
+    { force: true },
+  );
 };

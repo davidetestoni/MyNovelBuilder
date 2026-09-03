@@ -5,18 +5,21 @@
   "afterPack": "bin/electron-after-pack.cjs",
   "publish": null,
   "win": {
+    "icon": "bin/desktop-icons/icon.ico",
     "target": [
       "nsis"
     ],
     "artifactName": "MyNovelBuilder-Windows-${env.MNB_DESKTOP_ARCH}-Setup.${ext}"
   },
   "mac": {
+    "icon": "bin/desktop-icons/icon.icns",
     "target": [
       "dmg"
     ],
     "artifactName": "MyNovelBuilder-macOS-${env.MNB_DESKTOP_ARCH}.${ext}"
   },
   "linux": {
+    "icon": "bin/desktop-icons/icon.png",
     "target": [
       "AppImage",
       "deb"
