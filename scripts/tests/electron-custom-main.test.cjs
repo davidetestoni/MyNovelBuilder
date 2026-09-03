@@ -5,9 +5,23 @@ const test = require('node:test');
 
 const {
   attachNavigationGuards,
+  configureDesktopIdentity,
   isExternalBrowserUrl,
   isLoopbackApplicationUrl,
 } = require('../../src/backend/MyNovelBuilder/MyNovelBuilder.WebApi/Desktop/electron-custom-main.cjs');
+
+test('matches the installed Linux desktop entry before startup', () => {
+  const desktopNames = [];
+  const app = {
+    setDesktopName: (name) => desktopNames.push(name),
+  };
+
+  configureDesktopIdentity(app, 'linux');
+  configureDesktopIdentity(app, 'win32');
+  configureDesktopIdentity(app, 'darwin');
+
+  assert.deepEqual(desktopNames, ['MyNovelBuilder.desktop']);
+});
 
 test('recognizes only HTTP loopback application URLs', () => {
   assert.equal(isLoopbackApplicationUrl('http://127.0.0.1:43210/novels'), true);

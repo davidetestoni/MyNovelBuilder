@@ -1,6 +1,13 @@
 'use strict';
 
+const LINUX_DESKTOP_NAME = 'MyNovelBuilder.desktop';
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', '::1', '[::1]', 'localhost']);
+
+function configureDesktopIdentity(app, platform = process.platform) {
+  if (platform === 'linux') {
+    app.setDesktopName(LINUX_DESKTOP_NAME);
+  }
+}
 
 function parseUrl(value) {
   try {
@@ -78,6 +85,7 @@ function attachNavigationGuards(webContents, shell, logger = console) {
 
 function onStartup() {
   const { app, shell } = require('electron');
+  configureDesktopIdentity(app);
   app.on('web-contents-created', (_event, webContents) => {
     attachNavigationGuards(webContents, shell);
   });
@@ -87,6 +95,7 @@ function onStartup() {
 
 module.exports = {
   attachNavigationGuards,
+  configureDesktopIdentity,
   isExternalBrowserUrl,
   isLoopbackApplicationUrl,
   onStartup,
