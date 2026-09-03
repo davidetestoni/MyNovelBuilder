@@ -53,7 +53,9 @@
           />
         </div>
 
-        @if (textGenerationModelOptions.length > 0) {
+        @if (textGenerationModelsUnavailableMessage; as message) {
+          <p class="field-help">{{ message }}</p>
+        } @else if (textGenerationModelOptions.length > 0) {
           <div class="form-group">
             <label for="textGenerationModelId"
               >Default Text Generation Model:</label
@@ -268,7 +270,9 @@
         </div>
       }
 
-      @if (ttsModelOptions.length > 0) {
+      @if (ttsModelsUnavailableMessage; as message) {
+        <p class="field-help">{{ message }}</p>
+      } @else if (ttsModelOptions.length > 0) {
         <div class="form-group">
           <label for="ttsModelId">Select TTS Model:</label>
           <p-select

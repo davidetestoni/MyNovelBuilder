@@ -227,7 +227,7 @@ describe('IntegrationsComponent workflows', () => {
     component.ngOnInit();
     generateAudioService.getAvailableModels.calls.reset();
     generateTextService.getAvailableModelInfos.calls.reset();
-
+    component.hasGoogleGenAiApiKey = true;
     component.integrationsForm.controls.textGenerationProvider.setValue(
       TextGenerationProvider.GoogleGenAi,
     );
@@ -241,6 +241,31 @@ describe('IntegrationsComponent workflows', () => {
     expect(generateAudioService.getAvailableModels).toHaveBeenCalledOnceWith(
       TtsProvider.PocketTts,
     );
+  });
+
+  it('does not request model lists before the selected provider key is configured', () => {
+    integrationsService.getIntegrationsConfig.and.returnValue(
+      of(config({
+        hasOpenRouterApiKey: false,
+        hasElevenLabsApiKey: false,
+        textGenerationProvider: TextGenerationProvider.OpenRouter,
+        ttsProvider: TtsProvider.ElevenLabs,
+      })),
+    );
+
+    component.ngOnInit();
+
+    expect(generateTextService.getAvailableModelInfos).not.toHaveBeenCalled();
+    expect(generateAudioService.getAvailableModels).not.toHaveBeenCalled();
+    expect(component['textGenerationModelsUnavailableMessage']).toBe(
+      'Save an OpenRouter API key to load available models.',
+    );
+    expect(component['ttsModelsUnavailableMessage']).toBe(
+      'Save an ElevenLabs API key to load available models and voices.',
+    );
+    expect(component.integrationsForm.value.textGenerationModelId).toBe('');
+    expect(component.integrationsForm.value.ttsModelId).toBe('');
+    expect(component.integrationsForm.value.ttsVoiceId).toBe('');
   });
 
   it('filters out text models without structured-output support and sorts options', () => {
@@ -669,7 +694,7 @@ describe('IntegrationsComponent workflows', () => {
     );
   });
 
-  it('marks submitted keys configured, clears them, reloads TTS data, and reports success', () => {
+  it('marks submitted keys configured, clears them, reloads model data, and reports success', () => {
     component.availableTtsModels = ttsModels();
     component.integrationsForm.patchValue({
       openRouterApiKey: 'open-router',
@@ -702,6 +727,9 @@ describe('IntegrationsComponent workflows', () => {
     );
     expect(generateAudioService.getAvailableModels).toHaveBeenCalledOnceWith(
       TtsProvider.Qwen3,
+    );
+    expect(generateTextService.getAvailableModelInfos).toHaveBeenCalledOnceWith(
+      TextGenerationProvider.OpenRouter,
     );
     expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
       [TtsProvider.DeApi],

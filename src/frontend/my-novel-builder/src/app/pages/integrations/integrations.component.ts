@@ -234,6 +234,40 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       }));
   }
 
+  protected get textGenerationModelsUnavailableMessage(): string | null {
+    switch (this.integrationsForm.value.textGenerationProvider) {
+      case TextGenerationProvider.OpenRouter:
+        return this.hasOpenRouterApiKey
+          ? null
+          : 'Save an OpenRouter API key to load available models.';
+      case TextGenerationProvider.GoogleGenAi:
+        return this.hasGoogleGenAiApiKey
+          ? null
+          : 'Save a Google GenAI API key to load available models.';
+      default:
+        return null;
+    }
+  }
+
+  protected get ttsModelsUnavailableMessage(): string | null {
+    switch (this.integrationsForm.value.ttsProvider) {
+      case TtsProvider.DeApi:
+        return this.hasDeApiApiKey
+          ? null
+          : 'Save a DeAPI API key to load available models and voices.';
+      case TtsProvider.ElevenLabs:
+        return this.hasElevenLabsApiKey
+          ? null
+          : 'Save an ElevenLabs API key to load available models and voices.';
+      case TtsProvider.OpenRouter:
+        return this.hasOpenRouterApiKey
+          ? null
+          : 'Save an OpenRouter API key to load available models and voices.';
+      default:
+        return null;
+    }
+  }
+
   protected get ttsVoiceOptions(): {
     label: string;
     value: string;
@@ -315,6 +349,11 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     selectedModelId?: string,
     selectedVoiceId?: string,
   ): void {
+    if (this.ttsModelsUnavailableMessage) {
+      this.clearTtsModelSelection();
+      return;
+    }
+
     this.generateAudioService.getAvailableModels(provider).subscribe({
       next: (models: TtsModelDto[]) => {
         this.availableTtsModels = models;
@@ -340,15 +379,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading TTS voices:', error);
-        this.availableTtsModels = [];
-        this.integrationsForm.patchValue(
-          {
-            ttsModelId: '',
-            ttsVoiceId: '',
-            ttsEnableTextEmphasis: false,
-          },
-          { emitEvent: false },
-        );
+        this.clearTtsModelSelection();
       },
     });
   }
@@ -357,6 +388,11 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     provider: TextGenerationProvider,
     selectedModelId?: string,
   ): void {
+    if (this.textGenerationModelsUnavailableMessage) {
+      this.clearTextGenerationModelSelection();
+      return;
+    }
+
     this.generateTextService.getAvailableModelInfos(provider).subscribe({
       next: (models) => {
         this.availableTextGenerationModels = models.filter(
@@ -380,15 +416,31 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading text generation models:', error);
-        this.availableTextGenerationModels = [];
-        this.integrationsForm.patchValue(
-          {
-            textGenerationModelId: '',
-          },
-          { emitEvent: false },
-        );
+        this.clearTextGenerationModelSelection();
       },
     });
+  }
+
+  private clearTtsModelSelection(): void {
+    this.availableTtsModels = [];
+    this.integrationsForm.patchValue(
+      {
+        ttsModelId: '',
+        ttsVoiceId: '',
+        ttsEnableTextEmphasis: false,
+      },
+      { emitEvent: false },
+    );
+  }
+
+  private clearTextGenerationModelSelection(): void {
+    this.availableTextGenerationModels = [];
+    this.integrationsForm.patchValue(
+      {
+        textGenerationModelId: '',
+      },
+      { emitEvent: false },
+    );
   }
 
   loadConfiguredBalances(): void {
@@ -660,6 +712,12 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
             this.integrationsForm.value.ttsProvider,
             this.integrationsForm.value.ttsModelId ?? undefined,
             this.integrationsForm.value.ttsVoiceId ?? undefined,
+          );
+        }
+        if (this.integrationsForm.value.textGenerationProvider) {
+          this.loadTextGenerationModels(
+            this.integrationsForm.value.textGenerationProvider,
+            this.integrationsForm.value.textGenerationModelId ?? undefined,
           );
         }
         this.loadConfiguredBalances();
