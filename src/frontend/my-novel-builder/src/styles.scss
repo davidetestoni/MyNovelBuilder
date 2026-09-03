@@ -69,14 +69,6 @@ h2 {
   }
 }
 
-.p-inputtext,
-.p-textarea,
-.p-select,
-.p-multiselect,
-.p-calendar input {
-  background: var(--p-surface-800) !important;
-}
-
 /* When p-checkbox is near a label, add some margin */
 label + .p-checkbox {
   margin-left: 10px;
@@ -86,8 +78,14 @@ label + .p-checkbox {
 }
 
 /* Scrollbar (thin and dark) */
+html {
+  scrollbar-color: $grey6 $grey2;
+  scrollbar-width: thin;
+}
+
 ::-webkit-scrollbar {
   width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
