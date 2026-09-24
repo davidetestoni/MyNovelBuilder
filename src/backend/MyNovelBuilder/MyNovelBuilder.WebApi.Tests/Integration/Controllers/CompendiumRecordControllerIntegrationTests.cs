@@ -271,6 +271,46 @@ public class CompendiumRecordControllerIntegrationTests(
     }
 
     [Fact]
+    public async Task GetCompendiumRecordById_OrdersMediaByUploadTime()
+    {
+        using var client = Factory.CreateClient();
+        var compendium = new Compendium { Name = "Test Compendium" };
+        UnitOfWork.Compendia.Add(compendium);
+        var record = new CompendiumRecord
+        {
+            Name = "Test Record",
+            Type = CompendiumRecordType.Character,
+            Compendium = compendium
+        };
+        UnitOfWork.CompendiumRecords.Add(record);
+        await UnitOfWork.SaveChangesAsync();
+
+        var galleryPath = Path.Combine(
+            StorageOptions.StaticFilesRoot,
+            "compendium",
+            compendium.Id.ToString(),
+            "records",
+            record.Id.ToString(),
+            "gallery");
+        Directory.CreateDirectory(galleryPath);
+
+        var olderId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
+        var newerId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var olderPath = Path.Combine(galleryPath, $"{olderId}.png");
+        var newerPath = Path.Combine(galleryPath, $"{newerId}.png");
+        await File.WriteAllBytesAsync(olderPath, [0x12, 0x34]);
+        await File.WriteAllBytesAsync(newerPath, [0x12, 0x34]);
+        File.SetLastWriteTimeUtc(olderPath, new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        File.SetLastWriteTimeUtc(newerPath, new DateTime(2025, 1, 2, 0, 0, 0, DateTimeKind.Utc));
+
+        var result = await GetJsonAsync<CompendiumRecordDto>(
+            client, $"api/compendium-record/{record.Id}");
+
+        Assert.True(result.IsOk);
+        Assert.Equal([olderId, newerId], result.Value.Media.Select(media => media.Id));
+    }
+
+    [Fact]
     public async Task SetCurrentImage_ReturnsOk()
     {
         // Arrange
