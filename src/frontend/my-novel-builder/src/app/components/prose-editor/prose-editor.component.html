@@ -100,6 +100,11 @@
                     </div>
                   </div>
                   <div class="section-actions">
+                    @if (summaryGenerations.has(chapterIndex + ':' + sectionIndex)) {
+                      <div class="section-action">
+                        <i class="pi pi-stop" pTooltip="Cancel summary generation" tooltipPosition="bottom" (click)="cancelSectionSummary(chapterIndex, sectionIndex)" role="button" aria-label="Cancel summary generation"></i>
+                      </div>
+                    }
                     <div class="section-action">
                       <i
                         pTooltip="Generate Summary"
@@ -192,6 +197,7 @@
       selectedChapterIndex === prose.chapters.length - 1
     "
     (promptSubmitted)="sendRpgPrompt($event, rpgPanel)"
+    (generationCancelled)="cancelRpgGeneration()"
     (promptPreviewed)="previewRpgPrompt($event)"
   />
   @if (showEditorControls) {

@@ -297,6 +297,20 @@ describe('GenerateStorySuggestionsDialogComponent workflow', () => {
     expect(component.isGenerating).toBeFalse();
   });
 
+  it('unsubscribes from the provider request when cancelled', async () => {
+    const response = new Subject<GenerateTextCompletion>();
+    generateTextService.generateTextCompletion.and.returnValue(response);
+    setValidForm();
+
+    const generation = component.generate();
+    component.cancelGeneration();
+    await generation;
+
+    expect(response.observed).toBeFalse();
+    expect(component.isGenerating).toBeFalse();
+    expect(component.generationError).toBeNull();
+  });
+
   it('closes with the selected description and normalized model', async () => {
     setValidForm();
     await component.generate();

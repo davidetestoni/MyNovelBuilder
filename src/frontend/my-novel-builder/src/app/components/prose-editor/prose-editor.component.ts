@@ -2,6 +2,7 @@ import {
   Component,
   EventEmitter,
   Input,
+  OnDestroy,
   Output,
   inject,
 } from '@angular/core';
@@ -18,6 +19,7 @@ import { environment } from '../../../environment';
 import { FormsModule } from '@angular/forms';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { GenerateTextService } from '../../services/generate-text.service';
+import { Subscription } from 'rxjs';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import {
@@ -97,7 +99,7 @@ interface RpgAppendTarget {
     ProseTtsService,
   ],
 })
-export class ProseEditorComponent {
+export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
   @Input() prose!: Prose;
   @Input() selectedChapterIndex: number | null = null;
@@ -125,6 +127,8 @@ export class ProseEditorComponent {
   lastSelection: LastSelection | null = null;
   private readonly sectionEditors = new Map<string, Quill>();
   isRpgGenerating = false;
+  private rpgGenerationSubscription: Subscription | null = null;
+  readonly summaryGenerations = new Map<string, { subscription: Subscription; previousSummary: string }>();
   readonly normalizeQuillHtmlWhitespace = normalizeQuillHtmlWhitespace;
 
   getImageUrl(fileName: string): string {
@@ -242,7 +246,7 @@ export class ProseEditorComponent {
 
     const request = this.buildRpgRequest(command, target);
 
-    this.generateTextService.generateText(request).subscribe({
+    this.rpgGenerationSubscription = this.generateTextService.generateText(request).subscribe({
       next: async (update) => {
         if (!update.isComplete) {
           return;
@@ -253,6 +257,7 @@ export class ProseEditorComponent {
         if (!generatedText.trim()) {
           this.toastr.error('No RPG response was generated.');
           this.isRpgGenerating = false;
+          this.rpgGenerationSubscription = null;
           return;
         }
 
@@ -271,15 +276,31 @@ export class ProseEditorComponent {
         }
 
         this.isRpgGenerating = false;
+        this.rpgGenerationSubscription = null;
         this.saveProse();
       },
       error: (error) => {
         console.error('Error generating RPG text:', error);
         panel.restoreInput(command.input);
         this.isRpgGenerating = false;
+        this.rpgGenerationSubscription = null;
         this.toastr.error('Failed to generate RPG response.');
       },
     });
+  }
+
+  cancelRpgGeneration(): void {
+    this.rpgGenerationSubscription?.unsubscribe();
+    this.rpgGenerationSubscription = null;
+    this.isRpgGenerating = false;
+  }
+
+  ngOnDestroy(): void {
+    this.cancelRpgGeneration();
+    for (const generation of this.summaryGenerations.values()) {
+      generation.subscription.unsubscribe();
+    }
+    this.summaryGenerations.clear();
   }
 
   previewRpgPrompt(command: ProseRpgCommand): void {
@@ -509,22 +530,51 @@ export class ProseEditorComponent {
     sectionIndex: number,
     request: GenerateTextRequestDto,
   ) {
+    const key = `${chapterIndex}:${sectionIndex}`;
+    this.cancelSectionSummary(chapterIndex, sectionIndex);
+    const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
+    const previousSummary = section.summary;
     // Clear the current summary
-    this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
-      '[Summarizing...]';
+    section.summary = '[Summarizing...]';
 
-    this.generateTextService.generateText(request).subscribe({
+    const subscription = this.generateTextService.generateText(request).subscribe({
       next: (update) => {
         if (update.content.length > 0) {
-          this.prose.chapters[chapterIndex].sections[sectionIndex].summary =
-            update.content;
+          section.summary = update.content;
         }
 
         if (update.isComplete) {
+          this.summaryGenerations.delete(key);
           this.saveProse();
         }
       },
+      error: () => {
+        this.summaryGenerations.delete(key);
+        if (section.summary === '[Summarizing...]') {
+          section.summary = previousSummary;
+        }
+      },
+      complete: () => this.summaryGenerations.delete(key),
     });
+    if (!subscription.closed) {
+      this.summaryGenerations.set(key, { subscription, previousSummary });
+    }
+  }
+
+  cancelSectionSummary(chapterIndex: number, sectionIndex: number): void {
+    const key = `${chapterIndex}:${sectionIndex}`;
+    const generation = this.summaryGenerations.get(key);
+    if (!generation) {
+      return;
+    }
+    generation.subscription.unsubscribe();
+    this.summaryGenerations.delete(key);
+    const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
+    if (section.summary === '[Summarizing...]') {
+      section.summary = generation.previousSummary;
+    } else {
+      this.saveProse();
+    }
   }
 
   openGenerateTextDialog(prefill: GenerateTextDialogPrefill = {}) {

@@ -40,6 +40,7 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
     GenerateTextPreviewDialogService,
   );
   isGenerating = true;
+  wasCancelled = false;
   hasGenerationError = false;
   generatedText = '';
   generationElapsedSeconds = 0;
@@ -74,6 +75,7 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
     this.generatedText = '[Generating text...]';
     this.isGenerating = true;
     this.hasGenerationError = false;
+    this.wasCancelled = false;
     this.lastGenerationDurationSeconds = null;
     this.startGenerationTimer();
 
@@ -105,6 +107,21 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
       });
   }
 
+  cancelGeneration(): void {
+    if (!this.isGenerating) {
+      return;
+    }
+
+    this.generationSubscription?.unsubscribe();
+    this.generationSubscription = null;
+    this.isGenerating = false;
+    this.wasCancelled = true;
+    this.stopGenerationTimer();
+    if (this.generatedText === '[Generating text...]') {
+      this.generatedText = '';
+    }
+  }
+
   get retryButtonLabel(): string {
     return this.isGenerating
       ? `Generating (${this.generationElapsedSeconds}s)`
@@ -120,11 +137,13 @@ export class GenerateTextResultComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    return `Generation took ${this.lastGenerationDurationSeconds}s`;
+    return this.wasCancelled
+      ? `Cancelled after ${this.lastGenerationDurationSeconds}s`
+      : `Generation took ${this.lastGenerationDurationSeconds}s`;
   }
 
   accept(): void {
-    if (this.isGenerating || this.hasGenerationError) {
+    if (this.isGenerating || this.hasGenerationError || !this.generatedText) {
       return;
     }
 

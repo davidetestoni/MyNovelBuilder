@@ -223,6 +223,11 @@
               <i class="pi pi-send"></i>
             }
           </button>
+          @if (isGenerating) {
+            <button type="button" class="input-action-btn" (click)="stopGeneration()" aria-label="Cancel generation" title="Cancel generation">
+              <i class="pi pi-stop"></i>
+            </button>
+          }
         </div>
       </div>
     }

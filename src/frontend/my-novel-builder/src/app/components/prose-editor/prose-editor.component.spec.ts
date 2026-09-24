@@ -594,6 +594,20 @@ describe('ProseEditorComponent', () => {
         'Failed to generate RPG response.',
       );
     });
+
+    it('cancels a pending RPG provider stream', () => {
+      const updates = new Subject<GenerateTextStreamUpdate>();
+      generateTextService.generateText.and.returnValue(updates);
+      const panel = createPanel();
+
+      component.sendRpgPrompt(createCommand(), panel);
+      component.cancelRpgGeneration();
+      updates.next({ content: 'Late response', isComplete: true });
+
+      expect(updates.observed).toBeFalse();
+      expect(component.isRpgGenerating).toBeFalse();
+      expect(component.prose.chapters[0].sections[0].text).toBe('<p>Text</p>');
+    });
   });
 
   describe('text to speech', () => {
@@ -810,6 +824,18 @@ describe('ProseEditorComponent', () => {
       updates$.next({ content: 'Final', isComplete: true });
       expect(component.prose.chapters[0].sections[0].summary).toBe('Final');
       expect(emit).toHaveBeenCalledOnceWith(component.prose);
+    });
+
+    it('cancels a pending summary stream and restores the prior summary', () => {
+      const updates = new Subject<GenerateTextStreamUpdate>();
+      generateTextService.generateText.and.returnValue(updates);
+
+      component.generateSectionSummary(0, 0, createRequest());
+      component.cancelSectionSummary(0, 0);
+      updates.next({ content: 'Late response', isComplete: true });
+
+      expect(updates.observed).toBeFalse();
+      expect(component.prose.chapters[0].sections[0].summary).toBe('Summary');
     });
 
     it('validates story-suggestion selection and carries accepted suggestions forward', () => {
