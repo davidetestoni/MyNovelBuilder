@@ -171,7 +171,7 @@ describe('IntegrationsComponent workflows', () => {
     );
   });
 
-  it('loads configuration, models, API-key status, and configured balances', () => {
+  it('loads configuration, models, API-key status, and selected provider balances', () => {
     component.ngOnInit();
 
     expect(component.hasOpenRouterApiKey).toBeTrue();
@@ -202,7 +202,6 @@ describe('IntegrationsComponent workflows', () => {
     );
     expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
       [TtsProvider.DeApi],
-      [TtsProvider.NanoGpt],
     ]);
   });
 
@@ -241,6 +240,37 @@ describe('IntegrationsComponent workflows', () => {
     expect(generateAudioService.getAvailableModels).toHaveBeenCalledOnceWith(
       TtsProvider.PocketTts,
     );
+  });
+
+  it('checks the balance when switching to a saved provider and clears it when switching away', () => {
+    component.ngOnInit();
+    generateAudioService.getBalanceUsd.calls.reset();
+
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.NanoGpt);
+
+    expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
+      [TtsProvider.DeApi],
+      [TtsProvider.NanoGpt],
+    ]);
+    expect(component.nanoGptBalanceUsd).toBe(12.34);
+
+    generateAudioService.getBalanceUsd.calls.reset();
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.Custom);
+
+    expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
+      [TtsProvider.DeApi],
+    ]);
+    expect(component.nanoGptBalanceUsd).toBeNull();
+
+    generateAudioService.getBalanceUsd.calls.reset();
+    component.integrationsForm.controls.imageGenerationProvider.setValue(
+      ImageGenerationProvider.NanoGpt,
+    );
+
+    expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
+      [TtsProvider.DeApi],
+      [TtsProvider.NanoGpt],
+    ]);
   });
 
   it('does not request model lists before the selected provider key is configured', () => {
@@ -459,6 +489,39 @@ describe('IntegrationsComponent workflows', () => {
     expect(generateAudioService.getBalanceUsd).not.toHaveBeenCalled();
     expect(component.deApiBalanceUsd).toBeNull();
     expect(component.nanoGptBalanceUsd).toBeNull();
+  });
+
+  it('does not check NanoGPT balance for an unused saved key', () => {
+    component.hasNanoGptApiKey = true;
+    component.nanoGptBalanceUsd = 2;
+
+    component.loadConfiguredBalances();
+
+    expect(generateAudioService.getBalanceUsd).not.toHaveBeenCalled();
+    expect(component.nanoGptBalanceUsd).toBeNull();
+  });
+
+  it('checks NanoGPT balance when selected for TTS or images', () => {
+    component.hasNanoGptApiKey = true;
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.NanoGpt);
+
+    component.loadConfiguredBalances();
+
+    expect(generateAudioService.getBalanceUsd).toHaveBeenCalledOnceWith(
+      TtsProvider.NanoGpt,
+    );
+
+    generateAudioService.getBalanceUsd.calls.reset();
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.Custom);
+    component.integrationsForm.controls.imageGenerationProvider.setValue(
+      ImageGenerationProvider.NanoGpt,
+    );
+
+    component.loadConfiguredBalances();
+
+    expect(generateAudioService.getBalanceUsd).toHaveBeenCalledOnceWith(
+      TtsProvider.NanoGpt,
+    );
   });
 
   it('stores successful DeAPI and NanoGPT balance responses', () => {
@@ -733,7 +796,6 @@ describe('IntegrationsComponent workflows', () => {
     );
     expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
       [TtsProvider.DeApi],
-      [TtsProvider.NanoGpt],
     ]);
   });
 

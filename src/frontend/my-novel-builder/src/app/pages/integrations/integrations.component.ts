@@ -164,7 +164,16 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         if (provider) {
           this.loadTtsModels(provider);
         }
+        this.loadConfiguredBalances();
       },
+    );
+
+    this.integrationsForm.controls.imageGenerationProvider.valueChanges.subscribe(
+      () => this.loadConfiguredBalances(),
+    );
+
+    this.integrationsForm.controls.videoGenerationProvider.valueChanges.subscribe(
+      () => this.loadConfiguredBalances(),
     );
 
     this.integrationsForm.controls.ttsModelId.valueChanges.subscribe((modelId) => {
@@ -444,13 +453,28 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   }
 
   loadConfiguredBalances(): void {
-    if (this.hasDeApiApiKey) {
+    const ttsProvider = this.integrationsForm.controls.ttsProvider.value;
+    const imageGenerationProvider =
+      this.integrationsForm.controls.imageGenerationProvider.value;
+    const videoGenerationProvider =
+      this.integrationsForm.controls.videoGenerationProvider.value;
+
+    if (
+      this.hasDeApiApiKey &&
+      (ttsProvider === TtsProvider.DeApi ||
+        imageGenerationProvider === ImageGenerationProvider.DeApi ||
+        videoGenerationProvider === VideoGenerationProvider.DeApi)
+    ) {
       this.loadDeApiBalance();
     } else {
       this.deApiBalanceUsd = null;
     }
 
-    if (this.hasNanoGptApiKey) {
+    if (
+      this.hasNanoGptApiKey &&
+      (ttsProvider === TtsProvider.NanoGpt ||
+        imageGenerationProvider === ImageGenerationProvider.NanoGpt)
+    ) {
       this.loadNanoGptBalance();
     } else {
       this.nanoGptBalanceUsd = null;
