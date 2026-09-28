@@ -16,6 +16,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
     private readonly IAudioRepository _audioRepository;
     private readonly ITextGenerationServiceResolver _textGenerationServiceResolver;
     private readonly ILogger<TtsAudioGenerationService> _logger;
+    private readonly ITtsVoiceRevisionService _voiceRevisions;
 
     /// <summary></summary>
     public TtsAudioGenerationService(
@@ -23,13 +24,15 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         IIntegrationsService integrationsService,
         IAudioRepository audioRepository,
         ITextGenerationServiceResolver textGenerationServiceResolver,
-        ILogger<TtsAudioGenerationService> logger)
+        ILogger<TtsAudioGenerationService> logger,
+        ITtsVoiceRevisionService voiceRevisions)
     {
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
         _audioRepository = audioRepository;
         _textGenerationServiceResolver = textGenerationServiceResolver;
         _logger = logger;
+        _voiceRevisions = voiceRevisions;
     }
 
     /// <inheritdoc />
@@ -38,7 +41,11 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         CancellationToken cancellationToken = default)
     {
         var resolved = await ResolveRequestAsync(request, cancellationToken);
-        var cachedAudioTask = _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken);
+        // The playback cache omits endpoint and reference-recording revisions. Calls with
+        // explicit resolved options use the versioned cache introduced in Step 2.
+        var cachedAudioTask = request.ResolvedOptions is null
+            ? _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken)
+            : null;
 
         if (cachedAudioTask is not null)
         {
@@ -71,7 +78,10 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
             "TTS audio bytes generated successfully with {WavByteCount} WAV bytes.",
             wavBytes.Length);
 
-        await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
+        if (request.ResolvedOptions is null)
+        {
+            await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
+        }
         return wavBytes;
     }
 
@@ -81,7 +91,9 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         CancellationToken cancellationToken = default)
     {
         var resolved = await ResolveRequestAsync(request, cancellationToken);
-        var cachedAudioTask = _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken);
+        var cachedAudioTask = request.ResolvedOptions is null
+            ? _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken)
+            : null;
 
         if (cachedAudioTask is not null)
         {
@@ -124,9 +136,14 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
             await using var wavBuffer = new MemoryStream();
             await audioStream.CopyToAsync(wavBuffer, cancellationToken);
             var wavBytes = wavBuffer.ToArray();
-            await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
+            if (request.ResolvedOptions is null)
+            {
+                await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
+            }
             return new MemoryStream(wavBytes);
         }
+
+        if (request.ResolvedOptions is not null) return audioStream;
 
         return new CachingReadStream(
             audioStream,
@@ -181,10 +198,31 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         CancellationToken cancellationToken)
     {
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var effectiveProvider = request.Provider ?? config.TtsProvider;
-        var effectiveModelId = request.TtsModelId ?? config.TtsModelId;
-        var effectiveVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        var effectiveTextGenerationModelId = request.TextGenerationModelId ?? config.TextGenerationModelId;
+        var options = request.ResolvedOptions;
+        if (options is not null && !string.Equals(
+                options.EndpointIdentity,
+                TtsEndpointIdentity.FromConfig(config, options.Provider),
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The TTS endpoint changed since the audiobook snapshot was created.");
+        }
+        var effectiveProvider = options?.Provider ?? request.Provider ?? config.TtsProvider;
+        var effectiveModelId = options?.ModelId ?? request.TtsModelId ?? config.TtsModelId;
+        var effectiveVoiceId = options?.VoiceId ?? request.VoiceId ?? config.TtsVoiceId;
+        TtsExecutionInputs? executionInputs = null;
+        if (options is not null)
+        {
+            var baseUri = TtsEndpointIdentity.GetBaseUri(config, effectiveProvider);
+            var voice = await _voiceRevisions.CaptureAsync(
+                effectiveProvider, effectiveVoiceId, cancellationToken);
+            if (!string.Equals(options.VoiceRevision, voice?.Revision, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The recorded voice changed since the audiobook snapshot was created.");
+            }
+            executionInputs = new TtsExecutionInputs(baseUri, voice);
+        }
+        var effectiveTextGenerationModelId = options?.TextGenerationModelId ?? request.TextGenerationModelId ?? config.TextGenerationModelId;
+        var enableTextEmphasis = options?.EnableTextEmphasis ?? config.TtsEnableTextEmphasis;
         var ttsService = _serviceProvider.GetKeyedService<ITtsService>(effectiveProvider);
 
         if (ttsService is null)
@@ -199,12 +237,13 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
             effectiveModelId,
             effectiveVoiceId,
             effectiveTextGenerationModelId,
-            config.TtsEnableTextEmphasis,
+            enableTextEmphasis,
             request.Message.Length);
 
         return new ResolvedTtsRequest
         {
             Request = request,
+            ExecutionInputs = executionInputs,
             TtsService = ttsService,
             AudioParameters = new AudioGenerationParameters
             {
@@ -213,9 +252,10 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
                 ModelId = effectiveModelId,
                 VoiceId = effectiveVoiceId,
                 TextGenerationModelId = effectiveTextGenerationModelId,
-                EnableTextEmphasis = config.TtsEnableTextEmphasis
+                EnableTextEmphasis = enableTextEmphasis
             },
-            EnableTextEmphasis = config.TtsEnableTextEmphasis,
+            EnableTextEmphasis = enableTextEmphasis,
+            TextGenerationProvider = options?.TextGenerationProvider,
             EffectiveTextGenerationModelId = effectiveTextGenerationModelId,
             EffectiveTtsModelId = effectiveModelId,
             EffectiveVoiceId = effectiveVoiceId
@@ -229,6 +269,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         var ttsRequest = new TtsRequest
         {
             Message = resolved.Request.Message,
+            ExecutionInputs = resolved.ExecutionInputs,
             ModelId = resolved.EffectiveTtsModelId,
             VoiceId = resolved.EffectiveVoiceId,
             TextGenerationModelId = resolved.EffectiveTextGenerationModelId
@@ -242,7 +283,9 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
 
         var emphasizedText = await resolved.TtsService.EmphasizeTextAsync(
             ttsRequest,
-            _textGenerationServiceResolver.GetConfiguredServiceAsync,
+            resolved.TextGenerationProvider is { } provider
+                ? ct => ValueTask.FromResult(_serviceProvider.GetRequiredKeyedService<TextGeneration.ITextGenerationService>(provider))
+                : _textGenerationServiceResolver.GetConfiguredServiceAsync,
             cancellationToken);
         ttsRequest.Message = emphasizedText.Trim();
 
@@ -262,7 +305,11 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
 
         public required AudioGenerationParameters AudioParameters { get; init; }
 
+        public TtsExecutionInputs? ExecutionInputs { get; init; }
+
         public required bool EnableTextEmphasis { get; init; }
+
+        public TextGenerationProvider? TextGenerationProvider { get; init; }
 
         public required string EffectiveTtsModelId { get; init; }
 

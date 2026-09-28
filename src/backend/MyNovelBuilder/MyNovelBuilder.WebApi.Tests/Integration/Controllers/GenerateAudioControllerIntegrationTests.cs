@@ -110,6 +110,12 @@ public class GenerateAudioControllerIntegrationTests(
 
     private sealed class FakeImmersiveTtsService : IImmersiveTtsService
     {
+        public Task<Stream> GenerateStreamAsync(MyNovelBuilder.WebApi.Models.AudioGeneration.AudiobookRenderRequest request,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<ImmersiveTtsDebugResponseDto> PrepareDebugAsync(MyNovelBuilder.WebApi.Models.AudioGeneration.AudiobookRenderRequest request,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
         public Task<ImmersiveTtsDebugResponseDto> PrepareDebugAsync(
             ImmersiveTtsRequestDto request,
             CancellationToken cancellationToken = default)

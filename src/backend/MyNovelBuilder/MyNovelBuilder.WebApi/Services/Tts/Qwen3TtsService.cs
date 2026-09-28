@@ -104,14 +104,14 @@ public class Qwen3TtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
-        var referenceWavPath = GetReferenceWavPath(request.VoiceId);
+        var referenceWavPath = GetReferenceWavPath(request.VoiceId, request.ExecutionInputs);
 
         if (textChunks.Count == 0)
         {
             return [];
         }
 
-        var languageCode = await ResolveLanguageCodeAsync(request.VoiceId, cancellationToken);
+        var languageCode = await ResolveLanguageCodeAsync(request.VoiceId, cancellationToken, request.ExecutionInputs);
 
         await using var fullPcmStream = new MemoryStream();
 
@@ -123,7 +123,7 @@ public class Qwen3TtsService : ITtsService
 
             if (referenceWavPath is not null)
             {
-                await using var referenceWavStream = File.OpenRead(referenceWavPath);
+                await using var referenceWavStream = request.ExecutionInputs?.Voice?.OpenRead() ?? File.OpenRead(referenceWavPath);
                 using var wavContent = new StreamContent(referenceWavStream);
                 wavContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
                 formData.Add(
@@ -131,7 +131,7 @@ public class Qwen3TtsService : ITtsService
                     "reference_wav",
                     Path.GetFileName(referenceWavPath));
 
-                var requestUri = await CreateRequestUriAsync("tts", cancellationToken);
+                var requestUri = await CreateRequestUriAsync("tts", cancellationToken, request.ExecutionInputs);
                 using var response = await _httpClient.PostAsync(
                     requestUri,
                     formData,
@@ -143,7 +143,7 @@ public class Qwen3TtsService : ITtsService
             }
             else
             {
-                var requestUri = await CreateRequestUriAsync("tts", cancellationToken);
+                var requestUri = await CreateRequestUriAsync("tts", cancellationToken, request.ExecutionInputs);
                 using var response = await _httpClient.PostAsync(
                     requestUri,
                     formData,
@@ -171,7 +171,7 @@ public class Qwen3TtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         var textChunks = new TextChunker(_maxChunkLength).ChunkText(request.Message);
-        var referenceWavPath = GetReferenceWavPath(request.VoiceId);
+        var referenceWavPath = GetReferenceWavPath(request.VoiceId, request.ExecutionInputs);
 
         return Task.FromResult<Stream>(new PcmWavStreamingStream(
             sampleRate: _sampleRate,
@@ -179,7 +179,7 @@ public class Qwen3TtsService : ITtsService
             bitsPerSample: 16,
             producer: async (writeAsync, ct) =>
             {
-                var languageCode = await ResolveLanguageCodeAsync(request.VoiceId, ct);
+                var languageCode = await ResolveLanguageCodeAsync(request.VoiceId, ct, request.ExecutionInputs);
 
                 foreach (var chunk in textChunks)
                 {
@@ -189,7 +189,7 @@ public class Qwen3TtsService : ITtsService
 
                     if (referenceWavPath is not null)
                     {
-                        await using var referenceWavStream = File.OpenRead(referenceWavPath);
+                        await using var referenceWavStream = request.ExecutionInputs?.Voice?.OpenRead() ?? File.OpenRead(referenceWavPath);
                         using var wavContent = new StreamContent(referenceWavStream);
                         wavContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
                         formData.Add(
@@ -197,7 +197,7 @@ public class Qwen3TtsService : ITtsService
                             "reference_wav",
                             Path.GetFileName(referenceWavPath));
 
-                        var requestUri = await CreateRequestUriAsync("tts", ct);
+                        var requestUri = await CreateRequestUriAsync("tts", ct, request.ExecutionInputs);
                         using var response = await _httpClient.PostAsync(
                             requestUri,
                             formData,
@@ -209,7 +209,7 @@ public class Qwen3TtsService : ITtsService
                     }
                     else
                     {
-                        var requestUri = await CreateRequestUriAsync("tts", ct);
+                        var requestUri = await CreateRequestUriAsync("tts", ct, request.ExecutionInputs);
                         using var response = await _httpClient.PostAsync(
                             requestUri,
                             formData,
@@ -256,8 +256,12 @@ public class Qwen3TtsService : ITtsService
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
 
-    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken, TtsExecutionInputs? execution = null)
     {
+        if (execution?.BaseUri is { } frozenBaseUri)
+        {
+            return ProviderBaseUrlHelper.CreateRequestUri(frozenBaseUri, relativePath);
+        }
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
             config.Qwen3BaseUrl,
@@ -267,8 +271,9 @@ public class Qwen3TtsService : ITtsService
         return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
     }
 
-    private string? GetReferenceWavPath(string? voiceId)
+    private string? GetReferenceWavPath(string? voiceId, TtsExecutionInputs? execution = null)
     {
+        if (execution is not null) return execution.Voice is null ? null : $"{voiceId}.wav";
         if (!Guid.TryParse(voiceId, out var id))
         {
             throw new ApiException(
@@ -288,8 +293,13 @@ public class Qwen3TtsService : ITtsService
         return wavPath;
     }
 
-    private async Task<string> ResolveLanguageCodeAsync(string? voiceId, CancellationToken cancellationToken)
+    private async Task<string> ResolveLanguageCodeAsync(string? voiceId, CancellationToken cancellationToken,
+        TtsExecutionInputs? execution = null)
     {
+        if (execution is not null)
+        {
+            return execution.Voice is { } voice ? MapToQwen3LanguageCode(voice.Language) : _defaultLanguageCode;
+        }
         if (!Guid.TryParse(voiceId, out var id))
         {
             return _defaultLanguageCode;

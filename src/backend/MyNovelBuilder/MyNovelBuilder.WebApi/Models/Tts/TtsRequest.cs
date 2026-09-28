@@ -5,6 +5,10 @@ namespace MyNovelBuilder.WebApi.Models.Tts;
 /// </summary>
 public class TtsRequest
 {
+    /// <summary>Validated execution inputs supplied by audiobook generation.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public TtsExecutionInputs? ExecutionInputs { get; init; }
+
     /// <summary>
     /// The text generation model ID to use for auxiliary text-processing steps such as emphasis.
     /// </summary>

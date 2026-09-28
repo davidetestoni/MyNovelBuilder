@@ -47,6 +47,11 @@ public class ImmersiveTtsRequestDto
     /// Optional text-generation model override for chunk planning and emphasis.
     /// </summary>
     public string? TextGenerationModelId { get; set; }
+
+    /// <summary>Optional per-request pause; zero is a valid pause.</summary>
+    public int? PauseMs { get; set; }
+
+
 }
 
 internal class ImmersiveTtsRequestDtoValidator : AbstractValidator<ImmersiveTtsRequestDto>
@@ -60,6 +65,7 @@ internal class ImmersiveTtsRequestDtoValidator : AbstractValidator<ImmersiveTtsR
         RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.VoiceId).MaximumLength(200);
         RuleFor(x => x.TextGenerationModelId).MaximumLength(200);
+        RuleFor(x => x.PauseMs).InclusiveBetween(0, 10000).When(x => x.PauseMs.HasValue);
         RuleFor(x => x.Provider)
             .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
             .WithMessage("TTS provider is invalid.");

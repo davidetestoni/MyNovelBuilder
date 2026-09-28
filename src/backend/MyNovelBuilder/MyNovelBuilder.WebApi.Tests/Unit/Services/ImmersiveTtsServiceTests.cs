@@ -1,10 +1,12 @@
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.Integrations;
+using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
 using MyNovelBuilder.WebApi.Models.Tts;
@@ -71,7 +73,7 @@ public class ImmersiveTtsServiceTests
                 }
             ]),
             new RecordingTtsAudioGenerationService(CreatePcmWavBytes([1, 2])),
-            NullLogger<ImmersiveTtsService>.Instance);
+            NullLogger<ImmersiveTtsService>.Instance, new ServiceCollection().BuildServiceProvider(), new NoRecordedVoices());
 
         var response = await service.PrepareDebugAsync(new ImmersiveTtsRequestDto
         {
@@ -136,7 +138,7 @@ public class ImmersiveTtsServiceTests
             }),
             new FakeCompendiumRecordService([]),
             recordingTtsService,
-            NullLogger<ImmersiveTtsService>.Instance);
+            NullLogger<ImmersiveTtsService>.Instance, new ServiceCollection().BuildServiceProvider(), new NoRecordedVoices());
 
         await using var stream = await service.GenerateStreamAsync(new ImmersiveTtsRequestDto
         {
@@ -160,6 +162,53 @@ public class ImmersiveTtsServiceTests
 
         Assert.Equal(44 + 2 + 4800 + 2, bytes.Length);
         Assert.All(bytes.Skip(46).Take(4800), value => Assert.Equal(0, value));
+    }
+
+    [Fact]
+    public async Task FrozenRenderingUsesSnapshotPromptVoicesAndZeroPauseAfterDefaultsChange()
+    {
+        var characterId = Guid.NewGuid();
+        var planner = new FakeTextGenerationService($$"""
+            [{"speakerKind":"character","characterRecordId":"{{characterId}}","text":"First."},
+             {"speakerKind":"narrator","text":"Second."}]
+            """);
+        using var services = new ServiceCollection()
+            .AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter, planner)
+            .BuildServiceProvider();
+        var config = new IntegrationsConfig
+        {
+            TtsProvider = TtsProvider.PocketTts, TtsModelId = "changed-model", TtsVoiceId = "changed-voice",
+            TtsEnableTextEmphasis = true, TtsImmersivePauseMs = 900, TextGenerationProvider = TextGenerationProvider.GoogleGenAi,
+            TextGenerationModelId = "changed-text-model"
+        };
+        var tts = new RecordingTtsAudioGenerationService(CreatePcmWavBytes([10, 20]));
+        var livePrompt = new FakeNovelPromptCreatorService(new ProcessedPrompt { Messages = [], IncludedCompendiumRecordIds = [] });
+        var liveRecords = new FakeCompendiumRecordService([]);
+        var service = new ImmersiveTtsService(livePrompt,
+            new FakeTextGenerationServiceResolver(new FakeTextGenerationService("invalid live plan")),
+            new FakeIntegrationsService(config), liveRecords, tts,
+            NullLogger<ImmersiveTtsService>.Instance, services, new NoRecordedVoices());
+        var settings = new ResolvedAudiobookSettings(TtsProvider.ElevenLabs, "frozen-model", "narrator",
+            false, true, 0, TextGenerationProvider.OpenRouter, "frozen-text-model", Guid.NewGuid(), null, null);
+        var section = new AudiobookSectionSnapshot(0, "First. Second.",
+            [new(PromptMessageRole.User, "Frozen prompt")],
+            [new(characterId, "character", DateTime.UtcNow, null)]);
+        await using var stream = await service.GenerateStreamAsync(new AudiobookRenderRequest(Guid.NewGuid(), 0, settings, section));
+        using var output = new MemoryStream();
+        await stream.CopyToAsync(output);
+        Assert.Equal(48, output.Length); // WAV header + two samples, no pause.
+        Assert.Equal("frozen-text-model", planner.Model);
+        Assert.Equal("Frozen prompt", Assert.Single(planner.Messages).Message);
+        Assert.Equal(0, livePrompt.Calls);
+        Assert.Equal(0, liveRecords.GetByIdsCalls);
+        Assert.Equal(new[] { "character", "narrator" }, tts.Requests.Select(request => request.VoiceId));
+        Assert.All(tts.Requests, request =>
+        {
+            Assert.NotNull(request.ResolvedOptions);
+            Assert.False(request.ResolvedOptions.EnableTextEmphasis);
+            Assert.Equal("frozen-model", request.ResolvedOptions.ModelId);
+            Assert.Equal(TextGenerationProvider.OpenRouter, request.ResolvedOptions.TextGenerationProvider);
+        });
     }
 
     private static byte[] CreatePcmWavBytes(byte[] pcmBytes, int sampleRate = 24000, short channels = 1, short bitsPerSample = 16)
@@ -190,10 +239,12 @@ public class ImmersiveTtsServiceTests
 
     private sealed class FakeNovelPromptCreatorService(ProcessedPrompt processedPrompt) : INovelPromptCreatorService
     {
+        public int Calls { get; private set; }
         public Task<ProcessedPrompt> CreatePromptAsync(
             GenerateTextRequestDto request,
             CancellationToken cancellationToken = default)
         {
+            Calls++;
             return Task.FromResult(processedPrompt);
         }
     }
@@ -208,12 +259,16 @@ public class ImmersiveTtsServiceTests
 
     private sealed class FakeTextGenerationService(string generatedText) : ITextGenerationService
     {
+        public string? Model { get; private set; }
+        public List<PromptMessage> Messages { get; private set; } = [];
         public Task<string> GenerateAsync(
             string model,
             IEnumerable<PromptMessage> messages,
             StructuredOutputOptions? structuredOutputOptions = null,
             CancellationToken cancellationToken = default)
         {
+            Model = model;
+            Messages = messages.ToList();
             return Task.FromResult(generatedText);
         }
 
@@ -258,6 +313,7 @@ public class ImmersiveTtsServiceTests
 
     private sealed class FakeCompendiumRecordService(IEnumerable<CompendiumRecord> records) : ICompendiumRecordService
     {
+        public int GetByIdsCalls { get; private set; }
         private readonly IReadOnlyDictionary<Guid, CompendiumRecord> _records = records.ToDictionary(record => record.Id);
 
         public Task<CompendiumRecord> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -272,6 +328,7 @@ public class ImmersiveTtsServiceTests
 
         public Task<IEnumerable<CompendiumRecord>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
         {
+            GetByIdsCalls++;
             var result = ids.Where(_records.ContainsKey).Select(id => _records[id]);
             return Task.FromResult<IEnumerable<CompendiumRecord>>(result.ToList());
         }

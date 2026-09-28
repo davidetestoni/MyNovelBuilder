@@ -4,6 +4,7 @@ using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
+using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Models.Prompts;
 using MyNovelBuilder.WebApi.Models.Tts;
 
@@ -26,6 +27,8 @@ public class ImmersiveTtsService : IImmersiveTtsService
     private readonly ICompendiumRecordService _compendiumRecordService;
     private readonly ITtsAudioGenerationService _ttsAudioGenerationService;
     private readonly ILogger<ImmersiveTtsService> _logger;
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ITtsVoiceRevisionService _voiceRevisions;
 
     /// <summary></summary>
     public ImmersiveTtsService(
@@ -34,7 +37,9 @@ public class ImmersiveTtsService : IImmersiveTtsService
         IIntegrationsService integrationsService,
         ICompendiumRecordService compendiumRecordService,
         ITtsAudioGenerationService ttsAudioGenerationService,
-        ILogger<ImmersiveTtsService> logger)
+        ILogger<ImmersiveTtsService> logger,
+        IServiceProvider serviceProvider,
+        ITtsVoiceRevisionService voiceRevisions)
     {
         _novelPromptCreatorService = novelPromptCreatorService;
         _textGenerationServiceResolver = textGenerationServiceResolver;
@@ -42,14 +47,26 @@ public class ImmersiveTtsService : IImmersiveTtsService
         _compendiumRecordService = compendiumRecordService;
         _ttsAudioGenerationService = ttsAudioGenerationService;
         _logger = logger;
+        _serviceProvider = serviceProvider;
+        _voiceRevisions = voiceRevisions;
     }
 
     /// <inheritdoc />
-    public async Task<ImmersiveTtsDebugResponseDto> PrepareDebugAsync(
+    public Task<ImmersiveTtsDebugResponseDto> PrepareDebugAsync(
         ImmersiveTtsRequestDto request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => PrepareDebugCoreAsync(request, null, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<ImmersiveTtsDebugResponseDto> PrepareDebugAsync(
+        AudiobookRenderRequest request,
+        CancellationToken cancellationToken = default) => PrepareDebugCoreAsync(ToPlaybackRequest(request), request, cancellationToken);
+
+    private async Task<ImmersiveTtsDebugResponseDto> PrepareDebugCoreAsync(
+        ImmersiveTtsRequestDto request,
+        AudiobookRenderRequest? audiobook,
+        CancellationToken cancellationToken)
     {
-        var prepared = await PrepareAsync(request, cancellationToken);
+        var prepared = await PrepareAsync(request, audiobook, cancellationToken);
         return new ImmersiveTtsDebugResponseDto
         {
             Provider = prepared.Provider,
@@ -70,11 +87,30 @@ public class ImmersiveTtsService : IImmersiveTtsService
     }
 
     /// <inheritdoc />
-    public async Task<Stream> GenerateStreamAsync(
+    public Task<Stream> GenerateStreamAsync(
         ImmersiveTtsRequestDto request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => GenerateStreamCoreAsync(request, null, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<Stream> GenerateStreamAsync(
+        AudiobookRenderRequest request,
+        CancellationToken cancellationToken = default) => GenerateStreamCoreAsync(ToPlaybackRequest(request), request, cancellationToken);
+
+    private static ImmersiveTtsRequestDto ToPlaybackRequest(AudiobookRenderRequest request) => new()
     {
-        var prepared = await PrepareAsync(request, cancellationToken);
+        NovelId = request.NovelId,
+        ChapterIndex = request.ChapterIndex,
+        SectionIndex = request.Section.SectionIndex,
+        PromptId = request.Settings.ImmersivePromptId
+            ?? throw new ArgumentException("Immersive rendering requires a planning prompt.", nameof(request))
+    };
+
+    private async Task<Stream> GenerateStreamCoreAsync(
+        ImmersiveTtsRequestDto request,
+        AudiobookRenderRequest? audiobook,
+        CancellationToken cancellationToken)
+    {
+        var prepared = await PrepareAsync(request, audiobook, cancellationToken);
         _logger.LogInformation(
             "Starting immersive TTS stream for novel {NovelId}, chapter {ChapterIndex}, section {SectionIndex} with {ChunkCount} chunks.",
             request.NovelId,
@@ -107,7 +143,12 @@ public class ImmersiveTtsService : IImmersiveTtsService
                             Provider = prepared.Provider,
                             TtsModelId = prepared.TtsModelId,
                             VoiceId = chunk.VoiceId,
-                            TextGenerationModelId = prepared.TextGenerationModelId
+                            TextGenerationModelId = prepared.TextGenerationModelId,
+                            ResolvedOptions = audiobook?.Settings?.ToTtsOptions(
+                                chunk.VoiceId,
+                                audiobook?.Section?.VoiceAssignments
+                                    .FirstOrDefault(assignment => assignment.CharacterRecordId == chunk.CharacterRecordId
+                                        && assignment.VoiceId == chunk.VoiceId)?.VoiceRevision)
                         },
                         ct);
                     _logger.LogDebug(
@@ -149,22 +190,51 @@ public class ImmersiveTtsService : IImmersiveTtsService
 
     private async Task<PreparedImmersiveTtsResult> PrepareAsync(
         ImmersiveTtsRequestDto request,
+        AudiobookRenderRequest? audiobook,
         CancellationToken cancellationToken)
     {
+        var settings = audiobook?.Settings;
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
-        var provider = request.Provider ?? config.TtsProvider;
-        var ttsModelId = request.TtsModelId ?? config.TtsModelId;
-        var narratorVoiceId = request.VoiceId ?? config.TtsVoiceId;
-        var textGenerationModelId = request.TextGenerationModelId ?? config.TextGenerationModelId;
-        var pauseMs = config.TtsImmersivePauseMs > 0
-            ? config.TtsImmersivePauseMs
-            : _defaultPauseMs;
+        if (settings is not null && !string.Equals(
+                settings.TtsEndpointIdentity,
+                TtsEndpointIdentity.FromConfig(config, settings.Provider),
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The TTS endpoint changed since the audiobook snapshot was created.");
+        }
+        if (settings is not null)
+        {
+            var narratorRevision = await _voiceRevisions.GetRevisionAsync(
+                settings.Provider, settings.VoiceId, cancellationToken);
+            if (narratorRevision != settings.NarratorVoiceRevision)
+            {
+                throw new InvalidOperationException("The narrator recording changed since the audiobook snapshot was created.");
+            }
+            if (audiobook?.Section is { } section)
+            {
+                foreach (var assignment in section.VoiceAssignments)
+                {
+                    var revision = await _voiceRevisions.GetRevisionAsync(
+                        settings.Provider, assignment.VoiceId, cancellationToken);
+                    if (revision != assignment.VoiceRevision)
+                    {
+                        throw new InvalidOperationException("A character recording changed since the audiobook snapshot was created.");
+                    }
+                }
+            }
+        }
+        var provider = settings?.Provider ?? request.Provider ?? config.TtsProvider;
+        var ttsModelId = settings?.ModelId ?? request.TtsModelId ?? config.TtsModelId;
+        var narratorVoiceId = settings?.VoiceId ?? request.VoiceId ?? config.TtsVoiceId;
+        var textGenerationModelId = settings?.TextGenerationModelId ?? request.TextGenerationModelId ?? config.TextGenerationModelId;
+        var pauseMs = settings?.ImmersivePauseMs ?? request.PauseMs ?? config.TtsImmersivePauseMs;
+        if (pauseMs < 0) pauseMs = _defaultPauseMs;
         _logger.LogDebug(
             "Preparing immersive TTS for novel {NovelId}, chapter {ChapterIndex}, section {SectionIndex} using textProvider={TextProvider}, textModel={TextModelId}, ttsProvider={TtsProvider}, ttsModel={TtsModelId}, narratorVoiceId={NarratorVoiceId}, pauseMs={PauseMs}.",
             request.NovelId,
             request.ChapterIndex,
             request.SectionIndex,
-            config.TextGenerationProvider,
+            settings?.TextGenerationProvider ?? config.TextGenerationProvider,
             textGenerationModelId,
             provider,
             ttsModelId,
@@ -187,11 +257,21 @@ public class ImmersiveTtsService : IImmersiveTtsService
             ContextInfo = contextInfo
         };
 
-        var processedPrompt = await _novelPromptCreatorService.CreatePromptAsync(
-            promptRequest,
-            cancellationToken);
-        var textGenerationService =
-            await _textGenerationServiceResolver.GetConfiguredServiceAsync(cancellationToken);
+        var processedPrompt = audiobook?.Section is { } frozenSection
+            ? new ProcessedPrompt
+            {
+                Messages = frozenSection.ImmersivePrompt.Select(message => new PromptMessage
+                {
+                    Role = message.Role,
+                    Message = message.Message
+                }).ToList(),
+                IncludedCompendiumRecordIds = frozenSection.VoiceAssignments
+                    .Select(assignment => assignment.CharacterRecordId).Distinct().ToList()
+            }
+            : await _novelPromptCreatorService.CreatePromptAsync(promptRequest, cancellationToken);
+        var textGenerationService = settings is null
+            ? await _textGenerationServiceResolver.GetConfiguredServiceAsync(cancellationToken)
+            : _serviceProvider.GetRequiredKeyedService<TextGeneration.ITextGenerationService>(settings.TextGenerationProvider);
         var rawPlan = await textGenerationService.GenerateAsync(
             textGenerationModelId,
             processedPrompt.Messages,
@@ -228,7 +308,7 @@ public class ImmersiveTtsService : IImmersiveTtsService
         _logger.LogDebug(
             "Immersive TTS planner produced {StructuredChunkCount} structured chunks.",
             structuredChunks.Count);
-        var relevantRecords = processedPrompt.IncludedCompendiumRecordIds.Any()
+        var relevantRecords = audiobook?.Section is null && processedPrompt.IncludedCompendiumRecordIds.Any()
             ? await _compendiumRecordService.GetByIdsAsync(
                 processedPrompt.IncludedCompendiumRecordIds,
                 cancellationToken)
@@ -247,7 +327,8 @@ public class ImmersiveTtsService : IImmersiveTtsService
                     narratorVoiceId,
                     recordsById,
                     provider,
-                    ttsModelId);
+                    ttsModelId,
+                    audiobook?.Section?.VoiceAssignments);
 
                 if (resolvedChunk is not null)
                 {
@@ -291,7 +372,8 @@ public class ImmersiveTtsService : IImmersiveTtsService
         string narratorVoiceId,
         IReadOnlyDictionary<Guid, CompendiumRecord> recordsById,
         TtsProvider provider,
-        string ttsModelId)
+        string ttsModelId,
+        IReadOnlyList<AudiobookVoiceAssignment>? frozenAssignments)
     {
         if (string.IsNullOrWhiteSpace(textChunk))
         {
@@ -301,24 +383,24 @@ public class ImmersiveTtsService : IImmersiveTtsService
         var isCharacter =
             string.Equals(structuredChunk.SpeakerKind, "character", StringComparison.OrdinalIgnoreCase);
 
-        if (isCharacter
-            && Guid.TryParse(structuredChunk.CharacterRecordId, out var recordId)
-            && recordsById.TryGetValue(recordId, out var record))
+        if (isCharacter && Guid.TryParse(structuredChunk.CharacterRecordId, out var recordId))
         {
-            var assignment = record.CharacterVoiceAssignments.FirstOrDefault(a =>
-                a.Provider == provider
-                && string.Equals(a.ModelId, ttsModelId, StringComparison.Ordinal));
+            var record = recordsById.GetValueOrDefault(recordId);
+            var voiceId = frozenAssignments is null
+                ? record?.CharacterVoiceAssignments.FirstOrDefault(a =>
+                    a.Provider == provider && string.Equals(a.ModelId, ttsModelId, StringComparison.Ordinal))?.VoiceId
+                : frozenAssignments.FirstOrDefault(a => a.CharacterRecordId == recordId)?.VoiceId;
 
-            if (assignment is not null)
+            if (voiceId is not null)
             {
                 return new ResolvedImmersiveTtsChunk
                 {
                     SpeakerKind = "character",
                     SpeakerName = string.IsNullOrWhiteSpace(structuredChunk.SpeakerName)
-                        ? record.Name
+                        ? record?.Name ?? "Character"
                         : structuredChunk.SpeakerName,
-                    CharacterRecordId = record.Id,
-                    VoiceId = assignment.VoiceId,
+                    CharacterRecordId = recordId,
+                    VoiceId = voiceId,
                     IsNarratorFallback = false,
                     Text = textChunk
                 };

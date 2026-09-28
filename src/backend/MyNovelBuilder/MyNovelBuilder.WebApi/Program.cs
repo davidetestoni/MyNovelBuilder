@@ -162,6 +162,9 @@ builder.Services.AddScoped<IWorldBuildingSessionService, WorldBuildingSessionSer
 builder.Services.AddScoped<InitialPromptSeeder>();
 builder.Services.AddScoped<SampleNovelSeeder>();
 builder.Services.AddScoped<INovelExportService, NovelExportService>();
+builder.Services.AddScoped<AudiobookSettingsResolver>();
+builder.Services.AddScoped<AudiobookSnapshotBuilder>();
+builder.Services.AddScoped<ITtsVoiceRevisionService, TtsVoiceRevisionService>();
 builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationServiceResolver>();
 builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
 builder.Services.AddScoped<IImmersiveTtsService, ImmersiveTtsService>();
