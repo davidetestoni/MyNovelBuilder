@@ -50,6 +50,7 @@ public class IntegrationsController : ControllerBase
             Qwen3BaseUrl = config.Qwen3BaseUrl,
             OmniVoiceBaseUrl = config.OmniVoiceBaseUrl,
             Audio8BaseUrl = config.Audio8BaseUrl,
+            KittenTtsBaseUrl = config.KittenTtsBaseUrl,
             TextGenerationProvider = config.TextGenerationProvider,
             TextGenerationModelId = config.TextGenerationModelId,
             TtsProvider = config.TtsProvider,
@@ -162,6 +163,14 @@ public class IntegrationsController : ControllerBase
                 dto.Audio8BaseUrl,
                 IntegrationsConfig.DefaultAudio8BaseUrl);
             invalidatedTags.Add(Enums.TtsProvider.Audio8.ToString());
+        }
+
+        if (dto.KittenTtsBaseUrl is not null)
+        {
+            config.KittenTtsBaseUrl = ResolveBaseUrl(
+                dto.KittenTtsBaseUrl,
+                IntegrationsConfig.DefaultKittenTtsBaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.KittenTts.ToString());
         }
         
         if (dto.TextGenerationProvider.HasValue)

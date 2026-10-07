@@ -73,6 +73,10 @@ export class MockGenerateAudioService extends GenerateAudioService {
   getAvailableProviders(): Observable<TtsProviderDto[]> {
     return mockObservable([
       {
+        provider: TtsProvider.KittenTts,
+        supportsVoiceDesign: false,
+      },
+      {
         provider: TtsProvider.Qwen3,
         supportsVoiceDesign: true,
       },

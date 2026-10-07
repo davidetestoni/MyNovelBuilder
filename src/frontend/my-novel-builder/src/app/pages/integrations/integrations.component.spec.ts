@@ -44,6 +44,7 @@ describe('IntegrationsComponent workflows', () => {
     qwen3BaseUrl: 'http://qwen/',
     omniVoiceBaseUrl: 'http://omni/',
     audio8BaseUrl: 'http://audio8/',
+    kittenTtsBaseUrl: 'http://kitten/',
     textGenerationProvider: TextGenerationProvider.OpenRouter,
     textGenerationModelId: 'structured-model',
     ttsProvider: TtsProvider.Qwen3,
@@ -437,6 +438,7 @@ describe('IntegrationsComponent workflows', () => {
       [TtsProvider.Qwen3, 'qwen3BaseUrl', 'Qwen3', 'http://localhost:8000/'],
       [TtsProvider.OmniVoice, 'omniVoiceBaseUrl', 'OmniVoice', 'http://localhost:8000/'],
       [TtsProvider.Audio8, 'audio8BaseUrl', 'Audio8', 'http://localhost:8000/'],
+      [TtsProvider.KittenTts, 'kittenTtsBaseUrl', 'Kitten TTS', 'http://localhost:8000/'],
     ] as const;
 
     for (const [provider, controlName, label, placeholder] of cases) {
@@ -460,6 +462,10 @@ describe('IntegrationsComponent workflows', () => {
   });
 
   it('formats provider option labels for display', () => {
+    expect(component.ttsProviderOptions).toContain({
+      label: 'Kitten TTS',
+      value: TtsProvider.KittenTts,
+    });
     expect(component.ttsProviderOptions).toContain({
       label: 'Nano GPT',
       value: TtsProvider.NanoGpt,
@@ -728,6 +734,7 @@ describe('IntegrationsComponent workflows', () => {
       nanoGptApiKey: '',
       deApiApiKey: '',
       customTtsBaseUrl: '',
+      kittenTtsBaseUrl: 'http://kitten.test/',
       ttsProvider: TtsProvider.Custom,
       ttsModelId: 'basic',
       ttsVoiceId: 'english-voice',
@@ -746,6 +753,7 @@ describe('IntegrationsComponent workflows', () => {
         openRouterApiKey: undefined,
         googleGenAiApiKey: 'google-key',
         customTtsBaseUrl: '',
+        kittenTtsBaseUrl: 'http://kitten.test/',
         ttsProvider: TtsProvider.Custom,
         ttsModelId: 'basic',
         ttsVoiceId: 'english-voice',
