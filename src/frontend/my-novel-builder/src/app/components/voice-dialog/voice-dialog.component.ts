@@ -10,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { LocalStorageService } from '../../services/local-storage.service';
+import { SpeechTranscriptionService } from '../../services/speech-transcription.service';
 import { VoiceService } from '../../services/voice.service';
 import { TtsProviderDto } from '../../types/dtos/generate/tts-provider.dto';
 import { VoiceDto } from '../../types/dtos/voice/voice.dto';
@@ -53,14 +54,21 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
   private dialogRef = inject(DynamicDialogRef);
   private config = inject(DynamicDialogConfig);
   private voiceService = inject(VoiceService);
+  private speechTranscriptionService = inject(SpeechTranscriptionService);
   private generateAudioService = inject(GenerateAudioService);
   private localStorageService = inject(LocalStorageService);
   private toastr = inject(ToastrService);
   private createStreamingWavPlayer = inject(STREAMING_WAV_PLAYER_FACTORY);
   private previewPlayer: StreamingWavPlayerHandle | null = null;
+  private transcriptionController: AbortController | null = null;
+  private localSampleUrl: string | null = null;
 
   protected readonly data = (this.config.data || { mode: 'create' }) as VoiceDialogData;
   protected selectedFileName = '';
+  protected sampleAudioUrl: string | null = null;
+  protected samplePlaybackError = false;
+  protected isTranscribing = false;
+  protected transcriptionStatus = '';
   protected isVoiceDesignDialogVisible = false;
   protected isGeneratingDesignedVoice = false;
   protected isPreviewingDesignedVoice = false;
@@ -102,6 +110,7 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
         language: this.data.voice.language,
         transcript: this.data.voice.transcript ?? '',
       });
+      this.sampleAudioUrl = this.voiceService.getVoiceSampleUrl(this.data.voice.id);
     }
   }
 
@@ -137,7 +146,94 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelTranscription();
     this.previewPlayer?.stop();
+    this.releaseLocalSampleUrl();
+  }
+
+  private releaseLocalSampleUrl(): void {
+    if (this.localSampleUrl) {
+      URL.revokeObjectURL(this.localSampleUrl);
+      this.localSampleUrl = null;
+    }
+  }
+
+  private updateSamplePlayback(file: File | null): void {
+    this.releaseLocalSampleUrl();
+    this.samplePlaybackError = false;
+    if (file) {
+      this.localSampleUrl = URL.createObjectURL(file);
+      this.sampleAudioUrl = this.localSampleUrl;
+    } else {
+      this.sampleAudioUrl = this.data.voice ? this.voiceService.getVoiceSampleUrl(this.data.voice.id) : null;
+    }
+  }
+
+  protected get canTranscribe(): boolean {
+    return this.speechTranscriptionService.supportsLanguage(
+      this.formGroup.controls.language.value ?? WritingLanguage.English,
+    ) && !!(this.formGroup.controls.file.value || this.data.voice);
+  }
+
+  protected get supportsTranscriptionLanguage(): boolean {
+    return this.speechTranscriptionService.supportsLanguage(
+      this.formGroup.controls.language.value ?? WritingLanguage.English,
+    );
+  }
+
+  protected async transcribeVoice(): Promise<void> {
+    if (!this.canTranscribe || this.isTranscribing) return;
+    const controller = new AbortController();
+    this.transcriptionController = controller;
+    this.isTranscribing = true;
+    this.transcriptionStatus = 'Preparing audio…';
+    const file = this.formGroup.controls.file.value;
+    const language = this.formGroup.controls.language.value ?? WritingLanguage.English;
+    const originalTranscript = this.formGroup.controls.transcript.value;
+    try {
+      let audio: Blob;
+      if (file) {
+        audio = file;
+      } else {
+        // Decode the original sample, exactly as played in the editor.
+        const response = await fetch(this.voiceService.getVoiceSampleUrl(this.data.voice!.id), {
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Could not load the saved voice sample (HTTP ${response.status}).`);
+        }
+        audio = await response.blob();
+      }
+      controller.signal.throwIfAborted();
+      const transcript = await this.speechTranscriptionService.transcribe(
+        audio, language, controller.signal,
+        (status) => { this.transcriptionStatus = status; },
+      );
+      controller.signal.throwIfAborted();
+      if (this.formGroup.controls.file.value !== file
+        || this.formGroup.controls.language.value !== language
+        || this.formGroup.controls.transcript.value !== originalTranscript) return;
+      if (!transcript.trim()) {
+        this.toastr.error('No speech was detected. The existing transcript was kept.');
+        return;
+      }
+      this.formGroup.controls.transcript.setValue(transcript);
+      this.formGroup.controls.transcript.markAsDirty();
+      this.toastr.success('Transcribed. Review the text before saving.');
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        this.toastr.error(error instanceof Error ? error.message : 'Could not transcribe the voice sample.');
+      }
+    } finally {
+      if (this.transcriptionController === controller) this.cancelTranscription();
+    }
+  }
+
+  protected cancelTranscription(): void {
+    this.transcriptionController?.abort();
+    this.transcriptionController = null;
+    this.isTranscribing = false;
+    this.transcriptionStatus = '';
   }
 
   protected get voiceDesignProviderOptions(): { label: string; value: TtsProvider }[] {
@@ -249,12 +345,15 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.cancelTranscription();
+
     const designedVoiceFile = new File(
       [this.generatedVoiceSample],
       this.generatedVoiceSampleFileName || 'designed-voice.wav',
       { type: 'audio/wav' },
     );
     this.formGroup.controls.file.setValue(designedVoiceFile);
+    this.updateSamplePlayback(designedVoiceFile);
     this.formGroup.controls.file.markAsDirty();
     this.formGroup.controls.transcript.setValue(
       this.voiceDesignFormGroup.controls.prompt.value?.trim() ?? '',
@@ -264,17 +363,20 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
   }
 
   protected onFileSelected(event: Event): void {
+    this.cancelTranscription();
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
 
     if (file === null) {
       this.formGroup.controls.file.setValue(null);
+      this.updateSamplePlayback(null);
       this.selectedFileName = '';
       return;
     }
 
     if (!file.name.toLowerCase().endsWith('.wav')) {
       this.formGroup.controls.file.setValue(null);
+      this.updateSamplePlayback(null);
       input.value = '';
       this.selectedFileName = '';
       this.toastr.error('Only .wav files are allowed.');
@@ -282,12 +384,13 @@ export class VoiceDialogComponent implements OnInit, OnDestroy {
     }
 
     this.formGroup.controls.file.setValue(file);
+    this.updateSamplePlayback(file);
     this.selectedFileName = file.name;
     this.formGroup.controls.file.markAsDirty();
   }
 
   protected submit(): void {
-    if (this.formGroup.invalid) {
+    if (this.formGroup.invalid || this.isTranscribing) {
       return;
     }
 

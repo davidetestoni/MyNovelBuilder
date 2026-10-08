@@ -6,7 +6,7 @@ otherwise.
 
 ## Prerequisites
 
-- Git
+- Git and Git LFS
 - .NET SDK `10.0.100` or a newer compatible 10.0 patch selected by
   `global.json`
 - Node.js 22; the repository `.nvmrc` contains the expected major version
@@ -28,11 +28,15 @@ npm --version
 ## Clean-clone quick start
 
 ```shell
+git lfs install
 git clone https://github.com/davidetestoni/MyNovelBuilder.git
 cd MyNovelBuilder
 node scripts/tasks.mjs restore
 node scripts/tasks.mjs dev
 ```
+
+For an existing checkout, run `git lfs install` and `git lfs pull` before
+building. Whistle's model and runtime files are stored in Git LFS.
 
 Open <http://localhost:4200>. The task starts the backend at
 <http://localhost:5113> and Angular's development server at port `4200`.

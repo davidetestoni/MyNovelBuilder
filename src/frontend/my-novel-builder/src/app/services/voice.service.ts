@@ -23,6 +23,7 @@ export abstract class VoiceService {
     file: File | null,
   ): Observable<VoiceDto>;
   abstract deleteVoice(id: string): Observable<void>;
+  abstract getVoiceSampleUrl(voiceId: string): string;
   abstract getVoicePreviewStreamResponse(
     voiceId: string,
     seconds: number,

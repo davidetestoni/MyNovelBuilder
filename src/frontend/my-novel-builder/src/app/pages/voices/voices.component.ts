@@ -99,7 +99,8 @@ export class VoicesComponent implements OnInit, OnDestroy {
   openCreateVoiceDialog(): void {
     this.dialogRef = this.dialogService.open(VoiceDialogComponent, {
       header: 'Create Voice',
-      width: '35rem',
+      width: '60rem',
+      style: { maxWidth: '95vw' },
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
       modal: true,
@@ -122,7 +123,8 @@ export class VoicesComponent implements OnInit, OnDestroy {
 
     this.dialogRef = this.dialogService.open(VoiceDialogComponent, {
       header: 'Edit Voice',
-      width: '35rem',
+      width: '60rem',
+      style: { maxWidth: '95vw' },
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
       modal: true,

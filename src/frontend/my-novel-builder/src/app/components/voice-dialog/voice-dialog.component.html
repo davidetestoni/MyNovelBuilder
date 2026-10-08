@@ -1,93 +1,149 @@
 <div class="modal-container">
   <div class="form-container">
     <form [formGroup]="formGroup">
-      <div class="form-field">
-        <label for="name" class="form-field-label">Name *</label>
-        <input
-          pInputText
-          id="name"
-          type="text"
-          formControlName="name"
-          placeholder="Voice name"
-        />
-      </div>
-
-      <div class="form-field">
-        <label for="voiceGender" class="form-field-label">Gender *</label>
-        <p-select
-          id="voiceGender"
-          formControlName="voiceGender"
-          [options]="voiceGenderOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Select gender"
-          appendTo="body"
-          [style]="{ width: '100%' }"
-        />
-      </div>
-
-      <div class="form-field">
-        <label for="language" class="form-field-label">Language *</label>
-        <p-select
-          id="language"
-          formControlName="language"
-          [options]="languageOptions"
-          placeholder="Select language"
-          appendTo="body"
-          [style]="{ width: '100%' }"
-        >
-          <ng-template let-option #item>
-            {{ option | titlecase }}
-          </ng-template>
-          <ng-template let-option #selectedItem>
-            {{ option | titlecase }}
-          </ng-template>
-        </p-select>
-      </div>
-
-      <div class="form-field">
-        <label for="voiceFile" class="form-field-label">
-          Voice File (.wav){{ data.mode === 'create' ? ' *' : '' }}
-        </label>
-        <input
-          id="voiceFile"
-          type="file"
-          accept=".wav,audio/wav"
-          (change)="onFileSelected($event)"
-        />
-        @if (selectedFileName) {
-          <small>{{ selectedFileName }}</small>
-        } @else if (data.mode === 'edit') {
-          <small>Leave empty to keep the existing WAV file.</small>
-        }
-        @if (voiceDesignProviderOptions.length > 0) {
-          <div class="voice-design-action">
-            <p-button
-              type="button"
-              label="Design Voice"
-              icon="pi pi-sparkles"
-              severity="secondary"
-              [outlined]="true"
-              (onClick)="openVoiceDesignDialog()"
+      <div class="voice-editor-columns">
+        <div class="voice-details-column">
+          <div class="form-field">
+            <label for="name" class="form-field-label">Name *</label>
+            <input
+              pInputText
+              id="name"
+              type="text"
+              formControlName="name"
+              placeholder="Voice name"
             />
           </div>
-        }
-      </div>
 
-      <div class="form-field">
-        <label for="transcript" class="form-field-label">Voice Sample Transcript</label>
-        <textarea
-          pInputTextarea
-          id="transcript"
-          formControlName="transcript"
-          rows="5"
-          placeholder="Enter exactly what is spoken in the voice sample"
-        ></textarea>
-        <small>
-          Required by voice-cloning providers such as Audio8 and KittenTTS. The
-          transcript should match the recording exactly. KittenTTS samples must
-          be 5–30 seconds long.
-        </small>
+          <div class="form-field">
+            <label for="voiceGender" class="form-field-label">Gender *</label>
+            <p-select
+              id="voiceGender"
+              formControlName="voiceGender"
+              [options]="voiceGenderOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Select gender"
+              appendTo="body"
+              [style]="{ width: '100%' }"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="language" class="form-field-label">Language *</label>
+            <p-select
+              id="language"
+              formControlName="language"
+              [options]="languageOptions"
+              placeholder="Select language"
+              appendTo="body"
+              [style]="{ width: '100%' }"
+            >
+              <ng-template let-option #item>
+                {{ option | titlecase }}
+              </ng-template>
+              <ng-template let-option #selectedItem>
+                {{ option | titlecase }}
+              </ng-template>
+            </p-select>
+          </div>
+
+          <div class="form-field">
+            <label for="voiceFile" class="form-field-label">
+              Voice File (.wav){{ data.mode === 'create' ? ' *' : '' }}
+            </label>
+            <input
+              id="voiceFile"
+              type="file"
+              accept=".wav,audio/wav"
+              (change)="onFileSelected($event)"
+            />
+            @if (selectedFileName) {
+              <small>{{ selectedFileName }}</small>
+            } @else if (data.mode === 'edit') {
+              <small>Leave empty to keep the existing WAV file.</small>
+            }
+          </div>
+
+          <div class="form-field sample-playback">
+            <span id="voiceSampleLabel" class="form-field-label">Full voice sample</span>
+            @if (sampleAudioUrl) {
+              <audio
+                controls
+                preload="metadata"
+                [src]="sampleAudioUrl"
+                aria-labelledby="voiceSampleLabel"
+                (error)="samplePlaybackError = true"
+              ></audio>
+              @if (samplePlaybackError) {
+                <small role="alert">Could not play this sample. Check that it is a valid WAV file.</small>
+              }
+            } @else {
+              <small>Select a WAV file to listen to the sample here.</small>
+            }
+          </div>
+          @if (voiceDesignProviderOptions.length > 0) {
+            <div class="voice-design-action">
+              <p-button
+                type="button"
+                label="Design Voice"
+                icon="pi pi-sparkles"
+                severity="secondary"
+                [outlined]="true"
+                (onClick)="openVoiceDesignDialog()"
+              />
+            </div>
+          }
+        </div>
+        <div class="voice-transcript-column">
+          <div class="form-field">
+            <label for="transcript" class="form-field-label">Voice Sample Transcript</label>
+            <textarea
+              pInputTextarea
+              id="transcript"
+              formControlName="transcript"
+              rows="12"
+              placeholder="Enter exactly what is spoken in the voice sample"
+            ></textarea>
+            <small>
+              Required by voice-cloning providers such as Audio8 and KittenTTS. The
+              transcript should match the recording exactly. KittenTTS samples must
+              be 5–30 seconds long.
+            </small>
+            <div class="transcription-actions">
+              <p-button
+                type="button"
+                label="Transcribe"
+                icon="pi pi-file-edit"
+                severity="secondary"
+                [outlined]="true"
+                [loading]="isTranscribing"
+                [disabled]="!canTranscribe || isTranscribing"
+                (onClick)="transcribeVoice()"
+              />
+              @if (isTranscribing) {
+                <p-button
+                  type="button"
+                  label="Cancel transcription"
+                  severity="secondary"
+                  [text]="true"
+                  (onClick)="cancelTranscription()"
+                />
+              }
+            </div>
+            <small>
+              Transcribes samples up to 30 seconds in your browser using Whistle.
+              Audio stays on your device during transcription. Review the result
+              before saving.
+            </small>
+            @if (!supportsTranscriptionLanguage) {
+              <small>Browser transcription is unavailable for the selected language.</small>
+            }
+            @if (transcriptionStatus) {
+              <small role="status" aria-live="polite">{{ transcriptionStatus }}</small>
+            }
+          </div>
+
+        </div>
       </div>
 
       <div class="form-buttons-container">
@@ -102,7 +158,7 @@
           [label]="data.mode === 'edit' ? 'Save' : 'Create'"
           type="button"
           (onClick)="submit()"
-          [disabled]="formGroup.invalid"
+          [disabled]="formGroup.invalid || isTranscribing"
         />
       </div>
     </form>

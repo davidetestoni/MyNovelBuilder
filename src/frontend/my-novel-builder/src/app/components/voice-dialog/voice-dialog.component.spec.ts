@@ -4,6 +4,7 @@ import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { of, Subject, throwError } from 'rxjs';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { LocalStorageService } from '../../services/local-storage.service';
+import { SpeechTranscriptionService } from '../../services/speech-transcription.service';
 import { VoiceService } from '../../services/voice.service';
 import { TtsProviderDto } from '../../types/dtos/generate/tts-provider.dto';
 import { VoiceDto } from '../../types/dtos/voice/voice.dto';
@@ -24,6 +25,7 @@ import {
 describe('VoiceDialogComponent workflows', () => {
   let component: VoiceDialogComponent;
   let voiceService: jasmine.SpyObj<VoiceService>;
+  let speechTranscriptionService: jasmine.SpyObj<SpeechTranscriptionService>;
   let generateAudioService: jasmine.SpyObj<GenerateAudioService>;
   let localStorageService: jasmine.SpyObj<LocalStorageService>;
   let toastr: jasmine.SpyObj<ToastrService>;
@@ -93,7 +95,15 @@ describe('VoiceDialogComponent workflows', () => {
     voiceService = jasmine.createSpyObj<VoiceService>('VoiceService', [
       'createVoice',
       'updateVoice',
+      'getVoicePreviewStreamResponse',
+      'getVoiceSampleUrl',
     ]);
+    voiceService.getVoiceSampleUrl.and.returnValue('/api/voices/voice-id/sample');
+    speechTranscriptionService = jasmine.createSpyObj<SpeechTranscriptionService>(
+      'SpeechTranscriptionService', ['supportsLanguage', 'transcribe'],
+    );
+    speechTranscriptionService.supportsLanguage.and.returnValue(true);
+    speechTranscriptionService.transcribe.and.resolveTo('Transcribed sample.');
     generateAudioService = jasmine.createSpyObj<GenerateAudioService>(
       'GenerateAudioService',
       ['getAvailableProviders', 'voiceDesign'],
@@ -125,6 +135,7 @@ describe('VoiceDialogComponent workflows', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: VoiceService, useValue: voiceService },
+        { provide: SpeechTranscriptionService, useValue: speechTranscriptionService },
         { provide: GenerateAudioService, useValue: generateAudioService },
         { provide: LocalStorageService, useValue: localStorageService },
         { provide: ToastrService, useValue: toastr },
@@ -135,6 +146,178 @@ describe('VoiceDialogComponent workflows', () => {
     });
 
     component = createComponent();
+  });
+
+  it('transcribes the selected file into an editable, dirty transcript', async () => {
+    const file = setValidVoiceForm();
+    await component['transcribeVoice']();
+    expect(speechTranscriptionService.transcribe).toHaveBeenCalledOnceWith(
+      file, WritingLanguage.French, jasmine.any(AbortSignal), jasmine.any(Function),
+    );
+    expect(component['formGroup'].controls.transcript.value).toBe('Transcribed sample.');
+    expect(component['formGroup'].controls.transcript.dirty).toBeTrue();
+    expect(component['isTranscribing']).toBeFalse();
+  });
+
+  it('transcribes saved samples when editing without a replacement file', async () => {
+    component = createComponent({ mode: 'edit', voice: voice() });
+    const fetchSample = spyOn(window, 'fetch').and.resolveTo(new Response(new Blob(['sample'])));
+    await component['transcribeVoice']();
+    expect(fetchSample).toHaveBeenCalledOnceWith('/api/voices/voice-id/sample', { signal: jasmine.any(AbortSignal) });
+    expect(voiceService.getVoicePreviewStreamResponse).not.toHaveBeenCalled();
+    expect(speechTranscriptionService.transcribe).toHaveBeenCalled();
+    expect(component['formGroup'].controls.transcript.value).toBe('Transcribed sample.');
+  });
+
+  it('decodes the saved WAV through the real browser transcription service without a new upload', async () => {
+    component = createComponent({ mode: 'edit', voice: voice() });
+    const bytes = new ArrayBuffer(44 + 16000 * 2);
+    const view = new DataView(bytes);
+    const text = (offset: number, value: string) => {
+      for (let index = 0; index < value.length; index++) view.setUint8(offset + index, value.charCodeAt(index));
+    };
+    text(0, 'RIFF'); view.setUint32(4, bytes.byteLength - 8, true);
+    text(8, 'WAVE'); text(12, 'fmt '); view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+    view.setUint32(24, 16000, true); view.setUint32(28, 32000, true);
+    view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+    text(36, 'data'); view.setUint32(40, bytes.byteLength - 44, true);
+    spyOn(window, 'fetch').and.resolveTo(new Response(bytes, { headers: { 'Content-Type': 'audio/wav' } }));
+    const browserService = new SpeechTranscriptionService();
+    speechTranscriptionService.transcribe.and.callFake(browserService.transcribe.bind(browserService));
+    const fakeWorker = {
+      onmessage: null as ((event: MessageEvent) => void) | null,
+      onerror: null,
+      terminate: jasmine.createSpy('terminate'),
+      postMessage: (data: { samples: Float32Array; language: string }) => {
+        expect(data.samples.length).toBe(16000);
+        expect(data.language).toBe('it');
+        fakeWorker.onmessage!(new MessageEvent('message', { data: { text: 'Saved sample words.' } }));
+      },
+    };
+    spyOn(window, 'Worker').and.returnValue(fakeWorker as unknown as Worker);
+    await component['transcribeVoice']();
+    expect(component['formGroup'].controls.file.value).toBeNull();
+    expect(component['formGroup'].controls.transcript.value).toBe('Saved sample words.');
+    expect(toastr.error).not.toHaveBeenCalled();
+    expect(fakeWorker.terminate).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports saved sample HTTP errors before attempting to decode them', async () => {
+    component = createComponent({ mode: 'edit', voice: voice() });
+    spyOn(window, 'fetch').and.resolveTo(new Response('Not found', { status: 404 }));
+    await component['transcribeVoice']();
+    expect(toastr.error).toHaveBeenCalledOnceWith('Could not load the saved voice sample (HTTP 404).');
+    expect(speechTranscriptionService.transcribe).not.toHaveBeenCalled();
+    expect(component['formGroup'].controls.transcript.value).toBe('Existing transcript');
+  });
+
+  it('does not transcribe without audio or for an unsupported language', async () => {
+    await component['transcribeVoice']();
+    setValidVoiceForm();
+    speechTranscriptionService.supportsLanguage.and.returnValue(false);
+    await component['transcribeVoice']();
+    expect(component['canTranscribe']).toBeFalse();
+    expect(speechTranscriptionService.transcribe).not.toHaveBeenCalled();
+  });
+
+  it('keeps the existing transcript for silence or transcription errors', async () => {
+    setValidVoiceForm();
+    speechTranscriptionService.transcribe.and.resolveTo('');
+    await component['transcribeVoice']();
+    expect(component['formGroup'].controls.transcript.value).toBe('  The exact sample transcript.  ');
+    speechTranscriptionService.transcribe.and.rejectWith(new Error('Model failed'));
+    await component['transcribeVoice']();
+    expect(toastr.error).toHaveBeenCalledWith('Model failed');
+    expect(component['formGroup'].controls.transcript.value).toBe('  The exact sample transcript.  ');
+    expect(component['isTranscribing']).toBeFalse();
+  });
+
+  it('cancels transcription on destruction and ignores late results', async () => {
+    setValidVoiceForm();
+    let complete!: (text: string) => void;
+    speechTranscriptionService.transcribe.and.returnValue(new Promise(resolve => { complete = resolve; }));
+    const pending = component['transcribeVoice']();
+    const signal = speechTranscriptionService.transcribe.calls.mostRecent().args[2];
+    component.ngOnDestroy();
+    expect(signal.aborted).toBeTrue();
+    complete('Late result');
+    await pending;
+    expect(component['formGroup'].controls.transcript.value).toBe('  The exact sample transcript.  ');
+    expect(toastr.error).not.toHaveBeenCalled();
+  });
+
+  it('does not overwrite edits made while transcription was running', async () => {
+    setValidVoiceForm();
+    let complete!: (text: string) => void;
+    speechTranscriptionService.transcribe.and.returnValue(new Promise(resolve => { complete = resolve; }));
+    const pending = component['transcribeVoice']();
+    component['formGroup'].controls.transcript.setValue('Manual correction');
+    complete('Old result');
+    await pending;
+    expect(component['formGroup'].controls.transcript.value).toBe('Manual correction');
+  });
+
+  it('prevents duplicate transcription and saving while transcription is active', async () => {
+    setValidVoiceForm();
+    let complete!: (text: string) => void;
+    speechTranscriptionService.transcribe.and.returnValue(new Promise(resolve => { complete = resolve; }));
+    const pending = component['transcribeVoice']();
+    await component['transcribeVoice']();
+    component['submit']();
+    expect(speechTranscriptionService.transcribe).toHaveBeenCalledTimes(1);
+    expect(voiceService.createVoice).not.toHaveBeenCalled();
+    complete('Done');
+    await pending;
+  });
+
+  it('offers the full saved sample without loading transcription', () => {
+    component = createComponent({ mode: 'edit', voice: voice() });
+    component.ngOnInit();
+    expect(component['sampleAudioUrl']).toBe('/api/voices/voice-id/sample');
+    expect(voiceService.getVoiceSampleUrl).toHaveBeenCalledOnceWith('voice-id');
+    expect(voiceService.getVoicePreviewStreamResponse).not.toHaveBeenCalled();
+    expect(speechTranscriptionService.transcribe).not.toHaveBeenCalled();
+  });
+
+  it('uses a local playback URL for selected files and releases it when replaced or destroyed', () => {
+    const createUrl = spyOn(URL, 'createObjectURL').and.returnValues('blob:first', 'blob:second');
+    const revokeUrl = spyOn(URL, 'revokeObjectURL');
+    const first = new File(['first'], 'first.wav');
+    const second = new File(['second'], 'second.wav');
+    component['onFileSelected']({ target: { files: [first] } } as unknown as Event);
+    expect(component['sampleAudioUrl']).toBe('blob:first');
+    expect(createUrl).toHaveBeenCalledWith(first);
+    component['onFileSelected']({ target: { files: [second] } } as unknown as Event);
+    expect(revokeUrl).toHaveBeenCalledWith('blob:first');
+    expect(component['sampleAudioUrl']).toBe('blob:second');
+    component.ngOnDestroy();
+    expect(revokeUrl).toHaveBeenCalledWith('blob:second');
+  });
+
+  it('restores saved sample playback after clearing a replacement file', () => {
+    component = createComponent({ mode: 'edit', voice: voice() });
+    spyOn(URL, 'createObjectURL').and.returnValue('blob:replacement');
+    const revokeUrl = spyOn(URL, 'revokeObjectURL');
+    component['onFileSelected']({ target: { files: [new File(['sample'], 'new.wav')] } } as unknown as Event);
+    component['onFileSelected']({ target: { files: [] } } as unknown as Event);
+    expect(component['sampleAudioUrl']).toBe('/api/voices/voice-id/sample');
+    expect(revokeUrl).toHaveBeenCalledWith('blob:replacement');
+  });
+
+  it('renders native audio controls beside the transcript in the edit dialog', () => {
+    config.data = { mode: 'edit', voice: voice() };
+    const fixture = TestBed.createComponent(VoiceDialogComponent);
+    fixture.detectChanges();
+    const audio: HTMLAudioElement = fixture.nativeElement.querySelector('audio');
+    expect(audio).not.toBeNull();
+    expect(audio.controls).toBeTrue();
+    expect(audio.preload).toBe('metadata');
+    expect(audio.getAttribute('src')).toBe('/api/voices/voice-id/sample');
+    expect(fixture.nativeElement.querySelector('.voice-details-column audio')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.voice-transcript-column textarea')).not.toBeNull();
+    expect(speechTranscriptionService.transcribe).not.toHaveBeenCalled();
+    fixture.destroy();
   });
 
   it('starts a create dialog with required defaults', () => {
@@ -446,6 +629,7 @@ describe('VoiceDialogComponent workflows', () => {
     expect(file).toEqual(jasmine.any(File));
     expect(file?.name).toBe('designed.wav');
     expect(file?.type).toBe('audio/wav');
+    expect(component['sampleAudioUrl']).toMatch(/^blob:/);
     expect(component['formGroup'].controls.file.dirty).toBeTrue();
     expect(component['selectedFileName']).toBe('designed.wav');
     expect(component['formGroup'].controls.transcript.value).toBe(
