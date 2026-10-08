@@ -37,6 +37,7 @@ public static class TtsEndpointIdentity
             TtsProvider.Qwen3 => config.Qwen3BaseUrl,
             TtsProvider.OmniVoice => config.OmniVoiceBaseUrl,
             TtsProvider.Audio8 => config.Audio8BaseUrl,
+            TtsProvider.KittenTts => config.KittenTtsBaseUrl,
             _ => null
         };
     }

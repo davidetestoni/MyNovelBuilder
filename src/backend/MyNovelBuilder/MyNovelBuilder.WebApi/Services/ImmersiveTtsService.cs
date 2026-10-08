@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Collections.Immutable;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Dtos.Generate;
 using MyNovelBuilder.WebApi.Enums;
@@ -13,7 +14,7 @@ namespace MyNovelBuilder.WebApi.Services;
 /// <summary>
 /// Plans and streams immersive multi-speaker TTS playback.
 /// </summary>
-public class ImmersiveTtsService : IImmersiveTtsService
+public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlanner
 {
     private const int _outputSampleRate = 24000;
     private const short _outputChannels = 1;
@@ -95,6 +96,21 @@ public class ImmersiveTtsService : IImmersiveTtsService
     public Task<Stream> GenerateStreamAsync(
         AudiobookRenderRequest request,
         CancellationToken cancellationToken = default) => GenerateStreamCoreAsync(ToPlaybackRequest(request), request, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<ImmutableArray<AudiobookSpeechChunk>> PrepareAudiobookAsync(
+        AudiobookRenderRequest request, CancellationToken cancellationToken = default)
+    {
+        var prepared = await PrepareAsync(ToPlaybackRequest(request), request, cancellationToken, preserveSpeechUnits: true);
+        // The planner may redistribute whitespace, but must not omit, reorder or rewrite spoken characters.
+        static string Spoken(string text) => string.Concat(text.Where(c => !char.IsWhiteSpace(c)));
+        if (Spoken(string.Concat(prepared.Chunks.Select(c => c.Text))) != Spoken(request.Section.SpeechText))
+            throw new InvalidDataException("Immersive planning changed or omitted source text. Retry planning before exporting.");
+        return prepared.Chunks.Select(chunk => new AudiobookSpeechChunk(chunk.Text, chunk.VoiceId,
+            request.Settings.ToTtsOptions(chunk.VoiceId, request.Section.VoiceAssignments
+                .FirstOrDefault(a => a.CharacterRecordId == chunk.CharacterRecordId && a.VoiceId == chunk.VoiceId)?.VoiceRevision).VoiceRevision,
+            chunk.IsNarratorFallback)).ToImmutableArray();
+    }
 
     private static ImmersiveTtsRequestDto ToPlaybackRequest(AudiobookRenderRequest request) => new()
     {
@@ -191,7 +207,8 @@ public class ImmersiveTtsService : IImmersiveTtsService
     private async Task<PreparedImmersiveTtsResult> PrepareAsync(
         ImmersiveTtsRequestDto request,
         AudiobookRenderRequest? audiobook,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool preserveSpeechUnits = false)
     {
         var settings = audiobook?.Settings;
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
@@ -319,7 +336,16 @@ public class ImmersiveTtsService : IImmersiveTtsService
 
         foreach (var structuredChunk in structuredChunks)
         {
-            foreach (var textChunk in chunker.ChunkText(structuredChunk.Text ?? string.Empty))
+            if (structuredChunk is null)
+                throw new InvalidDataException("Immersive planning returned a null chunk.");
+            if (audiobook is not null && (structuredChunk.Text is null ||
+                (!string.Equals(structuredChunk.SpeakerKind, "narrator", StringComparison.OrdinalIgnoreCase) &&
+                 !string.Equals(structuredChunk.SpeakerKind, "character", StringComparison.OrdinalIgnoreCase))))
+                throw new InvalidDataException("Immersive planning returned an invalid speaker chunk.");
+            var texts = preserveSpeechUnits
+                ? new List<string> { structuredChunk.Text ?? string.Empty }
+                : chunker.ChunkText(structuredChunk.Text ?? string.Empty);
+            foreach (var textChunk in texts)
             {
                 var resolvedChunk = ResolveChunk(
                     structuredChunk,

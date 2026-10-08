@@ -9,7 +9,7 @@ namespace MyNovelBuilder.WebApi.Services;
 /// <summary>
 /// Shared TTS generation pipeline for controller endpoints and immersive playback.
 /// </summary>
-public class TtsAudioGenerationService : ITtsAudioGenerationService
+public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookTtsService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IIntegrationsService _integrationsService;
@@ -18,6 +18,8 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
     private readonly ILogger<TtsAudioGenerationService> _logger;
     private readonly ITtsVoiceRevisionService _voiceRevisions;
     private readonly IAudioArtifactRepository _artifacts;
+    private readonly AudioArtifactAssembler _assembler;
+    private readonly AudiobookPreparationCache _preparations;
 
     /// <summary></summary>
     public TtsAudioGenerationService(
@@ -27,7 +29,9 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         ITextGenerationServiceResolver textGenerationServiceResolver,
         ILogger<TtsAudioGenerationService> logger,
         ITtsVoiceRevisionService voiceRevisions,
-        IAudioArtifactRepository artifacts)
+        IAudioArtifactRepository artifacts,
+        AudioArtifactAssembler assembler,
+        AudiobookPreparationCache preparations)
     {
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
@@ -36,6 +40,8 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         _logger = logger;
         _voiceRevisions = voiceRevisions;
         _artifacts = artifacts;
+        _assembler = assembler;
+        _preparations = preparations;
     }
 
     /// <inheritdoc />
@@ -149,6 +155,26 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
             cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task<string> GenerateArtifactAsync(TextToSpeechGenerationRequest request, CancellationToken cancellationToken = default)
+    {
+        var options = request.ResolvedOptions ?? throw new ArgumentException("Audiobook synthesis requires frozen settings.", nameof(request));
+        var scope = request.PreparationScope ?? new AudiobookSectionSnapshot(0, request.Message, [], []);
+        var keys = new List<string>();
+        foreach (var text in AudiobookTextSplitter.Split(request.Message, AudiobookTextSplitter.Limit(options.Provider)))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(text)) continue;
+            var chunkRequest = new TextToSpeechGenerationRequest
+            {
+                Message = text, ResolvedOptions = options, PreparationScope = scope
+            };
+            keys.Add(await EnsureArtifactAsync(await ResolveRequestAsync(chunkRequest, cancellationToken), cancellationToken));
+        }
+        if (keys.Count == 0) throw new InvalidOperationException("There is no spoken text to synthesize.");
+        return keys.Count == 1 ? keys[0] : await _assembler.AssembleAsync(keys, 0, cancellationToken);
+    }
+
     private async Task<byte[]> GenerateCachedAsync(ResolvedTtsRequest resolved, CancellationToken cancellationToken)
     {
         var key = await EnsureArtifactAsync(resolved, cancellationToken);
@@ -165,26 +191,44 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
                 AudioCacheKey.Create("emphasis-messages-v1", resolved.TtsService.GetEmphasisMessages(resolved.Request.Message)))
             : null;
         var sourceKey = AudioCacheKey.Source(resolved.Request.Message, options, preparationKey);
+        if (resolved.Request.PreparationScope is not null)
+            sourceKey = AudioCacheKey.Create("finite-tts-v1", new { sourceKey, splitter = AudiobookTextSplitter.Version });
         using var sourceLease = await _artifacts.AcquireAsync(sourceKey, cancellationToken);
         var manifest = await _artifacts.ReadManifestAsync(sourceKey, cancellationToken);
         if (manifest is { ArtifactKeys.Length: 1 }) return manifest.ArtifactKeys[0];
 
-        // Emphasized text lives only on this request. The durable mapping bypasses the LLM
-        // on subsequent completed requests, including after an application restart.
-        var ttsRequest = await CreateTtsRequestAsync(resolved, cancellationToken);
-        var artifactKey = AudioCacheKey.Synthesis(ttsRequest.Message, options);
-        using var artifactLease = await _artifacts.AcquireAsync(artifactKey, cancellationToken);
-        await using (var cached = await _artifacts.OpenReadAsync(artifactKey, cancellationToken))
+        var ttsRequest = await _preparations.GetOrCreateAsync(resolved.Request.PreparationScope,
+            "emphasis-" + (preparationKey ?? AudioCacheKey.Hash(resolved.Request.Message)),
+            async () => (await CreateTtsRequestAsync(resolved, cancellationToken)).Message);
+        // Keep only prepared text across attempts. Execution inputs are validated afresh per call.
+        var keys = new List<string>();
+        var speechParts = resolved.Request.PreparationScope is null
+            ? new[] { ttsRequest }
+            : AudiobookTextSplitter.Split(ttsRequest, AudiobookTextSplitter.Limit(options.Provider), preserveTags: emphasized);
+        foreach (var text in speechParts)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (string.IsNullOrWhiteSpace(text)) continue;
+            var chunkKey = AudioCacheKey.Synthesis(text, options);
+            using var artifactLease = await _artifacts.AcquireAsync(chunkKey, cancellationToken);
+            await using var cached = await _artifacts.OpenReadAsync(chunkKey, cancellationToken);
             if (cached is null)
             {
-                var audio = await resolved.TtsService.GenerateAudioAsync(ttsRequest, cancellationToken);
+                var chunkRequest = new TtsRequest
+                {
+                    Message = text, VoiceId = options.VoiceId, ModelId = options.ModelId,
+                    TextGenerationModelId = options.TextGenerationModelId, ExecutionInputs = resolved.ExecutionInputs
+                };
+                var audio = await resolved.TtsService.GenerateAudioAsync(chunkRequest, cancellationToken);
                 if (resolved.TtsService.OutputAudioFormat == AudioFormat.Mp3)
                     audio = await AudioConversionHelper.ConvertMp3ToWavBytesAsync(audio, cancellationToken);
                 await using var buffer = new MemoryStream(audio, writable: false);
-                await _artifacts.SaveAsync(artifactKey, buffer, cancellationToken);
+                await _artifacts.SaveAsync(chunkKey, buffer, cancellationToken);
             }
+            keys.Add(chunkKey);
         }
+        if (keys.Count == 0) throw new InvalidDataException("Emphasis returned no spoken text.");
+        var artifactKey = keys.Count == 1 ? keys[0] : await _assembler.AssembleAsync(keys, 0, cancellationToken);
         await _artifacts.SaveManifestAsync(new AudioSourceManifest(1, sourceKey, preparationKey, [artifactKey]), cancellationToken);
         return artifactKey;
     }

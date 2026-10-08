@@ -31,6 +31,8 @@ public sealed class TtsFrozenInputsTests
     [InlineData(TtsProvider.Chatterbox, true)]
     [InlineData(TtsProvider.Audio8, false)]
     [InlineData(TtsProvider.Audio8, true)]
+    [InlineData(TtsProvider.KittenTts, false)]
+    [InlineData(TtsProvider.KittenTts, true)]
     public async Task EveryProviderChunkUsesValidatedEndpointAndRecording(TtsProvider provider, bool streamed)
     {
         using var fixture = new Fixture(provider);
@@ -54,7 +56,7 @@ public sealed class TtsFrozenInputsTests
         {
             Assert.Equal("original.test", call.Host);
             Assert.Equal(Fixture.OriginalAudio, call.Audio);
-            if (provider == TtsProvider.Audio8) Assert.Equal("original transcript", call.Transcript);
+            if (provider is TtsProvider.Audio8 or TtsProvider.KittenTts) Assert.Equal("original transcript", call.Transcript);
             else Assert.Equal(provider == TtsProvider.Qwen3 ? "italian" : "it", call.Language);
         }
     }
@@ -118,7 +120,8 @@ public sealed class TtsFrozenInputsTests
         public IntegrationsConfig Config { get; } = new()
         {
             OmniVoiceBaseUrl = "http://original.test/", Qwen3BaseUrl = "http://original.test/",
-            ChatterboxBaseUrl = "http://original.test/", Audio8BaseUrl = "http://original.test/"
+            ChatterboxBaseUrl = "http://original.test/", Audio8BaseUrl = "http://original.test/",
+            KittenTtsBaseUrl = "http://original.test/"
         };
         public RecordingHandler Handler { get; } = new();
         public TtsVoiceRevisionService Voices { get; }
@@ -149,13 +152,14 @@ public sealed class TtsFrozenInputsTests
                 TtsProvider.Qwen3 => new Qwen3TtsService(_httpClient, storage, scopes, integrations),
                 TtsProvider.Chatterbox => new ChatterboxTtsService(_httpClient, storage, scopes, integrations),
                 TtsProvider.Audio8 => new Audio8TtsService(_httpClient, storage, scopes, integrations),
+                TtsProvider.KittenTts => new KittenTtsService(_httpClient, storage, scopes, integrations),
                 _ => throw new ArgumentOutOfRangeException(nameof(provider))
             };
         }
 
         public void ChangeLiveInputs()
         {
-            Config.OmniVoiceBaseUrl = Config.Qwen3BaseUrl = Config.ChatterboxBaseUrl = Config.Audio8BaseUrl = "http://changed.test/";
+            Config.OmniVoiceBaseUrl = Config.Qwen3BaseUrl = Config.ChatterboxBaseUrl = Config.Audio8BaseUrl = Config.KittenTtsBaseUrl = "http://changed.test/";
             File.WriteAllBytes(VoicePath, [99]);
             _database.Voices.ExecuteUpdate(update => update
                 .SetProperty(voice => voice.Language, WritingLanguage.English)
@@ -175,7 +179,9 @@ public sealed class TtsFrozenInputsTests
             services.AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter, text ?? new CallbackTextService(() => { }));
             return new TtsAudioGenerationService(services.BuildServiceProvider(), new Integrations(Config),
                 new NoCache(), new NoDefaultTextResolver(), NullLogger<TtsAudioGenerationService>.Instance, revisions,
-                new FileSystemAudioArtifactRepository(Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder })));
+                new FileSystemAudioArtifactRepository(Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder })),
+                new AudioArtifactAssembler(new FileSystemAudioArtifactRepository(Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder })), Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder })),
+                new AudiobookPreparationCache());
         }
 
         public void Dispose()
@@ -212,7 +218,9 @@ public sealed class TtsFrozenInputsTests
                 parts.TryGetValue("reference_wav", out var audio) ? await audio.ReadAsByteArrayAsync(cancellationToken) : null,
                 parts.TryGetValue("language", out var language) ? await language.ReadAsStringAsync(cancellationToken) : null,
                 parts.TryGetValue("ref_text", out var transcript) ? await transcript.ReadAsStringAsync(cancellationToken) : null));
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 0, 2, 0]) };
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([1, 0, 2, 0]) };
+            response.Headers.Add("X-Sample-Rate", "24000");
+            return response;
         }
     }
 

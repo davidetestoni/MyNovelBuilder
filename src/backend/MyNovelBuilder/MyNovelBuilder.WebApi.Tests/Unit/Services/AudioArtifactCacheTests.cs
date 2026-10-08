@@ -33,7 +33,9 @@ public sealed class AudioArtifactCacheTests : IDisposable
     {
         var services = new ServiceCollection().AddKeyedSingleton<ITtsService>(TtsProvider.ElevenLabs, tts).BuildServiceProvider();
         return new(services, new Integrations(), new Legacy(), new Resolver(),
-            NullLogger<TtsAudioGenerationService>.Instance, new NoRecordedVoices(), repository ?? Repository());
+            NullLogger<TtsAudioGenerationService>.Instance, new NoRecordedVoices(), repository ?? Repository(),
+            new AudioArtifactAssembler(repository ?? Repository(), Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder })),
+            new AudiobookPreparationCache());
     }
     private static TextToSpeechGenerationRequest Request(ResolvedTtsGenerationOptions? options = null) =>
         new() { Message = Story, ResolvedOptions = options ?? Settings };

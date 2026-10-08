@@ -34,4 +34,7 @@ public class TextToSpeechGenerationRequest
 
     /// <summary>Explicit sound settings for callers that must not reread mutable defaults.</summary>
     public ResolvedTtsGenerationOptions? ResolvedOptions { get; set; }
+
+    /// <summary>In-memory lifetime for reusable text-bearing preparation; never persisted.</summary>
+    public Models.AudioGeneration.AudiobookSectionSnapshot? PreparationScope { get; set; }
 }
