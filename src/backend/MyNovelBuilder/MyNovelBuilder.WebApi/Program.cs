@@ -169,6 +169,7 @@ builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationService
 builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
 builder.Services.AddScoped<IImmersiveTtsService, ImmersiveTtsService>();
 builder.Services.AddSingleton<IAudioRepository, FileSystemWaveAudioRepository>();
+builder.Services.AddSingleton<IAudioArtifactRepository, FileSystemAudioArtifactRepository>();
 builder.Services.AddSingleton<ITokenizerService, TokenizerService>();
 
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();

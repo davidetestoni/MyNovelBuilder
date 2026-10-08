@@ -58,6 +58,21 @@ public class ElevenLabsTtsService : ITtsService
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<PromptMessage> GetEmphasisMessages(string text) =>
+    [
+        new PromptMessage
+        {
+            Role = PromptMessageRole.System,
+            Message = _emphasisPrompt
+        },
+        new PromptMessage
+        {
+            Role = PromptMessageRole.User,
+            Message = $"Here's the text that needs to be enriched:\n{text}"
+        }
+    ];
+
+    /// <inheritdoc />
     public async Task<string> EmphasizeTextAsync(
         TtsRequest request,
         Func<CancellationToken, ValueTask<ITextGenerationService>> textGenerationServiceFactory,
@@ -66,18 +81,7 @@ public class ElevenLabsTtsService : ITtsService
         var textGenerationService = await textGenerationServiceFactory(cancellationToken);
         return await textGenerationService.GenerateAsync(
             request.TextGenerationModelId ?? _fallbackEmphasisModel,
-            [
-                new PromptMessage
-                {
-                    Role = PromptMessageRole.System,
-                    Message = _emphasisPrompt
-                },
-                new PromptMessage
-                {
-                    Role = PromptMessageRole.User,
-                    Message = $"Here's the text that needs to be enriched:\n{request.Message}"
-                }
-            ],
+            GetEmphasisMessages(request.Message),
             cancellationToken: cancellationToken);
     }
     

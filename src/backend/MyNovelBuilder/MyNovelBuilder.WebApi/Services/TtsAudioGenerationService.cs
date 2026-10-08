@@ -17,6 +17,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
     private readonly ITextGenerationServiceResolver _textGenerationServiceResolver;
     private readonly ILogger<TtsAudioGenerationService> _logger;
     private readonly ITtsVoiceRevisionService _voiceRevisions;
+    private readonly IAudioArtifactRepository _artifacts;
 
     /// <summary></summary>
     public TtsAudioGenerationService(
@@ -25,7 +26,8 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         IAudioRepository audioRepository,
         ITextGenerationServiceResolver textGenerationServiceResolver,
         ILogger<TtsAudioGenerationService> logger,
-        ITtsVoiceRevisionService voiceRevisions)
+        ITtsVoiceRevisionService voiceRevisions,
+        IAudioArtifactRepository artifacts)
     {
         _serviceProvider = serviceProvider;
         _integrationsService = integrationsService;
@@ -33,6 +35,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         _textGenerationServiceResolver = textGenerationServiceResolver;
         _logger = logger;
         _voiceRevisions = voiceRevisions;
+        _artifacts = artifacts;
     }
 
     /// <inheritdoc />
@@ -41,11 +44,10 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         CancellationToken cancellationToken = default)
     {
         var resolved = await ResolveRequestAsync(request, cancellationToken);
-        // The playback cache omits endpoint and reference-recording revisions. Calls with
-        // explicit resolved options use the versioned cache introduced in Step 2.
-        var cachedAudioTask = request.ResolvedOptions is null
-            ? _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken)
-            : null;
+        if (request.ResolvedOptions is not null)
+            return await GenerateCachedAsync(resolved, cancellationToken);
+        // Legacy playback entries never satisfy frozen audiobook requests.
+        var cachedAudioTask = _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken);
 
         if (cachedAudioTask is not null)
         {
@@ -78,10 +80,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
             "TTS audio bytes generated successfully with {WavByteCount} WAV bytes.",
             wavBytes.Length);
 
-        if (request.ResolvedOptions is null)
-        {
-            await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
-        }
+        await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
         return wavBytes;
     }
 
@@ -91,9 +90,13 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
         CancellationToken cancellationToken = default)
     {
         var resolved = await ResolveRequestAsync(request, cancellationToken);
-        var cachedAudioTask = request.ResolvedOptions is null
-            ? _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken)
-            : null;
+        if (request.ResolvedOptions is not null)
+        {
+            var key = await EnsureArtifactAsync(resolved, cancellationToken);
+            return await _artifacts.OpenReadAsync(key, cancellationToken)
+                ?? throw new IOException("Generated audio disappeared before it could be opened.");
+        }
+        var cachedAudioTask = _audioRepository.GetAudioFileAsync(resolved.AudioParameters, cancellationToken);
 
         if (cachedAudioTask is not null)
         {
@@ -136,19 +139,54 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService
             await using var wavBuffer = new MemoryStream();
             await audioStream.CopyToAsync(wavBuffer, cancellationToken);
             var wavBytes = wavBuffer.ToArray();
-            if (request.ResolvedOptions is null)
-            {
-                await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
-            }
+            await _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, wavBytes, cancellationToken);
             return new MemoryStream(wavBytes);
         }
-
-        if (request.ResolvedOptions is not null) return audioStream;
 
         return new CachingReadStream(
             audioStream,
             (audioData, ct) => _audioRepository.SaveAudioFileAsync(resolved.AudioParameters, audioData, ct),
             cancellationToken);
+    }
+
+    private async Task<byte[]> GenerateCachedAsync(ResolvedTtsRequest resolved, CancellationToken cancellationToken)
+    {
+        var key = await EnsureArtifactAsync(resolved, cancellationToken);
+        return await _artifacts.ReadBytesAsync(key, cancellationToken)
+            ?? throw new IOException("Generated audio disappeared before it could be read.");
+    }
+
+    private async Task<string> EnsureArtifactAsync(ResolvedTtsRequest resolved, CancellationToken cancellationToken)
+    {
+        var options = resolved.Request.ResolvedOptions!;
+        var emphasized = resolved.EnableTextEmphasis && resolved.TtsService.SupportsTextEmphasis(options.ModelId);
+        var preparationKey = emphasized
+            ? AudioCacheKey.Emphasis(resolved.Request.Message, options,
+                AudioCacheKey.Create("emphasis-messages-v1", resolved.TtsService.GetEmphasisMessages(resolved.Request.Message)))
+            : null;
+        var sourceKey = AudioCacheKey.Source(resolved.Request.Message, options, preparationKey);
+        using var sourceLease = await _artifacts.AcquireAsync(sourceKey, cancellationToken);
+        var manifest = await _artifacts.ReadManifestAsync(sourceKey, cancellationToken);
+        if (manifest is { ArtifactKeys.Length: 1 }) return manifest.ArtifactKeys[0];
+
+        // Emphasized text lives only on this request. The durable mapping bypasses the LLM
+        // on subsequent completed requests, including after an application restart.
+        var ttsRequest = await CreateTtsRequestAsync(resolved, cancellationToken);
+        var artifactKey = AudioCacheKey.Synthesis(ttsRequest.Message, options);
+        using var artifactLease = await _artifacts.AcquireAsync(artifactKey, cancellationToken);
+        await using (var cached = await _artifacts.OpenReadAsync(artifactKey, cancellationToken))
+        {
+            if (cached is null)
+            {
+                var audio = await resolved.TtsService.GenerateAudioAsync(ttsRequest, cancellationToken);
+                if (resolved.TtsService.OutputAudioFormat == AudioFormat.Mp3)
+                    audio = await AudioConversionHelper.ConvertMp3ToWavBytesAsync(audio, cancellationToken);
+                await using var buffer = new MemoryStream(audio, writable: false);
+                await _artifacts.SaveAsync(artifactKey, buffer, cancellationToken);
+            }
+        }
+        await _artifacts.SaveManifestAsync(new AudioSourceManifest(1, sourceKey, preparationKey, [artifactKey]), cancellationToken);
+        return artifactKey;
     }
 
     private async Task<byte[]?> NormalizeCachedAudioBytesAsync(

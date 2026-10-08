@@ -174,7 +174,8 @@ public sealed class TtsFrozenInputsTests
             var services = new ServiceCollection().AddKeyedSingleton(_provider, _tts);
             services.AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter, text ?? new CallbackTextService(() => { }));
             return new TtsAudioGenerationService(services.BuildServiceProvider(), new Integrations(Config),
-                new NoCache(), new NoDefaultTextResolver(), NullLogger<TtsAudioGenerationService>.Instance, revisions);
+                new NoCache(), new NoDefaultTextResolver(), NullLogger<TtsAudioGenerationService>.Instance, revisions,
+                new FileSystemAudioArtifactRepository(Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder })));
         }
 
         public void Dispose()
