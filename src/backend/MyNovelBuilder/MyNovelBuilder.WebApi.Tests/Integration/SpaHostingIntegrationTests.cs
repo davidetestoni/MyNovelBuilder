@@ -21,6 +21,9 @@ public sealed class SpaHostingIntegrationTests : IDisposable,
         webRoot = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(webRoot);
         File.WriteAllText(Path.Combine(webRoot, "index.html"), IndexContents);
+        Directory.CreateDirectory(Path.Combine(webRoot, "whistle"));
+        File.WriteAllBytes(Path.Combine(webRoot, "whistle", "needle.wasm"), [0, 97, 115, 109]);
+        File.WriteAllBytes(Path.Combine(webRoot, "whistle", "whistle.bin"), [1, 2, 3, 4]);
 
         factory = baseFactory.WithWebHostBuilder(builder => builder.UseWebRoot(webRoot));
 
@@ -68,6 +71,18 @@ public sealed class SpaHostingIntegrationTests : IDisposable,
 
         Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
         Assert.NotEqual(IndexContents, await response.Content.ReadAsStringAsync());
+    }
+
+    [Theory]
+    [InlineData("needle.wasm", "application/wasm")]
+    [InlineData("whistle.bin", "application/octet-stream")]
+    public async Task BrowserTranscriptionBinariesAreServedAsStaticFiles(string file, string contentType)
+    {
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync($"/whistle/{file}");
+        response.EnsureSuccessStatusCode();
+        Assert.Equal(contentType, response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(4, (await response.Content.ReadAsByteArrayAsync()).Length);
     }
 
     [Fact]

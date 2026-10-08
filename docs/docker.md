@@ -99,6 +99,7 @@ secured, or supported automatically by MyNovelBuilder:
 - [OmniVoice](https://github.com/davidetestoni/OmniVoice)
 - [Qwen3-TTS](https://github.com/davidetestoni/Qwen3-TTS)
 - [Chatterbox](https://github.com/davidetestoni/chatterbox)
+- [KittenTTS](https://github.com/davidetestoni/KittenTTS)
 
 ## Local-only security boundary
 
