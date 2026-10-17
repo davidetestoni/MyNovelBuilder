@@ -66,9 +66,24 @@ public sealed class AudiobookApiIntegrationTests
             job = (await refreshedClient.GetFromJsonAsync<AudiobookJobStatus>(first.Headers.Location, options, timeout.Token))!;
         }
         Assert.Equal("completed", job.State);
-        Assert.Equal("sections_ready", job.Stage);
-        Assert.False(job.DownloadAvailable);
+        Assert.Equal("ready", job.Stage);
+        Assert.True(job.DownloadAvailable);
         Assert.Equal(1, tts.Calls);
+        var downloadUrl = root + $"/jobs/{job.Id}/download";
+        var download = await client.GetAsync(downloadUrl);
+        download.EnsureSuccessStatusCode();
+        Assert.Equal("application/zip", download.Content.Headers.ContentType!.MediaType);
+        Assert.EndsWith("-audiobook.zip", download.Content.Headers.ContentDisposition!.FileNameStar);
+        using (var bytes = new MemoryStream(await download.Content.ReadAsByteArrayAsync()))
+        using (var zip = new System.IO.Compression.ZipArchive(bytes))
+            Assert.Equal(new[] { "001-One.wav", "manifest.json" }, zip.Entries.Select(e => e.FullName));
+        using var range = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
+        range.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, 9);
+        var partial = await client.SendAsync(range);
+        Assert.Equal(HttpStatusCode.PartialContent, partial.StatusCode);
+        Assert.Equal(10, (await partial.Content.ReadAsByteArrayAsync()).Length);
+        var wrongDownload = await client.GetAsync($"/api/novel/{Guid.NewGuid()}/audiobook/jobs/{job.Id}/download");
+        Assert.False(wrongDownload.IsSuccessStatusCode);
         var list = await refreshedClient.GetFromJsonAsync<AudiobookJobStatus[]>(root + "/jobs", options);
         Assert.Contains(list!, j => j.Id == job.Id);
         var wrongNovel = await client.GetAsync($"/api/novel/{Guid.NewGuid()}/audiobook/jobs/{job.Id}");

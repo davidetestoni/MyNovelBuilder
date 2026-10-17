@@ -26,7 +26,7 @@ public sealed record AudiobookSectionStatus(int ChapterIndex, int SectionIndex, 
 /// <summary>Public history entry for one execution attempt; retries create new entries.</summary>
 /// <param name="Number">One-based attempt number within the job.</param>
 /// <param name="State">Attempt state: queued, running, cancelling, cancelled, failed or completed.</param>
-/// <param name="Stage">Current or terminal stage. sections_ready means section rendering finished; it does not imply chapter or ZIP publication.</param>
+/// <param name="Stage">Current or terminal stage; ready means chapter assembly and ZIP publication succeeded.</param>
 /// <param name="ErrorCode">Sanitized failure code, or null; excludes provider response bodies and raw exception messages.</param>
 /// <param name="CreatedAt">UTC time when this attempt was queued.</param>
 /// <param name="FinishedAt">UTC terminal time, or null while the attempt is active.</param>
@@ -37,16 +37,16 @@ public sealed record AudiobookAttemptStatus(int Number, string State, string Sta
 /// <param name="NovelId">Identifier of the novel that owns the job.</param>
 /// <param name="SnapshotAt">UTC capture time of the original frozen inputs, preserved across retries.</param>
 /// <param name="State">Job state: queued, running, cancelling, cancelled, failed or completed.</param>
-/// <param name="Stage">Current attempt stage. sections_ready currently marks successful rendering before chapter packaging is implemented.</param>
+/// <param name="Stage">Current attempt stage, including assembly, packaging and ready.</param>
 /// <param name="AttemptNumber">One-based number of the current attempt.</param>
 /// <param name="CompletedSections">Number of generated plus reused sections in the current attempt; excludes skipped sections.</param>
 /// <param name="ReusedSections">Sections completed using validated source-to-audio mappings; missing assembled files may have been rebuilt.</param>
 /// <param name="GeneratedSections">Sections completed without a prior valid source mapping. Some or all synthesis chunks may still have been reused.</param>
 /// <param name="FailedSections">Sections marked failed in the current attempt; excludes pending or cancelled work.</param>
 /// <param name="SkippedSections">Sections omitted because their normalized speech is empty.</param>
-/// <param name="CompletedChapters">Chapters whose eligible sections are all complete. This counts rendering progress, not published chapter files.</param>
+/// <param name="CompletedChapters">Number of complete chapter audio artifacts assembled during this attempt.</param>
 /// <param name="TotalChapters">Number of chapters containing at least one eligible section.</param>
-/// <param name="DownloadAvailable">Whether a complete archive can be downloaded. Always false until chapter and ZIP publication is implemented.</param>
+/// <param name="DownloadAvailable">Whether a completed job has an archive of the expected size; download also verifies its checksum.</param>
 /// <param name="ErrorCode">Sanitized error code for the current attempt, or null.</param>
 /// <param name="Sections">Current attempt section statuses ordered by chapter and section position, including skipped sections.</param>
 /// <param name="Attempts">Attempt history ordered by one-based attempt number.</param>

@@ -178,6 +178,7 @@ builder.Services.AddScoped<ITtsAudioGenerationService>(sp => sp.GetRequiredServi
 builder.Services.AddScoped<IAudiobookTtsService>(sp => sp.GetRequiredService<TtsAudioGenerationService>());
 builder.Services.AddSingleton<AudiobookPreparationCache>();
 builder.Services.AddSingleton<AudioArtifactAssembler>();
+builder.Services.AddSingleton<AudiobookArchiveService>();
 builder.Services.AddScoped<AudiobookSectionRenderer>();
 builder.Services.AddScoped<ImmersiveTtsService>();
 builder.Services.AddScoped<IImmersiveTtsService>(sp => sp.GetRequiredService<ImmersiveTtsService>());

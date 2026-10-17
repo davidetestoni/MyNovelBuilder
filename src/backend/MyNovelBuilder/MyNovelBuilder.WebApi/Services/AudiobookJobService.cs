@@ -5,7 +5,7 @@ namespace MyNovelBuilder.WebApi.Services;
 
 /// <summary>Job lifecycle over JSON metadata and the shared hash-addressed audio cache. Story snapshots stay in memory.</summary>
 public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, INovelService novels, AudiobookSnapshotBuilder builder,
-    AudiobookSectionRenderer renderer, AudiobookSnapshotStore store, TimeProvider clock)
+    AudiobookSectionRenderer renderer, AudiobookSnapshotStore store, TimeProvider clock, AudiobookArchiveService archives)
 {
     /// <summary>Freezes saved inputs and estimates uncached source characters without calling generation providers.</summary>
     public async Task<AudiobookPreview> PreviewAsync(Guid novelId, AudiobookSettingsRequest request, CancellationToken ct)
@@ -32,7 +32,7 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
                 ["Generation may incur provider charges. Character counts are source-text estimates, not prices or durations.",
                  "Unassigned immersive character voices use the narrator.",
                  "After a restart, incomplete sections may require paid preprocessing again.",
-                 "Chapter packaging and downloads are not enabled yet."]);
+                 "Downloads contain uncompressed PCM WAV chapters and may be large."]);
         }
         finally { store.Mutations.Release(); }
     }
@@ -68,14 +68,19 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
         finally { store.Mutations.Release(); }
     }
 
-    /// <summary>Queues a failed or cancelled job again; after restart, saved inputs must match the original checksum.</summary>
+    /// <summary>Queues failed, cancelled or unavailable completed work again; after restart, saved inputs must match the original checksum.</summary>
     public async Task<AudiobookJobStatus> RetryAsync(Guid novelId, Guid jobId, CancellationToken ct)
     {
         await store.Mutations.WaitAsync(ct);
         try
         {
             var job = await FindAsync(novelId, jobId, ct);
-            if (job.State is not ("failed" or "cancelled")) throw Bad("Only failed or cancelled jobs can be retried.");
+            if (job.State == "completed")
+            {
+                await using var existing = await archives.OpenAsync(novelId, job.Archive, ct);
+                if (existing is not null) throw Bad("This audiobook is already complete and available for download.");
+            }
+            else if (job.State is not ("failed" or "cancelled")) throw Bad("Only failed, cancelled or unavailable completed jobs can be retried.");
             await RequireIdleAsync(novelId, ct);
             var snapshot = store.Get(job.SnapshotId, novelId);
             if (snapshot is null)
@@ -121,6 +126,16 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
         return (await jobs.ListAsync(novelId, ct)).OrderByDescending(j => j.State is "queued" or "running" or "cancelling")
             .ThenByDescending(j => j.CreatedAt).Take(50).Select(Status).ToArray();
     }
+    /// <summary>Returns a validated ZIP stream for a completed job belonging to the novel. The caller must dispose the stream.</summary>
+    public async Task<(Stream Stream, string FileName)> DownloadAsync(Guid novelId, Guid jobId, CancellationToken ct)
+    {
+        var job = await FindAsync(novelId, jobId, ct);
+        if (job.State != "completed") throw Bad("This audiobook is not ready for download.");
+        var stream = await archives.OpenAsync(novelId, job.Archive, ct)
+            ?? throw Bad("The audiobook archive is missing or damaged. Retry the job to rebuild it from retained audio.");
+        return (stream, job.Archive!.FileName);
+    }
+
     private async Task<AudiobookJob> FindAsync(Guid novelId, Guid id, CancellationToken ct) =>
         await jobs.ReadAsync(novelId, id, ct) ?? throw Bad("Audiobook job not found for this novel.");
     private async Task RequireNovelAsync(Guid id, CancellationToken ct) => await novels.GetByIdAsync(id, ct);
@@ -142,6 +157,8 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
         job.AttemptCreatedAt = clock.GetUtcNow().UtcDateTime;
         job.FinishedAt = null;
         job.ErrorCode = null;
+        job.Archive = null;
+        job.CompletedChapters = 0;
         job.Sections = snapshot.Chapters.SelectMany(c => c.Sections.Select(s => new AudiobookSectionProgress
         {
             ChapterIndex = c.ChapterIndex, SectionIndex = s.SectionIndex,
@@ -153,15 +170,15 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
     /// <summary>Copies resolved settings into explicit selections that can reconstruct inputs after restart.</summary>
     public static AudiobookSettingsRequest ToRequest(ResolvedAudiobookSettings s) => new(s.Provider, s.ModelId, s.VoiceId,
         s.EnableTextEmphasis, s.EnableImmersive, s.ImmersivePauseMs, s.TextGenerationProvider, s.TextGenerationModelId, s.ImmersivePromptId);
-    /// <summary>Projects saved progress and attempt summaries into the API response; downloads remain unavailable.</summary>
-    public static AudiobookJobStatus Status(AudiobookJob job)
+    /// <summary>Projects saved progress and attempt summaries, checking whether the published archive is still present.</summary>
+    public AudiobookJobStatus Status(AudiobookJob job)
     {
         var sections = job.Sections.OrderBy(s => s.ChapterIndex).ThenBy(s => s.SectionIndex).ToArray();
         var chapters = sections.Where(s => s.State != "skipped").GroupBy(s => s.ChapterIndex).ToArray();
         return new(job.Id, job.NovelId, job.SnapshotAt, job.State, job.Stage, job.AttemptNumber,
             sections.Count(s => s.State is "generated" or "reused"), sections.Count(s => s.State == "reused"),
             sections.Count(s => s.State == "generated"), sections.Count(s => s.State == "failed"), sections.Count(s => s.State == "skipped"),
-            chapters.Count(c => c.All(s => s.State is "generated" or "reused")), chapters.Length, false, job.ErrorCode,
+            job.CompletedChapters, chapters.Length, job.State == "completed" && archives.IsAvailable(job.NovelId, job.Archive), job.ErrorCode,
             sections.Select(s => new AudiobookSectionStatus(s.ChapterIndex, s.SectionIndex, s.State)).ToArray(),
             job.History.Append(AttemptStatus(job)).ToArray());
     }

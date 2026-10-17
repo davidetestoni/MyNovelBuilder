@@ -4,7 +4,7 @@ using MyNovelBuilder.WebApi.Services;
 
 namespace MyNovelBuilder.WebApi.Controllers;
 
-/// <summary>Saved-novel audiobook orchestration. Downloads are introduced with chapter packaging.</summary>
+/// <summary>Saved-novel audiobook orchestration and streamed ZIP downloads.</summary>
 [ApiController]
 [Route("api/novel/{novelId:guid}/audiobook")]
 public sealed class AudiobookController(AudiobookJobService jobs) : ControllerBase
@@ -34,5 +34,12 @@ public sealed class AudiobookController(AudiobookJobService jobs) : ControllerBa
     {
         var job = await jobs.RetryAsync(novelId, jobId, ct);
         return AcceptedAtAction(nameof(Get), new { novelId, jobId }, job);
+    }
+    /// <summary>Streams a completed, validated archive with support for HTTP range requests.</summary>
+    [HttpGet("jobs/{jobId:guid}/download")]
+    public async Task<IActionResult> Download(Guid novelId, Guid jobId, CancellationToken ct)
+    {
+        var download = await jobs.DownloadAsync(novelId, jobId, ct);
+        return File(download.Stream, "application/zip", download.FileName, enableRangeProcessing: true);
     }
 }

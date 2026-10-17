@@ -105,7 +105,14 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
                 await CheckpointAsync("rendering");
                 active = null;
             }
-            await FinishAsync("completed", "sections_ready", null);
+            var archives = scope.ServiceProvider.GetRequiredService<AudiobookArchiveService>();
+            job.Archive = await archives.BuildAsync(snapshot, job.Sections, async (stage, count) =>
+            {
+                job.CompletedChapters = count;
+                await CheckpointAsync(stage);
+            }, cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            await FinishAsync("completed", "ready", null);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -122,6 +129,8 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
             {
                 SnapshotUnavailableException => "snapshot_unavailable_requires_verified_retry",
                 HttpRequestException => "provider_request_failed",
+                AudiobookExportException export => export.Code,
+                IOException io when (io.HResult & 0xffff) is 28 or 39 or 112 => "insufficient_disk_space",
                 IOException => "audio_storage_or_format_failed",
                 InvalidOperationException => "generation_inputs_or_plan_invalid",
                 _ => "generation_failed"

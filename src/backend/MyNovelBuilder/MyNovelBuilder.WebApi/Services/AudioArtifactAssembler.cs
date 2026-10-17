@@ -11,10 +11,18 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
 {
     /// <summary>Concatenates speech units with pauses only between units, never after the last unit.</summary>
     public async Task<string> AssembleAsync(IReadOnlyList<string> keys, int pauseMs, CancellationToken cancellationToken = default)
+        => await AssembleCoreAsync(keys, pauseMs, false, cancellationToken);
+
+    /// <summary>Concatenates normalized section PCM into a cached chapter with a 500 ms gap and no trailing silence.</summary>
+    public Task<string> AssembleChapterAsync(IReadOnlyList<string> keys, CancellationToken cancellationToken = default)
+        => AssembleCoreAsync(keys, 500, true, cancellationToken);
+
+    private async Task<string> AssembleCoreAsync(IReadOnlyList<string> keys, int pauseMs, bool chapter, CancellationToken cancellationToken)
     {
         if (keys.Count == 0) throw new ArgumentException("Cannot assemble empty audio.", nameof(keys));
         ArgumentOutOfRangeException.ThrowIfNegative(pauseMs);
-        var key = AudioCacheKey.Section(keys, pauseMs);
+        var key = chapter ? AudioCacheKey.Create("chapter-v1", new { sections = keys, pauseMs, profile = "pcm-24000-mono-16" })
+            : AudioCacheKey.Section(keys, pauseMs);
         using var lease = await artifacts.AcquireAsync(key, cancellationToken);
         await using (var cached = await artifacts.OpenReadAsync(key, cancellationToken))
         {
@@ -34,6 +42,11 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
                     await using var input = await artifacts.OpenReadAsync(keys[index], cancellationToken)
                         ?? throw new InvalidDataException("A section audio checkpoint is missing or corrupt.");
                     using var reader = new WaveFileReader(input);
+                    if (chapter && (reader.WaveFormat.Encoding != WaveFormatEncoding.Pcm || reader.WaveFormat.SampleRate != 24000 ||
+                        reader.WaveFormat.Channels != 1 || reader.WaveFormat.BitsPerSample != 16))
+                        throw new InvalidDataException("Chapter sections must use 24 kHz mono 16-bit PCM.");
+                    if (chapter) AudiobookStorage.EnsureWaveSize(writer.Length, reader.Length);
+                    AudiobookStorage.EnsureSpace(directory, reader.Length * 2 + (long)pauseMs * 96);
                     ISampleProvider samples = reader.ToSampleProvider();
                     if (samples.WaveFormat.Channels == 2)
                         samples = new StereoToMonoSampleProvider(samples) { LeftVolume = 0.5f, RightVolume = 0.5f };
@@ -42,15 +55,15 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
                     if (samples.WaveFormat.SampleRate != 24000) samples = new WdlResamplingSampleProvider(samples, 24000);
                     var pcm = new SampleToWaveProvider16(samples);
                     int read;
-                    while ((read = pcm.Read(buffer, 0, buffer.Length)) > 0)
+                    while ((read = chapter ? reader.Read(buffer, 0, buffer.Length) : pcm.Read(buffer, 0, buffer.Length)) > 0)
                     {
-                        CheckSize(writer.Length, read);
+                        AudiobookStorage.EnsureWaveSize(writer.Length, read);
                         await writer.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
                     }
                     if (index == keys.Count - 1) continue;
                     Array.Clear(buffer);
                     var remaining = (long)pauseMs * 48;
-                    CheckSize(writer.Length, remaining);
+                    AudiobookStorage.EnsureWaveSize(writer.Length, remaining);
                     while (remaining > 0)
                     {
                         var count = (int)Math.Min(remaining, buffer.Length);
@@ -60,15 +73,11 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
                 }
             }
             await using var completed = File.OpenRead(path);
+            AudiobookStorage.EnsureSpace(directory, completed.Length);
             await artifacts.SaveAsync(key, completed, cancellationToken);
             return key;
         }
         finally { File.Delete(path); }
     }
 
-    private static void CheckSize(long length, long additional)
-    {
-        if (length + additional > uint.MaxValue - 44L)
-            throw new InvalidDataException("This section exceeds the WAV container limit. Split it into smaller sections.");
-    }
 }

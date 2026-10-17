@@ -42,8 +42,8 @@ public sealed class AudiobookJobTests
         Assert.Equal(new[] { "First secret prose.", "Second secret prose." }, f.Tts.Messages);
         var status = await f.Status(jobs[0].Id);
         Assert.Equal("completed", status.State);
-        Assert.Equal("sections_ready", status.Stage);
-        Assert.False(status.DownloadAvailable);
+        Assert.Equal("ready", status.Stage);
+        Assert.True(status.DownloadAvailable);
         Assert.Equal(2, status.GeneratedSections);
         Assert.Equal(1, status.CompletedChapters);
         Assert.Equal(status.Id, (await f.Call(s => s.StartAsync(f.NovelId, request, default))).Id);
@@ -60,6 +60,37 @@ public sealed class AudiobookJobTests
         Assert.DoesNotContain("secret prose", persisted);
         Assert.DoesNotContain("http", persisted);
         Assert.False(db.Database.HasPendingModelChanges());
+    }
+
+    [Fact]
+    public async Task CompletedDownloadSurvivesRestart_MissingZipRetriesWithoutProviderCalls_AndNewFailureKeepsOldDownload()
+    {
+        using var f = await Fixture.Create();
+        var first = await f.Start(await f.Preview());
+        await Assert.ThrowsAsync<ApiException>(() => f.Call(s => s.DownloadAsync(f.NovelId, first.Id, default)));
+        await f.Worker.RunNextAsync(default);
+        f.Restart();
+        await f.Worker.RecoverAsync(default);
+        var download = await f.Call(s => s.DownloadAsync(f.NovelId, first.Id, default));
+        await download.Stream.DisposeAsync();
+        await Assert.ThrowsAsync<ApiException>(() => f.Call(s => s.RetryAsync(f.NovelId, first.Id, default)));
+        var repository = f.Services.GetRequiredService<FileSystemAudiobookJobRepository>();
+        var metadata = (await repository.ReadAsync(f.NovelId, first.Id))!;
+        File.Delete(Path.Combine(f.Folder, "audiobooks", f.NovelId.ToString(), "archives", metadata.Archive!.Key + ".zip"));
+        Assert.False((await f.Status(first.Id)).DownloadAvailable);
+        await Assert.ThrowsAsync<ApiException>(() => f.Call(s => s.DownloadAsync(f.NovelId, first.Id, default)));
+        await f.Call(s => s.RetryAsync(f.NovelId, first.Id, default));
+        await f.Worker.RunNextAsync(default);
+        Assert.True((await f.Status(first.Id)).DownloadAvailable);
+        Assert.Equal(2, f.Tts.Messages.Count);
+        await f.SetProse("Changed prose for a later run.");
+        var later = await f.Start(await f.Preview(), "later");
+        f.Tts.BeforeCall = (_, _) => Task.FromException(new InvalidOperationException());
+        await f.Worker.RunNextAsync(default);
+        Assert.Equal("failed", (await f.Status(later.Id)).State);
+        Assert.False((await f.Status(later.Id)).DownloadAvailable);
+        var previous = await f.Call(s => s.DownloadAsync(f.NovelId, first.Id, default));
+        await previous.Stream.DisposeAsync();
     }
 
     [Fact]
@@ -348,6 +379,7 @@ public sealed class AudiobookJobTests
             services.AddSingleton<IAudioRepository, FileSystemWaveAudioRepository>();
             services.AddSingleton<IAudioArtifactRepository, FileSystemAudioArtifactRepository>();
             services.AddSingleton<AudioArtifactAssembler>();
+            services.AddSingleton<AudiobookArchiveService>();
             services.AddSingleton<AudiobookPreparationCache>();
             services.AddScoped<IAudiobookTtsService, TtsAudioGenerationService>();
             services.AddSingleton<IAudiobookImmersivePlanner, NoPlan>();

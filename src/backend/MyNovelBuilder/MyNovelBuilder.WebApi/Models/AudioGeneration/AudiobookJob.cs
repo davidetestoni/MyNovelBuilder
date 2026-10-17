@@ -23,7 +23,7 @@ public sealed class AudiobookJob
     public DateTime CreatedAt { get; set; }
     /// <summary>queued, running, cancelling, cancelled, failed or completed.</summary>
     public string State { get; set; } = "queued";
-    /// <summary>Current stage; sections_ready means rendering finished, not that a ZIP is available.</summary>
+    /// <summary>Current stage: planning, rendering, assembly, packaging or ready when the ZIP is complete.</summary>
     public string Stage { get; set; } = "queued";
     /// <summary>One-based execution count, incremented for explicit retries.</summary>
     public int AttemptNumber { get; set; } = 1;
@@ -35,6 +35,10 @@ public sealed class AudiobookJob
     public string? ErrorCode { get; set; }
     /// <summary>Current section progress. Audio reuse is determined by the shared hash cache, not this list.</summary>
     public List<AudiobookSectionProgress> Sections { get; set; } = [];
+    /// <summary>Number of complete chapter artifacts assembled in the current attempt.</summary>
+    public int CompletedChapters { get; set; }
+    /// <summary>Validated ZIP reference, set only after successful publication.</summary>
+    public AudiobookArchiveReference? Archive { get; set; }
     /// <summary>Small summaries of prior attempts, without duplicated section checkpoints.</summary>
     public List<AudiobookAttemptStatus> History { get; set; } = [];
 }
