@@ -1,0 +1,126 @@
+<div class="audiobook">
+  @if (api.isDemo) { <p class="notice">Demo mode: downloads contain sample silence.</p> }
+  @if (error) { <p class="error" role="alert">{{ error }}</p> }
+  <div class="audiobook-columns">
+    <section class="settings-column" aria-label="Audiobook settings">
+      @if (loading) { <p role="status">Loading settings…</p> }
+    <fieldset [disabled]="busy || loading">
+      <legend>Narration</legend>
+      <label class="choice" for="ab-override"><p-checkbox inputId="ab-override" [(ngModel)]="overrideSettings" [binary]="true"
+        [disabled]="busy || loading" (onChange)="modeChanged()" /> Override default settings</label>
+      <div class="settings-grid">
+        <div><label for="ab-provider">Speech provider</label>
+          <p-select inputId="ab-provider" [options]="providers" optionLabel="provider" optionValue="provider" [(ngModel)]="settings.provider"
+            [disabled]="useDefaults || busy || loading" (onChange)="loadModels()" appendTo="body" /></div>
+        <div><label for="ab-model">Speech model</label>
+          <p-select inputId="ab-model" [options]="models" optionLabel="name" optionValue="modelId" [(ngModel)]="settings.modelId"
+            placeholder="Select a speech model" [disabled]="useDefaults || busy || loading || loadingModels" (onChange)="modelChanged()" [filter]="true" appendTo="body" /></div>
+      </div>
+      <div class="voice-row">
+        <div class="voice-select"><label for="ab-voice">Narrator voice</label>
+          <p-select inputId="ab-voice" [options]="voices" optionLabel="name" optionValue="voiceId" [(ngModel)]="settings.voiceId"
+            placeholder="Select a narrator" [disabled]="useDefaults || busy || loading || loadingModels" (onChange)="changed()" [filter]="true" appendTo="body" />
+        </div>
+        <p-button label="Preview voice" icon="pi pi-volume-up" variant="text" [loading]="loadingVoice"
+          [disabled]="!settings.voiceId || !selectedModel || busy || loadingModels || loadingVoice" (onClick)="previewVoice()" />
+      </div>
+      @if (!loading && !loadingModels && (!selectedModel || !voices.length)) {
+        <p class="notice">Select an available model and voice, or configure your speech provider in Integrations, then reload defaults.</p>
+      }
+      <label class="choice" for="ab-emphasis"><p-checkbox inputId="ab-emphasis" [(ngModel)]="settings.enableTextEmphasis" [binary]="true"
+        [disabled]="useDefaults || busy || !selectedModel?.supportsTextEmphasis" (onChange)="loadTextModels(false)" /> Text emphasis</label>
+      @if (!selectedModel?.supportsTextEmphasis) { <p class="muted">Text emphasis is unavailable for this model.</p> }
+      <label class="choice" for="ab-immersive"><p-checkbox inputId="ab-immersive" [(ngModel)]="settings.enableImmersive" [binary]="true"
+        [disabled]="useDefaults || busy" (onChange)="loadTextModels(false)" /> Immersive narration</label>
+      @if (needsText) {
+        <div class="settings-grid">
+          <div><label for="ab-text-provider">Text preparation provider</label>
+            <p-select inputId="ab-text-provider" [options]="textProviders" [(ngModel)]="settings.textGenerationProvider"
+              [disabled]="useDefaults || busy" (onChange)="loadTextModels()" appendTo="body" /></div>
+          <div><label for="ab-text-model">Text preparation model</label>
+            <p-select inputId="ab-text-model" [options]="textModels" optionLabel="id" optionValue="id" [(ngModel)]="settings.textGenerationModelId"
+              [disabled]="useDefaults || busy || loadingTextModels" (onChange)="changed()" [filter]="true" appendTo="body" /></div>
+        </div>
+      }
+      @if (settings.enableImmersive) {
+        <div class="settings-grid">
+          <div><label for="ab-prompt">Immersive planning prompt</label>
+            <p-select inputId="ab-prompt" [options]="prompts" optionLabel="name" optionValue="id" [(ngModel)]="settings.immersivePromptId"
+              [disabled]="busy" (onChange)="changed()" appendTo="body" placeholder="Select a prompt" /></div>
+          <div><label for="ab-pause">Pause between speakers (ms)</label>
+            <input id="ab-pause" type="number" min="0" max="10000" step="1" [(ngModel)]="settings.immersivePauseMs"
+              [disabled]="useDefaults || busy" (ngModelChange)="changed()" /></div>
+        </div>
+        @if (!prompts.length) { <p class="notice">Create a “Prepare immersive TTS” prompt before previewing immersive narration.</p> }
+        <p class="notice">Characters without an assigned voice use the narrator.</p>
+      }
+    </fieldset>
+    </section>
+    <section class="summary-column" aria-label="Audiobook scope and progress">
+      <h3>Your audiobook</h3>
+      <p class="muted">Based on your last saved prose.</p>
+      @if (summary; as p) {
+        <dl class="scope">
+          <dt>Chapters / sections</dt><dd>{{ p.eligibleChapters }} / {{ p.eligibleSections }}</dd>
+          <dt>Reusable sections</dt><dd>{{ preview ? p.reusableSections : '—' }}</dd>
+          <dt>Sections to generate</dt><dd>{{ preview ? p.eligibleSections - p.reusableSections : '—' }}</dd>
+          <dt>Characters</dt><dd>{{ p.totalCharacters | number }}</dd>
+          <dt>Characters to generate</dt><dd>{{ preview ? (p.charactersNeedingSynthesis | number) : '—' }}</dd>
+          <dt>Estimated audio</dt><dd>About {{ estimatedMinutes | number }} min</dd>
+        </dl>
+        <p class="estimate-note">Estimated at 150 words/minute. Voice pacing and pauses will vary.</p>
+        @if (p.skippedSections || p.skippedChapters) {
+          <p class="muted">Skipping {{ p.skippedSections }} empty sections and {{ p.skippedChapters }} empty chapters.</p>
+        }
+      } @else {
+        <p class="muted" role="status">{{ estimating ? 'Checking saved prose and reusable audio…' : 'Choose your narration settings to calculate scope and reuse.' }}</p>
+      }
+      <div class="actions">
+        <p-button [label]="jobs.length ? 'Generate again' : 'Generate audiobook'" icon="pi pi-play" [loading]="busy"
+          [disabled]="!valid || busy || estimating || active || loadingJobs || !!historyError" (onClick)="start()" />
+      </div>
+      @if (estimating && summary) { <p class="muted" role="status">Updating estimate…</p> }
+      @if (active) { <p class="muted">Generation continues when you close this dialog.</p> }
+    </section>
+    <section class="history-column" aria-label="Saved audiobook runs">
+      @if (historyError) { <p class="error" role="alert">Could not refresh progress: {{ historyError }}</p> }
+      @if (!jobs.length && !historyError) {
+        <h3>Saved runs</h3>
+        <p class="muted">{{ loadingJobs ? 'Loading saved runs…' : 'No saved runs yet.' }}</p>
+      }
+      @if (jobs.length || historyError) {
+        <div class="history">
+          <h3>Saved runs</h3>
+          @if (jobs.length) {
+            <label for="audiobook-job" class="muted">Snapshot</label>
+            <select id="audiobook-job" [(ngModel)]="selectedJobId">
+              @for (job of jobs; track job.id) {
+                <option [value]="job.id">{{ job.snapshotAt | date:'medium' }} — {{ job.state | spaced }}</option>
+              }
+            </select>
+          }
+          @if (selectedJob; as job) {
+            <div role="status" aria-live="polite" aria-atomic="true">
+              <p><strong>{{ stageLabel(job.stage) }}</strong></p>
+              <p>{{ job.completedSections }} sections complete · {{ job.reusedSections }} reused · {{ job.failedSections }} failed</p>
+              <p>{{ job.completedChapters }} / {{ job.totalChapters }} chapters assembled</p>
+            </div>
+            @if (savedAfter(job)) { <p class="muted">The novel was saved after this run; it may not include your latest edits.</p> }
+            @if (job.errorCode) { <p class="error" role="alert">{{ jobError(job) }}</p> }
+            <div class="actions">
+              @if (isActive(job)) {
+                <p-button label="Cancel generation" severity="danger" variant="outlined" [disabled]="busy || job.state === 'cancelling'" (onClick)="cancel(job)" />
+              }
+              @if (job.state === 'failed' || job.state === 'cancelled' || (job.state === 'completed' && !job.downloadAvailable)) {
+                <p-button [label]="job.state === 'completed' ? 'Rebuild download' : 'Retry'" [disabled]="busy || active || loadingJobs || !!historyError" (onClick)="retry(job)" />
+              }
+              @if (job.downloadAvailable) {
+                <p-button class="download" label="Download ZIP" icon="pi pi-download" (onClick)="download(job)" />
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </div>
+</div>

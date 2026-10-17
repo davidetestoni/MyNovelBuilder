@@ -15,9 +15,12 @@ public sealed record StartAudiobookJobRequest(Guid SnapshotId, string Idempotenc
 /// <param name="ReusableSections">Eligible sections with validated source-to-audio mappings at preview time; assembled audio may still need rebuilding.</param>
 /// <param name="CharactersNeedingSynthesis">UTF-16 code-unit count of normalized source text in sections lacking complete cache mappings. This is a source-text estimate, not an exact provider workload, price or duration.</param>
 /// <param name="Warnings">User-facing scope, billing, retry and capability notices.</param>
+/// <param name="EligibleChapters">Number of chapters containing spoken prose and therefore included in the ZIP.</param>
+/// <param name="TotalCharacters">UTF-16 character count of all normalized spoken prose, including cached sections.</param>
+/// <param name="SpokenWords">Whitespace-delimited word count across all spoken sections, used for rough narration estimates.</param>
 public sealed record AudiobookPreview(Guid SnapshotId, DateTimeOffset ExpiresAt, DateTimeOffset SnapshotAt,
     AudiobookSettingsRequest Settings, int EligibleSections, int SkippedSections, int SkippedChapters,
-    int ReusableSections, long CharactersNeedingSynthesis, string[] Warnings);
+    int ReusableSections, long CharactersNeedingSynthesis, string[] Warnings, int EligibleChapters, long TotalCharacters, long SpokenWords);
 /// <summary>Progress of one section in the current attempt, without source text or internal artifact references.</summary>
 /// <param name="ChapterIndex">Zero-based chapter position in the frozen snapshot.</param>
 /// <param name="SectionIndex">Zero-based section position within the frozen chapter.</param>

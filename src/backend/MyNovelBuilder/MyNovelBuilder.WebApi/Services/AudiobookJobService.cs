@@ -32,7 +32,10 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
                 ["Generation may incur provider charges. Character counts are source-text estimates, not prices or durations.",
                  "Unassigned immersive character voices use the narrator.",
                  "After a restart, incomplete sections may require paid preprocessing again.",
-                 "Downloads contain uncompressed PCM WAV chapters and may be large."]);
+                 "Downloads contain uncompressed PCM WAV chapters and may be large."],
+                snapshot.Chapters.Count(c => c.Sections.Any(s => !string.IsNullOrWhiteSpace(s.SpeechText))),
+                eligible.Sum(s => (long)s.Section.SpeechText.Length),
+                eligible.Sum(s => (long)System.Text.RegularExpressions.Regex.Count(s.Section.SpeechText, @"\S+")));
         }
         finally { store.Mutations.Release(); }
     }

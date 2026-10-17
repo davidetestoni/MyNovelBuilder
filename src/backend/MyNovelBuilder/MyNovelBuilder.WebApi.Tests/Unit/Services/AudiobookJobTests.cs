@@ -25,11 +25,30 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public sealed class AudiobookJobTests
 {
     [Fact]
+    public async Task FrequentEstimatesEvictOldPreviewsButKeepSubmittedSnapshots()
+    {
+        using var f = await Fixture.Create();
+        var preview = await f.Preview();
+        var store = f.Services.GetRequiredService<AudiobookSnapshotStore>();
+        var snapshot = store.Get(preview.SnapshotId, f.NovelId)!;
+        await f.Start(preview);
+        var oldest = store.Add(snapshot);
+        Guid latest = oldest;
+        for (var i = 0; i < 40; i++) latest = store.Add(snapshot);
+        Assert.Null(store.Get(oldest, f.NovelId));
+        Assert.NotNull(store.Get(latest, f.NovelId));
+        Assert.NotNull(store.Get(preview.SnapshotId, f.NovelId));
+    }
+
+    [Fact]
     public async Task PreviewIsFree_StartIsIdempotent_ExecutionUsesFrozenInputs_RepeatReusesAudio()
     {
         using var f = await Fixture.Create();
         var preview = await f.Preview();
         Assert.Equal(2, preview.EligibleSections);
+        Assert.Equal(1, preview.EligibleChapters);
+        Assert.Equal(39, preview.TotalCharacters);
+        Assert.Equal(6, preview.SpokenWords);
         Assert.Equal(1, preview.SkippedSections);
         Assert.Equal(1, preview.SkippedChapters);
         Assert.Empty(f.Tts.Messages);
@@ -50,6 +69,9 @@ public sealed class AudiobookJobTests
         await f.SetProse("First secret prose.", "Second secret prose.", "");
         var second = await f.Preview();
         Assert.Equal(2, second.ReusableSections);
+        Assert.Equal(6, second.SpokenWords);
+        Assert.Equal(39, second.TotalCharacters);
+        Assert.Equal(0, second.CharactersNeedingSynthesis);
         var repeat = await f.Start(second, "repeat");
         await f.Worker.RunNextAsync(default);
         Assert.Equal(2, (await f.Status(repeat.Id)).ReusedSections);
@@ -120,18 +142,22 @@ public sealed class AudiobookJobTests
     }
 
     [Fact]
-    public async Task CancellationInterruptsActiveCall_AndRetryRetainsTheFirstSection()
+    public async Task CancellationDrainsActiveCall_AndRetryRetainsTheFirstSection()
     {
         using var f = await Fixture.Create();
         var job = await f.Start(await f.Preview());
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        f.Tts.BeforeCall = async (n, cancellationToken) =>
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Tts.BeforeCall = async (n, _) =>
         {
-            if (n == 2) { entered.SetResult(); await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); }
+            if (n == 2) { entered.SetResult(); await release.Task; }
         };
         var run = f.Worker.RunNextAsync(default);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await f.Call(s => s.CancelAsync(f.NovelId, job.Id, default));
+        Assert.False(run.IsCompleted);
+        Assert.Equal("cancelling", (await f.Status(job.Id)).State);
+        release.SetResult();
         await run.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Equal("cancelled", (await f.Status(job.Id)).State);
         Assert.Equal(1, (await f.Status(job.Id)).CompletedSections);
@@ -187,11 +213,13 @@ public sealed class AudiobookJobTests
         var preview = await f.Preview();
         var job = await f.Start(preview);
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        f.Tts.BeforeCall = async (n, cancellationToken) => { if (n == 2) { entered.SetResult(); await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken); } };
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Tts.BeforeCall = async (n, _) => { if (n == 2) { entered.SetResult(); await release.Task; } };
         var run = f.Worker.RunNextAsync(default);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
         using (var scope = f.Services.CreateScope())
             await scope.ServiceProvider.GetRequiredService<INovelService>().DeleteAsync(f.NovelId);
+        release.SetResult();
         await run.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.Null(f.Services.GetRequiredService<AudiobookSnapshotStore>().Get(preview.SnapshotId, f.NovelId));
         Assert.Empty(await f.Services.GetRequiredService<FileSystemAudiobookJobRepository>().ListAsync());

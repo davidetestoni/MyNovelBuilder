@@ -1,3 +1,4 @@
+import { AudiobookDialogComponent } from '../../components/audiobook-dialog/audiobook-dialog.component';
 import { Component, OnDestroy, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
@@ -73,6 +74,10 @@ export class NovelSettingsComponent implements OnDestroy {
   private toastr = inject(ToastrService);
   private dialogRef: DynamicDialogRef | null = null;
 
+  openingAudiobook = false;
+  private destroyed = false;
+  private pendingSave: Promise<unknown> = Promise.resolve();
+
   novel: NovelDto | null = null;
   compendia: CompendiumDto[] | null = null;
   readonly novelService: NovelService = inject(NovelService);
@@ -122,6 +127,7 @@ export class NovelSettingsComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
     this.dialogRef?.close();
   }
 
@@ -149,8 +155,7 @@ export class NovelSettingsComponent implements OnDestroy {
       return;
     }
 
-    this.novelService
-      .updateNovel({
+    const update = {
         id: this.novel.id,
         title: this.novel.title,
         author: this.novel.author,
@@ -161,8 +166,14 @@ export class NovelSettingsComponent implements OnDestroy {
         rpgMode: this.novel.rpgMode,
         mainCharacterId: this.novel.mainCharacterId,
         compendiumIds: this.novel.compendiumIds,
-      })
-      .subscribe();
+      };
+    this.pendingSave = this.pendingSave.catch(() => {}).then(async () => {
+      const saved = await firstValueFrom(this.novelService.updateNovel(update));
+      if (this.novel?.id === saved.id) this.novel.updatedAt = saved.updatedAt;
+      return saved;
+    });
+    // The HTTP interceptor reports failures; retain the rejection so opening an export cannot ignore it.
+    void this.pendingSave.catch(() => {});
   }
 
   updateNovelCoverImage(event: Event) {
@@ -235,6 +246,26 @@ export class NovelSettingsComponent implements OnDestroy {
       : [...this.novel.compendiumIds, compendiumId];
 
     this.onBlur();
+  }
+
+  /** Saves current settings before opening the saved-prose audiobook workflow. */
+  async openAudiobookDialog(): Promise<void> {
+    if (!this.novel || this.openingAudiobook) return;
+    this.openingAudiobook = true;
+    try {
+      this.onBlur();
+      await this.pendingSave;
+      if (this.destroyed) return;
+      this.dialogRef = this.dialogService.open(AudiobookDialogComponent, {
+        header: 'Generate audiobook', width: '76rem',
+        breakpoints: { '1280px': '94vw', '800px': '96vw' },
+        contentStyle: { overflow: 'auto' }, modal: true, closable: true,
+        closeOnEscape: true, dismissableMask: true,
+        data: { novelId: this.novelId, updatedAt: this.novel.updatedAt },
+      });
+    } catch {
+      this.toastr.error('Could not save novel settings. Save successfully before generating an audiobook.');
+    } finally { this.openingAudiobook = false; }
   }
 
   async exportNovel(format: NovelExportFormat): Promise<void> {

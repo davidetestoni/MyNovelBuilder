@@ -6,7 +6,7 @@ using MyNovelBuilder.WebApi.Services.TextGeneration;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
-/// <summary>Gate the entire provider operation, including streamed response consumption.</summary>
+/// <summary>Serializes synthesis for every provider, retaining its slot until generation and streamed response consumption finish.</summary>
 public sealed class GatedTtsService(ITtsService inner, TtsProvider provider, ProviderSynthesisGate gate) : ITtsService
 {
     /// <inheritdoc/>
@@ -24,28 +24,47 @@ public sealed class GatedTtsService(ITtsService inner, TtsProvider provider, Pro
     /// <inheritdoc/>
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) => inner.GetBalanceUsdAsync(cancellationToken);
     /// <inheritdoc/>
-    /// <remarks>Holds the provider gate until the operation finishes.</remarks>
+    /// <remarks>Holds the provider gate until the operation finishes. Cancellation stops queued work; active remote work drains before releasing the slot.</remarks>
     public async Task<byte[]> VoiceDesignAsync(string prompt, WritingLanguage language, string voiceDescription, CancellationToken cancellationToken = default)
     {
         using var lease = await gate.AcquireAsync(provider, cancellationToken);
-        return await inner.VoiceDesignAsync(prompt, language, voiceDescription, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await inner.VoiceDesignAsync(prompt, language, voiceDescription, CancellationToken.None);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
     }
     /// <inheritdoc/>
-    /// <remarks>Holds the provider gate until the operation finishes.</remarks>
+    /// <remarks>Holds the provider gate until the operation finishes. Cancellation stops queued work; active remote work drains before releasing the slot.</remarks>
     public async Task<byte[]> GenerateAudioAsync(TtsRequest request, CancellationToken cancellationToken = default)
     {
         using var lease = await gate.AcquireAsync(provider, cancellationToken);
-        return await inner.GenerateAudioAsync(request, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        // Disconnecting the caller need not stop remote GPU work. Finish this operation before
+        // releasing the provider slot, then let cancellation stop the caller's remaining chunks.
+        var result = await inner.GenerateAudioAsync(request, CancellationToken.None);
+        cancellationToken.ThrowIfCancellationRequested();
+        return result;
     }
-    /// <summary>Acquires the provider gate and holds it until the returned stream is disposed by the caller.</summary>
+    /// <summary>Acquires the provider gate and holds it through playback or draining when the caller disposes early.</summary>
     public async Task<Stream> GenerateAudioStreamAsync(TtsRequest request, CancellationToken cancellationToken = default)
     {
         var lease = await gate.AcquireAsync(provider, cancellationToken);
-        try { return new LeasedStream(await inner.GenerateAudioStreamAsync(request, cancellationToken), lease); }
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var stream = new LeasedStream(await inner.GenerateAudioStreamAsync(request, CancellationToken.None), lease);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                await stream.DisposeAsync();
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+            return stream;
+        }
         catch { lease.Dispose(); throw; }
     }
     private sealed class LeasedStream(Stream inner, IDisposable lease) : Stream
     {
+        private int disposed;
         public override bool CanRead => inner.CanRead;
         public override bool CanSeek => inner.CanSeek;
         public override bool CanWrite => false;
@@ -61,17 +80,24 @@ public sealed class GatedTtsService(ITtsService inner, TtsProvider provider, Pro
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         protected override void Dispose(bool disposing)
         {
-            try { if (disposing) inner.Dispose(); }
-            finally
-            {
-                if (disposing) lease.Dispose();
-                base.Dispose(disposing);
-            }
+            if (disposing) DisposeAsync().AsTask().GetAwaiter().GetResult();
+            base.Dispose(disposing);
         }
         public override async ValueTask DisposeAsync()
         {
-            try { await inner.DisposeAsync(); }
-            finally { lease.Dispose(); GC.SuppressFinalize(this); }
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            try
+            {
+                // Streaming providers can produce subsequent chunks in the background. Drain
+                // them before releasing the slot, even when playback closed its consumer early.
+                try { await inner.CopyToAsync(Stream.Null, CancellationToken.None); }
+                catch { /* A failed producer is finished; disposal must still release the slot. */ }
+            }
+            finally
+            {
+                try { await inner.DisposeAsync(); }
+                finally { lease.Dispose(); GC.SuppressFinalize(this); }
+            }
         }
     }
 }

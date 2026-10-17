@@ -247,6 +247,13 @@
             (onClick)="exportMenu.toggle($event)"
           />
           <p-button
+            label="Generate audiobook"
+            icon="pi pi-headphones"
+            variant="outlined"
+            [disabled]="openingAudiobook"
+            (onClick)="openAudiobookDialog()"
+          />
+          <p-button
             label="Translate"
             icon="pi pi-language"
             variant="outlined"

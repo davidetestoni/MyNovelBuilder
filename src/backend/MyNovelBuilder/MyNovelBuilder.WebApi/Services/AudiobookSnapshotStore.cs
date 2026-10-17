@@ -10,7 +10,7 @@ public sealed class AudiobookSnapshotStore(TimeProvider clock)
     private readonly Dictionary<Guid, (Guid NovelId, CancellationTokenSource Cancellation)> running = [];
     /// <summary>Serializes job file changes and novel deletion within this process. Callers must release it after use.</summary>
     public SemaphoreSlim Mutations { get; } = new(1, 1);
-    /// <summary>Stores a preview for 15 minutes; rejects new previews when 32 unsubmitted snapshots remain.</summary>
+    /// <summary>Stores a preview for up to 15 minutes, evicting the oldest unsubmitted preview at the 32-preview limit.</summary>
     public Guid Add(AudiobookSnapshot snapshot)
     {
         lock (sync)
@@ -18,7 +18,7 @@ public sealed class AudiobookSnapshotStore(TimeProvider clock)
             Prune();
             // Bound abandoned preview memory, without evicting submitted work.
             if (entries.Values.Count(e => !e.Pinned) >= 32)
-                throw new InvalidOperationException("Too many audiobook previews. Wait for a preview to expire.");
+                entries.Remove(entries.Where(e => !e.Value.Pinned).MinBy(e => e.Value.Expires).Key);
             var id = Guid.NewGuid();
             entries[id] = new(snapshot, clock.GetUtcNow().AddMinutes(15), false);
             return id;
