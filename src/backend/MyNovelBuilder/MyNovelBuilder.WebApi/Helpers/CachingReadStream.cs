@@ -124,21 +124,32 @@ internal sealed class CachingReadStream : Stream
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
+        try
         {
-            TrySaveAsync().GetAwaiter().GetResult();
-            _source.Dispose();
-            _buffer.Dispose();
+            if (disposing)
+            {
+                try { TrySaveAsync().GetAwaiter().GetResult(); }
+                finally
+                {
+                    try { _source.Dispose(); }
+                    finally { _buffer.Dispose(); }
+                }
+            }
         }
-
-        base.Dispose(disposing);
+        finally { base.Dispose(disposing); }
     }
 
     public override async ValueTask DisposeAsync()
     {
-        await TrySaveAsync();
-        await _source.DisposeAsync();
-        await _buffer.DisposeAsync();
-        await base.DisposeAsync();
+        try { await TrySaveAsync(); }
+        finally
+        {
+            try { await _source.DisposeAsync(); }
+            finally
+            {
+                await _buffer.DisposeAsync();
+                GC.SuppressFinalize(this);
+            }
+        }
     }
 }

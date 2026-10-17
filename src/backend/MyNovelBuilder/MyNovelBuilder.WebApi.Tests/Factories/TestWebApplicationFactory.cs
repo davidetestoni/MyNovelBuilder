@@ -16,7 +16,10 @@ public class TestWebApplicationFactory<TProgram>
         builder.UseSetting("DataFolder", _dataFolder);
         builder.ConfigureServices(services =>
         {
-            // TODO: Override services as needed for testing
+            // Tests reset the database/files between requests. Worker lifecycle is covered separately.
+            var worker = services.SingleOrDefault(d => d.ServiceType == typeof(Microsoft.Extensions.Hosting.IHostedService)
+                && d.ImplementationType == typeof(MyNovelBuilder.WebApi.Services.AudiobookWorker));
+            if (worker is not null) services.Remove(worker);
         });
     }
 }
