@@ -1,3 +1,4 @@
+import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 import { STREAMING_WAV_PLAYER_FACTORY, StreamingWavPlayerHandle } from '../../utils/streaming-wav-player.factory';
 import { getVoicePreviewText } from '../../utils/tts-preview.utils';
 import { CommonModule } from '@angular/common';
@@ -21,12 +22,14 @@ import { TextGenerationModelInfoDto } from '../../types/dtos/generate/text-gener
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import { TextGenerationProvider } from '../../types/enums/text-generation-provider';
+import { WritingLanguage } from '../../types/enums/writing-language';
+import { TtsProvider } from '../../types/enums/tts-provider';
 import { SpacedPipe } from '../../pipes/spaced.pipe';
 
 /** One export dialog. Inputs are local; closing stops observation, never the server job. */
 @Component({
   selector: 'app-audiobook-dialog', standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule, SelectModule, CheckboxModule, SpacedPipe],
+  imports: [VoiceSelectorComponent, CommonModule, FormsModule, ButtonModule, SelectModule, CheckboxModule, SpacedPipe],
   templateUrl: './audiobook-dialog.component.html', styleUrl: './audiobook-dialog.component.scss',
 })
 export class AudiobookDialogComponent implements OnInit, OnDestroy {
@@ -36,6 +39,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
   private readonly text = inject(GenerateTextService);
   private readonly integrations = inject(IntegrationsService);
   private readonly promptsService = inject(PromptService);
+  readonly TtsProvider = TtsProvider;
   readonly textProviders = Object.values(TextGenerationProvider);
   settings: AudiobookSettings = {};
   defaults: AudiobookSettings = {};
@@ -121,6 +125,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
   }
 
   get selectedModel(): TtsModelDto | undefined { return this.models.find(m => m.modelId === this.settings.modelId); }
+  get voiceOptions() { return this.voices.map(voice => ({ label: voice.name, value: voice.voiceId })); }
   get voices() { return this.selectedModel?.voices ?? []; }
   get needsText(): boolean { return !!(this.settings.enableImmersive || this.settings.enableTextEmphasis); }
   get active(): boolean { return this.jobs.some(j => this.isActive(j)); }
@@ -128,7 +133,8 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
   get downloads(): AudiobookJob[] { return this.jobs.filter(j => j.downloadAvailable); }
   get valid(): boolean {
     return !this.loading && !this.loadingModels && !this.loadingTextModels && !!this.selectedModel &&
-      this.voices.some(v => v.voiceId === this.settings.voiceId) &&
+      (this.settings.provider === TtsProvider.OpenRouter ? !!this.settings.voiceId?.trim() :
+        this.voices.some(v => v.voiceId === this.settings.voiceId)) &&
       (!this.settings.enableTextEmphasis || !!this.selectedModel.supportsTextEmphasis) &&
       (!this.needsText || this.textModels.some(m => m.id === this.settings.textGenerationModelId)) &&
       (!this.settings.enableImmersive || (this.prompts.some(p => p.id === this.settings.immersivePromptId) &&
@@ -220,7 +226,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
   /** Streams the same localized sample as Integrations, using the selected provider/model/voice. */
   async previewVoice(): Promise<void> {
     const voice = this.voices.find(v => v.voiceId === this.settings.voiceId);
-    if (!voice || this.busy || this.loadingVoice) return;
+    if ((!voice && (this.settings.provider !== TtsProvider.OpenRouter || !this.settings.voiceId?.trim())) || this.busy || this.loadingVoice) return;
     this.stopVoicePreview(); this.error = null;
     const abort = new AbortController();
     this.voiceAbort = abort;
@@ -229,8 +235,8 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
     this.loadingVoice = this.previewingVoice = true;
     try {
       const response = await this.audio.textToSpeechStreamResponse({
-        message: getVoicePreviewText(voice.language), provider: this.settings.provider,
-        modelId: this.settings.modelId, voiceId: voice.voiceId,
+        message: getVoicePreviewText(voice?.language ?? WritingLanguage.English), provider: this.settings.provider,
+        modelId: this.settings.modelId, voiceId: this.settings.voiceId,
       }, abort.signal);
       if (abort.signal.aborted) { await response.body?.cancel(); return; }
       if (!response.body) throw new Error('No voice sample was returned. Check your speech provider settings.');

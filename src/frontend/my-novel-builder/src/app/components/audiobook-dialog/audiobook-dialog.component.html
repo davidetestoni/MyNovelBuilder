@@ -18,13 +18,18 @@
       </div>
       <div class="voice-row">
         <div class="voice-select"><label for="ab-voice">Narrator voice</label>
-          <p-select inputId="ab-voice" [options]="voices" optionLabel="name" optionValue="voiceId" [(ngModel)]="settings.voiceId"
-            placeholder="Select a narrator" [disabled]="useDefaults || busy || loading || loadingModels" (onChange)="changed()" [filter]="true" appendTo="body" />
+          <app-voice-selector inputId="ab-voice" [options]="voiceOptions" [(ngModel)]="settings.voiceId"
+            [allowCustom]="settings.provider === TtsProvider.OpenRouter"
+            [disabled]="useDefaults || busy || loading || loadingModels" (ngModelChange)="changed()" />
         </div>
         <p-button label="Preview voice" icon="pi pi-volume-up" variant="text" [loading]="loadingVoice"
           [disabled]="!settings.voiceId || !selectedModel || busy || loadingModels || loadingVoice" (onClick)="previewVoice()" />
       </div>
-      @if (!loading && !loadingModels && (!selectedModel || !voices.length)) {
+      @if (settings.provider === TtsProvider.OpenRouter) {
+        <p class="notice">Select a listed voice, or choose Custom to enter a voice ID if the list is empty
+          or your voice isn't listed. The voice ID must be supported by the selected model.</p>
+      }
+      @if (!loading && !loadingModels && (!selectedModel || (!voices.length && settings.provider !== TtsProvider.OpenRouter))) {
         <p class="notice">Select an available model and voice, or configure your speech provider in Integrations, then reload defaults.</p>
       }
       <label class="choice" for="ab-emphasis"><p-checkbox inputId="ab-emphasis" [(ngModel)]="settings.enableTextEmphasis" [binary]="true"

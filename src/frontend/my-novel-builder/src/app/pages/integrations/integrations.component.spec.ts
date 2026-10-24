@@ -172,6 +172,48 @@ describe('IntegrationsComponent workflows', () => {
     );
   });
 
+  it('preserves a custom OpenRouter voice ID when the catalogue contains no voices', () => {
+    integrationsService.getIntegrationsConfig.and.returnValue(of(config({
+      ttsProvider: TtsProvider.OpenRouter, ttsModelId: 'fish-audio/s2.1-pro',
+      ttsVoiceId: '933563129e564b19a115bedd57b7406a',
+    })));
+    generateAudioService.getAvailableModels.and.returnValue(of([
+      { modelId: 'fish-audio/s2.1-pro', name: 'Fish', supportsTextEmphasis: false, voices: [] },
+    ]));
+    component.ngOnInit();
+    expect(component.integrationsForm.value.ttsVoiceId).toBe('933563129e564b19a115bedd57b7406a');
+  });
+
+  for (const hasListedVoices of [false, true]) {
+    it(`lets the user type and paste a custom OpenRouter voice in the rendered field (listed voices: ${hasListedVoices})`, async () => {
+      integrationsService.getIntegrationsConfig.and.returnValue(of(config({
+        ttsProvider: TtsProvider.OpenRouter, ttsModelId: 'fish-audio/s2.1-pro', ttsVoiceId: 'old-id',
+      })));
+      generateAudioService.getAvailableModels.and.returnValue(of([{
+        modelId: 'fish-audio/s2.1-pro', name: 'Fish', supportsTextEmphasis: false,
+        voices: hasListedVoices ? [{ voiceId: 'alloy', name: 'Alloy', language: WritingLanguage.English, previewUrl: null }] : [],
+      }]));
+      const fixture = TestBed.createComponent(IntegrationsComponent);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const input = fixture.nativeElement.querySelector('#ttsVoiceId-custom') as HTMLInputElement;
+      expect(input).withContext('unlisted saved voice must preselect Custom and show its text box').not.toBeNull();
+      for (const value of ['a', 'al', 'all', '', '933563129e564b19a115bedd57b7406a']) {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(input.value).toBe(value);
+        expect(fixture.componentInstance.integrationsForm.value.ttsVoiceId ?? '').toBe(value);
+      }
+      input.dispatchEvent(new Event('blur'));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(input.value).toBe('933563129e564b19a115bedd57b7406a');
+      fixture.destroy();
+    });
+  }
+
   it('loads configuration, models, API-key status, and selected provider balances', () => {
     component.ngOnInit();
 

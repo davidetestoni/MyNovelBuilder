@@ -16,6 +16,17 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public class AudiobookSettingsResolverTests
 {
     [Fact]
+    public async Task OpenRouterAcceptsCustomVoiceIdsOutsideItsCatalogue()
+    {
+        var resolver = CreateResolver(new IntegrationsConfig
+        {
+            TtsProvider = TtsProvider.OpenRouter, TtsModelId = "model-a", TtsVoiceId = "933563129e564b19a115bedd57b7406a"
+        });
+        var result = await resolver.ResolveAsync(new AudiobookSettingsRequest());
+        Assert.Equal("933563129e564b19a115bedd57b7406a", result.VoiceId);
+    }
+
+    [Fact]
     public async Task ExplicitFalseAndZeroRemainFrozenWithoutChangingDefaults()
     {
         var defaults = new IntegrationsConfig
@@ -163,6 +174,7 @@ public class AudiobookSettingsResolverTests
     {
         var services = new ServiceCollection();
         services.AddKeyedSingleton<ITtsService>(TtsProvider.PocketTts, new FakeTtsService());
+        services.AddKeyedSingleton<ITtsService>(TtsProvider.OpenRouter, new FakeTtsService());
         services.AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter,
             new FakeTextService());
         services.AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.GoogleGenAi,

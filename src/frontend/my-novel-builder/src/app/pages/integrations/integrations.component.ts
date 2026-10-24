@@ -1,3 +1,4 @@
+import { VoiceSelectorComponent } from '../../components/voice-selector/voice-selector.component';
 import { getVoicePreviewText } from '../../utils/tts-preview.utils';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import {
@@ -37,6 +38,7 @@ import {
   selector: 'app-integrations',
   standalone: true,
   imports: [
+    VoiceSelectorComponent,
     ReactiveFormsModule,
     InputTextModule,
     ButtonModule,
@@ -594,7 +596,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   ): void {
     const voices = this.getSelectedModel(selectedModelId)?.voices ?? [];
     const currentVoiceId = preferredVoiceId ?? this.integrationsForm.value.ttsVoiceId;
-    const nextVoiceId = voices.some((voice) => voice.voiceId === currentVoiceId)
+    const nextVoiceId = (this.integrationsForm.value.ttsProvider === TtsProvider.OpenRouter && !!preferredVoiceId) ||
+      voices.some((voice) => voice.voiceId === currentVoiceId)
       ? currentVoiceId
       : (voices[0]?.voiceId ?? '');
 

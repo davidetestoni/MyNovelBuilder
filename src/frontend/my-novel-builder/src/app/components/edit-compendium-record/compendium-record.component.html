@@ -94,13 +94,12 @@
 
             <div class="voice-editor-field voice-editor-field-voice">
               <div class="voice-selector-with-action">
-                <p-select
+                <app-voice-selector
+                  [inputId]="'character-voice-' + record.id"
                   [options]="voiceOptions"
                   [(ngModel)]="selectedVoiceId"
-                  placeholder="Select voice"
-                  [style]="{ width: '100%' }"
-                  [filter]="true"
-                  [disabled]="voiceOptions.length === 0 || isLoadingVoiceModels"
+                  [allowCustom]="selectedVoiceProvider === TtsProvider.OpenRouter"
+                  [disabled]="(voiceOptions.length === 0 && selectedVoiceProvider !== TtsProvider.OpenRouter) || !selectedVoiceModelId || isLoadingVoiceModels"
                 />
 
                 <p-button

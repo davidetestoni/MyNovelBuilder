@@ -37,14 +37,14 @@ public sealed class AudiobookSettingsResolver(
         {
             throw BadRequest("Select a TTS model and narrator voice before generating an audiobook.");
         }
-        // Changing providers never carries an unvalidated model or voice across providers.
+        // Validate model availability. OpenRouter accepts custom voice IDs that its catalogue may omit.
         var models = (await tts.GetModelsAsync(cancellationToken)).ToList();
         var model = models.FirstOrDefault(m => string.Equals(m.ModelId, modelId, StringComparison.Ordinal));
         if (model is null)
         {
             throw BadRequest($"TTS model '{modelId}' is not available for {provider}.");
         }
-        if (!model.Voices.Any(v => string.Equals(v.VoiceId, voiceId, StringComparison.Ordinal)))
+        if (provider != TtsProvider.OpenRouter && !model.Voices.Any(v => string.Equals(v.VoiceId, voiceId, StringComparison.Ordinal)))
         {
             throw BadRequest($"Narrator voice '{voiceId}' is not available for model '{modelId}'.");
         }

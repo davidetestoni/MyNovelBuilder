@@ -33,6 +33,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\MyNovelBuilder.WebApi\MyNovelBuilder.WebApi.csproj" />
+      <None Update="Fixtures/Audio/*.mp3" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>

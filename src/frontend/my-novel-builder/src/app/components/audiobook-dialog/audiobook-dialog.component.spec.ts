@@ -58,6 +58,21 @@ describe('AudiobookDialogComponent', () => {
   });
   afterEach(() => component.ngOnDestroy());
 
+  it('accepts and previews a custom OpenRouter narrator absent from the catalogue', async () => {
+    await component.loadSettings();
+    component.settings.provider = TtsProvider.OpenRouter;
+    component.settings.voiceId = '933563129e564b19a115bedd57b7406a';
+    component.models = [{ ...models[0], voices: [] }];
+    audio.textToSpeechStreamResponse.and.resolveTo(new Response(new Uint8Array([1, 2])));
+    expect(component.valid).toBeTrue();
+    await component.previewVoice();
+    expect(audio.textToSpeechStreamResponse.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
+      provider: TtsProvider.OpenRouter, voiceId: '933563129e564b19a115bedd57b7406a',
+    }));
+    component.settings.provider = TtsProvider.ElevenLabs;
+    expect(component.valid).toBeFalse();
+  });
+
   it('previews defaults freely and does not update integrations', async () => {
     await component.loadSettings(); await component.refreshJobs();
     expect(component.valid).toBeTrue();
