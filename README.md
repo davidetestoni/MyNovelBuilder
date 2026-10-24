@@ -39,7 +39,8 @@ installation instructions are available in the [documentation](docs/index.md).
 A manuscript is split into chapters and sections. You can write in the prose
 editor, rearrange the book on a planning board, keep section summaries, and
 track story events alongside the draft. Finished work can be exported as
-Markdown, HTML, or PDF.
+Markdown, HTML, or PDF. You can also [generate an audiobook](docs/features/audiobooks.md)
+with a narrator or immersive character voices and download chapter WAVs in a ZIP.
 
 Reference material lives in reusable compendia. Characters, places, objects,
 events, concepts, and other records can be attached to a novel and included in

@@ -55,16 +55,16 @@ public class KittenTtsService : ITtsService
             return [];
         }
 
-        var voiceReference = await ResolveVoiceReferenceAsync(request.VoiceId, cancellationToken);
+        var voiceReference = request.ExecutionInputs is null ? await ResolveVoiceReferenceAsync(request.VoiceId, cancellationToken) : null;
         var firstChunk = await GeneratePcmChunkAsync(
-            textChunks[0], request.VoiceId, voiceReference, cancellationToken);
+            textChunks[0], request.VoiceId, voiceReference, cancellationToken, request.ExecutionInputs);
         using var wavStream = new MemoryStream();
         await using (var writer = new WaveFileWriter(wavStream, new WaveFormat(firstChunk.SampleRate, 16, 1)))
         {
             await writer.WriteAsync(firstChunk.Pcm, cancellationToken);
             foreach (var chunk in textChunks.Skip(1))
             {
-                var result = await GeneratePcmChunkAsync(chunk, request.VoiceId, voiceReference, cancellationToken);
+                var result = await GeneratePcmChunkAsync(chunk, request.VoiceId, voiceReference, cancellationToken, request.ExecutionInputs);
                 EnsureSameSampleRate(firstChunk, result);
                 await writer.WriteAsync(result.Pcm, cancellationToken);
             }
@@ -84,10 +84,10 @@ public class KittenTtsService : ITtsService
             return new MemoryStream();
         }
 
-        var voiceReference = await ResolveVoiceReferenceAsync(request.VoiceId, cancellationToken);
+        var voiceReference = request.ExecutionInputs is null ? await ResolveVoiceReferenceAsync(request.VoiceId, cancellationToken) : null;
         // The first response supplies the sample rate before we emit the WAV header.
         var firstChunk = await GeneratePcmChunkAsync(
-            textChunks[0], request.VoiceId, voiceReference, cancellationToken);
+            textChunks[0], request.VoiceId, voiceReference, cancellationToken, request.ExecutionInputs);
 
         return new PcmWavStreamingStream(
             sampleRate: firstChunk.SampleRate,
@@ -98,7 +98,7 @@ public class KittenTtsService : ITtsService
                 await writeAsync(firstChunk.Pcm);
                 foreach (var chunk in textChunks.Skip(1))
                 {
-                    var result = await GeneratePcmChunkAsync(chunk, request.VoiceId, voiceReference, ct);
+                    var result = await GeneratePcmChunkAsync(chunk, request.VoiceId, voiceReference, ct, request.ExecutionInputs);
                     EnsureSameSampleRate(firstChunk, result);
                     await writeAsync(result.Pcm);
                 }
@@ -151,13 +151,20 @@ public class KittenTtsService : ITtsService
         Task.FromResult<decimal?>(null);
 
     private async Task<PcmResult> GeneratePcmChunkAsync(
-        string text, string? voiceId, VoiceReference? voiceReference, CancellationToken cancellationToken)
+        string text, string? voiceId, VoiceReference? voiceReference, CancellationToken cancellationToken, TtsExecutionInputs? execution = null)
     {
         using var formData = new MultipartFormDataContent();
         formData.Add(new StringContent(text), "text");
         formData.Add(new StringContent("pcm"), "output_format");
 
-        if (voiceReference is not null)
+        if (execution?.Voice is { } frozenVoice)
+        {
+            formData.Add(new StringContent(frozenVoice.Transcript!.Trim()), "ref_text");
+            var wavContent = new StreamContent(frozenVoice.OpenRead());
+            wavContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+            formData.Add(wavContent, "reference_wav", "reference.wav");
+        }
+        else if (voiceReference is not null)
         {
             formData.Add(new StringContent(voiceReference.Transcript), "ref_text");
             var wavContent = new StreamContent(File.OpenRead(voiceReference.WavPath));
@@ -170,7 +177,7 @@ public class KittenTtsService : ITtsService
         }
 
         using var response = await _httpClient.PostAsync(
-            await CreateRequestUriAsync("tts", cancellationToken), formData, cancellationToken);
+            (execution?.BaseUri is { } uri ? ProviderBaseUrlHelper.CreateRequestUri(uri, "tts") : await CreateRequestUriAsync("tts", cancellationToken)), formData, cancellationToken);
         response.EnsureSuccessStatusCode();
         if (!response.Headers.TryGetValues("X-Sample-Rate", out var values)
             || !int.TryParse(values.FirstOrDefault(), out var sampleRate)

@@ -47,7 +47,7 @@ public class CustomTtsService : ITtsService
             Message = request.Message,
             VoiceId = request.VoiceId
         }, _jsonSerializerOptions);
-        var requestUri = await CreateRequestUriAsync("generate/audio", cancellationToken);
+        var requestUri = await CreateRequestUriAsync("generate/audio", cancellationToken, request.ExecutionInputs);
         using var response = await _httpClient.PostAsync(
             requestUri,
             new StringContent(jsonPayload, Encoding.UTF8, "application/json"),
@@ -100,8 +100,12 @@ public class CustomTtsService : ITtsService
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
 
-    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken, TtsExecutionInputs? execution = null)
     {
+        if (execution?.BaseUri is { } frozenBaseUri)
+        {
+            return ProviderBaseUrlHelper.CreateRequestUri(frozenBaseUri, relativePath);
+        }
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
             config.CustomTtsBaseUrl,

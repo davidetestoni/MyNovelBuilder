@@ -1,5 +1,7 @@
 using System.Reflection;
 using MyNovelBuilder.WebApi.Attributes;
+using MyNovelBuilder.WebApi.Services.Tts;
+using MyNovelBuilder.WebApi.Enums;
 
 namespace MyNovelBuilder.WebApi.Extensions;
 
@@ -25,20 +27,29 @@ public static class ServiceCollectionExtensions
             var attribute = implementation.GetCustomAttribute<RegisterKeyedServiceAttribute>();
             if (attribute == null) continue;
 
-            // Register the keyed service
-            switch (attribute.Lifetime)
+            if (typeof(TInterface) == typeof(ITtsService))
             {
-                case ServiceLifetime.Singleton:
-                    services.AddKeyedSingleton(typeof(TInterface), attribute.Key, implementation);
-                    break;
-                case ServiceLifetime.Scoped:
-                    services.AddKeyedScoped(typeof(TInterface), attribute.Key, implementation);
-                    break;
-                case ServiceLifetime.Transient:
-                    services.AddKeyedTransient(typeof(TInterface), attribute.Key, implementation);
-                    break;
-                default:
-                    throw new InvalidDataException($"Invalid lifetime specified: {attribute.Lifetime}");
+                services.Add(new ServiceDescriptor(typeof(ITtsService), attribute.Key, (sp, _) =>
+                    new GatedTtsService((ITtsService)ActivatorUtilities.CreateInstance(sp, implementation),
+                        (TtsProvider)attribute.Key, sp.GetRequiredService<ProviderSynthesisGate>()), attribute.Lifetime));
+            }
+            else
+            {
+                // Register the keyed service
+                switch (attribute.Lifetime)
+                {
+                    case ServiceLifetime.Singleton:
+                        services.AddKeyedSingleton(typeof(TInterface), attribute.Key, implementation);
+                        break;
+                    case ServiceLifetime.Scoped:
+                        services.AddKeyedScoped(typeof(TInterface), attribute.Key, implementation);
+                        break;
+                    case ServiceLifetime.Transient:
+                        services.AddKeyedTransient(typeof(TInterface), attribute.Key, implementation);
+                        break;
+                    default:
+                        throw new InvalidDataException($"Invalid lifetime specified: {attribute.Lifetime}");
+                }
             }
 
             // If an HTTP client is needed, register it for the implementation

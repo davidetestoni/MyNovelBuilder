@@ -1,3 +1,4 @@
+import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CompendiumService } from '../../services/compendium.service';
 import { FormsModule } from '@angular/forms';
@@ -49,6 +50,7 @@ import {
   selector: 'app-compendium-record',
   standalone: true,
   imports: [
+    VoiceSelectorComponent,
     FormsModule,
     TitleCasePipe,
     InputTextModule,
@@ -507,9 +509,9 @@ export class CompendiumRecordComponent {
         );
         this.selectedVoiceId =
           (preferredVoiceId &&
-            selectedModel?.voices.some(
+            (provider === TtsProvider.OpenRouter || selectedModel?.voices.some(
               (voice) => voice.voiceId === preferredVoiceId,
-            ) &&
+            )) &&
             preferredVoiceId) ||
           selectedModel?.voices[0]?.voiceId ||
           '';

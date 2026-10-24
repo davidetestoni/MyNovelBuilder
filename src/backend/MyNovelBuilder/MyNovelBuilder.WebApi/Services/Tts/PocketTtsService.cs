@@ -55,7 +55,7 @@ public class PocketTtsService : ITtsService
         TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var requestUri = await CreateRequestUriAsync("tts", cancellationToken);
+        var requestUri = await CreateRequestUriAsync("tts", cancellationToken, request.ExecutionInputs);
         using var response = await _httpClient.PostAsync(
             requestUri,
             CreateRequestContent(
@@ -72,7 +72,7 @@ public class PocketTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         using var httpRequest = new HttpRequestMessage();
-        httpRequest.RequestUri = await CreateRequestUriAsync("tts", cancellationToken);
+        httpRequest.RequestUri = await CreateRequestUriAsync("tts", cancellationToken, request.ExecutionInputs);
         httpRequest.Method = HttpMethod.Post;
         httpRequest.Content = CreateRequestContent(
             request.Message, request.VoiceId);
@@ -100,8 +100,12 @@ public class PocketTtsService : ITtsService
     public Task<decimal?> GetBalanceUsdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<decimal?>(null);
 
-    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken)
+    private async Task<Uri> CreateRequestUriAsync(string relativePath, CancellationToken cancellationToken, TtsExecutionInputs? execution = null)
     {
+        if (execution?.BaseUri is { } frozenBaseUri)
+        {
+            return ProviderBaseUrlHelper.CreateRequestUri(frozenBaseUri, relativePath);
+        }
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
             config.PocketTtsBaseUrl,

@@ -339,17 +339,19 @@
         </p-inputgroup>
       </div>
 
-      @if (ttsVoiceOptions.length > 0) {
+      @if (ttsVoiceOptions.length > 0 || (integrationsForm.value.ttsProvider === TtsProvider.OpenRouter && integrationsForm.value.ttsModelId)) {
         <div class="form-group">
           <label for="ttsVoiceId">Select TTS Voice:</label>
+          @if (integrationsForm.value.ttsProvider === TtsProvider.OpenRouter) {
+            <p class="field-help">Select a listed voice, or choose Custom to enter a voice ID if the list is empty
+              or your voice isn't listed. The voice ID must be supported by the selected model.</p>
+          }
           <div class="tts-voice-controls">
-            <p-select
-              id="ttsVoiceId"
+            <app-voice-selector
+              inputId="ttsVoiceId"
               [options]="ttsVoiceOptions"
               formControlName="ttsVoiceId"
-              placeholder="Select a TTS voice"
-              [style]="{ width: '100%' }"
-              [filter]="true"
+              [allowCustom]="integrationsForm.value.ttsProvider === TtsProvider.OpenRouter"
             />
 
             <p-button

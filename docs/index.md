@@ -24,6 +24,8 @@ Desktop packages are unsigned.
   short tour without configuring an AI provider.
 - [Writing workflow](features/writing.md): create a novel, write and organize
   prose, plan story events, use RPG mode, and import or export a manuscript.
+- [Audiobooks](features/audiobooks.md): generate chapter audio, reuse cached
+  speech, resume failed runs, download ZIPs, and manage generated-file storage.
 - [Compendia and AI tools](features/context-and-ai.md): manage reusable story
   context, customize prompts, chat about a novel, and review world-building
   proposals.

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG APP_VERSION=0.1.0
+ARG APP_VERSION=0.2.0
 
 FROM node:22-bookworm-slim AS frontend-build
 WORKDIR /src/src/frontend/my-novel-builder

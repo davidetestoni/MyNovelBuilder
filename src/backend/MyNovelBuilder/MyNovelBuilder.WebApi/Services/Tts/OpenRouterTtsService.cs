@@ -8,7 +8,6 @@ using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Tts;
-using NAudio.Wave;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
@@ -18,29 +17,6 @@ namespace MyNovelBuilder.WebApi.Services.Tts;
 [RegisterKeyedService(TtsProvider.OpenRouter, useHttpClient: true)]
 public class OpenRouterTtsService : ITtsService
 {
-    private const int SampleRate = 24000;
-    private const short ChannelCount = 1;
-    private const short BitsPerSample = 16;
-
-    // OpenRouter's TTS docs use the same normalized built-in voice IDs across models,
-    // while the models API does not currently expose per-model voice metadata.
-    private static readonly (string Id, string Name)[] BuiltInVoices =
-    [
-        ("alloy", "Alloy"),
-        ("ash", "Ash"),
-        ("ballad", "Ballad"),
-        ("cedar", "Cedar"),
-        ("coral", "Coral"),
-        ("echo", "Echo"),
-        ("fable", "Fable"),
-        ("marin", "Marin"),
-        ("nova", "Nova"),
-        ("onyx", "Onyx"),
-        ("sage", "Sage"),
-        ("shimmer", "Shimmer"),
-        ("verse", "Verse")
-    ];
-
     private readonly HttpClient _httpClient;
     private readonly ILogger<OpenRouterTtsService> _logger;
     private readonly IIntegrationsService _integrationsService;
@@ -66,20 +42,12 @@ public class OpenRouterTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         using var response = await SendSpeechRequestAsync(
-            request,
-            HttpCompletionOption.ResponseContentRead,
-            cancellationToken);
-
-        var pcmBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-        using var wavStream = new MemoryStream();
-        await using (var writer = new WaveFileWriter(
-                         wavStream,
-                         new WaveFormat(SampleRate, BitsPerSample, ChannelCount)))
-        {
-            await writer.WriteAsync(pcmBytes, cancellationToken);
-        }
-
-        return wavStream.ToArray();
+            request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        await using var mp3Stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using var wavStream = await AudioConversionHelper.ConvertMp3ToWavStreamAsync(mp3Stream, cancellationToken);
+        using var buffer = new MemoryStream();
+        await wavStream.CopyToAsync(buffer, cancellationToken);
+        return buffer.ToArray();
     }
 
     /// <inheritdoc />
@@ -92,30 +60,16 @@ public class OpenRouterTtsService : ITtsService
             HttpCompletionOption.ResponseHeadersRead,
             cancellationToken);
 
-        var pcmStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-
-        return new PcmWavStreamingStream(
-            sampleRate: SampleRate,
-            channels: ChannelCount,
-            bitsPerSample: BitsPerSample,
-            producer: async (writeAsync, ct) =>
-            {
-                await using var stream = pcmStream;
-                var buffer = new byte[16 * 1024];
-
-                while (true)
-                {
-                    var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), ct);
-                    if (read == 0)
-                    {
-                        break;
-                    }
-
-                    await writeAsync(buffer.AsMemory(0, read));
-                }
-            },
-            ct: cancellationToken,
-            onDispose: response.Dispose);
+        try
+        {
+            var mp3Stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            return await Mp3WavStreamingStream.CreateAsync(mp3Stream, response.Dispose, cancellationToken);
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -196,11 +150,15 @@ public class OpenRouterTtsService : ITtsService
         }
 
         var errorResponse = await response.Content.ReadAsStringAsync(cancellationToken);
-        response.Dispose();
+        using var failedResponse = response;
 
         _logger.LogError(
-            "OpenRouter TTS generation failed. Status code: {StatusCode}, Response: {Response}",
-            response.StatusCode,
+            "OpenRouter TTS generation failed. Status code: {StatusCode}, Model: {ModelId}, Voice: {VoiceId}, "
+            + "Format: {AudioFormat}, Input characters: {InputCharacters}, Input UTF-8 bytes: {InputUtf8Bytes}, "
+            + "Generation ID: {GenerationId}, Request ID: {RequestId}, CF-Ray: {CfRay}, Response: {Response}",
+            response.StatusCode, request.ModelId, request.VoiceId, "mp3", request.Message.Length,
+            Encoding.UTF8.GetByteCount(request.Message),
+            GetHeader(response, "X-Generation-Id"), GetHeader(response, "X-Request-Id"), GetHeader(response, "CF-Ray"),
             errorResponse);
 
         throw new ApiException(
@@ -215,7 +173,9 @@ public class OpenRouterTtsService : ITtsService
             input = request.Message,
             model = request.ModelId,
             voice = request.VoiceId,
-            response_format = "pcm"
+            // Raw PCM has no embedded format, and OpenRouter's rate/channels headers
+            // are optional. MP3 carries the format even when those headers are absent.
+            response_format = "mp3"
         };
 
         var httpRequest = new HttpRequestMessage(HttpMethod.Post, "audio/speech")
@@ -226,6 +186,7 @@ public class OpenRouterTtsService : ITtsService
                 "application/json")
         };
         httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        httpRequest.Headers.Add("X-OpenRouter-Metadata", "enabled");
         return httpRequest;
     }
 
@@ -265,9 +226,8 @@ public class OpenRouterTtsService : ITtsService
             .Cast<string>()
             .ToList();
 
-        var voices = supportedVoices is { Count: > 0 }
-            ? supportedVoices.Select(voice => (Id: voice, Name: voice))
-            : BuiltInVoices;
+        // Missing metadata means voices are unknown, not that OpenAI voice names work.
+        var voices = (supportedVoices ?? []).Select(voice => (Id: voice, Name: voice));
 
         return voices.Select(voice => new TtsVoiceDto
         {
@@ -277,22 +237,42 @@ public class OpenRouterTtsService : ITtsService
         }).ToList();
     }
 
+    private static string? GetHeader(HttpResponseMessage response, string name) =>
+        response.Headers.TryGetValues(name, out var values) ? string.Join(", ", values) : null;
+
     private static string? GetErrorMessage(string errorResponse)
     {
-        if (string.IsNullOrWhiteSpace(errorResponse))
-        {
-            return null;
-        }
-
+        if (string.IsNullOrWhiteSpace(errorResponse)) return null;
         try
         {
-            var errorObject = JsonNode.Parse(errorResponse);
-            return errorObject?["error"]?["message"]?.GetValue<string>()
-                   ?? errorObject?["message"]?.GetValue<string>();
+            var root = JsonNode.Parse(errorResponse) as JsonObject;
+            var error = root?["error"] as JsonObject;
+            var message = ReadString(error?["message"]) ?? ReadString(root?["message"]);
+            var metadata = error?["metadata"] as JsonObject;
+            var raw = metadata?["raw"];
+            var details = raw as JsonObject;
+            var rawText = ReadString(raw);
+            if (details is null && rawText is not null)
+            {
+                try { details = JsonNode.Parse(rawText) as JsonObject; }
+                catch (JsonException) { /* Some providers return plain text errors. */ }
+            }
+            var detail = ReadString((details?["error"] as JsonObject)?["message"])
+                         ?? ReadString(details?["message"]) ?? ReadString(details?["detail"]) ?? rawText;
+            if (!string.IsNullOrWhiteSpace(detail) && detail != message)
+                return $"{message ?? "OpenRouter TTS failed"}: {detail}";
+            if (message?.StartsWith("Provider returned", StringComparison.OrdinalIgnoreCase) == true)
+                return $"{message}. OpenRouter returned no further provider explanation. "
+                       + "Check that the voice ID belongs to the selected model; voice names such as Alloy are not universal. "
+                       + "See backend logs for the model, voice and request IDs.";
+            return message;
         }
         catch (JsonException)
         {
             return null;
         }
     }
+
+    private static string? ReadString(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 }

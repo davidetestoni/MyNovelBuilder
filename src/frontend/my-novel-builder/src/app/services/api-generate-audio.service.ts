@@ -41,8 +41,9 @@ export class ApiGenerateAudioService extends GenerateAudioService {
     });
   }
 
-  textToSpeechStreamResponse(request: TtsRequestDto): Promise<Response> {
+  textToSpeechStreamResponse(request: TtsRequestDto, signal?: AbortSignal): Promise<Response> {
     return fetch(`${this.baseUrl}/generate/audio/tts/stream`, {
+      signal,
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
