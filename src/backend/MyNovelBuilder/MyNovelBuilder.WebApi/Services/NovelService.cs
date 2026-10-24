@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Data;
@@ -17,6 +17,7 @@ namespace MyNovelBuilder.WebApi.Services;
 public class NovelService : INovelService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly AudiobookSnapshotStore? _audiobooks;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly string _dataFolder;
     private readonly string _staticFilesRoot;
@@ -24,9 +25,10 @@ public class NovelService : INovelService
     /// <summary></summary>
     public NovelService(
         IUnitOfWork unitOfWork,
-        IOptions<AppStorageOptions> storageOptions)
+        IOptions<AppStorageOptions> storageOptions, AudiobookSnapshotStore? audiobooks = null)
     {
         _unitOfWork = unitOfWork;
+        _audiobooks = audiobooks;
         _jsonSerializerOptions = JsonDefaults.Options;
         _dataFolder = storageOptions.Value.DataFolder;
         _staticFilesRoot = storageOptions.Value.StaticFilesRoot;
@@ -68,12 +70,18 @@ public class NovelService : INovelService
     /// <inheritdoc />
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var novel = await GetByIdAsync(id, cancellationToken);
-        
-        _unitOfWork.Novels.Remove(novel);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        DeleteNovelFiles(id);
+        if (_audiobooks is not null) await _audiobooks.Mutations.WaitAsync(cancellationToken);
+        try
+        {
+            var novel = await GetByIdAsync(id, cancellationToken);
+            _unitOfWork.Novels.Remove(novel);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            _audiobooks?.RemoveNovel(id);
+            DeleteNovelFiles(id);
+            var archives = Path.Combine(_dataFolder, "audiobooks", id.ToString());
+            if (Directory.Exists(archives)) Directory.Delete(archives, true);
+        }
+        finally { _audiobooks?.Mutations.Release(); }
     }
 
     /// <inheritdoc />

@@ -252,6 +252,65 @@ public class VoiceControllerIntegrationTests(
         var previewBytes = await response.Content.ReadAsByteArrayAsync();
         Assert.True(previewBytes.Length >= 44);
         Assert.True(previewBytes.Length < fullWav.Length);
+        using var previewReader = new WaveFileReader(new MemoryStream(previewBytes));
+        using var originalReader = new WaveFileReader(new MemoryStream(fullWav));
+        Assert.Equal(originalReader.WaveFormat.AverageBytesPerSecond, previewReader.Length);
+    }
+
+    [Fact]
+    public async Task GetVoiceSample_ReturnsCompleteWavAndSupportsSeeking()
+    {
+        using var client = Factory.CreateClient();
+        var voice = new Voice
+        {
+            Name = "Full Voice Sample",
+            VoiceGender = VoiceGender.Both,
+            Language = WritingLanguage.English
+        };
+        UnitOfWork.Voices.Add(voice);
+        await UnitOfWork.SaveChangesAsync();
+        var fullWav = CreateWavBytes(seconds: 35);
+        var wavPath = GetVoiceWavPath(voice.Id);
+        Directory.CreateDirectory(Path.GetDirectoryName(wavPath)!);
+        await File.WriteAllBytesAsync(wavPath, fullWav);
+
+        var response = await client.GetAsync($"api/voices/{voice.Id}/sample");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("audio/wav", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(fullWav, await response.Content.ReadAsByteArrayAsync());
+
+        using var rangeRequest = new HttpRequestMessage(HttpMethod.Get, $"api/voices/{voice.Id}/sample");
+        rangeRequest.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(44, 143);
+        var rangeResponse = await client.SendAsync(rangeRequest);
+        Assert.Equal(HttpStatusCode.PartialContent, rangeResponse.StatusCode);
+        Assert.Equal(fullWav.Length, rangeResponse.Content.Headers.ContentRange?.Length);
+        Assert.Equal(fullWav[44..144], await rangeResponse.Content.ReadAsByteArrayAsync());
+    }
+
+    [Fact]
+    public async Task GetVoiceSample_WithUnknownId_ReturnsVoiceNotFound()
+    {
+        using var client = Factory.CreateClient();
+        var result = await GetJsonAsync<object>(client, $"api/voices/{Guid.NewGuid()}/sample");
+        Assert.NotNull(result.Error);
+        Assert.Equal(ErrorCodes.VoiceNotFound, result.Error.Info!.Code);
+    }
+
+    [Fact]
+    public async Task GetVoiceSample_WithMissingFile_ReturnsInvalidFile()
+    {
+        using var client = Factory.CreateClient();
+        var voice = new Voice
+        {
+            Name = "Missing Voice Sample",
+            VoiceGender = VoiceGender.Both,
+            Language = WritingLanguage.English
+        };
+        UnitOfWork.Voices.Add(voice);
+        await UnitOfWork.SaveChangesAsync();
+        var result = await GetJsonAsync<object>(client, $"api/voices/{voice.Id}/sample");
+        Assert.NotNull(result.Error);
+        Assert.Equal(ErrorCodes.InvalidFile, result.Error.Info!.Code);
     }
 
     [Fact]

@@ -41,6 +41,7 @@ export class ProseRpgPanelComponent {
   @Input() isGenerating = false;
   @Input() isLastChapterSelected = true;
   @Output() promptSubmitted = new EventEmitter<ProseRpgCommand>();
+  @Output() generationCancelled = new EventEmitter<void>();
   @Output() promptPreviewed = new EventEmitter<ProseRpgCommand>();
 
   readonly promptType = PromptType.GenerateText;

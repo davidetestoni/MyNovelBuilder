@@ -57,13 +57,13 @@ public class Audio8TtsService : ITtsService
             return [];
         }
 
-        var voiceReference = await ResolveVoiceReferenceAsync(request.VoiceId, cancellationToken);
+        var voiceReference = await ResolveVoiceReferenceAsync(request.VoiceId, cancellationToken, request.ExecutionInputs);
         var responseSampleRate = _sampleRate;
         await using var fullPcmStream = new MemoryStream();
 
         foreach (var chunk in textChunks)
         {
-            var result = await GeneratePcmChunkAsync(chunk, voiceReference, cancellationToken);
+            var result = await GeneratePcmChunkAsync(chunk, voiceReference, cancellationToken, request.ExecutionInputs);
             responseSampleRate = result.SampleRate;
             await fullPcmStream.WriteAsync(result.Pcm, cancellationToken);
         }
@@ -92,11 +92,11 @@ public class Audio8TtsService : ITtsService
             bitsPerSample: 16,
             producer: async (writeAsync, ct) =>
             {
-                var voiceReference = await ResolveVoiceReferenceAsync(request.VoiceId, ct);
+                var voiceReference = await ResolveVoiceReferenceAsync(request.VoiceId, ct, request.ExecutionInputs);
 
                 foreach (var chunk in textChunks)
                 {
-                    var result = await GeneratePcmChunkAsync(chunk, voiceReference, ct);
+                    var result = await GeneratePcmChunkAsync(chunk, voiceReference, ct, request.ExecutionInputs);
                     await writeAsync(result.Pcm);
                 }
             },
@@ -147,7 +147,8 @@ public class Audio8TtsService : ITtsService
     private async Task<PcmResult> GeneratePcmChunkAsync(
         string text,
         VoiceReference? voiceReference,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TtsExecutionInputs? execution)
     {
         using var formData = new MultipartFormDataContent();
         formData.Add(new StringContent(text), "text");
@@ -155,23 +156,24 @@ public class Audio8TtsService : ITtsService
         if (voiceReference is not null)
         {
             formData.Add(new StringContent(voiceReference.Transcript), "ref_text");
-            await using var referenceWavStream = File.OpenRead(voiceReference.WavPath);
+            await using var referenceWavStream = voiceReference.FrozenVoice?.OpenRead() ?? File.OpenRead(voiceReference.WavPath);
             using var wavContent = new StreamContent(referenceWavStream);
             wavContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
             formData.Add(wavContent, "reference_wav", Path.GetFileName(voiceReference.WavPath));
 
-            return await PostTtsAsync(formData, cancellationToken);
+            return await PostTtsAsync(formData, cancellationToken, execution);
         }
 
-        return await PostTtsAsync(formData, cancellationToken);
+        return await PostTtsAsync(formData, cancellationToken, execution);
     }
 
     private async Task<PcmResult> PostTtsAsync(
         MultipartFormDataContent formData,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TtsExecutionInputs? execution)
     {
         using var response = await _httpClient.PostAsync(
-            await CreateRequestUriAsync("tts", cancellationToken),
+            await CreateRequestUriAsync("tts", cancellationToken, execution),
             formData,
             cancellationToken);
         response.EnsureSuccessStatusCode();
@@ -188,8 +190,19 @@ public class Audio8TtsService : ITtsService
 
     private async Task<VoiceReference?> ResolveVoiceReferenceAsync(
         string? voiceId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TtsExecutionInputs? execution = null)
     {
+        if (execution is not null)
+        {
+            if (execution.Voice is not { } voice) return null;
+            if (string.IsNullOrWhiteSpace(voice.Transcript))
+            {
+                throw new ApiException(ErrorCodes.BadRequest, "Audio8 requires a reference transcript.");
+            }
+            return new VoiceReference($"{voiceId}.wav", voice.Transcript.Trim(), voice);
+        }
+
         if (string.IsNullOrWhiteSpace(voiceId)
             || voiceId.Equals(_defaultVoiceId, StringComparison.OrdinalIgnoreCase))
         {
@@ -230,8 +243,13 @@ public class Audio8TtsService : ITtsService
 
     private async Task<Uri> CreateRequestUriAsync(
         string relativePath,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        TtsExecutionInputs? execution = null)
     {
+        if (execution?.BaseUri is { } frozenBaseUri)
+        {
+            return ProviderBaseUrlHelper.CreateRequestUri(frozenBaseUri, relativePath);
+        }
         var config = await _integrationsService.GetConfigAsync(cancellationToken);
         var baseUri = ProviderBaseUrlHelper.NormalizeHttpBaseUri(
             config.Audio8BaseUrl,
@@ -241,7 +259,7 @@ public class Audio8TtsService : ITtsService
         return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
     }
 
-    private sealed record VoiceReference(string WavPath, string Transcript);
+    private sealed record VoiceReference(string WavPath, string Transcript, RecordedTtsVoice? FrozenVoice = null);
 
     private sealed record PcmResult(byte[] Pcm, int SampleRate);
 }

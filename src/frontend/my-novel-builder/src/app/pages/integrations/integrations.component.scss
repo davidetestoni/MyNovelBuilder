@@ -92,8 +92,9 @@
       align-items: flex-start;
       flex-wrap: wrap;
 
-      p-select {
+      app-voice-selector {
         flex: 1;
+        min-width: 0;
       }
     }
 

@@ -71,6 +71,11 @@ public class IntegrationsConfigDto
     /// The configured base URL for the Audio8 provider.
     /// </summary>
     public required string Audio8BaseUrl { get; init; }
+
+    /// <summary>
+    /// The configured base URL for the KittenTTS provider.
+    /// </summary>
+    public required string KittenTtsBaseUrl { get; init; }
     
     /// <summary>
     /// The configured Text Generation provider.

@@ -99,6 +99,7 @@ export class ChatComponent
   private dialogRef: DynamicDialogRef | null = null;
   private contextSubscriptions = new Subscription();
   private generationSubscription: Subscription | null = null;
+  private activeAssistantMessage: ChatMessage | null = null;
   private shouldScrollToBottom = false;
 
   ChatMessageRole = ChatMessageRole;
@@ -437,6 +438,7 @@ export class ChatComponent
     );
 
     this.isGenerating = true;
+    this.activeAssistantMessage = assistantMessage;
     this.shouldScrollToBottom = true;
 
     this.generationSubscription?.unsubscribe();
@@ -457,6 +459,7 @@ export class ChatComponent
           console.error('Error generating text:', err);
           this.generationSubscription = null;
           this.isGenerating = false;
+          this.activeAssistantMessage = null;
           // Remove the empty assistant message if it failed
           if (!assistantMessage.textContent) {
             this.currentChat.messages = this.currentChat.messages.filter(
@@ -527,14 +530,30 @@ export class ChatComponent
     this.generationSubscription?.unsubscribe();
     this.generationSubscription = null;
     this.isGenerating = false;
+    this.activeAssistantMessage = null;
     this.saveChat();
     this.shouldScrollToBottom = true;
+  }
+
+  stopGeneration(): void {
+    if (!this.isGenerating) {
+      return;
+    }
+    const assistantMessage = this.activeAssistantMessage;
+    this.cancelGeneration();
+    if (assistantMessage && !assistantMessage.textContent) {
+      this.currentChat.messages = this.currentChat.messages.filter(
+        (message) => message.id !== assistantMessage.id,
+      );
+    }
+    this.saveChat();
   }
 
   private cancelGeneration(): void {
     this.generationSubscription?.unsubscribe();
     this.generationSubscription = null;
     this.isGenerating = false;
+    this.activeAssistantMessage = null;
   }
 
   private saveChat(): void {

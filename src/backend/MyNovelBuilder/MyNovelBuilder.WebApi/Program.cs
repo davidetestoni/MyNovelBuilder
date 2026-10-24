@@ -52,7 +52,10 @@ builder.Services.AddSingleton<IAppDataDirectoryInitializer>(dataDirectoryInitial
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IDatabaseBackupService, DatabaseBackupService>();
 builder.Services.AddOptions<AppStorageOptions>()
-    .Configure(options => options.DataFolder = dataFolder);
+    .Bind(builder.Configuration)
+    .Configure(options => options.DataFolder = dataFolder)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddOptions<SeedOptions>()
     .BindConfiguration(SeedOptions.SectionName);
 
@@ -162,10 +165,30 @@ builder.Services.AddScoped<IWorldBuildingSessionService, WorldBuildingSessionSer
 builder.Services.AddScoped<InitialPromptSeeder>();
 builder.Services.AddScoped<SampleNovelSeeder>();
 builder.Services.AddScoped<INovelExportService, NovelExportService>();
+builder.Services.AddScoped<AudiobookSettingsResolver>();
+builder.Services.AddScoped<AudiobookSnapshotBuilder>();
+builder.Services.AddSingleton<AudiobookSnapshotStore>();
+builder.Services.AddSingleton<FileSystemAudiobookJobRepository>();
+builder.Services.AddSingleton<GeneratedAudioCleanup>();
+builder.Services.AddScoped<AudiobookJobService>();
+builder.Services.AddHostedService<AudiobookWorker>();
+builder.Services.AddSingleton<ProviderSynthesisGate>();
+builder.Services.AddTransient<ProviderRetryHintHandler>();
+builder.Services.ConfigureHttpClientDefaults(http => http.AddHttpMessageHandler<ProviderRetryHintHandler>());
+builder.Services.AddScoped<ITtsVoiceRevisionService, TtsVoiceRevisionService>();
 builder.Services.AddScoped<ITextGenerationServiceResolver, TextGenerationServiceResolver>();
-builder.Services.AddScoped<ITtsAudioGenerationService, TtsAudioGenerationService>();
-builder.Services.AddScoped<IImmersiveTtsService, ImmersiveTtsService>();
+builder.Services.AddScoped<TtsAudioGenerationService>();
+builder.Services.AddScoped<ITtsAudioGenerationService>(sp => sp.GetRequiredService<TtsAudioGenerationService>());
+builder.Services.AddScoped<IAudiobookTtsService>(sp => sp.GetRequiredService<TtsAudioGenerationService>());
+builder.Services.AddSingleton<AudiobookPreparationCache>();
+builder.Services.AddSingleton<AudioArtifactAssembler>();
+builder.Services.AddSingleton<AudiobookArchiveService>();
+builder.Services.AddScoped<AudiobookSectionRenderer>();
+builder.Services.AddScoped<ImmersiveTtsService>();
+builder.Services.AddScoped<IImmersiveTtsService>(sp => sp.GetRequiredService<ImmersiveTtsService>());
+builder.Services.AddScoped<IAudiobookImmersivePlanner>(sp => sp.GetRequiredService<ImmersiveTtsService>());
 builder.Services.AddSingleton<IAudioRepository, FileSystemWaveAudioRepository>();
+builder.Services.AddSingleton<IAudioArtifactRepository, FileSystemAudioArtifactRepository>();
 builder.Services.AddSingleton<ITokenizerService, TokenizerService>();
 
 builder.Services.AddSingleton<IIntegrationsService, IntegrationsService>();

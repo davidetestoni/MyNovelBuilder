@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
@@ -12,17 +14,20 @@ namespace MyNovelBuilder.WebApi.Services.TextGeneration;
 /// <summary>
 /// Service for generating text using Google's GenAI API.
 /// </summary>
-[RegisterKeyedService(TextGenerationProvider.GoogleGenAi)]
+[RegisterKeyedService(TextGenerationProvider.GoogleGenAi, useHttpClient: true)]
 public class GoogleGenAiTextGenerationService : ITextGenerationService
 {
     private readonly IIntegrationsService _integrationsService;
+    private readonly HttpClient _httpClient;
     private readonly Google.GenAI.Client? _googleGenAiClient = null;
 
     /// <summary></summary>
     public GoogleGenAiTextGenerationService(
-        IIntegrationsService integrationsService)
+        IIntegrationsService integrationsService,
+        HttpClient httpClient)
     {
         _integrationsService = integrationsService;
+        _httpClient = httpClient;
     }
     
     private async ValueTask<Google.GenAI.Client> GetGoogleGenAiClientAsync(
@@ -74,30 +79,86 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         StructuredOutputOptions? structuredOutputOptions = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var client = await GetGoogleGenAiClientAsync(cancellationToken);
-        
+        var integrations = await _integrationsService.GetConfigAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(integrations.GoogleGenAiApiKey))
+        {
+            throw new ApiException(ErrorCodes.MissingOrInvalidServiceCredentials,
+                "Google API key is missing in integrations configuration.");
+        }
+
+        if (!Regex.IsMatch(model, @"^(models/)?[a-zA-Z0-9._-]+$"))
+        {
+            throw new ApiException(ErrorCodes.BadRequest, "The Google model ID is invalid.");
+        }
+
         var messageList = messages.ToList();
         var systemPrompt = messageList.FirstOrDefault(m => m.Role is PromptMessageRole.System);
         var conversationMessages = messageList
             .Where(m => m.Role is not PromptMessageRole.System)
-            .Select(ToContent)
+            .Select(m => new { role = m.Role is PromptMessageRole.Assistant ? "model" : "user",
+                parts = new[] { new { text = m.Message } } })
             .ToList();
-        
-        var config = CreateGenerateContentConfig(systemPrompt, structuredOutputOptions);
 
-        await foreach (var chunk in client.Models.GenerateContentStreamAsync(
-                           model, conversationMessages, config).WithCancellation(cancellationToken))
+        var body = new JsonObject
         {
-            var candidate = chunk.Candidates?[0]!;
+            ["contents"] = JsonSerializer.SerializeToNode(conversationMessages)
+        };
+        if (systemPrompt is not null)
+        {
+            body["systemInstruction"] = new JsonObject
+            {
+                ["parts"] = new JsonArray(new JsonObject { ["text"] = systemPrompt.Message })
+            };
+        }
+        if (structuredOutputOptions is not null)
+        {
+            body["generationConfig"] = new JsonObject
+            {
+                ["responseMimeType"] = "application/json",
+                ["responseJsonSchema"] = JsonNode.Parse(
+                    NormalizeJsonSchemaForGoogle(structuredOutputOptions.JsonSchema))
+            };
+        }
 
-            if (candidate.FinishReason is not (null or Google.GenAI.Types.FinishReason.STOP))
+        var modelPath = model.StartsWith("models/", StringComparison.Ordinal) ? model : $"models/{model}";
+        using var request = new HttpRequestMessage(HttpMethod.Post,
+            $"https://generativelanguage.googleapis.com/v1beta/{modelPath}:streamGenerateContent?alt=sse");
+        request.Headers.Add("x-goog-api-key", integrations.GoogleGenAiApiKey);
+        request.Content = JsonContent.Create(body);
+        using var response = await _httpClient.SendAsync(request,
+            HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new ApiException(ErrorCodes.ExternalServiceError,
+                $"Google GenAI returned HTTP {(int)response.StatusCode}.");
+        }
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream);
+        while (await reader.ReadLineAsync(cancellationToken) is { } line)
+        {
+            if (!line.StartsWith("data:", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var chunk = JsonNode.Parse(line[5..]);
+            var candidate = chunk?["candidates"]?[0];
+            var finishReason = candidate?["finishReason"]?.GetValue<string>();
+            if (finishReason is not (null or "STOP"))
             {
                 throw new ApiException(ErrorCodes.ExternalServiceError,
-                    $"Google GenAI refused to generate text. " +
-                    $"{candidate.FinishReason}: {candidate.FinishMessage}");
+                    $"Google GenAI refused to generate text: {finishReason}.");
             }
-            
-            yield return candidate.Content!.Parts![0].Text!;
+
+            foreach (var part in candidate?["content"]?["parts"]?.AsArray() ?? [])
+            {
+                var text = part?["text"]?.GetValue<string>();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    yield return text;
+                }
+            }
         }
     }
 

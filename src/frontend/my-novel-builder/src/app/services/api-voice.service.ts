@@ -68,4 +68,8 @@ export class ApiVoiceService extends VoiceService {
       return response;
     });
   }
+
+  getVoiceSampleUrl(voiceId: string): string {
+    return `${this.baseUrl}/voices/${encodeURIComponent(voiceId)}/sample`;
+  }
 }

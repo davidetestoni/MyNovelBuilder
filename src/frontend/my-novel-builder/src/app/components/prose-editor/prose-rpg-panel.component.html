@@ -71,5 +71,10 @@
         <i class="pi pi-send"></i>
       }
     </button>
+    @if (isGenerating) {
+      <button type="button" class="rpg-send-btn" pTooltip="Cancel generation" (click)="generationCancelled.emit()" aria-label="Cancel generation">
+        <i class="pi pi-stop"></i>
+      </button>
+    }
   </div>
 }

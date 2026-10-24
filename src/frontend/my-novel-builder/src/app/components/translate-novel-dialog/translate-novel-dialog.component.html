@@ -87,6 +87,9 @@
             (click)="generate()"
             [disabled]="!canGenerate"
           />
+          @if (isGenerating) {
+            <p-button label="Cancel" (click)="cancelGeneration()" />
+          }
           @if (translatedProse !== null) {
             <p-button
               label="Create Translated Novel"

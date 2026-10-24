@@ -44,6 +44,7 @@ describe('IntegrationsComponent workflows', () => {
     qwen3BaseUrl: 'http://qwen/',
     omniVoiceBaseUrl: 'http://omni/',
     audio8BaseUrl: 'http://audio8/',
+    kittenTtsBaseUrl: 'http://kitten/',
     textGenerationProvider: TextGenerationProvider.OpenRouter,
     textGenerationModelId: 'structured-model',
     ttsProvider: TtsProvider.Qwen3,
@@ -171,7 +172,49 @@ describe('IntegrationsComponent workflows', () => {
     );
   });
 
-  it('loads configuration, models, API-key status, and configured balances', () => {
+  it('preserves a custom OpenRouter voice ID when the catalogue contains no voices', () => {
+    integrationsService.getIntegrationsConfig.and.returnValue(of(config({
+      ttsProvider: TtsProvider.OpenRouter, ttsModelId: 'fish-audio/s2.1-pro',
+      ttsVoiceId: '933563129e564b19a115bedd57b7406a',
+    })));
+    generateAudioService.getAvailableModels.and.returnValue(of([
+      { modelId: 'fish-audio/s2.1-pro', name: 'Fish', supportsTextEmphasis: false, voices: [] },
+    ]));
+    component.ngOnInit();
+    expect(component.integrationsForm.value.ttsVoiceId).toBe('933563129e564b19a115bedd57b7406a');
+  });
+
+  for (const hasListedVoices of [false, true]) {
+    it(`lets the user type and paste a custom OpenRouter voice in the rendered field (listed voices: ${hasListedVoices})`, async () => {
+      integrationsService.getIntegrationsConfig.and.returnValue(of(config({
+        ttsProvider: TtsProvider.OpenRouter, ttsModelId: 'fish-audio/s2.1-pro', ttsVoiceId: 'old-id',
+      })));
+      generateAudioService.getAvailableModels.and.returnValue(of([{
+        modelId: 'fish-audio/s2.1-pro', name: 'Fish', supportsTextEmphasis: false,
+        voices: hasListedVoices ? [{ voiceId: 'alloy', name: 'Alloy', language: WritingLanguage.English, previewUrl: null }] : [],
+      }]));
+      const fixture = TestBed.createComponent(IntegrationsComponent);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const input = fixture.nativeElement.querySelector('#ttsVoiceId-custom') as HTMLInputElement;
+      expect(input).withContext('unlisted saved voice must preselect Custom and show its text box').not.toBeNull();
+      for (const value of ['a', 'al', 'all', '', '933563129e564b19a115bedd57b7406a']) {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(input.value).toBe(value);
+        expect(fixture.componentInstance.integrationsForm.value.ttsVoiceId ?? '').toBe(value);
+      }
+      input.dispatchEvent(new Event('blur'));
+      fixture.detectChanges();
+      await fixture.whenStable();
+      expect(input.value).toBe('933563129e564b19a115bedd57b7406a');
+      fixture.destroy();
+    });
+  }
+
+  it('loads configuration, models, API-key status, and selected provider balances', () => {
     component.ngOnInit();
 
     expect(component.hasOpenRouterApiKey).toBeTrue();
@@ -202,7 +245,6 @@ describe('IntegrationsComponent workflows', () => {
     );
     expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
       [TtsProvider.DeApi],
-      [TtsProvider.NanoGpt],
     ]);
   });
 
@@ -241,6 +283,37 @@ describe('IntegrationsComponent workflows', () => {
     expect(generateAudioService.getAvailableModels).toHaveBeenCalledOnceWith(
       TtsProvider.PocketTts,
     );
+  });
+
+  it('checks the balance when switching to a saved provider and clears it when switching away', () => {
+    component.ngOnInit();
+    generateAudioService.getBalanceUsd.calls.reset();
+
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.NanoGpt);
+
+    expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
+      [TtsProvider.DeApi],
+      [TtsProvider.NanoGpt],
+    ]);
+    expect(component.nanoGptBalanceUsd).toBe(12.34);
+
+    generateAudioService.getBalanceUsd.calls.reset();
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.Custom);
+
+    expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
+      [TtsProvider.DeApi],
+    ]);
+    expect(component.nanoGptBalanceUsd).toBeNull();
+
+    generateAudioService.getBalanceUsd.calls.reset();
+    component.integrationsForm.controls.imageGenerationProvider.setValue(
+      ImageGenerationProvider.NanoGpt,
+    );
+
+    expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
+      [TtsProvider.DeApi],
+      [TtsProvider.NanoGpt],
+    ]);
   });
 
   it('does not request model lists before the selected provider key is configured', () => {
@@ -407,6 +480,7 @@ describe('IntegrationsComponent workflows', () => {
       [TtsProvider.Qwen3, 'qwen3BaseUrl', 'Qwen3', 'http://localhost:8000/'],
       [TtsProvider.OmniVoice, 'omniVoiceBaseUrl', 'OmniVoice', 'http://localhost:8000/'],
       [TtsProvider.Audio8, 'audio8BaseUrl', 'Audio8', 'http://localhost:8000/'],
+      [TtsProvider.KittenTts, 'kittenTtsBaseUrl', 'Kitten TTS', 'http://localhost:8000/'],
     ] as const;
 
     for (const [provider, controlName, label, placeholder] of cases) {
@@ -430,6 +504,10 @@ describe('IntegrationsComponent workflows', () => {
   });
 
   it('formats provider option labels for display', () => {
+    expect(component.ttsProviderOptions).toContain({
+      label: 'Kitten TTS',
+      value: TtsProvider.KittenTts,
+    });
     expect(component.ttsProviderOptions).toContain({
       label: 'Nano GPT',
       value: TtsProvider.NanoGpt,
@@ -459,6 +537,39 @@ describe('IntegrationsComponent workflows', () => {
     expect(generateAudioService.getBalanceUsd).not.toHaveBeenCalled();
     expect(component.deApiBalanceUsd).toBeNull();
     expect(component.nanoGptBalanceUsd).toBeNull();
+  });
+
+  it('does not check NanoGPT balance for an unused saved key', () => {
+    component.hasNanoGptApiKey = true;
+    component.nanoGptBalanceUsd = 2;
+
+    component.loadConfiguredBalances();
+
+    expect(generateAudioService.getBalanceUsd).not.toHaveBeenCalled();
+    expect(component.nanoGptBalanceUsd).toBeNull();
+  });
+
+  it('checks NanoGPT balance when selected for TTS or images', () => {
+    component.hasNanoGptApiKey = true;
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.NanoGpt);
+
+    component.loadConfiguredBalances();
+
+    expect(generateAudioService.getBalanceUsd).toHaveBeenCalledOnceWith(
+      TtsProvider.NanoGpt,
+    );
+
+    generateAudioService.getBalanceUsd.calls.reset();
+    component.integrationsForm.controls.ttsProvider.setValue(TtsProvider.Custom);
+    component.integrationsForm.controls.imageGenerationProvider.setValue(
+      ImageGenerationProvider.NanoGpt,
+    );
+
+    component.loadConfiguredBalances();
+
+    expect(generateAudioService.getBalanceUsd).toHaveBeenCalledOnceWith(
+      TtsProvider.NanoGpt,
+    );
   });
 
   it('stores successful DeAPI and NanoGPT balance responses', () => {
@@ -665,6 +776,7 @@ describe('IntegrationsComponent workflows', () => {
       nanoGptApiKey: '',
       deApiApiKey: '',
       customTtsBaseUrl: '',
+      kittenTtsBaseUrl: 'http://kitten.test/',
       ttsProvider: TtsProvider.Custom,
       ttsModelId: 'basic',
       ttsVoiceId: 'english-voice',
@@ -683,6 +795,7 @@ describe('IntegrationsComponent workflows', () => {
         openRouterApiKey: undefined,
         googleGenAiApiKey: 'google-key',
         customTtsBaseUrl: '',
+        kittenTtsBaseUrl: 'http://kitten.test/',
         ttsProvider: TtsProvider.Custom,
         ttsModelId: 'basic',
         ttsVoiceId: 'english-voice',
@@ -733,7 +846,6 @@ describe('IntegrationsComponent workflows', () => {
     );
     expect(generateAudioService.getBalanceUsd.calls.allArgs()).toEqual([
       [TtsProvider.DeApi],
-      [TtsProvider.NanoGpt],
     ]);
   });
 

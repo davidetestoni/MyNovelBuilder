@@ -14,7 +14,7 @@ import { TtsProvider } from '../types/enums/tts-provider';
 @Injectable()
 export abstract class GenerateAudioService {
   abstract textToSpeech(request: TtsRequestDto): Observable<HttpEvent<Blob>>;
-  abstract textToSpeechStreamResponse(request: TtsRequestDto): Promise<Response>;
+  abstract textToSpeechStreamResponse(request: TtsRequestDto, signal?: AbortSignal): Promise<Response>;
   abstract immersiveTextToSpeechStreamResponse(
     request: ImmersiveTtsRequestDto,
   ): Promise<Response>;

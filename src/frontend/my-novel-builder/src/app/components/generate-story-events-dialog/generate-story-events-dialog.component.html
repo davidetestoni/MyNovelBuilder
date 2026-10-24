@@ -56,6 +56,9 @@
             (click)="generate()"
             [disabled]="formGroup.invalid || isGenerating || promptCount === 0"
           />
+          @if (isGenerating) {
+            <p-button label="Cancel" (click)="cancelGeneration()" />
+          }
           @if (generatedPreviews.length > 0) {
             <p-button
               label="Accept"

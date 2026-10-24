@@ -67,6 +67,12 @@ In **Record Overrides**, select that record, choose `age`, and enter the new
 content. The application replaces the text between them when building later prompts.
 A later override for the same record and keyword supersedes the earlier value.
 
+## Audiobook export
+
+Use **Novel Settings → Generate audiobook** for narration, voice preview,
+per-export settings and ZIP downloads. See [Audiobooks](audiobooks.md) for
+cache reuse, cancellation/retry and generated-file cleanup.
+
 ## Import, export, and translate
 
 Novel settings provide exports in Markdown, HTML, and PDF. **Replace prose from

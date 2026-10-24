@@ -105,12 +105,15 @@ public class CompendiumRecordService : ICompendiumRecordService
             return [];
         }
         
-        return Directory.GetFiles(localPath).Select(x => new MediaRef
-        {
-            Id = Guid.Parse(Path.GetFileNameWithoutExtension(x)),
-            Location = Path.Combine("static", "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", Path.GetFileName(x)),
-            IsVideo = Path.GetExtension(x) != ".png"
-        });
+        return Directory.GetFiles(localPath)
+            .OrderBy(File.GetLastWriteTimeUtc)
+            .ThenBy(Path.GetFileName, StringComparer.Ordinal)
+            .Select(x => new MediaRef
+            {
+                Id = Guid.Parse(Path.GetFileNameWithoutExtension(x)),
+                Location = Path.Combine("static", "compendium", record.Compendium.Id.ToString(), "records", id.ToString(), "gallery", Path.GetFileName(x)),
+                IsVideo = Path.GetExtension(x) != ".png"
+            });
     }
 
     /// <inheritdoc />

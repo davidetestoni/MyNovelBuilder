@@ -74,6 +74,19 @@ public class VoiceService : IVoiceService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         DeleteWavFile(id);
     }
+
+    /// <inheritdoc />
+    public async Task<Stream> GetSampleStreamAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        _ = await GetByIdAsync(id, cancellationToken);
+        var path = GetWavPath(id);
+        if (!File.Exists(path))
+        {
+            throw new ApiException(ErrorCodes.InvalidFile, $"Voice sample for ID {id} was not found.");
+        }
+
+        return File.OpenRead(path);
+    }
     
     /// <inheritdoc />
     public async Task<byte[]> GetPreviewAsync(
@@ -97,26 +110,28 @@ public class VoiceService : IVoiceService
         await using var inputStream = File.OpenRead(path);
         await using var reader = new WaveFileReader(inputStream);
         await using var output = new MemoryStream();
-        await using var writer = new WaveFileWriter(output, reader.WaveFormat);
-
-        var maxBytes = previewSeconds * reader.WaveFormat.AverageBytesPerSecond;
-        var bytesToCopy = Math.Min((int)reader.Length, maxBytes);
-        var alignedBytesToCopy = bytesToCopy - (bytesToCopy % reader.WaveFormat.BlockAlign);
-        var remaining = alignedBytesToCopy;
-        var buffer = new byte[16 * 1024];
-
-        while (remaining > 0)
+        await using (var writer = new WaveFileWriter(output, reader.WaveFormat))
         {
-            var readSize = Math.Min(buffer.Length, remaining);
-            var read = await reader.ReadAsync(buffer.AsMemory(0, readSize), cancellationToken);
 
-            if (read == 0)
+            var maxBytes = previewSeconds * reader.WaveFormat.AverageBytesPerSecond;
+            var bytesToCopy = Math.Min((int)reader.Length, maxBytes);
+            var alignedBytesToCopy = bytesToCopy - (bytesToCopy % reader.WaveFormat.BlockAlign);
+            var remaining = alignedBytesToCopy;
+            var buffer = new byte[16 * 1024];
+
+            while (remaining > 0)
             {
-                break;
-            }
+                var readSize = Math.Min(buffer.Length, remaining);
+                var read = await reader.ReadAsync(buffer.AsMemory(0, readSize), cancellationToken);
 
-            await writer.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
-            remaining -= read;
+                if (read == 0)
+                {
+                    break;
+                }
+
+                await writer.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                remaining -= read;
+            }
         }
 
         return output.ToArray();

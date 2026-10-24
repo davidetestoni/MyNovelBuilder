@@ -199,7 +199,8 @@ describe('VoicesComponent workflows', () => {
 
     expect(dialogService.open).toHaveBeenCalledOnceWith(VoiceDialogComponent, {
       header: 'Create Voice',
-      width: '35rem',
+      width: '60rem',
+      style: { maxWidth: '95vw' },
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
       modal: true,
@@ -229,7 +230,8 @@ describe('VoicesComponent workflows', () => {
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
     expect(dialogService.open).toHaveBeenCalledOnceWith(VoiceDialogComponent, {
       header: 'Edit Voice',
-      width: '35rem',
+      width: '60rem',
+      style: { maxWidth: '95vw' },
       contentStyle: { overflow: 'auto' },
       baseZIndex: 10000,
       modal: true,

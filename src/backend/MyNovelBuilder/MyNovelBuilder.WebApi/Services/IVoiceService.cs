@@ -31,6 +31,12 @@ public interface IVoiceService
     /// Delete a voice by its ID.
     /// </summary>
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Open the complete voice sample for playback, including seeking.
+    /// The caller owns the returned stream.
+    /// </summary>
+    Task<Stream> GetSampleStreamAsync(Guid id, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get a preview of a voice sample WAV file with a maximum duration.

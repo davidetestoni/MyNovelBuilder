@@ -21,6 +21,9 @@ public interface ITtsService
     /// </summary>
     bool SupportsTextEmphasis(string? modelId) => false;
 
+    /// <summary>Exact emphasis messages, used both for generation and cache fingerprints.</summary>
+    IReadOnlyList<PromptMessage> GetEmphasisMessages(string text) => [];
+
     /// <summary>
     /// Indicates whether this TTS service supports voice design.
     /// </summary>

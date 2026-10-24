@@ -23,7 +23,15 @@
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "assets": ["src/favicon.ico", "src/assets"],
+            "assets": [
+              "src/favicon.ico",
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "public/whistle",
+                "output": "whistle"
+              }
+            ],
             "styles": [
               "node_modules/quill/dist/quill.snow.css",
               "src/styles.scss",

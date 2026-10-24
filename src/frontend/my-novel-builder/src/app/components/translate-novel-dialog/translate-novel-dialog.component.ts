@@ -6,7 +6,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { ToastrModule, ToastrService } from 'ngx-toastr';
 import { ButtonModule } from 'primeng/button';
 import {
@@ -110,6 +110,7 @@ export class TranslateNovelDialogComponent implements OnDestroy {
   translatedProse: Prose | null = null;
   progressItems: TranslationProgressItem[] = [];
   private generationRequestId = 0;
+  private readonly generationCancelled = new Subject<void>();
   private translatedLanguage: WritingLanguage | null = null;
   private previewDialogRef: DynamicDialogRef | null = null;
 
@@ -185,7 +186,7 @@ export class TranslateNovelDialogComponent implements OnDestroy {
         }
 
         const completion = await firstValueFrom(
-          this.generateTextService.generateTextCompletion(request),
+          this.generateTextService.generateTextCompletion(request).pipe(takeUntil(this.generationCancelled)),
         );
         if (requestId !== this.generationRequestId) {
           return;
@@ -373,9 +374,16 @@ export class TranslateNovelDialogComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.generationRequestId++;
-    this.isGenerating = false;
+    this.cancelGeneration();
     this.previewDialogRef?.close();
+  }
+
+  cancelGeneration(): void {
+    this.generationRequestId++;
+    this.generationCancelled.next();
+    this.isGenerating = false;
+    this.translatedProse = null;
+    this.translatedLanguage = null;
   }
 
   get hasTranslationPromptOptions(): boolean {

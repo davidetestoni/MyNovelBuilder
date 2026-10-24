@@ -37,7 +37,7 @@ public class VibeVoiceTtsService : ITtsService
         CancellationToken cancellationToken = default)
     {
         // The websocket accepts query parameters for text and voice
-        var uriBuilder = new UriBuilder(await CreateStreamUriAsync(cancellationToken));
+        var uriBuilder = new UriBuilder(await CreateStreamUriAsync(cancellationToken, request.ExecutionInputs));
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
         query["voice"] = request.VoiceId;
@@ -115,7 +115,7 @@ public class VibeVoiceTtsService : ITtsService
         TtsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var uriBuilder = new UriBuilder(await CreateStreamUriAsync(cancellationToken));
+        var uriBuilder = new UriBuilder(await CreateStreamUriAsync(cancellationToken, request.ExecutionInputs));
         var query = System.Web.HttpUtility.ParseQueryString(string.Empty);
         query["text"] = request.Message;
         query["voice"] = request.VoiceId;
@@ -221,9 +221,9 @@ public class VibeVoiceTtsService : ITtsService
         return ProviderBaseUrlHelper.CreateRequestUri(baseUri, relativePath);
     }
 
-    private async Task<Uri> CreateStreamUriAsync(CancellationToken cancellationToken)
+    private async Task<Uri> CreateStreamUriAsync(CancellationToken cancellationToken, TtsExecutionInputs? execution)
     {
-        var baseUri = await GetBaseUriAsync(cancellationToken);
+        var baseUri = execution?.BaseUri ?? await GetBaseUriAsync(cancellationToken);
         return ProviderBaseUrlHelper.CreateWebSocketUri(baseUri, "stream");
     }
 

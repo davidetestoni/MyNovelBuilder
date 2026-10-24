@@ -69,4 +69,9 @@ public enum TtsProvider
     /// Audio8 TTS provider.
     /// </summary>
     Audio8,
+
+    /// <summary>
+    /// KittenTTS provider.
+    /// </summary>
+    KittenTts,
 }

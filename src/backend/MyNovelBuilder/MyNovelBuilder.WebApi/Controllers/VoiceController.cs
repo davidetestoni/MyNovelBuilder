@@ -68,6 +68,16 @@ public class VoiceController : ControllerBase
     }
     
     /// <summary>
+    /// Play the complete voice sample WAV file with byte-range support.
+    /// </summary>
+    [HttpGet("{id:guid}/sample")]
+    public async Task<IActionResult> GetVoiceSample(Guid id, CancellationToken cancellationToken = default)
+    {
+        var sample = await _voiceService.GetSampleStreamAsync(id, cancellationToken);
+        return File(sample, "audio/wav", enableRangeProcessing: true);
+    }
+
+    /// <summary>
     /// Get a preview of the voice sample WAV file.
     /// </summary>
     [HttpGet("{id:guid}/preview")]

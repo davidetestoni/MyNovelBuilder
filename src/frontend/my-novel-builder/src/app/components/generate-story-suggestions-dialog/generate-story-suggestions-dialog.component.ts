@@ -12,7 +12,7 @@ import {
   DynamicDialogRef,
 } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { PromptDto } from '../../types/dtos/prompt/prompt.dto';
 import { PromptType } from '../../types/enums/prompt-type';
 import {
@@ -80,6 +80,7 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
   generationError: string | null = null;
   rawOutput: string | null = null;
   private generationRequestId = 0;
+  private readonly generationCancelled = new Subject<void>();
 
   formGroup = new FormGroup({
     promptId: new FormControl('', [Validators.required]),
@@ -118,7 +119,7 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
     let completion: GenerateTextCompletion;
     try {
       completion = await firstValueFrom(
-        this.generateTextService.generateTextCompletion(request),
+        this.generateTextService.generateTextCompletion(request).pipe(takeUntil(this.generationCancelled)),
       );
     } catch (error) {
       if (requestId !== this.generationRequestId) {
@@ -184,7 +185,12 @@ export class GenerateStorySuggestionsDialogComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelGeneration();
+  }
+
+  cancelGeneration(): void {
     this.generationRequestId++;
+    this.generationCancelled.next();
     this.isGenerating = false;
   }
 

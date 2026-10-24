@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { Observable } from 'rxjs';
 import { VoiceDto } from '../types/dtos/voice/voice.dto';
 import { VoiceGender } from '../types/enums/voice-gender';
@@ -8,8 +8,9 @@ import { mockedVoices } from './mocks/mock-voice.data';
 import { VoiceService } from './voice.service';
 
 @Injectable()
-export class MockVoiceService extends VoiceService {
+export class MockVoiceService extends VoiceService implements OnDestroy {
   private voices: VoiceDto[] = [...mockedVoices];
+  private sampleUrls = new Map<string, string>();
 
   getVoices(): Observable<VoiceDto[]> {
     return mockObservable(this.voices);
@@ -78,6 +79,19 @@ export class MockVoiceService extends VoiceService {
         },
       }),
     );
+  }
+
+  getVoiceSampleUrl(voiceId: string): string {
+    let url = this.sampleUrls.get(voiceId);
+    if (!url) {
+      url = URL.createObjectURL(new Blob([this.createSilentWav(10)], { type: 'audio/wav' }));
+      this.sampleUrls.set(voiceId, url);
+    }
+    return url;
+  }
+
+  ngOnDestroy(): void {
+    this.sampleUrls.forEach(url => URL.revokeObjectURL(url));
   }
 
   private createSilentWav(durationSeconds: number): ArrayBuffer {

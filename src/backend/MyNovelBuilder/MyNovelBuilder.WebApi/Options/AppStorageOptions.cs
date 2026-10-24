@@ -18,6 +18,10 @@ public class AppStorageOptions
     [Required]
     public string DataFolder { get; set; } = string.Empty;
 
+    /// <summary>Days to keep unused generated audio and old ZIPs. Zero disables age expiry; abandoned temporary files are still cleaned.</summary>
+    [Range(0, 36500)]
+    public int GeneratedAudioRetentionDays { get; set; } = 90;
+
     /// <summary>
     /// Path to the application SQLite database.
     /// </summary>

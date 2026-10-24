@@ -1,10 +1,10 @@
 import { HttpHeaders, HttpResponse } from '@angular/common/http';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmationService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import {
   TranslateNovelDialogComponent,
   type TranslateNovelDialogResult,
@@ -214,13 +214,14 @@ describe('NovelSettingsComponent workflows', () => {
     ]);
   });
 
-  it('persists only the editable novel settings on blur', () => {
+  it('persists only the editable novel settings on blur', fakeAsync(() => {
     const loadedNovel = novel();
     loadedNovel.title = 'Updated title';
     loadedNovel.rpgMode = true;
     component.novel = loadedNovel;
 
     component.onBlur();
+    flushMicrotasks();
 
     expect(novelService.updateNovel).toHaveBeenCalledOnceWith({
       id: 'novel-id',
@@ -234,12 +235,13 @@ describe('NovelSettingsComponent workflows', () => {
       mainCharacterId: null,
       compendiumIds: ['selected-compendium'],
     });
-  });
+  }));
 
-  it('adds and removes compendia while persisting each change', () => {
+  it('adds and removes compendia while persisting each change', fakeAsync(() => {
     component.novel = novel();
 
     component.toggleCompendium('new-compendium');
+    flushMicrotasks();
 
     expect(component.novel.compendiumIds).toEqual([
       'selected-compendium',
@@ -248,10 +250,11 @@ describe('NovelSettingsComponent workflows', () => {
     expect(novelService.updateNovel).toHaveBeenCalledTimes(1);
 
     component.toggleCompendium('selected-compendium');
+    flushMicrotasks();
 
     expect(component.novel.compendiumIds).toEqual(['new-compendium']);
     expect(novelService.updateNovel).toHaveBeenCalledTimes(2);
-  });
+  }));
 
   it('returns alphabetized characters from selected compendia only', () => {
     component.novel = novel();
@@ -471,6 +474,27 @@ describe('NovelSettingsComponent workflows', () => {
 
     expect(novelService.deleteNovel).toHaveBeenCalledOnceWith('novel-id');
     expect(router.navigate).toHaveBeenCalledOnceWith(['/novels']);
+  });
+
+  it('waits for settings to save before opening the audiobook dialog', async () => {
+    component.ngOnInit();
+    const saved = new Subject<NovelDto>();
+    novelService.updateNovel.and.returnValue(saved);
+    const opening = component.openAudiobookDialog();
+    await Promise.resolve(); await Promise.resolve();
+    expect(dialogService.open).not.toHaveBeenCalled();
+    saved.next(novel());
+    await opening;
+    expect(dialogService.open).toHaveBeenCalled();
+    expect(dialogService.open.calls.mostRecent().args[1]?.data).toEqual(jasmine.objectContaining({ novelId: 'novel-id' }));
+  });
+
+  it('does not open an audiobook export if saving settings fails', async () => {
+    component.ngOnInit();
+    novelService.updateNovel.and.returnValue(throwError(() => new Error('Save failed')));
+    await component.openAudiobookDialog();
+    expect(dialogService.open).not.toHaveBeenCalled();
+    expect(component.openingAudiobook).toBeFalse();
   });
 
   it('guards novel-specific actions until the novel has loaded', async () => {

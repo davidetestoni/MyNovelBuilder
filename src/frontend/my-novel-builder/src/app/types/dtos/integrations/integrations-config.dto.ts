@@ -17,6 +17,7 @@ export interface IntegrationsConfigDto {
   qwen3BaseUrl: string;
   omniVoiceBaseUrl: string;
   audio8BaseUrl: string;
+  kittenTtsBaseUrl: string;
   textGenerationProvider: TextGenerationProvider;
   textGenerationModelId: string;
   ttsProvider: TtsProvider;
@@ -43,6 +44,7 @@ export interface UpdateIntegrationsConfigDto {
   qwen3BaseUrl?: string | null;
   omniVoiceBaseUrl?: string | null;
   audio8BaseUrl?: string | null;
+  kittenTtsBaseUrl?: string | null;
   textGenerationProvider?: TextGenerationProvider | null;
   textGenerationModelId?: string | null;
   ttsProvider?: TtsProvider | null;

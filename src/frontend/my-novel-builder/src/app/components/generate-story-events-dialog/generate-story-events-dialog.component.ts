@@ -27,7 +27,7 @@ import {
   GenerateTextRequestDto,
   NovelTextGenerationType,
 } from '../../types/dtos/generate/generate-text-request.dto';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject, takeUntil } from 'rxjs';
 import { PromptSelectComponent } from '../prompt-select/prompt-select.component';
 import { ModelSelectComponent } from '../model-select/model-select.component';
 import { GenerateTextPreviewDialogService } from '../generate-text-preview/generate-text-preview-dialog.service';
@@ -90,6 +90,7 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
   isGenerating = false;
   generationError: string | null = null;
   private generationRequestId = 0;
+  private readonly generationCancelled = new Subject<void>();
 
   formGroup = new FormGroup({
     chapterIndex: new FormControl<number | null>(null, [Validators.required]),
@@ -136,7 +137,7 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
         ?.label ?? `Chapter ${chapterIndex + 1}`;
     try {
       const completion: GenerateTextCompletion = await firstValueFrom(
-        this.generateTextService.generateTextCompletion(request),
+        this.generateTextService.generateTextCompletion(request).pipe(takeUntil(this.generationCancelled)),
       );
       if (requestId !== this.generationRequestId) {
         return;
@@ -273,7 +274,12 @@ export class GenerateStoryEventsDialogComponent implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.cancelGeneration();
+  }
+
+  cancelGeneration(): void {
     this.generationRequestId++;
+    this.generationCancelled.next();
     this.isGenerating = false;
   }
 

@@ -1,3 +1,5 @@
+import { VoiceSelectorComponent } from '../../components/voice-selector/voice-selector.component';
+import { getVoicePreviewText } from '../../utils/tts-preview.utils';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import {
   FormControl,
@@ -36,6 +38,7 @@ import {
   selector: 'app-integrations',
   standalone: true,
   imports: [
+    VoiceSelectorComponent,
     ReactiveFormsModule,
     InputTextModule,
     ButtonModule,
@@ -78,6 +81,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     qwen3BaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     omniVoiceBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     audio8BaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    kittenTtsBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
     ttsEnableTextEmphasis: new FormControl<boolean>(false),
@@ -109,7 +113,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     label: provider
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, (str) => str.toUpperCase())
-      .replace('Gpt', 'GPT'),
+      .replace('Gpt', 'GPT')
+      .replace('Tts', 'TTS'),
     value: provider,
   }));
 
@@ -164,7 +169,16 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         if (provider) {
           this.loadTtsModels(provider);
         }
+        this.loadConfiguredBalances();
       },
+    );
+
+    this.integrationsForm.controls.imageGenerationProvider.valueChanges.subscribe(
+      () => this.loadConfiguredBalances(),
+    );
+
+    this.integrationsForm.controls.videoGenerationProvider.valueChanges.subscribe(
+      () => this.loadConfiguredBalances(),
     );
 
     this.integrationsForm.controls.ttsModelId.valueChanges.subscribe((modelId) => {
@@ -190,6 +204,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           qwen3BaseUrl: config.qwen3BaseUrl,
           omniVoiceBaseUrl: config.omniVoiceBaseUrl,
           audio8BaseUrl: config.audio8BaseUrl,
+          kittenTtsBaseUrl: config.kittenTtsBaseUrl,
           ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
           ttsEnableImmersive: config.ttsEnableImmersive,
           ttsImmersivePauseMs: config.ttsImmersivePauseMs,
@@ -302,6 +317,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         return this.integrationsForm.controls.omniVoiceBaseUrl;
       case TtsProvider.Audio8:
         return this.integrationsForm.controls.audio8BaseUrl;
+      case TtsProvider.KittenTts:
+        return this.integrationsForm.controls.kittenTtsBaseUrl;
       default:
         return null;
     }
@@ -323,6 +340,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         return 'OmniVoice';
       case TtsProvider.Audio8:
         return 'Audio8';
+      case TtsProvider.KittenTts:
+        return 'Kitten TTS';
       default:
         return null;
     }
@@ -338,6 +357,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       case TtsProvider.Qwen3:
       case TtsProvider.OmniVoice:
       case TtsProvider.Audio8:
+      case TtsProvider.KittenTts:
         return 'http://localhost:8000/';
       default:
         return 'http://localhost:8000/';
@@ -444,13 +464,28 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   }
 
   loadConfiguredBalances(): void {
-    if (this.hasDeApiApiKey) {
+    const ttsProvider = this.integrationsForm.controls.ttsProvider.value;
+    const imageGenerationProvider =
+      this.integrationsForm.controls.imageGenerationProvider.value;
+    const videoGenerationProvider =
+      this.integrationsForm.controls.videoGenerationProvider.value;
+
+    if (
+      this.hasDeApiApiKey &&
+      (ttsProvider === TtsProvider.DeApi ||
+        imageGenerationProvider === ImageGenerationProvider.DeApi ||
+        videoGenerationProvider === VideoGenerationProvider.DeApi)
+    ) {
       this.loadDeApiBalance();
     } else {
       this.deApiBalanceUsd = null;
     }
 
-    if (this.hasNanoGptApiKey) {
+    if (
+      this.hasNanoGptApiKey &&
+      (ttsProvider === TtsProvider.NanoGpt ||
+        imageGenerationProvider === ImageGenerationProvider.NanoGpt)
+    ) {
       this.loadNanoGptBalance();
     } else {
       this.nanoGptBalanceUsd = null;
@@ -561,7 +596,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   ): void {
     const voices = this.getSelectedModel(selectedModelId)?.voices ?? [];
     const currentVoiceId = preferredVoiceId ?? this.integrationsForm.value.ttsVoiceId;
-    const nextVoiceId = voices.some((voice) => voice.voiceId === currentVoiceId)
+    const nextVoiceId = (this.integrationsForm.value.ttsProvider === TtsProvider.OpenRouter && !!preferredVoiceId) ||
+      voices.some((voice) => voice.voiceId === currentVoiceId)
       ? currentVoiceId
       : (voices[0]?.voiceId ?? '');
 
@@ -617,21 +653,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   }
 
   private getPreviewSampleText(language: WritingLanguage): string {
-    switch (language) {
-      case WritingLanguage.Italian:
-        return "Ciao, questo è un breve esempio per ascoltare l'anteprima della voce selezionata.";
-      case WritingLanguage.French:
-        return 'Bonjour, ceci est un court exemple pour prévisualiser la voix sélectionnée.';
-      case WritingLanguage.Spanish:
-        return 'Hola, este es un ejemplo rápido para previsualizar la voz seleccionada.';
-      case WritingLanguage.German:
-        return 'Hallo, dies ist ein kurzes Beispiel, um die ausgewählte Stimme vorzuhören.';
-      case WritingLanguage.Russian:
-        return 'Привет, это короткий пример для предварительного прослушивания выбранного голоса.';
-      case WritingLanguage.English:
-      default:
-        return 'Hello, this is a quick sample to preview the selected voice.';
-    }
+    return getVoicePreviewText(language);
   }
 
   onSubmit(): void {
@@ -661,6 +683,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       qwen3BaseUrl: this.integrationsForm.value.qwen3BaseUrl ?? undefined,
       omniVoiceBaseUrl: this.integrationsForm.value.omniVoiceBaseUrl ?? undefined,
       audio8BaseUrl: this.integrationsForm.value.audio8BaseUrl ?? undefined,
+      kittenTtsBaseUrl: this.integrationsForm.value.kittenTtsBaseUrl ?? undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,

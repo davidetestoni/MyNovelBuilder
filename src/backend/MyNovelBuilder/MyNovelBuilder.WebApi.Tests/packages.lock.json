@@ -121,6 +121,11 @@
         "resolved": "3.27.1",
         "contentHash": "7IVz9TzhYCZ8qY0rPhXUnyJSXYdshUqmmxmTI763XmDDSJJFnyfKH43FFcMJu/CZgBcE98xlFztrKwhzcRkiPg=="
       },
+      "HtmlAgilityPack": {
+        "type": "Transitive",
+        "resolved": "1.13.0",
+        "contentHash": "nWZtz9WjSbq6V7TjjYBCmW+D8+BrWs15O6MlPxh55SH4zmenkWHXwu6gYeIarHL3KoHgDyZzTdOM50EdTnR8Xw=="
+      },
       "KokoroSharp": {
         "type": "Transitive",
         "resolved": "0.6.4",
@@ -972,6 +977,7 @@
           "ElevenLabs-DotNet": "[3.7.1, )",
           "FluentValidation.AspNetCore": "[11.3.1, )",
           "Google.GenAI": "[0.14.0, )",
+          "HtmlAgilityPack": "[1.13.0, )",
           "KokoroSharp.CPU": "[0.6.4, )",
           "Mapster.DependencyInjection": "[1.0.1, )",
           "Markdig": "[0.37.0, )",

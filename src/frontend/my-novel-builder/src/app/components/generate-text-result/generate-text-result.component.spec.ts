@@ -190,6 +190,21 @@ describe('GenerateTextResultComponent workflow', () => {
     expect(generateTextService.generateText).toHaveBeenCalledTimes(2);
   });
 
+  it('cancels the active stream and keeps partial text available', () => {
+    component.generateText();
+    generation.next({ content: 'Partial response', isComplete: false });
+
+    component.cancelGeneration();
+    generation.next({ content: 'Late response', isComplete: true });
+
+    expect(generation.observed).toBeFalse();
+    expect(component.isGenerating).toBeFalse();
+    expect(component.generatedText).toBe('Partial response');
+    expect(component.wasCancelled).toBeTrue();
+    component.accept();
+    expect(dialogRef.close).toHaveBeenCalledOnceWith('Partial response');
+  });
+
   it('does not accept while generation is still running', () => {
     component.generateText();
 
