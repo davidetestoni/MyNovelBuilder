@@ -75,6 +75,7 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
             await using var completed = File.OpenRead(path);
             AudiobookStorage.EnsureSpace(directory, completed.Length);
             await artifacts.SaveAsync(key, completed, cancellationToken);
+            await artifacts.SaveManifestAsync(new(1, key, null, keys.ToArray()), cancellationToken);
             return key;
         }
         finally { File.Delete(path); }

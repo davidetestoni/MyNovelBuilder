@@ -20,6 +20,13 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
         try
         {
             await RecoverAsync(cancellationToken);
+            await store.Mutations.WaitAsync(cancellationToken);
+            try
+            {
+                using var scope = scopes.CreateScope();
+                await scope.ServiceProvider.GetRequiredService<GeneratedAudioCleanup>().RunAsync(cancellationToken);
+            }
+            finally { store.Mutations.Release(); }
             await base.StartAsync(cancellationToken);
         }
         catch { workerLease.Dispose(); workerLease = null; throw; }

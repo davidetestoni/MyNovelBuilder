@@ -61,12 +61,14 @@ public sealed class FileSystemAudioArtifactRepository(IOptions<AppStorageOptions
         {
             var metadata = JsonSerializer.Deserialize<Integrity>(await File.ReadAllTextAsync(PathFor(key, ".json"), cancellationToken));
             if (metadata is null || metadata.Version != 1 || metadata.Key != key || !IsKey(metadata.Sha256)) return null;
-            stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 65536, true);
+            stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 65536, true);
             if (stream.Length != metadata.Length || !ValidateWav(stream)) return null;
             stream.Position = 0;
             var checksum = Convert.ToHexStringLower(await SHA256.HashDataAsync(stream, cancellationToken));
             if (checksum != metadata.Sha256) return null;
             stream.Position = 0;
+            GeneratedAudioCleanup.RecordAccess(path);
+            GeneratedAudioCleanup.RecordAccess(PathFor(key, ".json"));
             var result = stream;
             stream = null;
             return result;
@@ -125,6 +127,7 @@ public sealed class FileSystemAudioArtifactRepository(IOptions<AppStorageOptions
                 await using var audio = await OpenReadAsync(key, cancellationToken);
                 if (audio is null) return null;
             }
+            GeneratedAudioCleanup.RecordAccess(path);
             return manifest;
         }
         catch (IOException) { return null; }

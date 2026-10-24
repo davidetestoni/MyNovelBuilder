@@ -52,7 +52,10 @@ builder.Services.AddSingleton<IAppDataDirectoryInitializer>(dataDirectoryInitial
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IDatabaseBackupService, DatabaseBackupService>();
 builder.Services.AddOptions<AppStorageOptions>()
-    .Configure(options => options.DataFolder = dataFolder);
+    .Bind(builder.Configuration)
+    .Configure(options => options.DataFolder = dataFolder)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddOptions<SeedOptions>()
     .BindConfiguration(SeedOptions.SectionName);
 
@@ -166,6 +169,7 @@ builder.Services.AddScoped<AudiobookSettingsResolver>();
 builder.Services.AddScoped<AudiobookSnapshotBuilder>();
 builder.Services.AddSingleton<AudiobookSnapshotStore>();
 builder.Services.AddSingleton<FileSystemAudiobookJobRepository>();
+builder.Services.AddSingleton<GeneratedAudioCleanup>();
 builder.Services.AddScoped<AudiobookJobService>();
 builder.Services.AddHostedService<AudiobookWorker>();
 builder.Services.AddSingleton<ProviderSynthesisGate>();

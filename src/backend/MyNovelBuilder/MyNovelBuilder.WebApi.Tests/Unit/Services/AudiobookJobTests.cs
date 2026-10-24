@@ -416,6 +416,7 @@ public sealed class AudiobookJobTests
             services.AddScoped<AudiobookSnapshotBuilder>();
             services.AddSingleton<AudiobookSnapshotStore>();
             services.AddSingleton<FileSystemAudiobookJobRepository>();
+            services.AddSingleton<GeneratedAudioCleanup>();
             services.AddScoped<AudiobookJobService>();
             Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
             Worker = new(Services.GetRequiredService<IServiceScopeFactory>(), Services.GetRequiredService<AudiobookSnapshotStore>(),

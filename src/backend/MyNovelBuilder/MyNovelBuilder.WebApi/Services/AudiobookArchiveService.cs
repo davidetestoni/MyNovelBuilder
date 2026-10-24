@@ -78,6 +78,7 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
                 await using var existing = OpenFile(path);
                 await ValidateAsync(existing, manifest, ct);
                 existing.Position = 0;
+                GeneratedAudioCleanup.RecordAccess(path);
                 return new(archiveKey, Convert.ToHexStringLower(await SHA256.HashDataAsync(existing, ct)), existing.Length,
                     SafeName(snapshot.Title, "novel") + "-audiobook.zip");
             }
@@ -142,6 +143,7 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
             stream = OpenFile(PathFor(novelId, reference!.Key));
             if (Convert.ToHexStringLower(await SHA256.HashDataAsync(stream, ct)) != reference.Sha256) return null;
             stream.Position = 0;
+            GeneratedAudioCleanup.RecordAccess(PathFor(novelId, reference.Key));
             var result = stream;
             stream = null;
             return result;
@@ -170,7 +172,7 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
     }
 
     private string PathFor(Guid novelId, string key) => Path.Combine(storage.Value.DataFolder, "audiobooks", novelId.ToString(), "archives", key + ".zip");
-    private static FileStream OpenFile(string path) => new(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete, 65536, true);
+    private static FileStream OpenFile(string path) => new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 65536, true);
     private static bool IsHash(string? value) => value is { Length: 64 } && value.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f');
 
     private static async Task ValidateAsync(Stream stream, AudiobookArchiveManifest manifest, CancellationToken ct)
