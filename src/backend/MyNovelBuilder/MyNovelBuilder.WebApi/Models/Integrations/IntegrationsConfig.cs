@@ -52,6 +52,9 @@ public class IntegrationsConfig
     /// </summary>
     public const string DefaultKittenTtsBaseUrl = "http://localhost:8000/";
 
+    /// <summary>The default base URL for the Ming provider.</summary>
+    public const string DefaultMingBaseUrl = "http://localhost:8000/";
+
     /// <summary>
     /// The OpenRouter API key.
     /// </summary>
@@ -121,6 +124,9 @@ public class IntegrationsConfig
     /// The base URL for the KittenTTS provider.
     /// </summary>
     public string KittenTtsBaseUrl { get; set; } = DefaultKittenTtsBaseUrl;
+
+    /// <summary>The base URL for the Ming provider.</summary>
+    public string MingBaseUrl { get; set; } = DefaultMingBaseUrl;
     
     /// <summary>
     /// The Text Generation provider to use to generate text.

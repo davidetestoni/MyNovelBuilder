@@ -76,6 +76,9 @@ public class IntegrationsConfigDto
     /// The configured base URL for the KittenTTS provider.
     /// </summary>
     public required string KittenTtsBaseUrl { get; init; }
+
+    /// <summary>The configured base URL for the Ming provider.</summary>
+    public required string MingBaseUrl { get; init; }
     
     /// <summary>
     /// The configured Text Generation provider.

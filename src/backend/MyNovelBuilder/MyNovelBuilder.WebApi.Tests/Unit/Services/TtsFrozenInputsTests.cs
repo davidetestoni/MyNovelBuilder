@@ -33,6 +33,8 @@ public sealed class TtsFrozenInputsTests
     [InlineData(TtsProvider.Audio8, true)]
     [InlineData(TtsProvider.KittenTts, false)]
     [InlineData(TtsProvider.KittenTts, true)]
+    [InlineData(TtsProvider.Ming, false)]
+    [InlineData(TtsProvider.Ming, true)]
     public async Task EveryProviderChunkUsesValidatedEndpointAndRecording(TtsProvider provider, bool streamed)
     {
         using var fixture = new Fixture(provider);
@@ -56,8 +58,9 @@ public sealed class TtsFrozenInputsTests
         {
             Assert.Equal("original.test", call.Host);
             Assert.Equal(Fixture.OriginalAudio, call.Audio);
-            if (provider is TtsProvider.Audio8 or TtsProvider.KittenTts) Assert.Equal("original transcript", call.Transcript);
+            if (provider is TtsProvider.Audio8 or TtsProvider.KittenTts or TtsProvider.Ming) Assert.Equal("original transcript", call.Transcript);
             else Assert.Equal(provider == TtsProvider.Qwen3 ? "italian" : "it", call.Language);
+            if (provider == TtsProvider.Ming) Assert.Equal("fr", call.Language);
         }
     }
 
@@ -105,6 +108,21 @@ public sealed class TtsFrozenInputsTests
         Assert.Null(await fixture.Voices.GetRevisionAsync(provider, "default"));
     }
 
+    [Fact]
+    public async Task MingVoiceRevision_IncludesOptionalTranscriptAndSkipsBuiltInSpeakers()
+    {
+        using var fixture = new Fixture(TtsProvider.Ming);
+        Assert.Null(await fixture.Voices.GetRevisionAsync(TtsProvider.Ming, "US_Emma"));
+        var original = await fixture.Voices.GetRevisionAsync(TtsProvider.Ming, fixture.VoiceId);
+        fixture.UpdateTranscript(null);
+        var withoutTranscript = await fixture.Voices.GetRevisionAsync(TtsProvider.Ming, fixture.VoiceId);
+        Assert.NotEqual(original, withoutTranscript);
+        fixture.UpdateTranscript("  ");
+        Assert.Equal(withoutTranscript, await fixture.Voices.GetRevisionAsync(TtsProvider.Ming, fixture.VoiceId));
+        fixture.UpdateTranscript("original transcript");
+        Assert.Equal(original, await fixture.Voices.GetRevisionAsync(TtsProvider.Ming, fixture.VoiceId));
+    }
+
     private sealed class Fixture : IDisposable
     {
         public static readonly byte[] OriginalAudio = [1, 2, 3, 4];
@@ -121,7 +139,7 @@ public sealed class TtsFrozenInputsTests
         {
             OmniVoiceBaseUrl = "http://original.test/", Qwen3BaseUrl = "http://original.test/",
             ChatterboxBaseUrl = "http://original.test/", Audio8BaseUrl = "http://original.test/",
-            KittenTtsBaseUrl = "http://original.test/"
+            KittenTtsBaseUrl = "http://original.test/", MingBaseUrl = "http://original.test/"
         };
         public RecordingHandler Handler { get; } = new();
         public TtsVoiceRevisionService Voices { get; }
@@ -137,7 +155,8 @@ public sealed class TtsFrozenInputsTests
             _database.Voices.Add(new Voice
             {
                 Id = Guid.Parse(VoiceId), Name = "Voice", VoiceGender = VoiceGender.Both,
-                Language = WritingLanguage.Italian, Transcript = "original transcript"
+                Language = provider == TtsProvider.Ming ? WritingLanguage.French : WritingLanguage.Italian,
+                Transcript = "original transcript"
             });
             _database.SaveChanges();
             var storage = Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder });
@@ -153,13 +172,17 @@ public sealed class TtsFrozenInputsTests
                 TtsProvider.Chatterbox => new ChatterboxTtsService(_httpClient, storage, scopes, integrations),
                 TtsProvider.Audio8 => new Audio8TtsService(_httpClient, storage, scopes, integrations),
                 TtsProvider.KittenTts => new KittenTtsService(_httpClient, storage, scopes, integrations),
+                TtsProvider.Ming => new MingTtsService(_httpClient, storage, scopes, integrations),
                 _ => throw new ArgumentOutOfRangeException(nameof(provider))
             };
         }
 
+        public void UpdateTranscript(string? transcript) => _database.Voices.ExecuteUpdate(
+            update => update.SetProperty(voice => voice.Transcript, transcript));
+
         public void ChangeLiveInputs()
         {
-            Config.OmniVoiceBaseUrl = Config.Qwen3BaseUrl = Config.ChatterboxBaseUrl = Config.Audio8BaseUrl = Config.KittenTtsBaseUrl = "http://changed.test/";
+            Config.OmniVoiceBaseUrl = Config.Qwen3BaseUrl = Config.ChatterboxBaseUrl = Config.Audio8BaseUrl = Config.KittenTtsBaseUrl = Config.MingBaseUrl = "http://changed.test/";
             File.WriteAllBytes(VoicePath, [99]);
             _database.Voices.ExecuteUpdate(update => update
                 .SetProperty(voice => voice.Language, WritingLanguage.English)

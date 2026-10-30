@@ -21,6 +21,15 @@ public class GenerateAudioControllerIntegrationTests(
     }
 
     [Fact]
+    public async Task GetProviders_IncludesMingVoiceDesign()
+    {
+        using var client = Factory.CreateClient();
+        var result = await GetJsonAsync<List<TtsProviderDto>>(client, "api/generate/audio/tts/providers");
+        Assert.True(result.IsOk);
+        Assert.True(Assert.Single(result.Value, provider => provider.Provider == TtsProvider.Ming).SupportsVoiceDesign);
+    }
+
+    [Fact]
     public async Task DebugImmersiveTts_ReturnsResolvedChunks()
     {
         await using var customFactory = Factory.WithWebHostBuilder(builder =>

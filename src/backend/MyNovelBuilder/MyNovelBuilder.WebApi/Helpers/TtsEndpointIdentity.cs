@@ -38,6 +38,7 @@ public static class TtsEndpointIdentity
             TtsProvider.OmniVoice => config.OmniVoiceBaseUrl,
             TtsProvider.Audio8 => config.Audio8BaseUrl,
             TtsProvider.KittenTts => config.KittenTtsBaseUrl,
+            TtsProvider.Ming => config.MingBaseUrl,
             _ => null
         };
     }

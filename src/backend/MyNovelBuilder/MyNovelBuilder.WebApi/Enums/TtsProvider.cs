@@ -74,4 +74,9 @@ public enum TtsProvider
     /// KittenTTS provider.
     /// </summary>
     KittenTts,
+
+    /// <summary>
+    /// Ming 3.0 TTS provider.
+    /// </summary>
+    Ming,
 }

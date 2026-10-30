@@ -539,6 +539,13 @@ export class CompendiumRecordComponent {
       .replace('Gpt', 'GPT');
   }
 
+  protected getAssignedVoiceModelLabel(assignment: CharacterVoiceAssignmentDto): string {
+    const modelName = assignment.provider === this.selectedVoiceProvider
+      ? this.availableVoiceModels.find((model) => model.modelId === assignment.modelId)?.name
+      : undefined;
+    return modelName || assignment.modelId;
+  }
+
   private async previewVoice(
     provider: TtsProvider,
     modelId: string,

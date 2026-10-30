@@ -20,7 +20,7 @@ public sealed class RecordedTtsVoice(byte[] audio, WritingLanguage language, str
     private readonly byte[] _audio = (byte[])audio.Clone();
     /// <summary>The recorded voice language.</summary>
     public WritingLanguage Language { get; } = language;
-    /// <summary>The reference transcript used by Audio8.</summary>
+    /// <summary>The reference transcript, when consumed by the provider.</summary>
     public string? Transcript { get; } = transcript;
     /// <summary>The fingerprint of this recording and its consumed metadata.</summary>
     public string Revision { get; } = revision;

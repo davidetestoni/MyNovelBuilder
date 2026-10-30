@@ -76,6 +76,9 @@ public class UpdateIntegrationsConfigDto
     /// The base URL for the KittenTTS provider.
     /// </summary>
     public string? KittenTtsBaseUrl { get; init; }
+
+    /// <summary>The base URL for the Ming provider.</summary>
+    public string? MingBaseUrl { get; init; }
     
     /// <summary>
     /// The Text Generation provider to use to generate text.
@@ -154,6 +157,8 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
             .WithMessage("Audio8 base URL must be a valid absolute HTTP or HTTPS URL.");
         RuleFor(x => x.KittenTtsBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
             .WithMessage("KittenTTS base URL must be a valid absolute HTTP or HTTPS URL.");
+        RuleFor(x => x.MingBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
+            .WithMessage("Ming base URL must be a valid absolute HTTP or HTTPS URL.");
         RuleFor(x => x.TextGenerationModelId).MaximumLength(200);
         RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.TtsVoiceId).MaximumLength(200);

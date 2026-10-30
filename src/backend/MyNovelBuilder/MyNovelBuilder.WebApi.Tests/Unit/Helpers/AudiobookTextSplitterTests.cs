@@ -34,6 +34,7 @@ public sealed class AudiobookTextSplitterTests
         Assert.All(chunks, chunk => Assert.Equal(chunk.Count(c => c == '['), chunk.Count(c => c == ']')));
         Assert.Equal(500, AudiobookTextSplitter.Limit(TtsProvider.OmniVoice));
         Assert.Equal(500, AudiobookTextSplitter.Limit(TtsProvider.KittenTts));
+        Assert.Equal(500, AudiobookTextSplitter.Limit(TtsProvider.Ming));
         Assert.Equal(1000, AudiobookTextSplitter.Limit(TtsProvider.UnrealSpeech));
     }
 }

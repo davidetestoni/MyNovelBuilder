@@ -82,6 +82,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     omniVoiceBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     audio8BaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     kittenTtsBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
+    mingBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
     ttsEnableTextEmphasis: new FormControl<boolean>(false),
@@ -205,6 +206,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           omniVoiceBaseUrl: config.omniVoiceBaseUrl,
           audio8BaseUrl: config.audio8BaseUrl,
           kittenTtsBaseUrl: config.kittenTtsBaseUrl,
+          mingBaseUrl: config.mingBaseUrl,
           ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
           ttsEnableImmersive: config.ttsEnableImmersive,
           ttsImmersivePauseMs: config.ttsImmersivePauseMs,
@@ -319,6 +321,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         return this.integrationsForm.controls.audio8BaseUrl;
       case TtsProvider.KittenTts:
         return this.integrationsForm.controls.kittenTtsBaseUrl;
+      case TtsProvider.Ming:
+        return this.integrationsForm.controls.mingBaseUrl;
       default:
         return null;
     }
@@ -342,6 +346,8 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         return 'Audio8';
       case TtsProvider.KittenTts:
         return 'Kitten TTS';
+      case TtsProvider.Ming:
+        return 'Ming';
       default:
         return null;
     }
@@ -358,6 +364,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       case TtsProvider.OmniVoice:
       case TtsProvider.Audio8:
       case TtsProvider.KittenTts:
+      case TtsProvider.Ming:
         return 'http://localhost:8000/';
       default:
         return 'http://localhost:8000/';
@@ -684,6 +691,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       omniVoiceBaseUrl: this.integrationsForm.value.omniVoiceBaseUrl ?? undefined,
       audio8BaseUrl: this.integrationsForm.value.audio8BaseUrl ?? undefined,
       kittenTtsBaseUrl: this.integrationsForm.value.kittenTtsBaseUrl ?? undefined,
+      mingBaseUrl: this.integrationsForm.value.mingBaseUrl ?? undefined,
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,

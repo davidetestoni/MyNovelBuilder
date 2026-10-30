@@ -45,6 +45,7 @@ describe('IntegrationsComponent workflows', () => {
     omniVoiceBaseUrl: 'http://omni/',
     audio8BaseUrl: 'http://audio8/',
     kittenTtsBaseUrl: 'http://kitten/',
+    mingBaseUrl: 'http://ming/',
     textGenerationProvider: TextGenerationProvider.OpenRouter,
     textGenerationModelId: 'structured-model',
     ttsProvider: TtsProvider.Qwen3,
@@ -216,6 +217,8 @@ describe('IntegrationsComponent workflows', () => {
 
   it('loads configuration, models, API-key status, and selected provider balances', () => {
     component.ngOnInit();
+
+    expect(component.integrationsForm.controls.mingBaseUrl.value).toBe('http://ming/');
 
     expect(component.hasOpenRouterApiKey).toBeTrue();
     expect(component.hasGoogleGenAiApiKey).toBeFalse();
@@ -481,6 +484,7 @@ describe('IntegrationsComponent workflows', () => {
       [TtsProvider.OmniVoice, 'omniVoiceBaseUrl', 'OmniVoice', 'http://localhost:8000/'],
       [TtsProvider.Audio8, 'audio8BaseUrl', 'Audio8', 'http://localhost:8000/'],
       [TtsProvider.KittenTts, 'kittenTtsBaseUrl', 'Kitten TTS', 'http://localhost:8000/'],
+      [TtsProvider.Ming, 'mingBaseUrl', 'Ming', 'http://localhost:8000/'],
     ] as const;
 
     for (const [provider, controlName, label, placeholder] of cases) {
@@ -777,6 +781,7 @@ describe('IntegrationsComponent workflows', () => {
       deApiApiKey: '',
       customTtsBaseUrl: '',
       kittenTtsBaseUrl: 'http://kitten.test/',
+      mingBaseUrl: 'http://ming.test/',
       ttsProvider: TtsProvider.Custom,
       ttsModelId: 'basic',
       ttsVoiceId: 'english-voice',
@@ -796,6 +801,7 @@ describe('IntegrationsComponent workflows', () => {
         googleGenAiApiKey: 'google-key',
         customTtsBaseUrl: '',
         kittenTtsBaseUrl: 'http://kitten.test/',
+        mingBaseUrl: 'http://ming.test/',
         ttsProvider: TtsProvider.Custom,
         ttsModelId: 'basic',
         ttsVoiceId: 'english-voice',

@@ -19,6 +19,7 @@ export const mockedIntegrationsConfig: IntegrationsConfigDto = {
   omniVoiceBaseUrl: 'http://localhost:8000/',
   audio8BaseUrl: 'http://localhost:8000/',
   kittenTtsBaseUrl: 'http://localhost:8000/',
+  mingBaseUrl: 'http://localhost:8000/',
   textGenerationProvider: TextGenerationProvider.OpenRouter,
   textGenerationModelId: 'openrouter/auto',
   ttsProvider: TtsProvider.Custom,

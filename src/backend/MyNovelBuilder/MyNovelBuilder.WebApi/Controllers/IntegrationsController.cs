@@ -51,6 +51,7 @@ public class IntegrationsController : ControllerBase
             OmniVoiceBaseUrl = config.OmniVoiceBaseUrl,
             Audio8BaseUrl = config.Audio8BaseUrl,
             KittenTtsBaseUrl = config.KittenTtsBaseUrl,
+            MingBaseUrl = config.MingBaseUrl,
             TextGenerationProvider = config.TextGenerationProvider,
             TextGenerationModelId = config.TextGenerationModelId,
             TtsProvider = config.TtsProvider,
@@ -163,6 +164,12 @@ public class IntegrationsController : ControllerBase
                 dto.Audio8BaseUrl,
                 IntegrationsConfig.DefaultAudio8BaseUrl);
             invalidatedTags.Add(Enums.TtsProvider.Audio8.ToString());
+        }
+
+        if (dto.MingBaseUrl is not null)
+        {
+            config.MingBaseUrl = ResolveBaseUrl(dto.MingBaseUrl, IntegrationsConfig.DefaultMingBaseUrl);
+            invalidatedTags.Add(Enums.TtsProvider.Ming.ToString());
         }
 
         if (dto.KittenTtsBaseUrl is not null)

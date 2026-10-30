@@ -100,6 +100,7 @@ secured, or supported automatically by MyNovelBuilder:
 - [Qwen3-TTS](https://github.com/davidetestoni/Qwen3-TTS)
 - [Chatterbox](https://github.com/davidetestoni/chatterbox)
 - [KittenTTS](https://github.com/davidetestoni/KittenTTS)
+- [Ming 3.0 TTS](https://github.com/davidetestoni/Ming-3.0-tts)
 
 ## Local-only security boundary
 

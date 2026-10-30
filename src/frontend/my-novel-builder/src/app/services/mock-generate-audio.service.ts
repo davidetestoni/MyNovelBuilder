@@ -81,6 +81,10 @@ export class MockGenerateAudioService extends GenerateAudioService {
         supportsVoiceDesign: true,
       },
       {
+        provider: TtsProvider.Ming,
+        supportsVoiceDesign: true,
+      },
+      {
         provider: TtsProvider.OmniVoice,
         supportsVoiceDesign: true,
       },

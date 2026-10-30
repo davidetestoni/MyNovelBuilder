@@ -12,7 +12,7 @@ public static class AudiobookTextSplitter
     public static int Limit(TtsProvider provider) => provider switch
     {
         TtsProvider.Chatterbox or TtsProvider.Qwen3 or TtsProvider.OmniVoice or
-        TtsProvider.Audio8 or TtsProvider.KittenTts or TtsProvider.DeApi => 500,
+        TtsProvider.Audio8 or TtsProvider.KittenTts or TtsProvider.Ming or TtsProvider.DeApi => 500,
         _ => 1000
     };
 

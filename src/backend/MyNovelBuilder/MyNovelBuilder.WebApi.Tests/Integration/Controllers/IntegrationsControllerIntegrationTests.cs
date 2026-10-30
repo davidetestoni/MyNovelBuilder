@@ -31,6 +31,7 @@ public class IntegrationsControllerIntegrationTests(
             NanoGptApiKey = "nano-gpt-api-key",
             Audio8BaseUrl = "http://audio8.test/",
             KittenTtsBaseUrl = "http://kitten.test/",
+            MingBaseUrl = "http://ming.test/",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/gpt-test",
             TtsProvider = TtsProvider.PocketTts,
@@ -55,6 +56,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.True(dto.HasNanoGptApiKey);
         Assert.Equal(config.Audio8BaseUrl, dto.Audio8BaseUrl);
         Assert.Equal(config.KittenTtsBaseUrl, dto.KittenTtsBaseUrl);
+        Assert.Equal(config.MingBaseUrl, dto.MingBaseUrl);
         Assert.Equal(TextGenerationProvider.OpenRouter, dto.TextGenerationProvider);
         Assert.Equal(config.TextGenerationModelId, dto.TextGenerationModelId);
         Assert.Equal(TtsProvider.PocketTts, dto.TtsProvider);
@@ -107,6 +109,7 @@ public class IntegrationsControllerIntegrationTests(
             NanoGptApiKey = "new-nano-gpt-api-key",
             Audio8BaseUrl = "http://new-audio8.test/",
             KittenTtsBaseUrl = "http://new-kitten.test/",
+            MingBaseUrl = "http://new-ming.test/",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/new-model",
             TtsProvider = TtsProvider.Kokoro,
@@ -130,6 +133,10 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(updateDto.NanoGptApiKey, updatedConfig.NanoGptApiKey);
         Assert.Equal(updateDto.Audio8BaseUrl, updatedConfig.Audio8BaseUrl);
         Assert.Equal(updateDto.KittenTtsBaseUrl, updatedConfig.KittenTtsBaseUrl);
+        Assert.Equal(updateDto.MingBaseUrl, updatedConfig.MingBaseUrl);
+
+        var dto = (await GetJsonAsync<IntegrationsConfigDto>(client, "api/integrations/config")).Value;
+        Assert.Equal(updateDto.MingBaseUrl, dto.MingBaseUrl);
         Assert.Equal(updateDto.TextGenerationProvider, updatedConfig.TextGenerationProvider);
         Assert.Equal(updateDto.TextGenerationModelId, updatedConfig.TextGenerationModelId);
         Assert.Equal(updateDto.TtsProvider, updatedConfig.TtsProvider);
@@ -139,6 +146,30 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(updateDto.TtsEnableTextEmphasis, updatedConfig.TtsEnableTextEmphasis);
         Assert.Equal(updateDto.TtsEnableImmersive, updatedConfig.TtsEnableImmersive);
         Assert.Equal(480, updatedConfig.TtsImmersivePauseMs);
+    }
+
+    [Theory]
+    [InlineData("ftp://ming.test/")]
+    [InlineData("relative/path")]
+    [InlineData("http://")]
+    public async Task UpdateMingBaseUrl_RejectsInvalidHttpUrls(string url)
+    {
+        using var client = Factory.CreateClient();
+        var result = await PutJsonAsync<object>(client, "api/integrations/config",
+            new UpdateIntegrationsConfigDto { MingBaseUrl = url });
+        Assert.NotNull(result.Error);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.Error.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateMingBaseUrl_BlankRestoresDefault()
+    {
+        using var client = Factory.CreateClient();
+        await IntegrationsService.UpdateConfigAsync(new IntegrationsConfig { MingBaseUrl = "http://custom-ming.test/" });
+        var result = await PutJsonAsync<object>(client, "api/integrations/config",
+            new UpdateIntegrationsConfigDto { MingBaseUrl = " " });
+        Assert.Null(result.Error);
+        Assert.Equal(IntegrationsConfig.DefaultMingBaseUrl, (await IntegrationsService.GetConfigAsync()).MingBaseUrl);
     }
 
     public Task DisposeAsync()
