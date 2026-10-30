@@ -44,8 +44,25 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
         _preparations = preparations;
     }
 
+    private async Task<double> ResolveGainAsync(TextToSpeechGenerationRequest request, CancellationToken ct) =>
+        request.ResolvedOptions?.GainDb ?? request.GainDb ?? (await _integrationsService.GetConfigAsync(ct)).TtsGainDb;
+
+    public async Task<byte[]> GenerateWavBytesAsync(TextToSpeechGenerationRequest request, CancellationToken cancellationToken = default)
+    {
+        var gain = await ResolveGainAsync(request, cancellationToken);
+        var bytes = await GenerateRawWavBytesAsync(request, cancellationToken);
+        return await WavGainStream.ApplyAsync(bytes, gain, cancellationToken);
+    }
+
+    public async Task<Stream> GenerateWavStreamAsync(TextToSpeechGenerationRequest request, CancellationToken cancellationToken = default)
+    {
+        var gain = await ResolveGainAsync(request, cancellationToken);
+        var source = await GenerateRawWavStreamAsync(request, cancellationToken);
+        return gain == 0 ? source : new WavGainStream(source, gain);
+    }
+
     /// <inheritdoc />
-    public async Task<byte[]> GenerateWavBytesAsync(
+    private async Task<byte[]> GenerateRawWavBytesAsync(
         TextToSpeechGenerationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -91,7 +108,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
     }
 
     /// <inheritdoc />
-    public async Task<Stream> GenerateWavStreamAsync(
+    private async Task<Stream> GenerateRawWavStreamAsync(
         TextToSpeechGenerationRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -172,7 +189,19 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
             keys.Add(await EnsureArtifactAsync(await ResolveRequestAsync(chunkRequest, cancellationToken), cancellationToken));
         }
         if (keys.Count == 0) throw new InvalidOperationException("There is no spoken text to synthesize.");
-        return keys.Count == 1 ? keys[0] : await _assembler.AssembleAsync(keys, 0, cancellationToken);
+        var rawKey = keys.Count == 1 ? keys[0] : await _assembler.AssembleAsync(keys, 0, cancellationToken);
+        if (options.GainDb == 0) return rawKey;
+        var gainedKey = AudioCacheKey.Create("gain-v1", new { rawKey, options.GainDb });
+        using var lease = await _artifacts.AcquireAsync(gainedKey, cancellationToken);
+        await using var existing = await _artifacts.OpenReadAsync(gainedKey, cancellationToken);
+        if (existing is null)
+        {
+            await using var raw = await _artifacts.OpenReadAsync(rawKey, cancellationToken)
+                ?? throw new IOException("Source audio disappeared.");
+            await using var gained = new WavGainStream(raw, options.GainDb);
+            await _artifacts.SaveAsync(gainedKey, gained, cancellationToken);
+        }
+        return gainedKey;
     }
 
     private async Task<byte[]> GenerateCachedAsync(ResolvedTtsRequest resolved, CancellationToken cancellationToken)

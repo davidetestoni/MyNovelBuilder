@@ -8,6 +8,8 @@ using MyNovelBuilder.WebApi.Enums;
 /// </summary>
 public class TtsRequestDto
 {
+    public double? GainDb { get; set; }
+
     /// <summary>
     /// The message to generate audio for.
     /// </summary>
@@ -36,6 +38,7 @@ internal class TtsRequestDtoValidator : AbstractValidator<TtsRequestDto>
 {
     public TtsRequestDtoValidator()
     {
+        RuleFor(x => x.GainDb).InclusiveBetween(-60, 60);
         RuleFor(x => x.Message).NotEmpty().MaximumLength(50_000);
         RuleFor(x => x.ModelId).MaximumLength(200);
         RuleFor(x => x.VoiceId).MaximumLength(200);

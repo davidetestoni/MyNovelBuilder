@@ -27,12 +27,12 @@ public sealed record ResolvedAudiobookSettings(
     string TextGenerationModelId,
     Guid? ImmersivePromptId,
     string? TtsEndpointIdentity,
-    string? NarratorVoiceRevision)
+    string? NarratorVoiceRevision, double GainDb = 0)
 {
     /// <summary>Builds generic TTS options for the narrator or a frozen character voice.</summary>
     public ResolvedTtsGenerationOptions ToTtsOptions(
         string? voiceId = null,
-        string? voiceRevision = null) => new(
+        string? voiceRevision = null, double? gainDb = null) => new(
         Provider,
         ModelId,
         voiceId ?? VoiceId,
@@ -40,5 +40,5 @@ public sealed record ResolvedAudiobookSettings(
         TextGenerationModelId,
         EnableTextEmphasis,
         TtsEndpointIdentity,
-        voiceRevision ?? (voiceId is null || voiceId == VoiceId ? NarratorVoiceRevision : null));
+        voiceRevision ?? (voiceId is null || voiceId == VoiceId ? NarratorVoiceRevision : null), gainDb ?? GainDb);
 }

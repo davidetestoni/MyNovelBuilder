@@ -154,6 +154,26 @@
                       <span class="character-voice-detail-label">Voice</span>
                       <span>{{ assignment.voiceName || assignment.voiceId }}</span>
                     </div>
+                    <div class="character-voice-detail">
+                      <label
+                        class="character-voice-detail-label"
+                        [for]="'voice-gain-' + record.id + '-' + assignment.provider + '-' + assignment.modelId"
+                      >Volume adjustment</label>
+                      <p-inputgroup class="gain-input-group">
+                        <input
+                          [id]="'voice-gain-' + record.id + '-' + assignment.provider + '-' + assignment.modelId"
+                          pInputText
+                          type="number"
+                          min="-60"
+                          max="60"
+                          step="0.5"
+                          [ngModel]="assignment.gainDb ?? 0"
+                          (ngModelChange)="assignment.gainDb = $event ?? 0"
+                          (blur)="onBlur()"
+                        />
+                        <p-inputgroup-addon>dB</p-inputgroup-addon>
+                      </p-inputgroup>
+                    </div>
                   </div>
                   <div class="compendium-record-character-voice-item-actions">
                     <p-button

@@ -7,6 +7,8 @@ namespace MyNovelBuilder.WebApi.Models.Tts;
 /// </summary>
 public class CharacterVoiceAssignment
 {
+    public double GainDb { get; set; }
+
     /// <summary>
     /// The TTS provider this assignment applies to.
     /// </summary>

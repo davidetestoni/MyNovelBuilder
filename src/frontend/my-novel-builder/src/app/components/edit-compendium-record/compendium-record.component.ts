@@ -11,6 +11,8 @@ import {
   GenerateMediaComponentData,
 } from '../generate-media/generate-media.component';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputGroup } from 'primeng/inputgroup';
+import { InputGroupAddon } from 'primeng/inputgroupaddon';
 import { TextareaModule } from 'primeng/textarea';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -54,6 +56,8 @@ import {
     FormsModule,
     TitleCasePipe,
     InputTextModule,
+    InputGroup,
+    InputGroupAddon,
     TextareaModule,
     ButtonModule,
     CheckboxModule,
@@ -239,6 +243,7 @@ export class CompendiumRecordComponent {
       modelId: this.selectedVoiceModelId,
       voiceId: this.selectedVoiceId,
       voiceName: selectedVoiceName,
+      gainDb: this.record.characterVoiceAssignments.find(a => a.provider === this.selectedVoiceProvider && a.modelId === this.selectedVoiceModelId)?.gainDb ?? 0,
       updatedAt: new Date().toISOString(),
     };
 
@@ -296,6 +301,7 @@ export class CompendiumRecordComponent {
       assignment.modelId,
       assignment.voiceId,
       language,
+      assignment.gainDb ?? 0,
     );
   }
 
@@ -551,6 +557,7 @@ export class CompendiumRecordComponent {
     modelId: string,
     voiceId: string,
     language: WritingLanguage,
+    gainDb: number = 0,
   ): Promise<void> {
     if (this.isPreviewingVoice) {
       return;
@@ -570,6 +577,7 @@ export class CompendiumRecordComponent {
         message: this.getPreviewSampleText(language),
         modelId,
         voiceId,
+        gainDb,
         provider,
       });
 

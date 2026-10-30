@@ -38,7 +38,7 @@ public sealed class AudiobookSectionRenderer(
                 () => settings.EnableImmersive
                     ? planner.PrepareAudiobookAsync(request, cancellationToken)
                     : Task.FromResult(ImmutableArray.Create(new AudiobookSpeechChunk(request.Section.SpeechText,
-                        settings.VoiceId, settings.NarratorVoiceRevision, false))));
+                        settings.VoiceId, settings.NarratorVoiceRevision, false, settings.GainDb))));
             if (chunks.IsEmpty) throw new InvalidDataException("The section plan contains no speech.");
             if (reportStage is not null) await reportStage("synthesis");
             var completed = new List<string>();
@@ -49,7 +49,7 @@ public sealed class AudiobookSectionRenderer(
                 {
                     Message = chunk.Text,
                     IsAnnotated = settings.EnableImmersive,
-                    ResolvedOptions = settings.ToTtsOptions(chunk.VoiceId, chunk.VoiceRevision),
+                    ResolvedOptions = settings.ToTtsOptions(chunk.VoiceId, chunk.VoiceRevision, chunk.GainDb),
                     PreparationScope = request.Section
                 }, cancellationToken));
             }
@@ -76,7 +76,7 @@ public sealed class AudiobookSectionRenderer(
         var source = settings.EnableImmersive
             ? AudioCacheKey.ImmersiveSource(request.Section, settings, preparationKey!, emphasis)
             : AudioCacheKey.Source(request.Section.SpeechText, settings.ToTtsOptions(), narratorPreparation);
-        var sourceKey = AudioCacheKey.Create("section-source-v1", new { source, splitter = AudiobookTextSplitter.Version });
+        var sourceKey = AudioCacheKey.Create("section-source-v1", new { source, settings.GainDb, splitter = AudiobookTextSplitter.Version });
         return (sourceKey, preparationKey, narratorPreparation);
     }
     /// <summary>Checks whether the section has a complete, valid audio artifact in the shared cache.</summary>

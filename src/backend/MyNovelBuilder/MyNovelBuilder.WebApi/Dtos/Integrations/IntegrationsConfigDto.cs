@@ -7,6 +7,8 @@ namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 /// </summary>
 public class IntegrationsConfigDto
 {
+    public double TtsGainDb { get; init; }
+
     /// <summary>
     /// Indicates whether an OpenRouter API key is configured.
     /// </summary>

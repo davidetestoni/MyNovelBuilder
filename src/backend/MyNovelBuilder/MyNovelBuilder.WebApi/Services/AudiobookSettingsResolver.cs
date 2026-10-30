@@ -79,7 +79,7 @@ public sealed class AudiobookSettingsResolver(
             textProvider, textModelId, request.ImmersivePromptId,
             TtsEndpointIdentity.FromConfig(defaults, provider),
             await voiceRevisions.GetRevisionAsync(
-                provider, voiceId, cancellationToken));
+                provider, voiceId, cancellationToken), defaults.TtsGainDb);
     }
 
     private static ApiException BadRequest(string message) => new(ErrorCodes.BadRequest, message);

@@ -32,4 +32,4 @@ public sealed record AudiobookVoiceAssignment(
     Guid CharacterRecordId,
     string VoiceId,
     DateTime UpdatedAt,
-    string? VoiceRevision);
+    string? VoiceRevision, double GainDb = 0);

@@ -78,10 +78,10 @@ public static class AudioCacheKey
         string preparationKey, string? emphasisPromptIdentity) => Create("immersive-source-v1", new
     {
         preparationKey, settings.Provider, settings.ModelId, settings.VoiceId,
-        settings.TtsEndpointIdentity, settings.NarratorVoiceRevision,
+        settings.TtsEndpointIdentity, settings.NarratorVoiceRevision, settings.GainDb,
         emphasisPromptIdentity,
         assignments = section.VoiceAssignments.OrderBy(a => a.CharacterRecordId)
-            .Select(a => new { a.CharacterRecordId, a.VoiceId, a.VoiceRevision })
+            .Select(a => new { a.CharacterRecordId, a.VoiceId, a.VoiceRevision, a.GainDb })
     });
 
     /// <summary>Identifies ordered audio, inter-chunk pause and output profile.</summary>

@@ -7,6 +7,8 @@ namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 /// </summary>
 public class UpdateIntegrationsConfigDto
 {
+    public double? TtsGainDb { get; init; }
+
     /// <summary>
     /// The OpenRouter API key.
     /// </summary>
@@ -135,6 +137,7 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
 {
     public UpdateIntegrationsConfigDtoValidator()
     {
+        RuleFor(x => x.TtsGainDb).InclusiveBetween(-60, 60);
         RuleFor(x => x.OpenRouterApiKey).MaximumLength(500);
         RuleFor(x => x.GoogleGenAiApiKey).MaximumLength(500);
         RuleFor(x => x.ElevenLabsApiKey).MaximumLength(500);

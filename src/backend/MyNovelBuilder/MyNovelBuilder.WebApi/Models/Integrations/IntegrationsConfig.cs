@@ -7,6 +7,8 @@ namespace MyNovelBuilder.WebApi.Models.Integrations;
 /// </summary>
 public class IntegrationsConfig
 {
+    public double TtsGainDb { get; set; }
+
     /// <summary>
     /// The default text generation model ID to use for new or incomplete integrations config.
     /// </summary>

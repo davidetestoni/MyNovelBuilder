@@ -8,6 +8,8 @@ namespace MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
 /// </summary>
 public class CharacterVoiceAssignmentDto
 {
+    public double GainDb { get; set; }
+
     /// <summary>
     /// The TTS provider this assignment applies to.
     /// </summary>
@@ -38,6 +40,7 @@ internal class CharacterVoiceAssignmentDtoValidator : AbstractValidator<Characte
 {
     public CharacterVoiceAssignmentDtoValidator()
     {
+        RuleFor(x => x.GainDb).InclusiveBetween(-60, 60);
         RuleFor(x => x.Provider).IsInEnum();
         RuleFor(x => x.ModelId).NotEmpty().MaximumLength(200);
         RuleFor(x => x.VoiceId).NotEmpty().MaximumLength(200);

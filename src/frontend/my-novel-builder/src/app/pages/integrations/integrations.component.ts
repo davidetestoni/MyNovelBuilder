@@ -85,6 +85,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     mingBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
+    ttsGainDb: new FormControl<number>(0),
     ttsEnableTextEmphasis: new FormControl<boolean>(false),
     ttsEnableImmersive: new FormControl<boolean>(false),
     ttsImmersivePauseMs: new FormControl<number>(150),
@@ -207,6 +208,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           audio8BaseUrl: config.audio8BaseUrl,
           kittenTtsBaseUrl: config.kittenTtsBaseUrl,
           mingBaseUrl: config.mingBaseUrl,
+          ttsGainDb: config.ttsGainDb ?? 0,
           ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
           ttsEnableImmersive: config.ttsEnableImmersive,
           ttsImmersivePauseMs: config.ttsImmersivePauseMs,
@@ -556,6 +558,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           message: previewMessage,
           modelId: this.integrationsForm.value.ttsModelId ?? undefined,
           voiceId: this.integrationsForm.value.ttsVoiceId ?? undefined,
+          gainDb: this.integrationsForm.value.ttsGainDb ?? 0,
           provider: this.integrationsForm.value.ttsProvider ?? undefined,
         });
 
@@ -695,6 +698,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
+      ttsGainDb: this.integrationsForm.value.ttsGainDb ?? 0,
       ttsEnableTextEmphasis:
         this.supportsSelectedTtsModelTextEmphasis
           ? (this.integrationsForm.value.ttsEnableTextEmphasis ?? false)

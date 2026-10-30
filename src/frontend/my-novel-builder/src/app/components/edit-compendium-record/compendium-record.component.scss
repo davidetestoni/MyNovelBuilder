@@ -178,6 +178,25 @@
         min-width: 140px;
       }
 
+    .gain-input-group {
+      display: inline-flex;
+      width: auto;
+      max-width: fit-content;
+      vertical-align: top;
+    }
+
+    .gain-input-group input {
+      width: 8rem;
+      flex: 0 0 auto;
+    }
+
+    .gain-input-group p-inputgroup-addon,
+    .gain-input-group .p-inputgroup-addon {
+      background: $grey2 !important;
+      background-color: $grey2 !important;
+      color: $grey13 !important;
+    }
+
       .character-voice-detail-label {
         color: $grey13;
         font-size: 0.75rem;

@@ -112,7 +112,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
         return prepared.Chunks.Select(chunk => new AudiobookSpeechChunk(chunk.Text, chunk.VoiceId,
             request.Settings.ToTtsOptions(chunk.VoiceId, request.Section.VoiceAssignments
                 .FirstOrDefault(a => a.CharacterRecordId == chunk.CharacterRecordId && a.VoiceId == chunk.VoiceId)?.VoiceRevision).VoiceRevision,
-            chunk.IsNarratorFallback)).ToImmutableArray();
+            chunk.IsNarratorFallback, chunk.GainDb)).ToImmutableArray();
     }
 
     private static ImmersiveTtsRequestDto ToPlaybackRequest(AudiobookRenderRequest request) => new()
@@ -163,12 +163,13 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                             Provider = prepared.Provider,
                             TtsModelId = prepared.TtsModelId,
                             VoiceId = chunk.VoiceId,
+                            GainDb = chunk.GainDb,
                             TextGenerationModelId = prepared.TextGenerationModelId,
                             ResolvedOptions = audiobook?.Settings?.ToTtsOptions(
                                 chunk.VoiceId,
                                 audiobook?.Section?.VoiceAssignments
                                     .FirstOrDefault(assignment => assignment.CharacterRecordId == chunk.CharacterRecordId
-                                        && assignment.VoiceId == chunk.VoiceId)?.VoiceRevision)
+                                        && assignment.VoiceId == chunk.VoiceId)?.VoiceRevision, chunk.GainDb)
                         },
                         ct);
                     _logger.LogDebug(
@@ -393,7 +394,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                     recordsById,
                     provider,
                     ttsModelId,
-                    audiobook?.Section?.VoiceAssignments);
+                    audiobook?.Section?.VoiceAssignments, settings?.GainDb ?? config.TtsGainDb);
 
                 if (resolvedChunk is not null)
                 {
@@ -438,7 +439,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
         IReadOnlyDictionary<Guid, CompendiumRecord> recordsById,
         TtsProvider provider,
         string ttsModelId,
-        IReadOnlyList<AudiobookVoiceAssignment>? frozenAssignments)
+        IReadOnlyList<AudiobookVoiceAssignment>? frozenAssignments, double narratorGainDb)
     {
         if (string.IsNullOrWhiteSpace(textChunk))
         {
@@ -466,6 +467,9 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                         : structuredChunk.SpeakerName,
                     CharacterRecordId = recordId,
                     VoiceId = voiceId,
+                    GainDb = frozenAssignments is null
+                        ? record!.CharacterVoiceAssignments.First(a => a.Provider == provider && a.ModelId == ttsModelId).GainDb
+                        : frozenAssignments.First(a => a.CharacterRecordId == recordId).GainDb,
                     IsNarratorFallback = false,
                     Text = textChunk
                 };
@@ -480,6 +484,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                 : structuredChunk.SpeakerName,
             CharacterRecordId = null,
             VoiceId = narratorVoiceId,
+            GainDb = narratorGainDb,
             IsNarratorFallback = isCharacter,
             Text = textChunk
         };
@@ -511,6 +516,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
 
     private sealed class ResolvedImmersiveTtsChunk
     {
+        public double GainDb { get; init; }
         public required string SpeakerKind { get; init; }
 
         public required string SpeakerName { get; init; }

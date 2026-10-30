@@ -159,7 +159,7 @@ public sealed class AudiobookSnapshotBuilder(
                                 && assignment.ModelId == settings.ModelId)
                             .Select(assignment => new AudiobookVoiceAssignment(
                                 record.Id, assignment.VoiceId, assignment.UpdatedAt,
-                                null)))
+                                null, assignment.GainDb)))
                         .OrderBy(assignment => assignment.CharacterRecordId)
                         .ThenBy(assignment => assignment.VoiceId, StringComparer.Ordinal)
                         .ToImmutableArray();

@@ -26,6 +26,7 @@ export interface IntegrationsConfigDto {
   videoGenerationProvider: VideoGenerationProvider;
   ttsModelId: string;
   ttsVoiceId: string;
+  ttsGainDb?: number | null;
   ttsEnableTextEmphasis: boolean;
   ttsEnableImmersive: boolean;
   ttsImmersivePauseMs: number;
@@ -54,6 +55,7 @@ export interface UpdateIntegrationsConfigDto {
   videoGenerationProvider?: VideoGenerationProvider | null;
   ttsModelId?: string | null;
   ttsVoiceId?: string | null;
+  ttsGainDb?: number | null;
   ttsEnableTextEmphasis?: boolean | null;
   ttsEnableImmersive?: boolean | null;
   ttsImmersivePauseMs?: number | null;

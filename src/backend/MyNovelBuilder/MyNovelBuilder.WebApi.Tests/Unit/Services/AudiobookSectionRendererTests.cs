@@ -51,6 +51,30 @@ public sealed class AudiobookSectionRendererTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task GainChangesRebuildOutputWithoutResynthesizing(bool immersive)
+    {
+        using var fixture = new Fixture();
+        var id = Guid.NewGuid();
+        var request = Fixture.Request("Opening. Reply.", immersive, false);
+        request = request with { Section = request.Section with { VoiceAssignments = [new(id, "character", DateTime.UtcNow, null)] } };
+        fixture.Text.PlannerResponse = Plan(("Opening. ", null), ("Reply.", id));
+        var original = await fixture.Renderer.RenderAsync(request);
+        var calls = fixture.Tts.Requests.Count;
+        var changed = request with
+        {
+            Settings = request.Settings with { GainDb = -6 },
+            Section = request.Section with { VoiceAssignments = [new(id, "character", DateTime.UtcNow, null, -3)] }
+        };
+        var adjusted = await fixture.Renderer.RenderAsync(changed);
+        Assert.NotEqual(original.ArtifactKey, adjusted.ArtifactKey);
+        Assert.Equal(calls, fixture.Tts.Requests.Count);
+        Assert.Equal(await fixture.PcmLength(original.ArtifactKey), await fixture.PcmLength(adjusted.ArtifactKey));
+        Assert.True((await fixture.Renderer.RenderAsync(changed)).Reused);
+    }
+
     [Fact]
     public async Task AssignedCharacterVoiceAndPauseChangesReuseAllSpeech()
     {

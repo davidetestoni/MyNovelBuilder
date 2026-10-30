@@ -85,6 +85,7 @@ public class GenerateAudioController : ControllerBase
                 Message = dto.Message,
                 Provider = dto.Provider,
                 TtsModelId = dto.ModelId,
+                GainDb = dto.GainDb,
                 VoiceId = dto.VoiceId
             },
             cancellationToken);
@@ -108,6 +109,7 @@ public class GenerateAudioController : ControllerBase
                 Message = dto.Message,
                 Provider = dto.Provider,
                 TtsModelId = dto.ModelId,
+                GainDb = dto.GainDb,
                 VoiceId = dto.VoiceId
             },
             cancellationToken);
