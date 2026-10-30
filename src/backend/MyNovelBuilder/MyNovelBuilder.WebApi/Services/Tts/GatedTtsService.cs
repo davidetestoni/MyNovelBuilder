@@ -14,11 +14,7 @@ public sealed class GatedTtsService(ITtsService inner, TtsProvider provider, Pro
     /// <inheritdoc/>
     public bool SupportsTextEmphasis(string? modelId) => inner.SupportsTextEmphasis(modelId);
     /// <inheritdoc/>
-    public IReadOnlyList<PromptMessage> GetEmphasisMessages(string text) => inner.GetEmphasisMessages(text);
-    /// <inheritdoc/>
     public bool SupportsVoiceDesign() => inner.SupportsVoiceDesign();
-    /// <inheritdoc/>
-    public Task<string> EmphasizeTextAsync(TtsRequest request, Func<CancellationToken, ValueTask<ITextGenerationService>> textGenerationServiceFactory, CancellationToken cancellationToken = default) => inner.EmphasizeTextAsync(request, textGenerationServiceFactory, cancellationToken);
     /// <inheritdoc/>
     public Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default) => inner.GetModelsAsync(cancellationToken);
     /// <inheritdoc/>

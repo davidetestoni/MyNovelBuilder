@@ -161,13 +161,13 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
         var options = request.ResolvedOptions ?? throw new ArgumentException("Audiobook synthesis requires frozen settings.", nameof(request));
         var scope = request.PreparationScope ?? new AudiobookSectionSnapshot(0, request.Message, [], []);
         var keys = new List<string>();
-        foreach (var text in AudiobookTextSplitter.Split(request.Message, AudiobookTextSplitter.Limit(options.Provider)))
+        foreach (var text in new[] { request.Message })
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (string.IsNullOrWhiteSpace(text)) continue;
             var chunkRequest = new TextToSpeechGenerationRequest
             {
-                Message = text, ResolvedOptions = options, PreparationScope = scope
+                Message = text, ResolvedOptions = options, PreparationScope = scope, IsAnnotated = request.IsAnnotated
             };
             keys.Add(await EnsureArtifactAsync(await ResolveRequestAsync(chunkRequest, cancellationToken), cancellationToken));
         }
@@ -185,10 +185,10 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
     private async Task<string> EnsureArtifactAsync(ResolvedTtsRequest resolved, CancellationToken cancellationToken)
     {
         var options = resolved.Request.ResolvedOptions!;
-        var emphasized = resolved.EnableTextEmphasis && resolved.TtsService.SupportsTextEmphasis(options.ModelId);
+        var emphasized = !resolved.Request.IsAnnotated && resolved.EnableTextEmphasis && TtsAnnotationProfile.Resolve(options.Provider, options.ModelId) is not null;
         var preparationKey = emphasized
             ? AudioCacheKey.Emphasis(resolved.Request.Message, options,
-                AudioCacheKey.Create("emphasis-messages-v1", resolved.TtsService.GetEmphasisMessages(resolved.Request.Message)))
+                AudioCacheKey.Create("emphasis-messages-v1", TtsAnnotationProfile.Resolve(options.Provider, options.ModelId)!.Messages(resolved.Request.Message)))
             : null;
         var sourceKey = AudioCacheKey.Source(resolved.Request.Message, options, preparationKey);
         if (resolved.Request.PreparationScope is not null)
@@ -204,7 +204,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
         var keys = new List<string>();
         var speechParts = resolved.Request.PreparationScope is null
             ? new[] { ttsRequest }
-            : AudiobookTextSplitter.Split(ttsRequest, AudiobookTextSplitter.Limit(options.Provider), preserveTags: emphasized);
+            : AudiobookTextSplitter.Split(ttsRequest, AudiobookTextSplitter.Limit(options.Provider), preserveTags: emphasized || resolved.Request.IsAnnotated);
         foreach (var text in speechParts)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -334,6 +334,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
                 ModelId = effectiveModelId,
                 VoiceId = effectiveVoiceId,
                 TextGenerationModelId = effectiveTextGenerationModelId,
+                TextGenerationProvider = options?.TextGenerationProvider ?? config.TextGenerationProvider,
                 EnableTextEmphasis = enableTextEmphasis
             },
             EnableTextEmphasis = enableTextEmphasis,
@@ -357,19 +358,19 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
             TextGenerationModelId = resolved.EffectiveTextGenerationModelId
         };
 
-        if (!resolved.EnableTextEmphasis
-            || !resolved.TtsService.SupportsTextEmphasis(resolved.EffectiveTtsModelId))
+        if (resolved.Request.IsAnnotated || !resolved.EnableTextEmphasis
+            || TtsAnnotationProfile.Resolve(resolved.AudioParameters.Provider, resolved.EffectiveTtsModelId) is null)
         {
             return ttsRequest;
         }
 
-        var emphasizedText = await resolved.TtsService.EmphasizeTextAsync(
-            ttsRequest,
-            resolved.TextGenerationProvider is { } provider
-                ? ct => ValueTask.FromResult(_serviceProvider.GetRequiredKeyedService<TextGeneration.ITextGenerationService>(provider))
-                : _textGenerationServiceResolver.GetConfiguredServiceAsync,
-            cancellationToken);
-        ttsRequest.Message = emphasizedText.Trim();
+        var generator = resolved.TextGenerationProvider is { } provider
+            ? _serviceProvider.GetRequiredKeyedService<TextGeneration.ITextGenerationService>(provider)
+            : await _textGenerationServiceResolver.GetConfiguredServiceAsync(cancellationToken);
+        var emphasizedText = await TtsAnnotationService.AnnotateAsync(ttsRequest.Message,
+            TtsAnnotationProfile.Resolve(resolved.AudioParameters.Provider, resolved.EffectiveTtsModelId),
+            generator, resolved.EffectiveTextGenerationModelId!, cancellationToken);
+        ttsRequest.Message = emphasizedText;
 
         if (!string.Equals(ttsRequest.Message, resolved.Request.Message, StringComparison.Ordinal))
         {

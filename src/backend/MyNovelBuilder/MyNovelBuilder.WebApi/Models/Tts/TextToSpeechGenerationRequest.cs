@@ -7,6 +7,9 @@ namespace MyNovelBuilder.WebApi.Models.Tts;
 /// </summary>
 public class TextToSpeechGenerationRequest
 {
+    /// <summary>Internal preparation state; prevents annotating immersive chunks twice.</summary>
+    public bool IsAnnotated { get; set; }
+
     /// <summary>
     /// The text to synthesize.
     /// </summary>

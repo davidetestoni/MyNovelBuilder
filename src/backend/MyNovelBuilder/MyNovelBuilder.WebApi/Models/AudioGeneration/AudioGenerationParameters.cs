@@ -1,3 +1,4 @@
+using MyNovelBuilder.WebApi.Services;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -13,6 +14,8 @@ public class AudioGenerationParameters
     /// <summary>
     /// The text generation model used for auxiliary TTS preprocessing.
     /// </summary>
+    public TextGenerationProvider? TextGenerationProvider { get; set; }
+
     public string? TextGenerationModelId { get; set; }
 
     /// <summary>
@@ -47,10 +50,13 @@ public class AudioGenerationParameters
     {
         var payload = new
         {
+            AnnotationVersion = TtsAnnotationProfile.Version,
+            AnnotationProfile = TtsAnnotationProfile.Resolve(Provider, ModelId)?.Messages(string.Empty),
             Provider,
             ModelId,
             VoiceId,
             TextGenerationModelId,
+            TextGenerationProvider,
             EnableTextEmphasis,
             Text
         };

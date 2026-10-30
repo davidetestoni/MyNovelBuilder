@@ -53,7 +53,7 @@ public class PrepareImmersiveTtsPromptBuilder : NovelPromptBuilder<PrepareImmers
         Builder
             .Replace("{{chapterTitle}}", chapter.Title.StripHtml())
             .Replace("{{sectionSummary}}", section?.Summary ?? string.Empty)
-            .Replace("{{sectionText}}", sectionText)
+            .Replace("{{sectionText}}", "<tts-source>" + sectionText + "</tts-source>")
             .Replace("{{storySoFar}}", storySoFar)
             .Replace("{{wholeChapter}}", chapterContext)
             .Replace("{{records}}", PromptBuilderUtils.CreateCompendiumRecordsString(

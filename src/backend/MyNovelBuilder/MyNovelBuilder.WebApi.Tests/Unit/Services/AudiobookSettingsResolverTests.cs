@@ -116,7 +116,7 @@ public class AudiobookSettingsResolverTests
     {
         var resolver = CreateResolver(new IntegrationsConfig
         {
-            TtsProvider = TtsProvider.PocketTts, TtsModelId = "model-a", TtsVoiceId = "voice-a",
+            TtsProvider = TtsProvider.ElevenLabs, TtsModelId = "eleven_v3", TtsVoiceId = "voice-a",
             TextGenerationModelId = "openrouter/auto"
         });
         var error = await Assert.ThrowsAsync<MyNovelBuilder.WebApi.Exceptions.ApiException>(() => resolver.ResolveAsync(
@@ -160,7 +160,7 @@ public class AudiobookSettingsResolverTests
         var snapshot = AudiobookSnapshotBuilder.Capture(new Novel { Title = "Novel" }, prose, settings, prompt);
         var section = snapshot.Chapters[0].Sections[1];
         var message = Assert.Single(section.ImmersivePrompt).Message;
-        Assert.StartsWith(section.SpeechText, message);
+        Assert.StartsWith("<tts-source>" + section.SpeechText + "</tts-source>", message);
         Assert.Contains("Hello\nworld <3 & bye", message);
         Assert.Contains("Earlier\nspeech", message);
         Assert.DoesNotContain("secret", message);
@@ -174,6 +174,7 @@ public class AudiobookSettingsResolverTests
     {
         var services = new ServiceCollection();
         services.AddKeyedSingleton<ITtsService>(TtsProvider.PocketTts, new FakeTtsService());
+        services.AddKeyedSingleton<ITtsService>(TtsProvider.ElevenLabs, new FakeTtsService());
         services.AddKeyedSingleton<ITtsService>(TtsProvider.OpenRouter, new FakeTtsService());
         services.AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter,
             new FakeTextService());
@@ -196,7 +197,7 @@ public class AudiobookSettingsResolverTests
         public AudioFormat OutputAudioFormat => AudioFormat.Wav;
         public bool SupportsTextEmphasis(string? modelId) => true;
         public Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<IEnumerable<TtsModelDto>>([new TtsModelDto
+            Task.FromResult<IEnumerable<TtsModelDto>>([new TtsModelDto { ModelId = "eleven_v3", Name = "Eleven v3", Voices = [new TtsVoiceDto { VoiceId = "voice-a", Name = "Voice A", Language = WritingLanguage.English }] }, new TtsModelDto
             {
                 ModelId = "model-a",
                 Name = "Model A",

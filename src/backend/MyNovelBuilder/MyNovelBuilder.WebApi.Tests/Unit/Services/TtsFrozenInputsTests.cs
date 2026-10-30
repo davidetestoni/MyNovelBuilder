@@ -192,7 +192,7 @@ public sealed class TtsFrozenInputsTests
         public TextToSpeechGenerationRequest Request(string? revision, bool emphasis = false) => new()
         {
             Message = string.Join(" ", Enumerable.Repeat("This sentence makes several chunks.", 40)),
-            ResolvedOptions = new(_provider, "model", VoiceId, TextGenerationProvider.OpenRouter, "text-model",
+            ResolvedOptions = new(_provider, _provider == TtsProvider.OmniVoice ? "k2-fsa/OmniVoice" : "model", VoiceId, TextGenerationProvider.OpenRouter, "text-model",
                 emphasis, TtsEndpointIdentity.FromConfig(Config, _provider), revision)
         };
 
@@ -269,7 +269,7 @@ public sealed class TtsFrozenInputsTests
             Assert.Equal("text-model", modelId);
             Calls++;
             callback();
-            return Task.FromResult(string.Join(" ", Enumerable.Repeat("Emphasized speech.", 100)));
+            return Task.FromResult("[sigh]" + messages.Last().Message);
         }
         public IAsyncEnumerable<string> GenerateStreamedAsync(string model, IEnumerable<PromptMessage> messages, StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<string> DescribeImageAsync(string model, IEnumerable<PromptMessage> messages, byte[] imageBytes, string imageMimeType, CancellationToken cancellationToken = default) => throw new NotSupportedException();

@@ -55,6 +55,7 @@ public static class AudioCacheKey
     public static string Emphasis(string speech, ResolvedTtsGenerationOptions options, string promptIdentity) =>
         Create("emphasis-v1", new
         {
+            annotationVersion = Services.TtsAnnotationProfile.Version,
             speech = Hash(speech), promptIdentity, options.TextGenerationProvider, options.TextGenerationModelId
         });
 
@@ -67,6 +68,8 @@ public static class AudioCacheKey
         StructuredOutputOptions schema) => Create("immersive-preparation-v1", new
     {
         speech = Hash(section.SpeechText), messages = section.ImmersivePrompt,
+        annotation = Services.TtsAnnotationProfile.Resolve(settings.Provider, settings.ModelId),
+        annotationVersion = Services.TtsAnnotationProfile.Version, settings.EnableTextEmphasis,
         settings.TextGenerationProvider, settings.TextGenerationModelId, schema
     });
 

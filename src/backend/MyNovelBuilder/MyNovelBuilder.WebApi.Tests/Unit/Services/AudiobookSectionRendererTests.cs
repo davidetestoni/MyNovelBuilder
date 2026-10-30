@@ -102,11 +102,11 @@ public sealed class AudiobookSectionRendererTests
         };
         await Assert.ThrowsAnyAsync<Exception>(() => fixture.Renderer.RenderAsync(request, cancellation.Token));
         Assert.Equal(1, fixture.Text.PlannerCalls);
-        Assert.Equal(2, fixture.Text.EmphasisCalls);
+        Assert.Equal(1, fixture.Text.EmphasisCalls);
         fixture.Tts.BeforeCall = null;
         var result = await fixture.Renderer.RenderAsync(request);
         Assert.Equal(1, fixture.Text.PlannerCalls);
-        Assert.Equal(3, fixture.Text.EmphasisCalls); // only the unvisited third chunk is emphasized
+        Assert.Equal(1, fixture.Text.EmphasisCalls); // full section preparation is retained
         Assert.Equal(4, fixture.Tts.Requests.Count); // first successful chunk was not synthesized again
         Assert.Equal(3 * 480 + 2 * 150 * 48, await fixture.PcmLength(result.ArtifactKey));
         Assert.Empty(Directory.GetFiles(fixture.Folder, "*.tmp", SearchOption.AllDirectories));
@@ -117,7 +117,7 @@ public sealed class AudiobookSectionRendererTests
     {
         using var fixture = new Fixture();
         fixture.Text.ExpandEmphasis = true;
-        var result = await fixture.Renderer.RenderAsync(Fixture.Request("A short sentence.", false, true));
+        var result = await fixture.Renderer.RenderAsync(Fixture.Request(string.Concat(Enumerable.Repeat("A short sentence. ", 100)), false, true));
         Assert.True(fixture.Tts.Requests.Count > 1);
         Assert.All(fixture.Tts.Requests, r => Assert.InRange(r.Message.Length, 1, 1000));
         Assert.Equal(fixture.Text.LastEmphasis, string.Concat(fixture.Tts.Requests.Select(r => r.Message)));
@@ -148,7 +148,7 @@ public sealed class AudiobookSectionRendererTests
     {
         using var fixture = new Fixture();
         fixture.Text.ExpandEmphasis = true;
-        var request = Fixture.Request("Source speech.", false, true);
+        var request = Fixture.Request(string.Concat(Enumerable.Repeat("Source speech. ", 100)), false, true);
         fixture.Tts.BeforeCall = n => { if (n == 2) throw new IOException("Interrupted"); };
         await Assert.ThrowsAsync<IOException>(() => fixture.Renderer.RenderAsync(request));
         fixture.Tts.BeforeCall = null;
@@ -209,14 +209,14 @@ public sealed class AudiobookSectionRendererTests
     }
 
     [Fact]
-    public async Task TogglingEmphasisReusesTheResolvedInMemorySpeakerPlan()
+    public async Task TogglingEmphasisReplansTheAnnotatedPassage()
     {
         using var fixture = new Fixture();
         var request = Fixture.Request("Spoken text.", true, false);
         fixture.Text.PlannerResponse = Plan(("Spoken text.", null));
         await fixture.Renderer.RenderAsync(request);
         await fixture.Renderer.RenderAsync(request with { Settings = request.Settings with { EnableTextEmphasis = true } });
-        Assert.Equal(1, fixture.Text.PlannerCalls);
+        Assert.Equal(2, fixture.Text.PlannerCalls);
         Assert.Equal(1, fixture.Text.EmphasisCalls);
         Assert.Equal(2, fixture.Tts.Requests.Count);
     }
@@ -265,9 +265,9 @@ public sealed class AudiobookSectionRendererTests
             Renderer = new(tts, planner, Artifacts, assembler, preparations, _services);
         }
         public static AudiobookRenderRequest Request(string text, bool immersive, bool emphasis) => new(Guid.NewGuid(), 0,
-            new(TtsProvider.ElevenLabs, "model", "narrator", emphasis, immersive, 150,
+            new(TtsProvider.ElevenLabs, "eleven_v3", "narrator", emphasis, immersive, 150,
                 TextGenerationProvider.OpenRouter, "auxiliary", Guid.NewGuid(), null, null),
-            new(0, text, [new(PromptMessageRole.User, text)], []));
+            new(0, text, [new(PromptMessageRole.User, "<tts-source>" + text + "</tts-source>")], []));
         public async Task<long> PcmLength(string key)
         {
             await using var stream = await Artifacts.OpenReadAsync(key);
@@ -329,9 +329,21 @@ public sealed class AudiobookSectionRendererTests
         public Task<string> GenerateAsync(string model, IEnumerable<PromptMessage> messages, StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default)
         {
             Assert.Equal("auxiliary", model);
-            if (structuredOutputOptions is not null) { PlannerCalls++; return Task.FromResult(PlannerResponse); }
+            if (structuredOutputOptions is not null)
+            {
+                PlannerCalls++;
+                var annotated = messages.LastOrDefault(m => m.Message.Contains("<tts-source>"))?.Message.Contains("[warm]") == true;
+                var plan = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(PlannerResponse);
+                if (annotated && plan?.Count > 0)
+                {
+                    var text = plan[0]["text"].GetString();
+                    plan[0]["text"] = JsonSerializer.SerializeToElement("[warm]" + text);
+                    return Task.FromResult(JsonSerializer.Serialize(plan));
+                }
+                return Task.FromResult(PlannerResponse);
+            }
             EmphasisCalls++;
-            LastEmphasis = ExpandEmphasis ? string.Concat(Enumerable.Repeat("[warm] Expanded speech. ", 100)).Trim() : "[warm] " + messages.Last().Message.Trim();
+            LastEmphasis = "[warm]" + messages.Last().Message;
             return Task.FromResult(LastEmphasis);
         }
         public IAsyncEnumerable<string> GenerateStreamedAsync(string model, IEnumerable<PromptMessage> messages, StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();

@@ -21,25 +21,10 @@ public interface ITtsService
     /// </summary>
     bool SupportsTextEmphasis(string? modelId) => false;
 
-    /// <summary>Exact emphasis messages, used both for generation and cache fingerprints.</summary>
-    IReadOnlyList<PromptMessage> GetEmphasisMessages(string text) => [];
-
     /// <summary>
     /// Indicates whether this TTS service supports voice design.
     /// </summary>
     bool SupportsVoiceDesign() => false;
-
-    /// <summary>
-    /// Emphasize the given text for this TTS service.
-    /// Services that do not support emphasis should return the original text unchanged.
-    /// </summary>
-    Task<string> EmphasizeTextAsync(
-        TtsRequest request,
-        Func<CancellationToken, ValueTask<ITextGenerationService>> textGenerationServiceFactory,
-        CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(request.Message);
-    }
 
     /// <summary>
     /// Generate a WAV sample from a voice design prompt and voice description.

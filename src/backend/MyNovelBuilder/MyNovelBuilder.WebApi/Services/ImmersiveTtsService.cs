@@ -16,6 +16,7 @@ namespace MyNovelBuilder.WebApi.Services;
 /// </summary>
 public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlanner
 {
+    private readonly AudiobookPreparationCache _annotationPreparations = new();
     private const int _outputSampleRate = 24000;
     private const short _outputChannels = 1;
     private const short _outputBitsPerSample = 16;
@@ -70,6 +71,8 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
         var prepared = await PrepareAsync(request, audiobook, cancellationToken);
         return new ImmersiveTtsDebugResponseDto
         {
+            AnnotationProfileId = TtsAnnotationProfile.Resolve(prepared.Provider, prepared.TtsModelId)?.Id,
+            AnnotationProfileVersion = TtsAnnotationProfile.Version,
             Provider = prepared.Provider,
             TtsModelId = prepared.TtsModelId,
             TextGenerationModelId = prepared.TextGenerationModelId,
@@ -104,7 +107,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
         var prepared = await PrepareAsync(ToPlaybackRequest(request), request, cancellationToken, preserveSpeechUnits: true);
         // The planner may redistribute whitespace, but must not omit, reorder or rewrite spoken characters.
         static string Spoken(string text) => string.Concat(text.Where(c => !char.IsWhiteSpace(c)));
-        if (Spoken(string.Concat(prepared.Chunks.Select(c => c.Text))) != Spoken(request.Section.SpeechText))
+        if (!TtsAnnotationService.PreservesSource(Spoken(request.Section.SpeechText), Spoken(string.Concat(prepared.Chunks.Select(c => c.Text)))))
             throw new InvalidDataException("Immersive planning changed or omitted source text. Retry planning before exporting.");
         return prepared.Chunks.Select(chunk => new AudiobookSpeechChunk(chunk.Text, chunk.VoiceId,
             request.Settings.ToTtsOptions(chunk.VoiceId, request.Section.VoiceAssignments
@@ -156,6 +159,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                         new TextToSpeechGenerationRequest
                         {
                             Message = chunk.Text,
+                            IsAnnotated = true,
                             Provider = prepared.Provider,
                             TtsModelId = prepared.TtsModelId,
                             VoiceId = chunk.VoiceId,
@@ -289,9 +293,38 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
         var textGenerationService = settings is null
             ? await _textGenerationServiceResolver.GetConfiguredServiceAsync(cancellationToken)
             : _serviceProvider.GetRequiredKeyedService<TextGeneration.ITextGenerationService>(settings.TextGenerationProvider);
+        var planningMessages = processedPrompt.Messages.Select(m => new PromptMessage { Role = m.Role, Message = m.Message }).ToList();
+        string? planningText = null;
+        var annotatedSources = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var message in planningMessages)
+        {
+            var begin = message.Message.IndexOf("<tts-source>", StringComparison.Ordinal);
+            var end = message.Message.IndexOf("</tts-source>", StringComparison.Ordinal);
+            if (begin < 0 || end < begin) continue;
+            begin += "<tts-source>".Length;
+            var source = message.Message[begin..end];
+            var profile = (settings?.EnableTextEmphasis ?? config.TtsEnableTextEmphasis)
+                ? TtsAnnotationProfile.Resolve(provider, ttsModelId) : null;
+            if (!annotatedSources.TryGetValue(source, out planningText))
+            {
+                planningText = await _annotationPreparations.GetOrCreateAsync(audiobook?.Section,
+                    AudioCacheKey.Create("section-annotation-v1", new { source, profile, textGenerationModelId,
+                        textProvider = settings?.TextGenerationProvider ?? config.TextGenerationProvider }),
+                    () => TtsAnnotationService.AnnotateAsync(source, profile,
+                        textGenerationService, textGenerationModelId, cancellationToken));
+                annotatedSources.Add(source, planningText);
+            }
+            message.Message = message.Message[..begin] + planningText + message.Message[end..];
+        }
+        if (planningText is null && (settings?.EnableTextEmphasis ?? config.TtsEnableTextEmphasis)
+            && TtsAnnotationProfile.Resolve(provider, ttsModelId) is not null)
+            throw new InvalidDataException("The immersive prompt must include {{sectionText}} to prepare annotations.");
+        if (planningText is not null)
+            planningMessages.Add(new PromptMessage { Role = PromptMessageRole.System,
+                Message = "Partition only the tts-source passage. Copy all characters and delivery annotations in order. Keep leading tags with their following speech and the correct character or narrator. Never create tag-only chunks or move directions between speakers." });
         var rawPlan = await textGenerationService.GenerateAsync(
             textGenerationModelId,
-            processedPrompt.Messages,
+            planningMessages,
             contextInfo.GetStructuredOutputOptions(),
             cancellationToken);
         _logger.LogDebug(
@@ -325,6 +358,13 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
         _logger.LogDebug(
             "Immersive TTS planner produced {StructuredChunkCount} structured chunks.",
             structuredChunks.Count);
+        if (planningText is not null && string.Concat(planningText.Where(c => !char.IsWhiteSpace(c))) !=
+            string.Concat(string.Concat(structuredChunks.Select(c => c.Text)).Where(c => !char.IsWhiteSpace(c))))
+            throw new InvalidDataException("Immersive planning changed source text or annotations.");
+        if (planningText is not null && structuredChunks.Any(chunk =>
+            System.Text.RegularExpressions.Regex.Matches(chunk.Text ?? "", "<whisper>").Count !=
+            System.Text.RegularExpressions.Regex.Matches(chunk.Text ?? "", "</whisper>").Count))
+            throw new InvalidDataException("Immersive planning moved a scoped direction across speakers.");
         var relevantRecords = audiobook?.Section is null && processedPrompt.IncludedCompendiumRecordIds.Any()
             ? await _compendiumRecordService.GetByIdsAsync(
                 processedPrompt.IncludedCompendiumRecordIds,
@@ -332,7 +372,6 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
             : [];
         var recordsById = relevantRecords.ToDictionary(record => record.Id);
         var resolvedChunks = new List<ResolvedImmersiveTtsChunk>();
-        var chunker = new TextChunker(_maxResolvedChunkLength);
 
         foreach (var structuredChunk in structuredChunks)
         {
@@ -344,7 +383,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                 throw new InvalidDataException("Immersive planning returned an invalid speaker chunk.");
             var texts = preserveSpeechUnits
                 ? new List<string> { structuredChunk.Text ?? string.Empty }
-                : chunker.ChunkText(structuredChunk.Text ?? string.Empty);
+                : AudiobookTextSplitter.Split(structuredChunk.Text ?? string.Empty, _maxResolvedChunkLength, preserveTags: true).ToList();
             foreach (var textChunk in texts)
             {
                 var resolvedChunk = ResolveChunk(

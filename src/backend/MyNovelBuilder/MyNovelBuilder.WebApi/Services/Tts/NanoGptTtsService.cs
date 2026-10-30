@@ -22,39 +22,16 @@ public class NanoGptTtsService : ITtsService
     private static readonly TimeSpan _pollDelay = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan _pollTimeout = TimeSpan.FromMinutes(5);
     private const string _elevenLabsV3Model = "Elevenlabs-V3";
-    private const string _fallbackEmphasisModel = "anthropic/claude-sonnet-4";
-    // TODO: Make the emphasis prompt user-configurable.
-    private const string _emphasisPrompt =
-        """
-        You are an audio labeling specialist.
-        You will be given a text that needs to be enriched with the most fitting style tags in the appropriate places. The goal is to insert tags where it makes sense in the text (don't overdo it) without altering the existing text in any other way, to help a narrator know with which tone and pace they need to read different parts of the text.
-        You MUST reply with ONLY the enriched text (nothing else).
-        
-        Tags can be anything that makes sense, you're not limited to just this list, but here are some examples of what can be done:
-        Emotional tone: [excited], [nervous], [frustrated], [tired]
-        Reactions: [gasp], [sigh], [laughs], [gulps]
-        Volume & energy: [whispering], [shouting], [quietly], [loudly]
-        Pacing & rhythm: [pauses], [stammers], [rushed]
-        
-        Don't overdo it, only place tags where it makes sense to use them.
-        
-        Here's an example of a base text:
-        In the ancient land of Eldoria, where skies shimmered and forests, whispered secrets to the wind, lived a dragon named Zephyros. Not the "burn it all down" kind... but he was gentle, wise, with eyes like old stars. Even the birds fell silent when he passed.
-        
-        and its enriched version
-        In the ancient land of Eldoria, where skies shimmered and forests, whispered secrets to the wind, lived a dragon named Zephyros. [sarcastically] Not the "burn it all down" kind... [giggles] but he was gentle, wise, with eyes like old stars. [whispers] Even the birds fell silent when he passed.
-        """;
-
     private readonly HttpClient _httpClient;
     private readonly ILogger<NanoGptTtsService> _logger;
     private readonly IIntegrationsService _integrationsService;
-    
+
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
     /// <inheritdoc />
     public bool SupportsTextEmphasis(string? modelId) =>
-        string.Equals(modelId, _elevenLabsV3Model, StringComparison.OrdinalIgnoreCase);
+        TtsAnnotationProfile.Resolve(TtsProvider.NanoGpt, modelId) is not null;
 
     /// <summary></summary>
     public NanoGptTtsService(
@@ -68,39 +45,6 @@ public class NanoGptTtsService : ITtsService
         _httpClient.BaseAddress = new Uri("https://nano-gpt.com/api/");
     }
 
-    /// <inheritdoc />
-    public IReadOnlyList<PromptMessage> GetEmphasisMessages(string text) =>
-    [
-        new PromptMessage
-        {
-            Role = PromptMessageRole.System,
-            Message = _emphasisPrompt
-        },
-        new PromptMessage
-        {
-            Role = PromptMessageRole.User,
-            Message = $"Here's the text that needs to be enriched:\n{text}"
-        }
-    ];
-
-    /// <inheritdoc />
-    public async Task<string> EmphasizeTextAsync(
-        TtsRequest request,
-        Func<CancellationToken, ValueTask<ITextGenerationService>> textGenerationServiceFactory,
-        CancellationToken cancellationToken = default)
-    {
-        if (!string.Equals(request.ModelId, _elevenLabsV3Model, StringComparison.OrdinalIgnoreCase))
-        {
-            return request.Message;
-        }
-
-        var textGenerationService = await textGenerationServiceFactory(cancellationToken);
-        return await textGenerationService.GenerateAsync(
-            request.TextGenerationModelId ?? _fallbackEmphasisModel,
-            GetEmphasisMessages(request.Message),
-            cancellationToken: cancellationToken);
-    }
-    
     /// <inheritdoc />
     public async Task<byte[]> GenerateAudioAsync(TtsRequest request, CancellationToken cancellationToken = default)
     {

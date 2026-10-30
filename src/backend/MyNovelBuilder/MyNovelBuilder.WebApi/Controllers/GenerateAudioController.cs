@@ -149,9 +149,10 @@ public class GenerateAudioController : ControllerBase
         var ttsService = await GetTtsServiceAsync(provider, cancellationToken);
         
         var models = await ttsService.GetModelsAsync(cancellationToken);
+        var effectiveProvider = provider ?? (await _integrationsService.GetConfigAsync(cancellationToken)).TtsProvider;
         var modelsWithFeatures = models.Select(model =>
         {
-            model.SupportsTextEmphasis = ttsService.SupportsTextEmphasis(model.ModelId);
+            model.SupportsTextEmphasis = TtsAnnotationProfile.Resolve(effectiveProvider, model.ModelId) is not null;
             return model;
         });
         

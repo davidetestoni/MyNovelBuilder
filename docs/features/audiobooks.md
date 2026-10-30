@@ -18,6 +18,14 @@ Choose narrator-only or immersive narration. Immersive mode needs a
 character voice assignments where available; unassigned characters use the
 narrator. Text emphasis is available only for models that support it.
 
+Annotations guide delivery in both narration and dialogue. Supported profiles
+include ElevenLabs v3, ElevenLabs v3 through NanoGPT, OmniVoice, and Fish Audio
+Drama 3 through OpenRouter. Emphasis is off by default. When enabled, it applies to narration and dialogue;
+existing explicit preferences are preserved. Immersive mode annotates the section
+before assigning speakers, then preserves those directions through synthesis
+chunking. Annotation preparation uses the selected text-generation model and
+does not change saved prose.
+
 Scope and reuse estimates update automatically as you change settings. They
 show spoken chapters/sections, skipped empty content, reusable audio, and
 characters needing generation. The rough audio estimate uses 150 words per

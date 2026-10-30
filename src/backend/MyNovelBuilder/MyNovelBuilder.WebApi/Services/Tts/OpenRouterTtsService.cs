@@ -24,6 +24,9 @@ public class OpenRouterTtsService : ITtsService
     /// <inheritdoc />
     public AudioFormat OutputAudioFormat => AudioFormat.Wav;
 
+    /// <inheritdoc />
+    public bool SupportsTextEmphasis(string? modelId) => TtsAnnotationProfile.Resolve(TtsProvider.OpenRouter, modelId) is not null;
+
     /// <summary></summary>
     public OpenRouterTtsService(
         HttpClient httpClient,

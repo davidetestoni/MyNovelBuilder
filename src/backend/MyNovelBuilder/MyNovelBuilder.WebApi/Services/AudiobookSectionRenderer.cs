@@ -48,6 +48,7 @@ public sealed class AudiobookSectionRenderer(
                 completed.Add(await tts.GenerateArtifactAsync(new TextToSpeechGenerationRequest
                 {
                     Message = chunk.Text,
+                    IsAnnotated = settings.EnableImmersive,
                     ResolvedOptions = settings.ToTtsOptions(chunk.VoiceId, chunk.VoiceRevision),
                     PreparationScope = request.Section
                 }, cancellationToken));
@@ -65,8 +66,8 @@ public sealed class AudiobookSectionRenderer(
     {
         var settings = request.Settings;
         var provider = services.GetRequiredKeyedService<ITtsService>(settings.Provider);
-        var emphasis = settings.EnableTextEmphasis && provider.SupportsTextEmphasis(settings.ModelId)
-            ? AudioCacheKey.Create("emphasis-template-v1", provider.GetEmphasisMessages(string.Empty)) : null;
+        var emphasis = settings.EnableTextEmphasis && TtsAnnotationProfile.Resolve(settings.Provider, settings.ModelId) is not null
+            ? AudioCacheKey.Create("emphasis-template-v1", new { version = TtsAnnotationProfile.Version, messages = TtsAnnotationProfile.Resolve(settings.Provider, settings.ModelId)!.Messages(string.Empty) }) : null;
         var preparationKey = settings.EnableImmersive
             ? AudioCacheKey.ImmersivePreparation(request.Section, settings,
                 new PrepareImmersiveTtsContextInfoDto { NovelId = request.NovelId, TtsModelId = settings.ModelId }.GetStructuredOutputOptions()!) : null;

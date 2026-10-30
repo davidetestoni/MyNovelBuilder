@@ -7,6 +7,12 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 /// </summary>
 public class ImmersiveTtsDebugResponseDto
 {
+    /// <summary>Annotation profile supported by the resolved model.</summary>
+    public string? AnnotationProfileId { get; set; }
+
+    /// <summary>Code-owned annotation profile version.</summary>
+    public int AnnotationProfileVersion { get; set; }
+
     /// <summary>
     /// The resolved TTS provider.
     /// </summary>

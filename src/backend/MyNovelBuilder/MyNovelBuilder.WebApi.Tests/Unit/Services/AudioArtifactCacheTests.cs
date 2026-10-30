@@ -19,7 +19,7 @@ public sealed class AudioArtifactCacheTests : IDisposable
 {
     private readonly string _folder = Path.Combine(Path.GetTempPath(), "audio-cache-tests-" + Guid.NewGuid());
     private FileSystemAudioArtifactRepository Repository() => new(Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder }));
-    private static readonly ResolvedTtsGenerationOptions Settings = new(TtsProvider.ElevenLabs, "model", "voice",
+    private static readonly ResolvedTtsGenerationOptions Settings = new(TtsProvider.ElevenLabs, "eleven_v3", "voice",
         TextGenerationProvider.OpenRouter, "text-model", true, null, null);
     private const string Story = "Private story text that must never appear in cache metadata.";
     private static byte[] Wav()
@@ -31,8 +31,8 @@ public sealed class AudioArtifactCacheTests : IDisposable
 
     private TtsAudioGenerationService Service(FakeTts tts, IAudioArtifactRepository? repository = null)
     {
-        var services = new ServiceCollection().AddKeyedSingleton<ITtsService>(TtsProvider.ElevenLabs, tts).BuildServiceProvider();
-        return new(services, new Integrations(), new Legacy(), new Resolver(),
+        var services = new ServiceCollection().AddKeyedSingleton<ITtsService>(TtsProvider.ElevenLabs, tts).AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter, new AnnotationGenerator(tts)).BuildServiceProvider();
+        return new(services, new Integrations(), new Legacy(), new Resolver(tts),
             NullLogger<TtsAudioGenerationService>.Instance, new NoRecordedVoices(), repository ?? Repository(),
             new AudioArtifactAssembler(repository ?? Repository(), Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = _folder })),
             new AudiobookPreparationCache());
@@ -107,8 +107,8 @@ public sealed class AudioArtifactCacheTests : IDisposable
         Assert.Equal(1, tts.SynthesisCalls);
         Assert.Equal(0, tts.EmphasisCalls);
         await Service(tts).GenerateWavBytesAsync(Request());
-        tts.Prompt = "Changed prompt";
-        await Service(tts).GenerateWavBytesAsync(Request());
+        // Changing the auxiliary model invalidates preparation but preserves identical synthesis.
+        await Service(tts).GenerateWavBytesAsync(Request(Settings with { TextGenerationModelId = "changed" }));
         Assert.Equal(2, tts.EmphasisCalls);
         // The fake emits the same emphasized text: reuse synthesis despite changed preparation.
         Assert.Equal(2, tts.SynthesisCalls);
@@ -233,9 +233,20 @@ public sealed class AudioArtifactCacheTests : IDisposable
         public ValueTask<IntegrationsConfig> GetConfigAsync(CancellationToken cancellationToken = default) => ValueTask.FromResult(new IntegrationsConfig());
         public Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
-    private sealed class Resolver : ITextGenerationServiceResolver
+    private sealed class AnnotationGenerator(FakeTts tts) : ITextGenerationService
     {
-        public ValueTask<ITextGenerationService> GetConfiguredServiceAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<string> GenerateAsync(string model, IEnumerable<PromptMessage> messages, Models.TextGeneration.StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default)
+        {
+            tts.EmphasisCalls++;
+            return Task.FromResult("[warm]" + messages.Last().Message);
+        }
+        public IAsyncEnumerable<string> GenerateStreamedAsync(string model, IEnumerable<PromptMessage> messages, Models.TextGeneration.StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<string> DescribeImageAsync(string model, IEnumerable<PromptMessage> messages, byte[] imageBytes, string imageMimeType, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IEnumerable<Models.TextGeneration.TextGenerationModelInfo>> GetAvailableModelsAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    }
+    private sealed class Resolver(FakeTts tts) : ITextGenerationServiceResolver
+    {
+        public ValueTask<ITextGenerationService> GetConfiguredServiceAsync(CancellationToken cancellationToken = default) => ValueTask.FromResult<ITextGenerationService>(new AnnotationGenerator(tts));
     }
     private sealed class Legacy : IAudioRepository
     {

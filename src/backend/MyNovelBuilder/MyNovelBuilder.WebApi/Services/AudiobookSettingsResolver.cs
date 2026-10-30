@@ -49,7 +49,8 @@ public sealed class AudiobookSettingsResolver(
             throw BadRequest($"Narrator voice '{voiceId}' is not available for model '{modelId}'.");
         }
 
-        var emphasis = request.EnableTextEmphasis ?? defaults.TtsEnableTextEmphasis;
+        var emphasis = (request.EnableTextEmphasis ?? defaults.TtsEnableTextEmphasis)
+            && TtsAnnotationProfile.Resolve(provider, modelId) is not null;
         if (emphasis && !tts.SupportsTextEmphasis(modelId))
         {
             throw BadRequest($"Text emphasis is not supported by model '{modelId}'.");
