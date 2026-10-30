@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { RememberScrollDirective } from '../../directives/remember-scroll.directive';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { NovelDto } from '../../types/dtos/novel/novel.dto';
 import { NovelService } from '../../services/novel.service';
@@ -26,6 +27,7 @@ import { CompendiumOptionPreviewComponent } from '../../components/compendium-op
   selector: 'app-novel-editor',
   standalone: true,
   imports: [
+    RememberScrollDirective,
     FormsModule,
     RouterModule,
     SpacedPipe,
