@@ -16,6 +16,7 @@ public class AudioGenerationParameters
     /// </summary>
     public TextGenerationProvider? TextGenerationProvider { get; set; }
 
+    /// <summary>Text generation model used to prepare immersive speech.</summary>
     public string? TextGenerationModelId { get; set; }
 
     /// <summary>

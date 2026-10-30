@@ -47,6 +47,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
     private async Task<double> ResolveGainAsync(TextToSpeechGenerationRequest request, CancellationToken ct) =>
         request.ResolvedOptions?.GainDb ?? request.GainDb ?? (await _integrationsService.GetConfigAsync(ct)).TtsGainDb;
 
+    /// <summary>Generates WAV audio for the supplied speech request.</summary>
     public async Task<byte[]> GenerateWavBytesAsync(TextToSpeechGenerationRequest request, CancellationToken cancellationToken = default)
     {
         var gain = await ResolveGainAsync(request, cancellationToken);
@@ -54,6 +55,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
         return await WavGainStream.ApplyAsync(bytes, gain, cancellationToken);
     }
 
+    /// <summary>Generates a WAV stream for the supplied speech request.</summary>
     public async Task<Stream> GenerateWavStreamAsync(TextToSpeechGenerationRequest request, CancellationToken cancellationToken = default)
     {
         var gain = await ResolveGainAsync(request, cancellationToken);

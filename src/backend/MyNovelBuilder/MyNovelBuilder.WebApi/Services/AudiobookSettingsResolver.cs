@@ -12,6 +12,7 @@ public sealed class AudiobookSettingsResolver(
     IServiceProvider services,
     ITtsVoiceRevisionService voiceRevisions)
 {
+    /// <summary>Resolves requested audiobook options against the configured defaults.</summary>
     public async Task<ResolvedAudiobookSettings> ResolveAsync(
         AudiobookSettingsRequest request,
         CancellationToken cancellationToken = default)

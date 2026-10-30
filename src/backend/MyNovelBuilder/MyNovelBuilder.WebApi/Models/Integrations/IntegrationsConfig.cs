@@ -7,6 +7,7 @@ namespace MyNovelBuilder.WebApi.Models.Integrations;
 /// </summary>
 public class IntegrationsConfig
 {
+    /// <summary>Default speech playback gain in decibels.</summary>
     public double TtsGainDb { get; set; }
 
     /// <summary>

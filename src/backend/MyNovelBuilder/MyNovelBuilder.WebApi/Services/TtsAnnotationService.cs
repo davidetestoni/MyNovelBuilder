@@ -8,7 +8,9 @@ namespace MyNovelBuilder.WebApi.Services;
 /// <summary>Code-owned annotation instructions shared by playback and audiobook preparation.</summary>
 public sealed record TtsAnnotationProfile(string Id, string Directions, string Whisper = "whispers", string Sigh = "sighs")
 {
+    /// <summary>Annotation recipe version used in audio cache identities.</summary>
     public const int Version = 1;
+    /// <summary>Returns the annotation profile supported by the provider and model.</summary>
     public static TtsAnnotationProfile? Resolve(TtsProvider provider, string? model) => (provider, model) switch
     {
         (TtsProvider.ElevenLabs, "eleven_v3") or (TtsProvider.NanoGpt, "Elevenlabs-V3") => new("eleven-v3", "Use bracket audio tags such as [whispers], [excited], [nervous], [laughs], [sighs]."),
@@ -16,6 +18,7 @@ public sealed record TtsAnnotationProfile(string Id, string Directions, string W
         (TtsProvider.OmniVoice, "k2-fsa/OmniVoice") => new("omnivoice", "Only use these exact tags: [laughter], [sigh], [confirmation-en], [question-en], [question-ah], [question-oh], [question-ei], [question-yi], [surprise-ah], [surprise-oh], [surprise-wa], [surprise-yo], [dissatisfaction-hnn].", "question-en", "sigh"),
         _ => null
     };
+    /// <summary>Builds prompt messages for annotating the supplied speech text.</summary>
     public IReadOnlyList<PromptMessage> Messages(string text) =>
     [
         new() { Role = PromptMessageRole.System, Message = $"""
@@ -42,11 +45,13 @@ public sealed record TtsAnnotationProfile(string Id, string Directions, string W
 /// <summary>Validates insertion-only markup without deleting literal source brackets.</summary>
 public static class TtsAnnotationService
 {
+    /// <summary>Checks that annotations preserve every original character and obey the profile.</summary>
     public static bool PreservesSource(string source, string annotated, TtsAnnotationProfile? profile = null)
     {
         var i = 0;
         var scoped = false;
-        for (var j = 0; j < annotated.Length;)
+        var j = 0;
+        while (j < annotated.Length)
         {
             string? token = null;
             if (annotated[j] == '[' && annotated.IndexOf(']', j + 1) is var end && end > j &&
@@ -61,8 +66,16 @@ public static class TtsAnnotationService
                 if (token[0] == '<')
                 {
                     if (profile is not null && profile.Id != "drama-3") return false;
-                    if (token == "<whisper>") { if (scoped) return false; scoped = true; }
-                    else { if (!scoped) return false; scoped = false; }
+                    if (token == "<whisper>")
+                    {
+                        if (scoped) return false;
+                        scoped = true;
+                    }
+                    else
+                    {
+                        if (!scoped) return false;
+                        scoped = false;
+                    }
                 }
                 else if (profile?.Id == "omnivoice" && !profile.Directions.Contains(token, StringComparison.Ordinal))
                     return false;
@@ -75,6 +88,7 @@ public static class TtsAnnotationService
         return i == source.Length && !scoped;
     }
 
+    /// <summary>Adds supported performance directions, falling back to the source on invalid output.</summary>
     public static async Task<string> AnnotateAsync(string source, TtsAnnotationProfile? profile,
         ITextGenerationService generator, string model, CancellationToken cancellationToken)
     {

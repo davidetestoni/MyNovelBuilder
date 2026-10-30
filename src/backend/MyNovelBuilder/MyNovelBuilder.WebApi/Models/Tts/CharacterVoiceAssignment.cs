@@ -7,6 +7,7 @@ namespace MyNovelBuilder.WebApi.Models.Tts;
 /// </summary>
 public class CharacterVoiceAssignment
 {
+    /// <summary>Fixed playback gain in decibels; zero leaves the source level unchanged.</summary>
     public double GainDb { get; set; }
 
     /// <summary>

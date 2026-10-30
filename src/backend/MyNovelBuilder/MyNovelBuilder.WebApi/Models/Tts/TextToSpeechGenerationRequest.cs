@@ -7,6 +7,7 @@ namespace MyNovelBuilder.WebApi.Models.Tts;
 /// </summary>
 public class TextToSpeechGenerationRequest
 {
+    /// <summary>Fixed playback gain in decibels; zero leaves the source level unchanged.</summary>
     public double? GainDb { get; set; }
 
     /// <summary>Internal preparation state; prevents annotating immersive chunks twice.</summary>

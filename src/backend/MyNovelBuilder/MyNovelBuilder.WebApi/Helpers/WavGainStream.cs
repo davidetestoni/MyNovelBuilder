@@ -14,6 +14,7 @@ public sealed class WavGainStream(Stream source, double gainDb) : Stream
     private int _offset;
     private bool _data;
 
+    /// <summary>Applies fixed gain to a WAV buffer and returns the resulting audio.</summary>
     public static async Task<byte[]> ApplyAsync(byte[] wav, double gainDb, CancellationToken ct)
     {
         if (gainDb == 0) return wav;
@@ -23,6 +24,7 @@ public sealed class WavGainStream(Stream source, double gainDb) : Stream
         return output.ToArray();
     }
 
+    /// <inheritdoc />
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
     {
         if (buffer.Length == 0) return 0;
@@ -112,25 +114,37 @@ public sealed class WavGainStream(Stream source, double gainDb) : Stream
         else for (var i = 0; i < _sampleBytes; i++) sample[i] = (byte)(value >> (i * 8));
     }
 
+    /// <inheritdoc />
     protected override void Dispose(bool disposing)
     {
         if (disposing) source.Dispose();
         base.Dispose(disposing);
     }
 
+    /// <inheritdoc />
     public override async ValueTask DisposeAsync()
     {
         await source.DisposeAsync();
         GC.SuppressFinalize(this);
     }
+    /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
+    /// <inheritdoc />
     public override bool CanRead => true;
+    /// <inheritdoc />
     public override bool CanSeek => false;
+    /// <inheritdoc />
     public override bool CanWrite => false;
+    /// <inheritdoc />
     public override long Length => throw new NotSupportedException();
+    /// <inheritdoc />
     public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+    /// <inheritdoc />
     public override void Flush() { }
+    /// <inheritdoc />
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    /// <inheritdoc />
     public override void SetLength(long value) => throw new NotSupportedException();
+    /// <inheritdoc />
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

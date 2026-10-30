@@ -8,6 +8,7 @@ namespace MyNovelBuilder.WebApi.Dtos.CompendiumRecord;
 /// </summary>
 public class CharacterVoiceAssignmentDto
 {
+    /// <summary>Fixed playback gain in decibels; zero leaves the source level unchanged.</summary>
     public double GainDb { get; set; }
 
     /// <summary>

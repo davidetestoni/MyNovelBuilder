@@ -8,12 +8,14 @@ namespace MyNovelBuilder.WebApi.Helpers;
 /// <summary>Versioned conversion of editor HTML into spoken text.</summary>
 public static partial class AudiobookSpeechTextNormalizer
 {
+    /// <summary>Normalization recipe version used to invalidate cached speech.</summary>
     public const int Version = 2;
     private static readonly HashSet<string> NonSpokenElements = new(StringComparer.OrdinalIgnoreCase)
         { "script", "style", "template", "svg", "noscript" };
     private static readonly HashSet<string> ParagraphElements = new(StringComparer.OrdinalIgnoreCase)
         { "p", "div", "section", "article", "h1", "h2", "h3", "h4", "h5", "h6", "li", "blockquote", "tr" };
 
+    /// <summary>Normalizes story text for speech without changing its spoken content.</summary>
     public static string Normalize(string? html)
     {
         if (string.IsNullOrWhiteSpace(html)) return string.Empty;

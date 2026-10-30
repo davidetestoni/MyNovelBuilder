@@ -53,10 +53,13 @@ public sealed class TtsVoiceRevisionService(
         var audioHash = SHA256.HashData(audio);
         if (provider == TtsProvider.KittenTts && string.IsNullOrWhiteSpace(metadata.Transcript))
             throw new ApiException(ErrorCodes.BadRequest, "KittenTTS recorded voices require an exact sample transcript.");
-        var consumedMetadata = provider == TtsProvider.KittenTts ? metadata.Transcript!.Trim() : provider == TtsProvider.Ming
-            ? $"{metadata.Language}\n{metadata.Transcript?.Trim()}" : provider == TtsProvider.Audio8
-            ? $"{metadata.Language}\n{metadata.Transcript}"
-            : metadata.Language.ToString();
+        var consumedMetadata = provider switch
+        {
+            TtsProvider.KittenTts => metadata.Transcript!.Trim(),
+            TtsProvider.Ming => $"{metadata.Language}\n{metadata.Transcript?.Trim()}",
+            TtsProvider.Audio8 => $"{metadata.Language}\n{metadata.Transcript}",
+            _ => metadata.Language.ToString()
+        };
         var revisionBytes = SHA256.HashData(Encoding.UTF8.GetBytes(
             $"recorded-voice-v1\n{provider}\n{Convert.ToHexString(audioHash)}\n{consumedMetadata}"));
         return new RecordedTtsVoice(audio, metadata.Language, metadata.Transcript, Convert.ToHexString(revisionBytes));

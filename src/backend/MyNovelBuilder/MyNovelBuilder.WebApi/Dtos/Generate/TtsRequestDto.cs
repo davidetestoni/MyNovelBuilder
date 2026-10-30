@@ -8,6 +8,7 @@ using MyNovelBuilder.WebApi.Enums;
 /// </summary>
 public class TtsRequestDto
 {
+    /// <summary>Fixed playback gain in decibels; zero leaves the source level unchanged.</summary>
     public double? GainDb { get; set; }
 
     /// <summary>

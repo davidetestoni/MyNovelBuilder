@@ -21,6 +21,7 @@ public sealed class AudiobookSnapshotBuilder(
     ITtsVoiceRevisionService voiceRevisions,
     IServiceProvider services)
 {
+    /// <summary>Captures detached novel inputs for a reproducible audiobook run.</summary>
     public async Task<AudiobookSnapshot> BuildAsync(
         Guid novelId,
         AudiobookSettingsRequest request,
