@@ -128,6 +128,10 @@ builder.Host.UseSerilog((_, options) =>
     options.MinimumLevel.Override("Microsoft.AspNetCore",
         LogEventLevel.Warning);
 
+    // Suppress routine SQL command logs while retaining database warnings and failures.
+    options.MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command",
+        LogEventLevel.Warning);
+
     // Log to the console sink, more sinks can be added here if needed
     options.WriteTo.Console();
 });
