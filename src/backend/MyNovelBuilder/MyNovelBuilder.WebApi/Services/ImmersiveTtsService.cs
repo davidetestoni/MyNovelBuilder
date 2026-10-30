@@ -313,7 +313,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                     AudioCacheKey.Create("section-annotation-v1", new { source, profile, textGenerationModelId,
                         textProvider = settings?.TextGenerationProvider ?? config.TextGenerationProvider }),
                     () => TtsAnnotationService.AnnotateAsync(source, profile,
-                        textGenerationService, textGenerationModelId, cancellationToken));
+                        textGenerationService, textGenerationModelId, cancellationToken, _logger));
                 annotatedSources.Add(source, planningText);
             }
             message.Message = message.Message[..begin] + planningText + message.Message[end..];

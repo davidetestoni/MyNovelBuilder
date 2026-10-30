@@ -25,6 +25,8 @@ existing explicit preferences are preserved. Immersive mode annotates the sectio
 before assigning speakers, then preserves those directions through synthesis
 chunking. Annotation preparation uses the selected text-generation model and
 does not change saved prose.
+If annotation output still fails text-preservation checks after a retry, speech
+uses the original passage without added annotations.
 
 Scope and reuse estimates update automatically as you change settings. They
 show spoken chapters/sections, skipped empty content, reusable audio, and

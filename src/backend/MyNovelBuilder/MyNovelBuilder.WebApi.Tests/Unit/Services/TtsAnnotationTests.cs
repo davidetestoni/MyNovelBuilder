@@ -1,5 +1,8 @@
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Services;
+using MyNovelBuilder.WebApi.Models.Prompts;
+using MyNovelBuilder.WebApi.Models.TextGeneration;
+using MyNovelBuilder.WebApi.Services.TextGeneration;
 
 namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 
@@ -46,4 +49,63 @@ public sealed class TtsAnnotationTests
         Assert.True(fish.Messages("source").Count >= 8);
         Assert.Equal("source", fish.Messages("source").Last().Message);
     }
+    [Theory]
+    [InlineData("\"Stay here.\"", "\"[whispers]Stay here.\"", "\"[whispers]Stay here.\"")]
+    [InlineData("\"Stay here.\"", "[whispers]Stay here.", "\"[whispers]Stay here.\"")]
+    [InlineData("\"Stay here.\"", "\"[whispers]Stay here.", "\"[whispers]Stay here.\"")]
+    [InlineData("\"Stay here.\"", "[whispers]Stay here.\"", "\"[whispers]Stay here.\"")]
+    [InlineData("“Stay here.”", "[whispers]Stay here.", "“[whispers]Stay here.”")]
+    [InlineData("\"He said \"stay\".\"", "[soft]He said \"stay\".", "\"[soft]He said \"stay\".\"")]
+    public async Task QuotedDialoguePreservesOrRestoresOnlyBoundaryQuotes(string source, string response, string expected)
+    {
+        var generator = new AnnotationGenerator(response);
+        var result = await TtsAnnotationService.AnnotateAsync(source,
+            TtsAnnotationProfile.Resolve(TtsProvider.OpenRouter, "fish-audio/drama-3"),
+            generator, "model", CancellationToken.None);
+        Assert.Equal(expected, result);
+        Assert.True(TtsAnnotationService.PreservesSource(source, result));
+        Assert.Single(generator.Prompts);
+    }
+
+    [Theory]
+    [InlineData("[soft]Changed words.")]
+    [InlineData("[unclosed Stay here.")]
+    [InlineData("[soft]Stay  here.")]
+    public async Task InvalidAnnotationRetriesWithCorrectionThenUsesOriginalText(string response)
+    {
+        const string source = "\"Stay here.\"";
+        var generator = new AnnotationGenerator(response);
+        var result = await TtsAnnotationService.AnnotateAsync(source,
+            TtsAnnotationProfile.Resolve(TtsProvider.ElevenLabs, "eleven_v3"),
+            generator, "model", CancellationToken.None);
+        Assert.Equal(source, result);
+        Assert.Equal(2, generator.Prompts.Count);
+        Assert.Contains("previous attempt failed validation", generator.Prompts[1]);
+    }
+
+    [Fact]
+    public async Task CancellationDoesNotBecomeUnannotatedFallback()
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        var generator = new AnnotationGenerator("invalid");
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => TtsAnnotationService.AnnotateAsync("source",
+            TtsAnnotationProfile.Resolve(TtsProvider.ElevenLabs, "eleven_v3"), generator, "model", cancellation.Token));
+        Assert.Empty(generator.Prompts);
+    }
+
+    private sealed class AnnotationGenerator(string response) : ITextGenerationService
+    {
+        public List<string> Prompts { get; } = [];
+        public Task<string> GenerateAsync(string model, IEnumerable<PromptMessage> messages,
+            StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default)
+        {
+            Prompts.Add(messages.First().Message);
+            return Task.FromResult(response);
+        }
+        public IAsyncEnumerable<string> GenerateStreamedAsync(string model, IEnumerable<PromptMessage> messages, StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<string> DescribeImageAsync(string model, IEnumerable<PromptMessage> messages, byte[] imageBytes, string imageMimeType, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IEnumerable<TextGenerationModelInfo>> GetAvailableModelsAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    }
+
 }

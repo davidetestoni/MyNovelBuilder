@@ -400,7 +400,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
             : await _textGenerationServiceResolver.GetConfiguredServiceAsync(cancellationToken);
         var emphasizedText = await TtsAnnotationService.AnnotateAsync(ttsRequest.Message,
             TtsAnnotationProfile.Resolve(resolved.AudioParameters.Provider, resolved.EffectiveTtsModelId),
-            generator, resolved.EffectiveTextGenerationModelId!, cancellationToken);
+            generator, resolved.EffectiveTextGenerationModelId!, cancellationToken, _logger);
         ttsRequest.Message = emphasizedText;
 
         if (!string.Equals(ttsRequest.Message, resolved.Request.Message, StringComparison.Ordinal))
