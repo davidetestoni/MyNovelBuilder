@@ -19,6 +19,7 @@ export interface ProseTtsRequest {
   chapterIndex: number;
   sectionIndex: number;
   narratorText: string;
+  selectedText?: string;
 }
 
 @Injectable()
@@ -75,6 +76,9 @@ export class ProseTtsService implements OnDestroy {
               promptId: immersivePromptId,
               chapterIndex: request.chapterIndex,
               sectionIndex: request.sectionIndex,
+              ...(request.selectedText !== undefined
+                ? { selectedText: request.selectedText }
+                : {}),
             } satisfies ImmersiveTtsRequestDto);
 
           await this.playWavStreamResponse(response, firstAudioTimerLabel, () => {

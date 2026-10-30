@@ -155,6 +155,7 @@ internal class PrepareImmersiveTtsContextInfoDtoValidator : AbstractValidator<Pr
         RuleFor(x => x.NovelId).NotEmpty();
         RuleFor(x => x.ChapterIndex).GreaterThanOrEqualTo(0);
         RuleFor(x => x.SectionIndex).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.SelectedText).NotEmpty().When(x => x.SelectedText is not null);
         RuleFor(x => x.Provider).IsInEnum();
         RuleFor(x => x.TtsModelId).NotEmpty().MaximumLength(200);
     }

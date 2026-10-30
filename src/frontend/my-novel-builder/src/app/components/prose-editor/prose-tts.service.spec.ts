@@ -117,6 +117,40 @@ describe('ProseTtsService', () => {
     expect(toastr.clear).toHaveBeenCalledOnceWith(41);
   });
 
+  it('uses immersive playback for the selected passage', async () => {
+    integrationsConfig$.next({ ttsEnableImmersive: true });
+    generateAudioService.immersiveTextToSpeechStreamResponse.and.resolveTo(
+      playableResponse(),
+    );
+
+    await service.playSection({
+      ...createRequest([createPrompt('immersive')]),
+      narratorText: 'Selected passage',
+      selectedText: 'Selected passage',
+    });
+
+    expect(generateAudioService.immersiveTextToSpeechStreamResponse)
+      .toHaveBeenCalledOnceWith({
+        novelId: 'novel-1', promptId: 'immersive',
+        chapterIndex: 2, sectionIndex: 3, selectedText: 'Selected passage',
+      });
+    expect(generateAudioService.textToSpeechStreamResponse).not.toHaveBeenCalled();
+  });
+
+  it('falls back to only the selected passage when immersive playback fails', async () => {
+    integrationsConfig$.next({ ttsEnableImmersive: true });
+    generateAudioService.immersiveTextToSpeechStreamResponse.and.rejectWith(new Error('failed'));
+    generateAudioService.textToSpeechStreamResponse.and.resolveTo(playableResponse());
+
+    await service.playSection({
+      ...createRequest([createPrompt('immersive')]),
+      narratorText: 'Selected passage', selectedText: 'Selected passage',
+    });
+
+    expect(generateAudioService.textToSpeechStreamResponse)
+      .toHaveBeenCalledOnceWith({ message: 'Selected passage' });
+  });
+
   it('uses the stored immersive prompt when it remains available', async () => {
     integrationsConfig$.next({ ttsEnableImmersive: true });
     localStorageService.getNestedStringForKey.and.returnValue('immersive-1');

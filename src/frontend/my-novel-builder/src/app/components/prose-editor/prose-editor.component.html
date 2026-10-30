@@ -239,6 +239,15 @@
         >
           <i class="pi pi-user-plus"> </i>
         </div>
+        <div
+          pTooltip="Read selected text aloud"
+          tooltipPosition="bottom"
+          class="tooltip-control icon-only"
+          aria-label="Read selected text aloud"
+          (mousedown)="$event.preventDefault(); selectedTextToSpeech()"
+        >
+          <i class="icon icon-headphones" aria-hidden="true"></i>
+        </div>
       }
     </div>
   }

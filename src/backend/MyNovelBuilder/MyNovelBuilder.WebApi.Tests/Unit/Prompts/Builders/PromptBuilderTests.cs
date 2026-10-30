@@ -8,6 +8,41 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Prompts.Builders;
 
 public class PromptBuilderTests
 {
+    [Theory]
+    [InlineData(null, "Before. Selected. After.")]
+    [InlineData("Selected.", "Selected.")]
+    [InlineData("Edited selection.\nAnother line.", "Edited selection.\nAnother line.")]
+    public void ImmersiveTts_UsesSelectedSourceWhileKeepingChapterContext(
+        string? selectedText, string expectedSource)
+    {
+        var context = new NovelPromptBuilderContext<PrepareImmersiveTtsContextInfoDto>
+        {
+            Client = new PrepareImmersiveTtsContextInfoDto
+            {
+                NovelId = Guid.NewGuid(), ChapterIndex = 0, SectionIndex = 0,
+                TtsModelId = "model", SelectedText = selectedText
+            },
+            Novel = new Novel { Title = "Novel", Language = WritingLanguage.English },
+            Prose = new Prose
+            {
+                Chapters = [new Chapter
+                {
+                    Title = "Chapter",
+                    Sections = [new Section { Text = "<p>Before. Selected. After.</p>" }]
+                }]
+            },
+            CompendiumRecords = [],
+            IncludedCompendiumRecordIds = new HashSet<Guid>()
+        };
+        var builder = new PrepareImmersiveTtsPromptBuilder("{{sectionText}}|{{wholeChapter}}");
+
+        builder.ReplacePlaceholders(context);
+
+        var prompt = builder.ToString();
+        Assert.StartsWith("<tts-source>" + expectedSource + "</tts-source>|", prompt);
+        Assert.Contains("Before. Selected. After.", prompt);
+    }
+
     private class TestPromptBuilder(string prompt)
         : NovelPromptBuilder<TestTextGenerationContextInfoDto>(prompt)
     {

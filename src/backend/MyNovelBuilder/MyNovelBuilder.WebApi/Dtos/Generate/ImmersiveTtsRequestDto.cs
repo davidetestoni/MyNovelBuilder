@@ -29,6 +29,11 @@ public class ImmersiveTtsRequestDto
     public required int SectionIndex { get; set; }
 
     /// <summary>
+    /// Exact plain text selected in the editor; null narrates the whole section.
+    /// </summary>
+    public string? SelectedText { get; set; }
+
+    /// <summary>
     /// Optional TTS provider override.
     /// </summary>
     public TtsProvider? Provider { get; set; }
@@ -62,6 +67,7 @@ internal class ImmersiveTtsRequestDtoValidator : AbstractValidator<ImmersiveTtsR
         RuleFor(x => x.PromptId).NotEmpty();
         RuleFor(x => x.ChapterIndex).GreaterThanOrEqualTo(0);
         RuleFor(x => x.SectionIndex).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.SelectedText).NotEmpty().When(x => x.SelectedText is not null);
         RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.VoiceId).MaximumLength(200);
         RuleFor(x => x.TextGenerationModelId).MaximumLength(200);

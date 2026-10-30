@@ -268,6 +268,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
             NovelId = request.NovelId,
             ChapterIndex = request.ChapterIndex,
             SectionIndex = request.SectionIndex,
+            SelectedText = request.SelectedText,
             Provider = provider,
             TtsModelId = ttsModelId
         };
@@ -317,6 +318,8 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
             }
             message.Message = message.Message[..begin] + planningText + message.Message[end..];
         }
+        if (request.SelectedText is not null && planningText is null)
+            throw new InvalidDataException("The immersive prompt must include {{sectionText}} to narrate a selection.");
         if (planningText is null && (settings?.EnableTextEmphasis ?? config.TtsEnableTextEmphasis)
             && TtsAnnotationProfile.Resolve(provider, ttsModelId) is not null)
             throw new InvalidDataException("The immersive prompt must include {{sectionText}} to prepare annotations.");

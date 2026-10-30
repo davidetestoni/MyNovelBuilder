@@ -27,6 +27,7 @@ public class PrepareImmersiveTtsPromptBuilder : NovelPromptBuilder<PrepareImmers
         var chapter = PromptBuilderUtils.GetChapter(context.Prose, context.Client.ChapterIndex);
         var section = PromptBuilderUtils.GetSection(chapter, context.Client.SectionIndex);
         var sectionText = section?.Text.StripHtml() ?? string.Empty;
+        var sourceText = context.Client.SelectedText ?? sectionText;
         var chapterContext = PromptBuilderUtils.GetWholeChapter(context.Prose, context.Client.ChapterIndex);
         var storySoFar = PromptBuilderUtils.GetStorySoFar(
             context.Prose,
@@ -42,6 +43,7 @@ public class PrepareImmersiveTtsPromptBuilder : NovelPromptBuilder<PrepareImmers
                     chapter.Title,
                     section?.Summary ?? string.Empty,
                     sectionText,
+                    sourceText,
                     chapterContext
                 ]));
 
@@ -53,7 +55,7 @@ public class PrepareImmersiveTtsPromptBuilder : NovelPromptBuilder<PrepareImmers
         Builder
             .Replace("{{chapterTitle}}", chapter.Title.StripHtml())
             .Replace("{{sectionSummary}}", section?.Summary ?? string.Empty)
-            .Replace("{{sectionText}}", "<tts-source>" + sectionText + "</tts-source>")
+            .Replace("{{sectionText}}", "<tts-source>" + sourceText + "</tts-source>")
             .Replace("{{storySoFar}}", storySoFar)
             .Replace("{{wholeChapter}}", chapterContext)
             .Replace("{{records}}", PromptBuilderUtils.CreateCompendiumRecordsString(

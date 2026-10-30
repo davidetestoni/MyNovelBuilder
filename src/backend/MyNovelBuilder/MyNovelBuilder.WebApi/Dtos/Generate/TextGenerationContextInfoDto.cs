@@ -330,6 +330,11 @@ public class PrepareImmersiveTtsContextInfoDto : NovelTextGenerationContextInfoD
     public int SectionIndex { get; set; }
 
     /// <summary>
+    /// Exact plain text selected in the editor; null narrates the whole section.
+    /// </summary>
+    public string? SelectedText { get; set; }
+
+    /// <summary>
     /// The active TTS provider used for character-voice resolution.
     /// </summary>
     public TtsProvider Provider { get; set; }

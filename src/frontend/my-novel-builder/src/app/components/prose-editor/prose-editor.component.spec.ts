@@ -611,6 +611,32 @@ describe('ProseEditorComponent', () => {
   });
 
   describe('text to speech', () => {
+    it('plays only the selected text with its section context', async () => {
+      setSelection();
+
+      await component.selectedTextToSpeech();
+
+      expect(proseTtsService.playSection).toHaveBeenCalledOnceWith({
+        novelId: 'novel-1',
+        prompts: component.prompts,
+        chapterIndex: 0,
+        sectionIndex: 0,
+        narratorText: 'llo',
+        selectedText: 'llo',
+      });
+    });
+
+    it('does not play missing, cursor-only, or blank selections', async () => {
+      await component.selectedTextToSpeech();
+      setSelection(createQuill(), { index: 2, length: 0 });
+      await component.selectedTextToSpeech();
+      setSelection();
+      component.lastSelection!.text = ' \n';
+      await component.selectedTextToSpeech();
+
+      expect(proseTtsService.playSection).not.toHaveBeenCalled();
+    });
+
     it('delegates playback with normalized section text and context', async () => {
       component.prose.chapters[0].sections[0].text =
         '<p>Hello</p><p>world</p>';

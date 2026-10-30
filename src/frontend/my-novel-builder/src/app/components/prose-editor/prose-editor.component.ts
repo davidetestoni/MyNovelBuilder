@@ -497,6 +497,24 @@ export class ProseEditorComponent implements OnDestroy {
     });
   }
 
+  async selectedTextToSpeech() {
+    const selection = this.requireLastSelection();
+    if (!selection || selection.range.length === 0 || !selection.text.trim()) {
+      return;
+    }
+
+    this.showEditorControls = false;
+
+    await this.proseTtsService.playSection({
+      novelId: this.novelId,
+      prompts: this.prompts ?? [],
+      chapterIndex: selection.chapterIndex,
+      sectionIndex: selection.sectionIndex,
+      narratorText: selection.text,
+      selectedText: selection.text,
+    });
+  }
+
   openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {
     const prompts = this.prompts.filter(
       (p) => p.type === PromptType.SummarizeText,

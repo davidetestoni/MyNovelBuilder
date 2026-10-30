@@ -5,6 +5,7 @@ export interface ImmersiveTtsRequestDto {
   promptId: string;
   chapterIndex: number;
   sectionIndex: number;
+  selectedText?: string;
   provider?: TtsProvider;
   ttsModelId?: string;
   voiceId?: string;
