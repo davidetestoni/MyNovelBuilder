@@ -167,7 +167,7 @@ public static class AudioConversionHelper
 
         if (sampleProvider.WaveFormat.SampleRate != sampleRate)
         {
-            sampleProvider = new WdlResamplingSampleProvider(sampleProvider, sampleRate);
+            sampleProvider = new BandLimitedResamplingSampleProvider(sampleProvider, sampleRate);
         }
 
         if (bitsPerSample != 16)

@@ -76,7 +76,7 @@ public sealed class AudiobookSectionRenderer(
         var source = settings.EnableImmersive
             ? AudioCacheKey.ImmersiveSource(request.Section, settings, preparationKey!, emphasis)
             : AudioCacheKey.Source(request.Section.SpeechText, settings.ToTtsOptions(), narratorPreparation);
-        var sourceKey = AudioCacheKey.Create("section-source-v1", new { source, settings.GainDb, splitter = AudiobookTextSplitter.Version });
+        var sourceKey = AudioCacheKey.Create("section-source-v2", new { source, settings.GainDb, splitter = AudiobookTextSplitter.Version });
         return (sourceKey, preparationKey, narratorPreparation);
     }
     /// <summary>Checks whether the section has a complete, valid audio artifact in the shared cache.</summary>

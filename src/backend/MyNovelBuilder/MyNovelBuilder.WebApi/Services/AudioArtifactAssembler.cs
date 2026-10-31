@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Options;
 using NAudio.Wave;
@@ -42,20 +43,15 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
                     await using var input = await artifacts.OpenReadAsync(keys[index], cancellationToken)
                         ?? throw new InvalidDataException("A section audio checkpoint is missing or corrupt.");
                     using var reader = new WaveFileReader(input);
-                    if (chapter && (reader.WaveFormat.Encoding != WaveFormatEncoding.Pcm || reader.WaveFormat.SampleRate != 24000 ||
-                        reader.WaveFormat.Channels != 1 || reader.WaveFormat.BitsPerSample != 16))
+                    var normalized = reader.WaveFormat.Encoding == WaveFormatEncoding.Pcm && reader.WaveFormat.SampleRate == 24000 &&
+                        reader.WaveFormat.Channels == 1 && reader.WaveFormat.BitsPerSample == 16;
+                    if (chapter && !normalized)
                         throw new InvalidDataException("Chapter sections must use 24 kHz mono 16-bit PCM.");
                     if (chapter) AudiobookStorage.EnsureWaveSize(writer.Length, reader.Length);
                     AudiobookStorage.EnsureSpace(directory, reader.Length * 2 + (long)pauseMs * 96);
-                    ISampleProvider samples = reader.ToSampleProvider();
-                    if (samples.WaveFormat.Channels == 2)
-                        samples = new StereoToMonoSampleProvider(samples) { LeftVolume = 0.5f, RightVolume = 0.5f };
-                    else if (samples.WaveFormat.Channels != 1)
-                        throw new NotSupportedException("Audiobook rendering supports mono or stereo provider audio.");
-                    if (samples.WaveFormat.SampleRate != 24000) samples = new WdlResamplingSampleProvider(samples, 24000);
-                    var pcm = new SampleToWaveProvider16(samples);
+                    var pcm = normalized ? null : Normalize(reader);
                     int read;
-                    while ((read = chapter ? await reader.ReadAsync(buffer.AsMemory(), cancellationToken) : pcm.Read(buffer, 0, buffer.Length)) > 0)
+                    while ((read = pcm is null ? await reader.ReadAsync(buffer.AsMemory(), cancellationToken) : pcm.Read(buffer, 0, buffer.Length)) > 0)
                     {
                         AudiobookStorage.EnsureWaveSize(writer.Length, read);
                         await writer.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
@@ -81,4 +77,15 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
         finally { File.Delete(path); }
     }
 
+    private static IWaveProvider Normalize(WaveFileReader reader)
+    {
+        ISampleProvider samples = reader.ToSampleProvider();
+        if (samples.WaveFormat.Channels == 2)
+            samples = new StereoToMonoSampleProvider(samples) { LeftVolume = 0.5f, RightVolume = 0.5f };
+        else if (samples.WaveFormat.Channels != 1)
+            throw new NotSupportedException("Audiobook rendering supports mono or stereo provider audio.");
+        if (samples.WaveFormat.SampleRate != 24000)
+            samples = new BandLimitedResamplingSampleProvider(samples, 24000);
+        return new SampleToWaveProvider16(samples);
+    }
 }

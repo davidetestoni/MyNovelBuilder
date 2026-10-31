@@ -95,7 +95,13 @@ checksums and section offsets. Chapter filenames retain their original order;
 empty chapters and sections are skipped. Titles name files but are not spoken.
 
 WAV chapters use 24 kHz mono 16-bit PCM with a 500 ms gap between sections and
-no trailing gap. Expect about 2.9 MB per audio minute (173 MB per hour), plus
+no trailing gap. Higher-rate provider audio is downsampled with a sinc low-pass
+filter to suppress aliasing; matching PCM is copied without requantization.
+After upgrading from the earlier assembly filter, create a new run to use the
+improved conversion. Existing downloads and completed section checkpoints in
+old runs keep their original audio. New runs reuse cached provider synthesis
+where its inputs match, but may need new narration planning.
+Expect about 2.9 MB per audio minute (173 MB per hour), plus
 small file/ZIP headers. WAV entries are not compressed, so book-sized exports
 can be large. A chapter exceeding the WAV container limit must be split into
 smaller chapters before generating again.

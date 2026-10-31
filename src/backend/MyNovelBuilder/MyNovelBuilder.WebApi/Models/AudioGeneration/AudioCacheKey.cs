@@ -85,7 +85,7 @@ public static class AudioCacheKey
     });
 
     /// <summary>Identifies ordered audio, inter-chunk pause and output profile.</summary>
-    public static string Section(IEnumerable<string> chunks, int pauseMs) => Create("section-v1", new
+    public static string Section(IEnumerable<string> chunks, int pauseMs) => Create("section-v2", new
     {
         chunks, pauseMs, profile = "pcm-24000-mono-16"
     });
