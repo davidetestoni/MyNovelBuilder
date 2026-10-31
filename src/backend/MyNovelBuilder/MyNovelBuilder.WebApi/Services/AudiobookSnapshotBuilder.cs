@@ -85,7 +85,10 @@ public sealed class AudiobookSnapshotBuilder(
             foreach (var assignment in snapshot.Chapters.SelectMany(chapter => chapter.Sections)
                          .SelectMany(section => section.VoiceAssignments))
             {
-                if (!availableVoiceIds.Contains(assignment.VoiceId))
+                // Like narrator voices, OpenRouter character voices may use custom IDs
+                // that are absent from the provider's catalogue.
+                if (settings.Provider != TtsProvider.OpenRouter
+                    && !availableVoiceIds.Contains(assignment.VoiceId))
                 {
                     throw new ApiException(ErrorCodes.BadRequest,
                         $"Character voice '{assignment.VoiceId}' is not available for model '{settings.ModelId}'.");

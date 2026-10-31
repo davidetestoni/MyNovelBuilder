@@ -15,6 +15,70 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 
 public class AudiobookSettingsResolverTests
 {
+    [Theory]
+    [InlineData(TtsProvider.OpenRouter, "custom-character", true)]
+    [InlineData(TtsProvider.OpenRouter, "voice-a", true)]
+    [InlineData(TtsProvider.PocketTts, "custom-character", false)]
+    [InlineData(TtsProvider.PocketTts, "voice-a", true)]
+    public async Task SnapshotValidatesCharacterVoicesUsingProviderPolicy(
+        TtsProvider provider, string characterVoiceId, bool accepted)
+    {
+        using var baseFactory = new MyNovelBuilder.WebApi.Tests.Factories.TestWebApplicationFactory<Program>();
+        using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+        {
+            services.AddKeyedSingleton<ITtsService>(provider, new FakeTtsService());
+            services.AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter, new FakeTextService());
+            services.AddSingleton<IIntegrationsService>(new FakeIntegrations(new IntegrationsConfig
+            {
+                TtsProvider = provider, TtsModelId = "model-a", TtsVoiceId = "voice-a",
+                TextGenerationProvider = TextGenerationProvider.OpenRouter, TextGenerationModelId = "text-a"
+            }));
+        }));
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MyNovelBuilder.WebApi.Data.AppDbContext>();
+        var character = new CompendiumRecord
+        {
+            Name = "Alice", Type = CompendiumRecordType.Character, AlwaysIncluded = true,
+            CharacterVoiceAssignments = [new CharacterVoiceAssignment
+            {
+                Provider = provider, ModelId = "model-a", VoiceId = characterVoiceId
+            }]
+        };
+        var novel = new Novel
+        {
+            Title = "Character voices",
+            Compendia = [new Compendium { Name = "Characters", Records = [character] }]
+        };
+        var prompt = new Prompt
+        {
+            Name = "Immersive", Type = PromptType.PrepareImmersiveTts,
+            Messages = [new() { Role = PromptMessageRole.User, Message = "{{speakerOptions}} {{sectionText}}" }]
+        };
+        db.Novels.Add(novel);
+        db.Prompts.Add(prompt);
+        await db.SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<INovelService>().UpdateProseAsync(novel.Id,
+            new Prose { Chapters = [new Chapter
+            {
+                Title = "One", Sections = [new Section { Text = "Alice speaks." }]
+            }] });
+        var builder = scope.ServiceProvider.GetRequiredService<AudiobookSnapshotBuilder>();
+        var request = new AudiobookSettingsRequest(EnableImmersive: true, ImmersivePromptId: prompt.Id);
+
+        if (accepted)
+        {
+            var snapshot = await builder.BuildAsync(novel.Id, request);
+            var assignment = Assert.Single(Assert.Single(Assert.Single(snapshot.Chapters).Sections).VoiceAssignments);
+            Assert.Equal(characterVoiceId, assignment.VoiceId);
+        }
+        else
+        {
+            var error = await Assert.ThrowsAsync<MyNovelBuilder.WebApi.Exceptions.ApiException>(
+                () => builder.BuildAsync(novel.Id, request));
+            Assert.Equal($"Character voice '{characterVoiceId}' is not available for model 'model-a'.", error.Message);
+        }
+    }
+
     [Fact]
     public async Task OpenRouterAcceptsCustomVoiceIdsOutsideItsCatalogue()
     {
