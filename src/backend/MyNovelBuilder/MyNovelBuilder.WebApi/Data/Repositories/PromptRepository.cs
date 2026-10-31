@@ -17,7 +17,6 @@ public class PromptRepository : Repository<Prompt>, IPromptRepository
     public async Task<Prompt?> GetWithMessagesByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await Context.Set<Prompt>()
-            .Include(p => p.Messages)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 }
