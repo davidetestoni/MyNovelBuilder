@@ -47,7 +47,7 @@ public sealed class TtsAnnotationTests
         Assert.Null(TtsAnnotationProfile.Resolve(TtsProvider.ElevenLabs, "eleven_multilingual_v2"));
         Assert.Null(TtsAnnotationProfile.Resolve(TtsProvider.Custom, "fish-audio/drama-3"));
         Assert.True(fish.Messages("source").Count >= 8);
-        Assert.Equal("source", fish.Messages("source").Last().Message);
+        Assert.Equal("source", fish.Messages("source")[^1].Message);
     }
     [Theory]
     [InlineData("\"Stay here.\"", "\"[whispers]Stay here.\"", "\"[whispers]Stay here.\"")]
@@ -87,7 +87,7 @@ public sealed class TtsAnnotationTests
     public async Task CancellationDoesNotBecomeUnannotatedFallback()
     {
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         var generator = new AnnotationGenerator("invalid");
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => TtsAnnotationService.AnnotateAsync("source",
             TtsAnnotationProfile.Resolve(TtsProvider.ElevenLabs, "eleven_v3"), generator, "model", cancellation.Token));

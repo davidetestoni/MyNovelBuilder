@@ -207,7 +207,7 @@ public class MingTtsServiceTests
     {
         await using var test = await Context.CreateAsync();
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => test.Service.GenerateAudioAsync(
             new TtsRequest { Message = "Hello.", VoiceId = "US_Emma" }, cancellation.Token));
         Assert.Empty(test.Handler.Calls);
@@ -328,7 +328,7 @@ public class MingTtsServiceTests
             else if (request.RequestUri!.AbsolutePath.EndsWith("voice-design"))
             {
                 using var output = new MemoryStream();
-                using (var writer = new WaveFileWriter(output, new WaveFormat(44100, 16, 1))) writer.Write(Pcm);
+                using (var writer = new WaveFileWriter(output, new WaveFormat(44100, 16, 1))) await writer.WriteAsync(Pcm);
                 response.Content = new ByteArrayContent(output.ToArray());
             }
             else

@@ -29,7 +29,7 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
             finally { store.Mutations.Release(); }
             await base.StartAsync(cancellationToken);
         }
-        catch { workerLease.Dispose(); workerLease = null; throw; }
+        catch { await workerLease.DisposeAsync(); workerLease = null; throw; }
     }
     /// <summary>Disposes the background service and releases the queue’s file lease.</summary>
     public override void Dispose()
@@ -106,7 +106,12 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
                 var input = chapter.Sections.Single(s => s.SectionIndex == section.SectionIndex);
                 var result = await ProviderRetry.ExecuteAsync(
                     () => renderer.RenderAsync(new(job.NovelId, chapter.ChapterIndex, snapshot.Settings, input),
-                        cancellation.Token, CheckpointAsync), cancellation.Token);
+                        cancellation.Token, CheckpointAsync), cancellation.Token,
+                    onRetry: (attempt, delay, error) => logger.LogWarning(error,
+                        "Audiobook job {JobId}, chapter {Chapter}, section {Section}, stage {Stage}, "
+                        + "provider {Provider}, model {ModelId}: attempt {Attempt}/3 failed; retrying in {DelaySeconds}s.",
+                        job.Id, section.ChapterIndex + 1, section.SectionIndex + 1, job.Stage,
+                        snapshot.Settings.Provider, snapshot.Settings.ModelId, attempt, delay.TotalSeconds));
                 section.ArtifactKey = result.ArtifactKey;
                 section.State = result.Reused ? "reused" : "generated";
                 await CheckpointAsync("rendering");
@@ -131,7 +136,7 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
         catch (Exception ex)
         {
             if (active is not null) active.State = "failed";
-            // Never put provider exception messages, prompts, URLs or request bodies in job records/logs.
+            // Keep stable codes in job records; preserve exception details in server logs.
             var code = ex switch
             {
                 SnapshotUnavailableException => "snapshot_unavailable_requires_verified_retry",
@@ -142,7 +147,11 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
                 InvalidOperationException => "generation_inputs_or_plan_invalid",
                 _ => "generation_failed"
             };
-            logger.LogWarning("Audiobook job {JobId} failed with code {Code}.", job.Id, code);
+            logger.LogError(ex,
+                "Audiobook job {JobId} failed with code {Code}; chapter {Chapter}, section {Section}, "
+                + "stage {Stage}, provider {Provider}, model {ModelId}.",
+                job.Id, code, active?.ChapterIndex + 1, active?.SectionIndex + 1, job.Stage,
+                snapshot?.Settings.Provider, snapshot?.Settings.ModelId);
             await FinishAsync("failed", "failed", code);
         }
         finally { store.Unregister(job.Id); }
@@ -154,7 +163,7 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
             try
             {
                 var state = (await jobs.ReadAsync(job.NovelId, job.Id, cancellation.Token))?.State;
-                if (state is null or "cancelling") { cancellation.Cancel(); cancellation.Token.ThrowIfCancellationRequested(); }
+                if (state is null or "cancelling") { await cancellation.CancelAsync(); cancellation.Token.ThrowIfCancellationRequested(); }
                 job.Stage = stage;
                 await jobs.SaveAsync(job, cancellation.Token);
             }
@@ -177,5 +186,6 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
             finally { store.Mutations.Release(); }
         }
     }
-    private sealed class SnapshotUnavailableException : Exception;
+    /// <summary>The frozen inputs for the queued audiobook are no longer available.</summary>
+    public sealed class SnapshotUnavailableException : Exception;
 }

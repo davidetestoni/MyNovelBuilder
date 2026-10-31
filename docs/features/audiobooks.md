@@ -61,6 +61,32 @@ regenerate only affected sections. Immersive planning uses story context, so
 an earlier edit may also affect later sections. Missing or damaged files are
 rebuilt from the nearest retained audio layer.
 
+### Diagnosing a failed run
+
+The failed run shows a **Job ID**. Search the backend console logs for that ID.
+For Docker, run:
+
+```sh
+docker compose logs --follow app
+```
+
+Failure logs include the exception and stack trace, chapter and section numbers
+(starting at 1), stage, TTS provider and model. HTTP failures inside generation
+also include the status, provider host, `X-Request-Id` when supplied, and up to
+8,192 characters of the provider's error response. These error responses appear
+at Warning/Error level; Debug logging is not required. Provider responses can
+contain provider-supplied details, so review logs before sharing them.
+
+Each section has at most three automatic attempts for connection failures,
+timeouts, and HTTP 408, 429, 500, 502, 503 or 504 responses. Retries wait 1 then
+2 seconds, or use the provider's `Retry-After` header when supplied. A hint over
+30 seconds stops automatic retries; use **Retry** after the cooldown. Each retry
+logs its failed attempt and delay. Authentication, payment and invalid-request
+errors are not automatically retried. Completed cached audio is reused when a
+section is retried, though failed or incomplete provider operations may be charged
+again. Other SDK exceptions without a recognizable HTTP status are logged but
+are not automatically retried.
+
 ## Download
 
 A completed run offers **Download ZIP**. It contains one WAV file for each

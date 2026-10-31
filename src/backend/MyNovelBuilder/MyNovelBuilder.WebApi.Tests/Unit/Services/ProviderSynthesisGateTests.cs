@@ -25,7 +25,7 @@ public sealed class ProviderSynthesisGateTests
         using var cancellation = new CancellationTokenSource();
         var first = firstService.GenerateAudioAsync(new() { VoiceId = "voice", Message = "first" }, cancellation.Token);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         var second = secondService.GenerateAudioAsync(new() { VoiceId = "voice", Message = "second" });
         Assert.False(first.IsCompleted);
         Assert.False(second.IsCompleted);
@@ -84,10 +84,10 @@ public sealed class ProviderSynthesisGateTests
         using var stream = await tts.GenerateAudioStreamAsync(new() { VoiceId = "voice", Message = "playback" });
         using var cancellation = new CancellationTokenSource();
         var wait = tts.GenerateAudioAsync(new() { VoiceId = "voice", Message = "waiting" }, cancellation.Token);
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => wait);
         Assert.Equal(0, provider.Calls);
-        stream.Dispose();
+        await stream.DisposeAsync();
         provider.Fail = true;
         await Assert.ThrowsAsync<IOException>(() => tts.GenerateAudioAsync(new() { VoiceId = "voice", Message = "fail" }));
         provider.Fail = false;
@@ -99,7 +99,8 @@ public sealed class ProviderSynthesisGateTests
     [InlineData(HttpStatusCode.Forbidden, 1)]
     [InlineData(HttpStatusCode.PaymentRequired, 1)]
     [InlineData(HttpStatusCode.BadRequest, 1)]
-    [InlineData(HttpStatusCode.TooManyRequests, 1)]
+    [InlineData(HttpStatusCode.TooManyRequests, 3)]
+    [InlineData(HttpStatusCode.InternalServerError, 3)]
     [InlineData(HttpStatusCode.ServiceUnavailable, 3)]
     [InlineData(HttpStatusCode.BadGateway, 3)]
     public async Task RetryIsBoundedAndDoesNotLoopOnAuthQuotaOrValidation(HttpStatusCode status, int expected)
@@ -132,12 +133,63 @@ public sealed class ProviderSynthesisGateTests
     }
 
     [Fact]
-    public async Task HttpHandlerPreservesRetryAfterWithoutRetainingResponseBody()
+    public async Task HttpHandlerPreservesRetryAfterAndProviderResponse()
     {
         using var client = new HttpClient(new ProviderRetryHintHandler { InnerHandler = new HintResponse() });
         var error = await Assert.ThrowsAsync<RetryableProviderException>(() => ProviderRetry.ExecuteAsync(() => client.GetAsync("http://localhost/test"), default, (_, _) => Task.CompletedTask));
         Assert.Equal(TimeSpan.FromSeconds(8), error.RetryAfter);
-        Assert.DoesNotContain("secret", error.Message);
+        Assert.Contains("secret", error.Message);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.TooManyRequests, 3)]
+    [InlineData(HttpStatusCode.InternalServerError, 3)]
+    [InlineData(HttpStatusCode.BadRequest, 1)]
+    [InlineData(HttpStatusCode.Unauthorized, 1)]
+    public async Task HttpFailuresPreserveDiagnosticsAndReportBoundedRetries(HttpStatusCode status, int attempts)
+    {
+        using var client = new HttpClient(new ProviderRetryHintHandler { InnerHandler = new ErrorResponse(status) });
+        var retries = new List<(int Attempt, TimeSpan Delay, Exception Error)>();
+        var error = await Assert.ThrowsAsync<RetryableProviderException>(() => ProviderRetry.ExecuteAsync(
+            () => client.GetAsync("https://provider.example/speech?key=do-not-log"), default,
+            (_, _) => Task.CompletedTask,
+            (attempt, delay, exception) => retries.Add((attempt, delay, exception))));
+
+        Assert.Equal(status, error.StatusCode);
+        Assert.Contains("voice not found", error.Message);
+        Assert.Contains("request-123", error.Message);
+        Assert.Contains("provider.example", error.Message);
+        Assert.DoesNotContain("do-not-log", error.Message);
+        Assert.Equal(attempts - 1, retries.Count);
+        for (var i = 0; i < retries.Count; i++)
+        {
+            Assert.Equal(i + 1, retries[i].Attempt);
+            Assert.Equal(TimeSpan.FromSeconds(1 << i), retries[i].Delay);
+            Assert.Contains("voice not found", retries[i].Error.Message);
+        }
+    }
+
+    [Fact]
+    public async Task ProviderDiagnosticsAreTruncated()
+    {
+        using var client = new HttpClient(new ProviderRetryHintHandler
+        {
+            InnerHandler = new ErrorResponse(HttpStatusCode.BadRequest, new string('x', 20000))
+        });
+        var error = await Assert.ThrowsAsync<RetryableProviderException>(() => ProviderRetry.ExecuteAsync(
+            () => client.GetAsync("https://provider.example/speech"), default));
+        Assert.EndsWith(" [truncated]", error.Message);
+        Assert.True(error.Message.Length < 8500);
+    }
+
+    private sealed class ErrorResponse(HttpStatusCode status, string body = "{\"error\":{\"message\":\"voice not found\"}}") : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(status) { Content = new StringContent(body) };
+            response.Headers.Add("X-Request-Id", "request-123");
+            return Task.FromResult(response);
+        }
     }
     [Theory]
     [InlineData(false)]

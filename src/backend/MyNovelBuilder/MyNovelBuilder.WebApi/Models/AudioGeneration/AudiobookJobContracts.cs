@@ -3,7 +3,7 @@ namespace MyNovelBuilder.WebApi.Models.AudioGeneration;
 /// <summary>Submits an unexpired in-memory preview for durable background execution.</summary>
 /// <param name="SnapshotId">Identifier returned by preview for the same novel. Starting uses those exact frozen inputs.</param>
 /// <param name="IdempotencyKey">Client key unique within the novel. Repeating it with the same snapshot returns the existing job.</param>
-public sealed record StartAudiobookJobRequest(Guid SnapshotId, string IdempotencyKey);
+public sealed record StartAudiobookJobRequest([property: System.Text.Json.Serialization.JsonRequired] Guid SnapshotId, string IdempotencyKey);
 /// <summary>Free preview of saved-novel generation scope and effective settings. Cache estimates are rechecked during execution.</summary>
 /// <param name="SnapshotId">Identifier of the frozen snapshot held in application memory.</param>
 /// <param name="ExpiresAt">Time after which an unsubmitted preview must be refreshed.</param>

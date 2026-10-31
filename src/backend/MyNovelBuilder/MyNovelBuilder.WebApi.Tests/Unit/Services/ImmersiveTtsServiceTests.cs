@@ -305,7 +305,7 @@ public class ImmersiveTtsServiceTests
             return ValueTask.FromResult(config);
         }
 
-        public Task UpdateConfigAsync(IntegrationsConfig updatedConfig, CancellationToken cancellationToken = default)
+        public Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default)
         {
             throw new NotSupportedException();
         }

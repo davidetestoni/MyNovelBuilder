@@ -65,7 +65,7 @@ public sealed class AudiobookSectionRenderer(
     public (string SourceKey, string? PreparationKey, string? NarratorPreparation) GetIdentity(AudiobookRenderRequest request)
     {
         var settings = request.Settings;
-        var provider = services.GetRequiredKeyedService<ITtsService>(settings.Provider);
+        _ = services.GetRequiredKeyedService<ITtsService>(settings.Provider);
         var emphasis = settings.EnableTextEmphasis && TtsAnnotationProfile.Resolve(settings.Provider, settings.ModelId) is not null
             ? AudioCacheKey.Create("emphasis-template-v1", new { version = TtsAnnotationProfile.Version, messages = TtsAnnotationProfile.Resolve(settings.Provider, settings.ModelId)!.Messages(string.Empty) }) : null;
         var preparationKey = settings.EnableImmersive

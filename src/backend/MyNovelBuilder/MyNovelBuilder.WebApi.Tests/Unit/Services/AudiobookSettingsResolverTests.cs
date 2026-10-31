@@ -252,7 +252,7 @@ public class AudiobookSettingsResolverTests
         public ValueTask<IntegrationsConfig> GetConfigAsync(CancellationToken cancellationToken = default) =>
             ValueTask.FromResult(config);
 
-        public Task UpdateConfigAsync(IntegrationsConfig updated, CancellationToken cancellationToken = default) =>
+        public Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default) =>
             throw new InvalidOperationException("Resolution must not update defaults.");
     }
 
@@ -276,7 +276,7 @@ public class AudiobookSettingsResolverTests
 
     private sealed class FakeTextService : ITextGenerationService
     {
-        public Task<string> GenerateAsync(string modelId, IEnumerable<MyNovelBuilder.WebApi.Models.Prompts.PromptMessage> messages,
+        public Task<string> GenerateAsync(string model, IEnumerable<MyNovelBuilder.WebApi.Models.Prompts.PromptMessage> messages,
             MyNovelBuilder.WebApi.Models.TextGeneration.StructuredOutputOptions? structuredOutputOptions = null,
             CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public async IAsyncEnumerable<string> GenerateStreamedAsync(string model,

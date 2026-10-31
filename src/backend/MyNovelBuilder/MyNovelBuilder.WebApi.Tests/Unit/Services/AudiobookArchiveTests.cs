@@ -29,7 +29,7 @@ public sealed class AudiobookArchiveTests
         Assert.Equal(0.53, chapter.DurationSeconds, 6);
         Assert.Equal(0.51, chapter.Sections[1].OffsetSeconds, 6);
         Assert.Equal(0.02, chapter.Sections[1].DurationSeconds, 6);
-        await using var entry = zip.Entries[0].Open();
+        await using var entry = await zip.Entries[0].OpenAsync();
         using var copy = new MemoryStream();
         await entry.CopyToAsync(copy);
         copy.Position = 0;
@@ -38,7 +38,7 @@ public sealed class AudiobookArchiveTests
         Assert.Equal(1, wav.WaveFormat.Channels);
         Assert.Equal(16, wav.WaveFormat.BitsPerSample);
         var pcm = new byte[wav.Length];
-        Assert.Equal(pcm.Length, wav.Read(pcm, 0, pcm.Length));
+        Assert.Equal(pcm.Length, await wav.ReadAsync(pcm.AsMemory()));
         Assert.Equal(25440, pcm.Length); // 480 + 24000 + 960, with no final gap.
         Assert.All(pcm.Take(480), b => Assert.Equal((byte)1, b));
         Assert.All(pcm.Skip(480).Take(24000), b => Assert.Equal((byte)0, b));
@@ -166,7 +166,7 @@ public sealed class AudiobookArchiveTests
 
     private static async Task<AudiobookArchiveManifest> ReadManifest(ZipArchive zip)
     {
-        await using var entry = zip.GetEntry("manifest.json")!.Open();
+        await using var entry = await zip.GetEntry("manifest.json")!.OpenAsync();
         return (await JsonSerializer.DeserializeAsync<AudiobookArchiveManifest>(entry, new JsonSerializerOptions(JsonSerializerDefaults.Web)))!;
     }
 
@@ -182,7 +182,7 @@ public sealed class AudiobookArchiveTests
         public Task<IDisposable> AcquireAsync(string key, CancellationToken cancellationToken = default) => inner.AcquireAsync(key, cancellationToken);
         public Task<byte[]?> ReadBytesAsync(string key, CancellationToken cancellationToken = default) => inner.ReadBytesAsync(key, cancellationToken);
         public Task SaveAsync(string key, Stream wav, CancellationToken cancellationToken = default) => inner.SaveAsync(key, wav, cancellationToken);
-        public Task<AudioSourceManifest?> ReadManifestAsync(string key, CancellationToken cancellationToken = default) => inner.ReadManifestAsync(key, cancellationToken);
+        public Task<AudioSourceManifest?> ReadManifestAsync(string sourceKey, CancellationToken cancellationToken = default) => inner.ReadManifestAsync(sourceKey, cancellationToken);
         public Task SaveManifestAsync(AudioSourceManifest manifest, CancellationToken cancellationToken = default) => inner.SaveManifestAsync(manifest, cancellationToken);
     }
 
@@ -214,7 +214,7 @@ public sealed class AudiobookArchiveTests
         {
             var key = AudioCacheKey.Hash(value.ToString());
             using var bytes = new MemoryStream();
-            using (var writer = new WaveFileWriter(bytes, new WaveFormat(24000, 16, 1))) writer.Write(Enumerable.Repeat(value, count).ToArray(), 0, count);
+            using (var writer = new WaveFileWriter(bytes, new WaveFormat(24000, 16, 1))) await writer.WriteAsync(Enumerable.Repeat(value, count).ToArray());
             using var input = new MemoryStream(bytes.ToArray());
             await Artifacts.SaveAsync(key, input);
             return key;

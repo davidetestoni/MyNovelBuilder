@@ -55,7 +55,7 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
                     if (samples.WaveFormat.SampleRate != 24000) samples = new WdlResamplingSampleProvider(samples, 24000);
                     var pcm = new SampleToWaveProvider16(samples);
                     int read;
-                    while ((read = chapter ? reader.Read(buffer, 0, buffer.Length) : pcm.Read(buffer, 0, buffer.Length)) > 0)
+                    while ((read = chapter ? await reader.ReadAsync(buffer.AsMemory(), cancellationToken) : pcm.Read(buffer, 0, buffer.Length)) > 0)
                     {
                         AudiobookStorage.EnsureWaveSize(writer.Length, read);
                         await writer.WriteAsync(buffer.AsMemory(0, read), cancellationToken);

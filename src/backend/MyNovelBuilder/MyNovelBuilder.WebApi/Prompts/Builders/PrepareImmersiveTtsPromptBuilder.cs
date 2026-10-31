@@ -39,13 +39,11 @@ public class PrepareImmersiveTtsPromptBuilder : NovelPromptBuilder<PrepareImmers
             context.CompendiumRecords,
             string.Join(
                 "\n\n",
-                [
                     chapter.Title,
                     section?.Summary ?? string.Empty,
                     sectionText,
                     sourceText,
-                    chapterContext
-                ]));
+                    chapterContext));
 
         var recordsInContextList = recordsInContext.ToList();
         PromptBuilderUtils.TrackIncludedRecords(

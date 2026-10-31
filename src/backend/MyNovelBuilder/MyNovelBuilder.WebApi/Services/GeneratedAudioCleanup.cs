@@ -15,8 +15,8 @@ public sealed class GeneratedAudioCleanup(IOptions<AppStorageOptions> options, F
     public async Task RunAsync(CancellationToken ct = default)
     {
         try { await CleanAsync(ct); }
-        catch (IOException) { logger.LogWarning("Generated audio cleanup was skipped because storage is unavailable."); }
-        catch (UnauthorizedAccessException) { logger.LogWarning("Generated audio cleanup was skipped because storage is not writable."); }
+        catch (IOException ex) { logger.LogWarning(ex, "Generated audio cleanup was skipped because storage is unavailable."); }
+        catch (UnauthorizedAccessException ex) { logger.LogWarning(ex, "Generated audio cleanup was skipped because storage is not writable."); }
     }
 
     private async Task CleanAsync(CancellationToken ct)
@@ -76,14 +76,14 @@ public sealed class GeneratedAudioCleanup(IOptions<AppStorageOptions> options, F
             // Retained ZIPs also pin chapter assemblies, so old downloads can be rebuilt cheaply.
             try
             {
-                using var zip = ZipFile.OpenRead(file.FullName);
+                await using var zip = await ZipFile.OpenReadAsync(file.FullName, ct);
                 if (zip.GetEntry("manifest.json") is not { } entry) continue;
-                await using var input = entry.Open();
+                await using var input = await entry.OpenAsync(ct);
                 var manifest = await JsonSerializer.DeserializeAsync<AudiobookArchiveManifest>(input,
                     new JsonSerializerOptions(JsonSerializerDefaults.Web), ct);
                 if (manifest?.Chapters is not null)
-                    foreach (var chapter in manifest.Chapters)
-                        if (chapter is not null && IsHash(chapter.ArtifactKey)) required.Add(chapter.ArtifactKey);
+                    foreach (var chapter in manifest.Chapters.Where(chapter => chapter is not null && IsHash(chapter.ArtifactKey)))
+                        required.Add(chapter.ArtifactKey);
             }
             catch (InvalidDataException) { /* Keep the ZIP; status/download already handles damaged archives. */ }
             catch (JsonException) { /* Existing job section references remain protected. */ }
@@ -99,14 +99,14 @@ public sealed class GeneratedAudioCleanup(IOptions<AppStorageOptions> options, F
                     value.ArtifactKeys is not { Length: > 0 } || value.ArtifactKeys.Any(k => !IsHash(k))) throw new JsonException();
                 manifests.Add((file, value, File.Exists(Path.Combine(cache, value.SourceKey + ".wav"))));
             }
-            catch (JsonException)
+            catch (JsonException ex)
             {
-                logger.LogWarning("Keeping shared audio because some dependency metadata could not be read.");
+                logger.LogWarning(ex, "Keeping shared audio because some dependency metadata could not be read.");
                 return;
             }
         }
-        foreach (var file in cacheFiles.Where(f => f.LastWriteTimeUtc >= cutoff))
-            if (IsHash(Path.GetFileNameWithoutExtension(file.Name))) required.Add(Path.GetFileNameWithoutExtension(file.Name));
+        foreach (var file in cacheFiles.Where(f => f.LastWriteTimeUtc >= cutoff && IsHash(Path.GetFileNameWithoutExtension(f.Name))))
+            required.Add(Path.GetFileNameWithoutExtension(file.Name));
         var sectionKeys = required.ToHashSet();
         var pauses = saved.Select(j => j.Settings.EnableImmersive == true ? j.Settings.ImmersivePauseMs ?? 0 : 0).Append(0).Distinct().ToArray();
         var kept = new HashSet<string>();
@@ -155,8 +155,8 @@ public sealed class GeneratedAudioCleanup(IOptions<AppStorageOptions> options, F
             if (file.Exists && (file.Attributes & FileAttributes.ReparsePoint) == 0 && file.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1))
                 file.LastWriteTimeUtc = DateTime.UtcNow;
         }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (IOException) { /* Access timestamps are best effort and must not interrupt playback. */ }
+        catch (UnauthorizedAccessException) { /* Read-only audio remains playable without refreshing its timestamp. */ }
     }
 
     private static bool IsHash(string? key) => key is { Length: 64 } && key.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f');
@@ -176,7 +176,7 @@ public sealed class GeneratedAudioCleanup(IOptions<AppStorageOptions> options, F
     private void Delete(FileInfo file)
     {
         try { file.Delete(); }
-        catch (IOException) { logger.LogWarning("A generated audio file could not be removed during cleanup."); }
-        catch (UnauthorizedAccessException) { logger.LogWarning("A generated audio file is not writable during cleanup."); }
+        catch (IOException ex) { logger.LogWarning(ex, "A generated audio file could not be removed during cleanup."); }
+        catch (UnauthorizedAccessException ex) { logger.LogWarning(ex, "A generated audio file is not writable during cleanup."); }
     }
 }

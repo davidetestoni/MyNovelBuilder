@@ -211,12 +211,6 @@ public sealed class AudioArtifactCacheTests : IDisposable
         public AudioFormat OutputAudioFormat => AudioFormat.Wav;
         public bool SupportsTextEmphasis(string? modelId) => true;
         public IReadOnlyList<PromptMessage> GetEmphasisMessages(string text) => [new() { Role = PromptMessageRole.System, Message = Prompt }, new() { Role = PromptMessageRole.User, Message = text }];
-        public async Task<string> EmphasizeTextAsync(TtsRequest request, Func<CancellationToken, ValueTask<ITextGenerationService>> textGenerationServiceFactory, CancellationToken cancellationToken = default)
-        {
-            Interlocked.Increment(ref EmphasisCalls);
-            await Task.Delay(10, cancellationToken);
-            return "Emphasized " + request.Message;
-        }
         public async Task<byte[]> GenerateAudioAsync(TtsRequest request, CancellationToken cancellationToken = default)
         {
             Interlocked.Increment(ref SynthesisCalls);

@@ -120,9 +120,8 @@ public static class TtsAnnotationService
 
         // Repair only omitted boundary punctuation. Full validation still rejects changed words,
         // missing internal quotes, invented prose, unsupported tags and unbalanced scopes.
-        foreach (var candidate in new[] { source[0] + result + source[^1], source[0] + result, result + source[^1] })
-            if (PreservesSource(source, candidate, profile)) return candidate;
-        return null;
+        return new[] { source[0] + result + source[^1], source[0] + result, result + source[^1] }
+            .FirstOrDefault(candidate => PreservesSource(source, candidate, profile));
     }
 
 }

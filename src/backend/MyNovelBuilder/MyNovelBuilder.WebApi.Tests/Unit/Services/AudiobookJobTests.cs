@@ -367,12 +367,40 @@ public sealed class AudiobookJobTests
         Assert.Equal("completed", (await f.Status(next.Id)).State);
     }
 
+    [Fact]
+    public async Task FailureLogIncludesOriginalExceptionAndSectionContext()
+    {
+        using var f = await Fixture.Create();
+        var job = await f.Start(await f.Preview());
+        var error = new ApiException(ErrorCodes.ExternalServiceError, "Provider says: voice abc is unavailable");
+        f.Tts.BeforeCall = (_, _) => Task.FromException(error);
+
+        await f.Worker.RunNextAsync(default);
+
+        Assert.Equal("failed", (await f.Status(job.Id)).State);
+        var entry = Assert.Single(f.Logger.Entries);
+        Assert.Same(error, entry.Error);
+        Assert.Contains(job.Id.ToString(), entry.Message);
+        Assert.Contains("chapter 1, section 1", entry.Message);
+        Assert.Contains("synthesis", entry.Message);
+    }
+
+    private sealed class WorkerLogger : ILogger<AudiobookWorker>
+    {
+        public List<(string Message, Exception? Error)> Entries { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Entries.Add((formatter(state, exception), exception));
+    }
+
     private sealed class Fixture : IDisposable
     {
         public string Folder { get; } = Path.Combine(Path.GetTempPath(), "audiobook-jobs-" + Guid.NewGuid());
         public Guid NovelId { get; } = Guid.NewGuid();
         public FakeTts Tts { get; } = new();
         public TestClock Clock { get; } = new();
+        public WorkerLogger Logger { get; } = new();
         public ServiceProvider Services { get; private set; } = null!;
         public AudiobookWorker Worker { get; private set; } = null!;
         public static async Task<Fixture> Create()
@@ -420,7 +448,7 @@ public sealed class AudiobookJobTests
             services.AddScoped<AudiobookJobService>();
             Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
             Worker = new(Services.GetRequiredService<IServiceScopeFactory>(), Services.GetRequiredService<AudiobookSnapshotStore>(),
-                Services.GetRequiredService<IOptions<AppStorageOptions>>(), Services.GetRequiredService<ILogger<AudiobookWorker>>());
+                Services.GetRequiredService<IOptions<AppStorageOptions>>(), Logger);
         }
         public async Task SetProse(params string[] texts)
         {

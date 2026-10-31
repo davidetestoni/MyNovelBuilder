@@ -29,9 +29,9 @@ public sealed class FileSystemAudiobookJobRepository(IOptions<AppStorageOptions>
         }
         catch (FileNotFoundException) { return null; }
         catch (DirectoryNotFoundException) { return null; }
-        catch (JsonException)
+        catch (JsonException ex)
         {
-            logger.LogWarning("Ignoring invalid audiobook metadata for job {JobId} in novel {NovelId}.", jobId, novelId);
+            logger.LogWarning(ex, "Ignoring invalid audiobook metadata for job {JobId} in novel {NovelId}.", jobId, novelId);
             return null;
         }
     }

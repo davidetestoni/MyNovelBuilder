@@ -160,7 +160,7 @@ public sealed class GeneratedAudioCleanupTests
         var repository = new FileSystemAudioArtifactRepository(f.Options);
         var key = Key("valid-audio");
         using var bytes = new MemoryStream();
-        using (var wav = new WaveFileWriter(bytes, new WaveFormat(24000, 16, 1))) wav.Write(new byte[480], 0, 480);
+        using (var wav = new WaveFileWriter(bytes, new WaveFormat(24000, 16, 1))) await wav.WriteAsync(new byte[480]);
         using var input = new MemoryStream(bytes.ToArray());
         await repository.SaveAsync(key, input);
         var source = Key("source");
@@ -200,7 +200,7 @@ public sealed class GeneratedAudioCleanupTests
         var repository = new FileSystemAudioArtifactRepository(f.Options);
         var inputKey = Key("input");
         using var bytes = new MemoryStream();
-        using (var wav = new WaveFileWriter(bytes, new WaveFormat(24000, 16, 1))) wav.Write(new byte[480], 0, 480);
+        using (var wav = new WaveFileWriter(bytes, new WaveFormat(24000, 16, 1))) await wav.WriteAsync(new byte[480]);
         using var input = new MemoryStream(bytes.ToArray());
         await repository.SaveAsync(inputKey, input);
         var assembler = new AudioArtifactAssembler(repository, f.Options);
@@ -235,7 +235,7 @@ public sealed class GeneratedAudioCleanupTests
         using var f = new Fixture();
         var audio = f.Wave(Key("audio"));
         using var cancellation = new CancellationTokenSource();
-        cancellation.Cancel();
+        await cancellation.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => f.Cleanup.RunAsync(cancellation.Token));
         Assert.True(File.Exists(audio));
     }

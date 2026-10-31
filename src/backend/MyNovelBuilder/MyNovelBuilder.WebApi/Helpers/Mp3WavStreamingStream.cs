@@ -73,6 +73,10 @@ public sealed class Mp3WavStreamingStream : Stream
         return count;
     }
 
+    /// <inheritdoc />
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+        ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
     private static async Task<Mp3Frame?> ReadFrameAsync(Stream source, CancellationToken token)
     {
         var header = new byte[4];
@@ -122,10 +126,6 @@ public sealed class Mp3WavStreamingStream : Stream
     /// <inheritdoc />
     public override int Read(byte[] buffer, int offset, int count) =>
         ReadAsync(buffer.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
-
-    /// <inheritdoc />
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
-        ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
 
     /// <inheritdoc />
     protected override void Dispose(bool disposing)

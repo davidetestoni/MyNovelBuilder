@@ -82,16 +82,16 @@ public sealed class AudiobookSnapshotBuilder(
             }
             var availableVoiceIds = model.Voices.Select(voice => voice.VoiceId)
                 .ToHashSet(StringComparer.Ordinal);
-            foreach (var assignment in snapshot.Chapters.SelectMany(chapter => chapter.Sections)
-                         .SelectMany(section => section.VoiceAssignments))
+            foreach (var voiceId in snapshot.Chapters.SelectMany(chapter => chapter.Sections)
+                         .SelectMany(section => section.VoiceAssignments).Select(assignment => assignment.VoiceId))
             {
                 // Like narrator voices, OpenRouter character voices may use custom IDs
                 // that are absent from the provider's catalogue.
                 if (settings.Provider != TtsProvider.OpenRouter
-                    && !availableVoiceIds.Contains(assignment.VoiceId))
+                    && !availableVoiceIds.Contains(voiceId))
                 {
                     throw new ApiException(ErrorCodes.BadRequest,
-                        $"Character voice '{assignment.VoiceId}' is not available for model '{settings.ModelId}'.");
+                        $"Character voice '{voiceId}' is not available for model '{settings.ModelId}'.");
                 }
             }
         }

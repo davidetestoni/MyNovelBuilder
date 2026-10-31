@@ -140,7 +140,6 @@ public sealed class AudiobookSectionRendererTests
     public async Task ExpandedEmphasisIsSplitAndCheckpointedWithoutLosingTags()
     {
         using var fixture = new Fixture();
-        fixture.Text.ExpandEmphasis = true;
         var result = await fixture.Renderer.RenderAsync(Fixture.Request(string.Concat(Enumerable.Repeat("A short sentence. ", 100)), false, true));
         Assert.True(fixture.Tts.Requests.Count > 1);
         Assert.All(fixture.Tts.Requests, r => Assert.InRange(r.Message.Length, 1, 1000));
@@ -171,7 +170,6 @@ public sealed class AudiobookSectionRendererTests
     public async Task IncompleteEmphasisChunksResumeInMemoryAndCorruptUnitRebuildsFromCheckpoints()
     {
         using var fixture = new Fixture();
-        fixture.Text.ExpandEmphasis = true;
         var request = Fixture.Request(string.Concat(Enumerable.Repeat("Source speech. ", 100)), false, true);
         fixture.Tts.BeforeCall = n => { if (n == 2) throw new IOException("Interrupted"); };
         await Assert.ThrowsAsync<IOException>(() => fixture.Renderer.RenderAsync(request));
@@ -348,7 +346,6 @@ public sealed class AudiobookSectionRendererTests
         public int PlannerCalls;
         public int EmphasisCalls;
         public int Calls => PlannerCalls + EmphasisCalls;
-        public bool ExpandEmphasis;
         public string? LastEmphasis;
         public Task<string> GenerateAsync(string model, IEnumerable<PromptMessage> messages, StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default)
         {

@@ -82,10 +82,9 @@ public static class AudiobookTextSplitter
         var chunks = new List<string>();
         var current = new System.Text.StringBuilder();
         var scoped = false;
-        foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(
-            text, @"<whisper>|</whisper>|\[[^\]]*\]|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]"))
+        foreach (var token in System.Text.RegularExpressions.Regex.Matches(
+            text, @"<whisper>|</whisper>|\[[^\]]*\]|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]").Select(match => match.Value))
         {
-            var token = match.Value;
             var nextScoped = token == "<whisper>" || (scoped && token != "</whisper>");
             var reserve = nextScoped ? 10 : 0;
             if (current.Length + token.Length + reserve > limit)

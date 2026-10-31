@@ -91,7 +91,7 @@ public sealed class TtsFrozenInputsTests
         var revision = await fixture.Voices.GetRevisionAsync(TtsProvider.OmniVoice, fixture.VoiceId);
         var request = fixture.Request(revision, emphasis: true);
         if (changeEndpoint) fixture.Config.OmniVoiceBaseUrl = "http://changed.test/";
-        else File.WriteAllBytes(fixture.VoicePath, [99]);
+        else await File.WriteAllBytesAsync(fixture.VoicePath, [99]);
         var text = new CallbackTextService(() => { });
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             fixture.CreateService(fixture.Voices, text).GenerateWavBytesAsync(request));
@@ -250,7 +250,7 @@ public sealed class TtsFrozenInputsTests
     private sealed class Integrations(IntegrationsConfig config) : IIntegrationsService
     {
         public ValueTask<IntegrationsConfig> GetConfigAsync(CancellationToken cancellationToken = default) => ValueTask.FromResult(config);
-        public Task UpdateConfigAsync(IntegrationsConfig updated, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
     private sealed class NoCache : IAudioRepository
     {
@@ -264,9 +264,9 @@ public sealed class TtsFrozenInputsTests
     private sealed class CallbackTextService(Action callback) : ITextGenerationService
     {
         public int Calls { get; private set; }
-        public Task<string> GenerateAsync(string modelId, IEnumerable<PromptMessage> messages, StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default)
+        public Task<string> GenerateAsync(string model, IEnumerable<PromptMessage> messages, StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default)
         {
-            Assert.Equal("text-model", modelId);
+            Assert.Equal("text-model", model);
             Calls++;
             callback();
             return Task.FromResult("[sigh]" + messages.Last().Message);

@@ -116,8 +116,8 @@ var defaultLogLevel = configuredDefaultLogLevel switch
 builder.Host.UseSerilog((_, options) =>
 {
     // Keep the default concise. Full prompts, generated text, and provider
-    // response bodies are logged at Debug and are only emitted when this
-    // configured level is Debug (or Trace).
+    // successful response bodies are logged at Debug and are only emitted when this
+    // configured level is Debug (or Trace). Provider error responses are included in failure diagnostics.
     options.MinimumLevel.Is(defaultLogLevel);
 
     // This will destructure JsonDocument and JsonElement when passed

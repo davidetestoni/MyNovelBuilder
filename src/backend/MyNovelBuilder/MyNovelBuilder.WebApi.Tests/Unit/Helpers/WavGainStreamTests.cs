@@ -17,7 +17,7 @@ public sealed class WavGainStreamTests
         Assert.Equal(wav.Length, result.Length);
         using var reader = new WaveFileReader(new MemoryStream(result));
         var samples = new byte[4];
-        Assert.Equal(4, reader.Read(samples, 0, 4));
+        Assert.Equal(4, await reader.ReadAsync(samples.AsMemory()));
         Assert.Equal(expected, BinaryPrimitives.ReadInt16LittleEndian(samples));
         Assert.Equal(-expected, BinaryPrimitives.ReadInt16LittleEndian(samples.AsSpan(2)));
         Assert.Equal(CreateWav(), wav);
@@ -31,7 +31,7 @@ public sealed class WavGainStreamTests
         await using var stream = new WavGainStream(new FragmentedStream(wav), -6);
         using var output = new MemoryStream();
         var singleByte = new byte[1];
-        while (await stream.ReadAsync(singleByte.AsMemory()) > 0) output.Write(singleByte);
+        while (await stream.ReadAsync(singleByte.AsMemory()) > 0) await output.WriteAsync(singleByte);
         Assert.Equal(expected, output.ToArray());
     }
 
@@ -48,7 +48,7 @@ public sealed class WavGainStreamTests
 
     private sealed class FragmentedStream(byte[] bytes) : MemoryStream(bytes)
     {
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default) =>
-            base.ReadAsync(buffer[..Math.Min(buffer.Length, 1)], ct);
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            base.ReadAsync(buffer[..Math.Min(buffer.Length, 1)], cancellationToken);
     }
 }

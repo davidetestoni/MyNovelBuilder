@@ -60,7 +60,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
     {
         var gain = await ResolveGainAsync(request, cancellationToken);
         var source = await GenerateRawWavStreamAsync(request, cancellationToken);
-        return gain == 0 ? source : new WavGainStream(source, gain);
+        return gain.Equals(0d) ? source : new WavGainStream(source, gain);
     }
 
     /// <inheritdoc />
@@ -192,7 +192,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
         }
         if (keys.Count == 0) throw new InvalidOperationException("There is no spoken text to synthesize.");
         var rawKey = keys.Count == 1 ? keys[0] : await _assembler.AssembleAsync(keys, 0, cancellationToken);
-        if (options.GainDb == 0) return rawKey;
+        if (options.GainDb.Equals(0d)) return rawKey;
         var gainedKey = AudioCacheKey.Create("gain-v1", new { rawKey, options.GainDb });
         using var lease = await _artifacts.AcquireAsync(gainedKey, cancellationToken);
         await using var existing = await _artifacts.OpenReadAsync(gainedKey, cancellationToken);

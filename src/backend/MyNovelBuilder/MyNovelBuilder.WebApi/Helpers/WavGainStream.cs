@@ -17,7 +17,7 @@ public sealed class WavGainStream(Stream source, double gainDb) : Stream
     /// <summary>Applies fixed gain to a WAV buffer and returns the resulting audio.</summary>
     public static async Task<byte[]> ApplyAsync(byte[] wav, double gainDb, CancellationToken ct)
     {
-        if (gainDb == 0) return wav;
+        if (gainDb.Equals(0d)) return wav;
         await using var stream = new WavGainStream(new MemoryStream(wav, false), gainDb);
         using var output = new MemoryStream();
         await stream.CopyToAsync(output, ct);

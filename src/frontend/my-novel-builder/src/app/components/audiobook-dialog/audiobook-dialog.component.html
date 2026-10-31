@@ -111,7 +111,10 @@
               <p>{{ job.completedChapters }} / {{ job.totalChapters }} chapters assembled</p>
             </div>
             @if (savedAfter(job)) { <p class="muted">The novel was saved after this run; it may not include your latest edits.</p> }
-            @if (job.errorCode) { <p class="error" role="alert">{{ jobError(job) }}</p> }
+            @if (job.errorCode) {
+              <p class="error" role="alert">{{ jobError(job) }}</p>
+              <p class="muted">Check the server logs for failure details. Job ID: <code>{{ job.id }}</code></p>
+            }
             <div class="actions">
               @if (isActive(job)) {
                 <p-button label="Cancel generation" severity="danger" variant="outlined" [disabled]="busy || job.state === 'cancelling'" (onClick)="cancel(job)" />

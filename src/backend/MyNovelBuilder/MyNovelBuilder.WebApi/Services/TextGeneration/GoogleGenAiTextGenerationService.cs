@@ -398,22 +398,16 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         {
             case JsonObject jsonObject:
                 NormalizeNullableTypeArray(jsonObject);
-                foreach (var property in jsonObject.ToList())
+                foreach (var property in jsonObject.Where(property => property.Value is not null))
                 {
-                    if (property.Value is not null)
-                    {
-                        NormalizeJsonSchemaNode(property.Value);
-                    }
+                    NormalizeJsonSchemaNode(property.Value!);
                 }
                 break;
 
             case JsonArray jsonArray:
-                foreach (var item in jsonArray)
+                foreach (var item in jsonArray.OfType<JsonNode>())
                 {
-                    if (item is not null)
-                    {
-                        NormalizeJsonSchemaNode(item);
-                    }
+                    NormalizeJsonSchemaNode(item);
                 }
                 break;
         }

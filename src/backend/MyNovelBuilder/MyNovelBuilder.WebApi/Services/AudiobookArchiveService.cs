@@ -102,10 +102,10 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
                             ?? throw new InvalidDataException("Chapter audio is missing or corrupt.");
                         AudiobookStorage.EnsureSpace(directory, audio.Length + 65536);
                         var entry = zip.CreateEntry(chapter.FileName, CompressionLevel.NoCompression);
-                        await using var destination = entry.Open();
+                        await using var destination = await entry.OpenAsync(ct);
                         await audio.CopyToAsync(destination, ct);
                     }
-                    await using var metadata = zip.CreateEntry("manifest.json", CompressionLevel.Optimal).Open();
+                    await using var metadata = await zip.CreateEntry("manifest.json", CompressionLevel.Optimal).OpenAsync(ct);
                     await JsonSerializer.SerializeAsync(metadata, manifest, Json, ct);
                 }
                 output.Flush(flushToDisk: true);
@@ -182,11 +182,11 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
         foreach (var chapter in manifest.Chapters)
         {
             var entry = zip.GetEntry(chapter.FileName) ?? throw new InvalidDataException("Missing chapter in ZIP.");
-            await using var audio = entry.Open();
+            await using var audio = await entry.OpenAsync(ct);
             if (Convert.ToHexStringLower(await SHA256.HashDataAsync(audio, ct)) != chapter.Sha256)
                 throw new InvalidDataException("Chapter checksum mismatch in ZIP.");
         }
-        await using var metadata = (zip.GetEntry("manifest.json") ?? throw new InvalidDataException("Missing export manifest.")).Open();
+        await using var metadata = await (zip.GetEntry("manifest.json") ?? throw new InvalidDataException("Missing export manifest.")).OpenAsync(ct);
         var saved = await JsonSerializer.DeserializeAsync<AudiobookArchiveManifest>(metadata, Json, ct);
         if (saved is null || AudioCacheKey.Create("archive-v1", saved) != AudioCacheKey.Create("archive-v1", manifest))
             throw new InvalidDataException("Export manifest mismatch.");
