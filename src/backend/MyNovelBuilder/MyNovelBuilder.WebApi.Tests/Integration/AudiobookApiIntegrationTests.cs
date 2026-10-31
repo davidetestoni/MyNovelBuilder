@@ -122,7 +122,7 @@ public sealed class AudiobookApiIntegrationTests
         Assert.EndsWith("-audiobook.zip", download.Content.Headers.ContentDisposition!.FileNameStar);
         using (var bytes = new MemoryStream(await download.Content.ReadAsByteArrayAsync()))
         using (var zip = new System.IO.Compression.ZipArchive(bytes))
-            Assert.Equal(new[] { "001-One.wav", "manifest.json" }, zip.Entries.Select(e => e.FullName));
+            Assert.Equal(new[] { "001-One.wav", "sections.xspf", "manifest.json" }, zip.Entries.Select(e => e.FullName));
         using var range = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
         range.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, 9);
         var partial = await client.SendAsync(range);

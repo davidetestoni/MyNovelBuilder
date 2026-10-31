@@ -9,6 +9,67 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public sealed class AudioArtifactAssemblerTests
 {
     [Theory]
+    [InlineData(24000, 16, false)]
+    [InlineData(22051, 8, false)]
+    [InlineData(44100, 32, true)]
+    public async Task EmbeddedCuesUseFrameOffsetsAndOriginalLabelsWithoutChangingSamples(int rate, int bits, bool floating)
+    {
+        using var f = new Fixture();
+        var format = floating ? WaveFormat.CreateIeeeFloatWaveFormat(rate, 2) : new WaveFormat(rate, bits, 1);
+        var pcm = new byte[4 * format.BlockAlign];
+        var source = await f.Save(pcm, format);
+        var key = await f.Assembler.AssembleChapterAsync([source, source], [0, 11]);
+        await using var input = await f.Artifacts.OpenReadAsync(key);
+        Assert.NotNull(input);
+        using var reader = new BinaryReader(input, System.Text.Encoding.ASCII, leaveOpen: true);
+        input.Position = 4;
+        Assert.Equal(input.Length - 8, reader.ReadUInt32());
+        input.Position = 12;
+        var foundCues = false;
+        var foundLabels = false;
+        while (input.Position < input.Length)
+        {
+            var id = System.Text.Encoding.ASCII.GetString(reader.ReadBytes(4));
+            var size = reader.ReadUInt32();
+            var end = input.Position + size;
+            if (id == "cue ")
+            {
+                foundCues = true;
+                Assert.Equal(2u, reader.ReadUInt32());
+                foreach (var (cueId, frame) in new[] { (1u, 0u), (2u, (uint)(4 + rate / 2)) })
+                {
+                    Assert.Equal(cueId, reader.ReadUInt32());
+                    Assert.Equal(frame, reader.ReadUInt32());
+                    Assert.Equal("data", System.Text.Encoding.ASCII.GetString(reader.ReadBytes(4)));
+                    Assert.Equal(0u, reader.ReadUInt32());
+                    Assert.Equal(0u, reader.ReadUInt32());
+                    Assert.Equal(frame, reader.ReadUInt32());
+                }
+            }
+            if (id == "LIST")
+            {
+                foundLabels = true;
+                Assert.Equal("adtl", System.Text.Encoding.ASCII.GetString(reader.ReadBytes(4)));
+                foreach (var (cueId, label) in new[] { (1u, "Section 1\0"), (2u, "Section 12\0") })
+                {
+                    Assert.Equal("labl", System.Text.Encoding.ASCII.GetString(reader.ReadBytes(4)));
+                    Assert.Equal((uint)(4 + label.Length), reader.ReadUInt32());
+                    Assert.Equal(cueId, reader.ReadUInt32());
+                    Assert.Equal(label, System.Text.Encoding.ASCII.GetString(reader.ReadBytes(label.Length)));
+                    if (label.Length % 2 != 0) Assert.Equal(0, reader.ReadByte());
+                }
+            }
+            input.Position = end + size % 2;
+        }
+        Assert.True(foundCues && foundLabels);
+        var (_, samples) = await f.Read(key);
+        Assert.Equal((8 + rate / 2) * format.BlockAlign, samples.Length);
+        Assert.Equal(pcm, samples[..pcm.Length]);
+        Assert.Equal(pcm, samples[^pcm.Length..]);
+        Assert.NotEqual(key, await f.Assembler.AssembleChapterAsync([source, source], [0, 1]));
+    }
+
+    [Theory]
     [InlineData(24000, 1, 16, false)]
     [InlineData(44100, 1, 16, false)]
     [InlineData(48000, 2, 16, false)]

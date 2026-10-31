@@ -136,11 +136,22 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
     /// <summary>Returns a validated ZIP stream for a completed job belonging to the novel. The caller must dispose the stream.</summary>
     public async Task<(Stream Stream, string FileName)> DownloadAsync(Guid novelId, Guid jobId, CancellationToken ct)
     {
-        var job = await FindAsync(novelId, jobId, ct);
-        if (job.State != "completed") throw Bad("This audiobook is not ready for download.");
-        var stream = await archives.OpenAsync(novelId, job.Archive, ct)
-            ?? throw Bad("The audiobook archive is missing or damaged. Retry the job to rebuild it from retained audio.");
-        return (stream, job.Archive!.FileName);
+        await store.Mutations.WaitAsync(ct);
+        try
+        {
+            var job = await FindAsync(novelId, jobId, ct);
+            if (job.State != "completed") throw Bad("This audiobook is not ready for download.");
+            var upgraded = await archives.EnsureSectionPlaylistAsync(novelId, job.Archive, ct);
+            if (upgraded is not null && upgraded != job.Archive)
+            {
+                job.Archive = upgraded;
+                await jobs.SaveAsync(job, ct);
+            }
+            var stream = await archives.OpenAsync(novelId, job.Archive, ct)
+                ?? throw Bad("The audiobook archive is missing or damaged. Retry the job to rebuild it from retained audio.");
+            return (stream, job.Archive!.FileName);
+        }
+        finally { store.Mutations.Release(); }
     }
 
     private async Task<AudiobookJob> FindAsync(Guid novelId, Guid id, CancellationToken ct) =>

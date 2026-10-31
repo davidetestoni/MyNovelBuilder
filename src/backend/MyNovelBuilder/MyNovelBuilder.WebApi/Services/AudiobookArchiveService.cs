@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Options;
@@ -45,7 +46,7 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
                 sectionIndices.Add(section.SectionIndex);
             }
             if (keys.Count == 0) { skippedChapters.Add(chapter.ChapterIndex); continue; }
-            var key = await assembler.AssembleChapterAsync(keys, ct);
+            var key = await assembler.AssembleChapterAsync(keys, sectionIndices, ct);
             var assembly = await artifacts.ReadManifestAsync(key, ct);
             if (assembly?.SegmentFrames is not { } segmentFrames || segmentFrames.Length != keys.Count)
                 throw new InvalidDataException("Chapter segment timings are missing.");
@@ -74,7 +75,7 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
             AudiobookJobService.ToRequest(snapshot.Settings), profiles.Length == 1 ? profiles[0] : "per-chapter", 500, chapters.ToArray(),
             skippedChapters.ToArray(), skippedSections.ToArray(),
             skippedChapters.Count + skippedSections.Count > 0 ? ["Empty chapters and sections were omitted; original numbering is preserved."] : []);
-        var archiveKey = AudioCacheKey.Create("archive-v1", manifest);
+        var archiveKey = AudioCacheKey.Create("archive-v2", manifest);
         // The snapshot date is exported metadata, so a new preview may need a new ZIP even when all audio is reused.
         var path = PathFor(snapshot.NovelId, archiveKey);
         using var lease = await artifacts.AcquireAsync(archiveKey, ct);
@@ -113,6 +114,8 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
                         await using var destination = await entry.OpenAsync(ct);
                         await audio.CopyToAsync(destination, ct);
                     }
+                    await using (var playlist = await zip.CreateEntry("sections.xspf", CompressionLevel.Optimal).OpenAsync(ct))
+                        await playlist.WriteAsync(SectionPlaylist(manifest), ct);
                     await using var metadata = await zip.CreateEntry("manifest.json", CompressionLevel.Optimal).OpenAsync(ct);
                     await JsonSerializer.SerializeAsync(metadata, manifest, Json, ct);
                 }
@@ -139,6 +142,50 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
         if (reference is null || !IsHash(reference.Key) || !IsHash(reference.Sha256)) return false;
         try { return new FileInfo(PathFor(novelId, reference.Key)) is { Exists: true } info && info.Length == reference.Length; }
         catch (IOException) { return false; }
+    }
+
+    /// <summary>Adds VLC navigation to an older ZIP using its frozen manifest and audio, without any provider calls.</summary>
+    public async Task<AudiobookArchiveReference?> EnsureSectionPlaylistAsync(Guid novelId, AudiobookArchiveReference? reference, CancellationToken ct)
+    {
+        await using var source = await OpenAsync(novelId, reference, ct);
+        if (source is null) return null;
+        AudiobookArchiveManifest manifest;
+        using (var zip = new ZipArchive(source, ZipArchiveMode.Read, leaveOpen: true))
+        {
+            if (zip.GetEntry("sections.xspf") is not null) return reference;
+            await using var metadata = await (zip.GetEntry("manifest.json") ?? throw new InvalidDataException("Missing export manifest.")).OpenAsync(ct);
+            manifest = await JsonSerializer.DeserializeAsync<AudiobookArchiveManifest>(metadata, Json, ct)
+                ?? throw new InvalidDataException("Missing export manifest.");
+        }
+        var key = AudioCacheKey.Create("archive-v2", manifest);
+        var path = PathFor(novelId, key);
+        using var lease = await artifacts.AcquireAsync(key, ct);
+        var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            AudiobookStorage.EnsureSpace(Path.GetDirectoryName(path)!, source.Length + 65536);
+            await using var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 65536, true);
+            source.Position = 0;
+            await source.CopyToAsync(output, ct);
+            output.Position = 0;
+            using (var zip = new ZipArchive(output, ZipArchiveMode.Update, leaveOpen: true))
+            {
+                await using var playlist = await zip.CreateEntry("sections.xspf", CompressionLevel.Optimal).OpenAsync(ct);
+                await playlist.WriteAsync(SectionPlaylist(manifest), ct);
+            }
+            output.Flush(flushToDisk: true);
+            output.Position = 0;
+            await ValidateAsync(output, manifest, ct);
+            output.Position = 0;
+            var upgraded = new AudiobookArchiveReference(key, Convert.ToHexStringLower(await SHA256.HashDataAsync(output, ct)),
+                output.Length, reference!.FileName);
+            await output.DisposeAsync();
+            await source.DisposeAsync();
+            ct.ThrowIfCancellationRequested();
+            File.Move(temporary, path, overwrite: true);
+            return upgraded;
+        }
+        finally { File.Delete(temporary); }
     }
 
     /// <summary>Opens a seekable ZIP after verifying integrity, or returns null when it is missing or damaged.</summary>
@@ -186,7 +233,7 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
     private static async Task ValidateAsync(Stream stream, AudiobookArchiveManifest manifest, CancellationToken ct)
     {
         using var zip = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
-        if (zip.Entries.Count != manifest.Chapters.Length + 1) throw new InvalidDataException("Incomplete audiobook ZIP.");
+        if (zip.Entries.Count != manifest.Chapters.Length + 2) throw new InvalidDataException("Incomplete audiobook ZIP.");
         foreach (var chapter in manifest.Chapters)
         {
             var entry = zip.GetEntry(chapter.FileName) ?? throw new InvalidDataException("Missing chapter in ZIP.");
@@ -194,9 +241,36 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
             if (Convert.ToHexStringLower(await SHA256.HashDataAsync(audio, ct)) != chapter.Sha256)
                 throw new InvalidDataException("Chapter checksum mismatch in ZIP.");
         }
+        await using (var playlist = await (zip.GetEntry("sections.xspf") ?? throw new InvalidDataException("Missing section playlist.")).OpenAsync(ct))
+        {
+            using var bytes = new MemoryStream();
+            await playlist.CopyToAsync(bytes, ct);
+            if (!bytes.ToArray().AsSpan().SequenceEqual(SectionPlaylist(manifest)))
+                throw new InvalidDataException("Section playlist mismatch.");
+        }
         await using var metadata = await (zip.GetEntry("manifest.json") ?? throw new InvalidDataException("Missing export manifest.")).OpenAsync(ct);
         var saved = await JsonSerializer.DeserializeAsync<AudiobookArchiveManifest>(metadata, Json, ct);
-        if (saved is null || AudioCacheKey.Create("archive-v1", saved) != AudioCacheKey.Create("archive-v1", manifest))
+        if (saved is null || AudioCacheKey.Create("archive-v2", saved) != AudioCacheKey.Create("archive-v2", manifest))
             throw new InvalidDataException("Export manifest mismatch.");
+    }
+
+    private static byte[] SectionPlaylist(AudiobookArchiveManifest manifest)
+    {
+        XNamespace xspf = "http://xspf.org/ns/0/";
+        XNamespace vlc = "http://www.videolan.org/vlc/playlist/ns/0/";
+        var tracks = manifest.Chapters.SelectMany(chapter => chapter.Sections.Select((section, index) =>
+            new XElement(xspf + "track",
+                new XElement(xspf + "location", Uri.EscapeDataString(chapter.FileName)),
+                new XElement(xspf + "title", $"{chapter.Title} — Section {((long)section.SectionIndex + 1).ToString(CultureInfo.InvariantCulture)}"),
+                new XElement(xspf + "extension", new XAttribute("application", "http://www.videolan.org/vlc/playlist/0"),
+                    new XElement(vlc + "option", "start-time=" + section.OffsetSeconds.ToString("R", CultureInfo.InvariantCulture)),
+                    new XElement(vlc + "option", "stop-time=" + (index + 1 < chapter.Sections.Length
+                        ? chapter.Sections[index + 1].OffsetSeconds : chapter.DurationSeconds).ToString("R", CultureInfo.InvariantCulture))))));
+        var document = new XDocument(new XElement(xspf + "playlist", new XAttribute("version", "1"),
+            new XAttribute(XNamespace.Xmlns + "vlc", vlc.NamespaceName),
+            new XElement(xspf + "title", manifest.Title), new XElement(xspf + "trackList", tracks)));
+        using var output = new MemoryStream();
+        document.Save(output);
+        return output.ToArray();
     }
 }

@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text.Json;
+using System.Xml.Linq;
 using Microsoft.Extensions.Options;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.AudioGeneration;
@@ -44,7 +45,7 @@ public sealed class AudiobookArchiveTests
         await using var file = await f.Service.OpenAsync(f.Snapshot.NovelId, reference, default);
         Assert.NotNull(file);
         using var zip = new ZipArchive(file);
-        Assert.Equal(new[] { "001-evil_title.wav", "003-evil_title.wav", "manifest.json" }, zip.Entries.Select(e => e.FullName));
+        Assert.Equal(new[] { "001-evil_title.wav", "003-evil_title.wav", "sections.xspf", "manifest.json" }, zip.Entries.Select(e => e.FullName));
         var manifest = await ReadManifest(zip);
         Assert.Equal(new[] { 1 }, manifest.SkippedChapters);
         Assert.Contains(manifest.SkippedSections, s => s.ChapterIndex == 0 && s.SectionIndex == 1);
@@ -70,6 +71,28 @@ public sealed class AudiobookArchiveTests
         Assert.DoesNotContain("PRIVATE", json);
         Assert.DoesNotContain("https://", json);
         Assert.Equal(("packaging", 2), stages[^1]);
+    }
+
+    [Fact]
+    public async Task VlcPlaylistUsesPortablePathsOriginalSectionNumbersAndExactPlaybackBounds()
+    {
+        using var f = new Fixture();
+        var snapshot = f.Snapshot with { Chapters = f.Snapshot.Chapters.SetItem(0, f.Snapshot.Chapters[0] with { Title = "Caffè & <日本語>" }) };
+        var reference = await f.Service.BuildAsync(snapshot, await f.Progress(), (_, _) => Task.CompletedTask, default);
+        await using var file = await f.Service.OpenAsync(snapshot.NovelId, reference, default);
+        using var zip = new ZipArchive(file!);
+        await using var playlist = await zip.GetEntry("sections.xspf")!.OpenAsync();
+        var document = XDocument.Load(playlist);
+        XNamespace ns = "http://xspf.org/ns/0/";
+        XNamespace vlc = "http://www.videolan.org/vlc/playlist/ns/0/";
+        var tracks = document.Descendants(ns + "track").ToArray();
+        Assert.Equal(3, tracks.Length);
+        Assert.Equal("Caffè & <日本語> — Section 3", tracks[1].Element(ns + "title")!.Value);
+        var manifest = await ReadManifest(zip);
+        Assert.Equal(manifest.Chapters[0].FileName, Uri.UnescapeDataString(tracks[0].Element(ns + "location")!.Value));
+        Assert.Equal(new[] { "start-time=0", "stop-time=0.51" }, tracks[0].Descendants(vlc + "option").Select(e => e.Value));
+        Assert.Equal(new[] { "start-time=0.51", "stop-time=0.53" }, tracks[1].Descendants(vlc + "option").Select(e => e.Value));
+        Assert.Equal(new[] { "start-time=0", "stop-time=0.01" }, tracks[2].Descendants(vlc + "option").Select(e => e.Value));
     }
 
     [Fact]

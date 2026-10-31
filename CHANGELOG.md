@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- Audiobook chapter WAVs include named section cue points. ZIP downloads also
+  include `sections.xspf` for section navigation in VLC after extraction.
+
+### Fixed
+
+- Downloading an older completed audiobook now adds the VLC section playlist
+  from its saved ZIP without regenerating speech or requiring unchanged prose.
+
 ## [0.2.0] - 2026-10-24
 
 ### Added

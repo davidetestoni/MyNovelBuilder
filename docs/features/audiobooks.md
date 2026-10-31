@@ -116,6 +116,22 @@ non-empty chapter and a `manifest.json` with chapter titles, duration,
 checksums and section offsets. Chapter filenames retain their original order;
 empty chapters and sections are skipped. Titles name files but are not spoken.
 
+Chapter WAVs embed a named cue point at the start of each spoken section
+(**Section 1**, **Section 2**, etc.), preserving original numbering when empty
+sections are skipped. Marker support depends on the player. For VLC, extract
+the ZIP and open **sections.xspf** in the extracted folder. Its playlist lists
+each chapter's sections and plays from the selected section to the next section
+boundary (including the intervening gap), or to the end of the chapter.
+Keep the playlist beside the WAV files. VLC 3's native WAV reader does not
+expose embedded cue points through its Chapter menu.
+
+New exports include these navigation aids and reuse retained speech audio.
+Downloading an older saved run automatically adds **sections.xspf** using the
+timings and audio in its original ZIP. This needs no new speech generation,
+even if the novel has since changed. Its WAV audio stays unchanged; embedded
+WAV cue points are included in newly generated exports. Previously downloaded
+copies are unchanged; download the ZIP again to get the playlist.
+
 WAV assembly preserves the provider's sample rate, channel count and sample
 format when inputs match, copying the audio samples byte-for-byte. Chapters
 can have different formats; `manifest.json` records each chapter's actual

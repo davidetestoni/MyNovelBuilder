@@ -17,13 +17,20 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
 
     /// <summary>Concatenates section audio into a cached chapter with a 500 ms gap and no trailing silence.</summary>
     public Task<string> AssembleChapterAsync(IReadOnlyList<string> keys, CancellationToken cancellationToken = default)
-        => AssembleCoreAsync(keys, 500, true, cancellationToken);
+        => AssembleChapterAsync(keys, Enumerable.Range(0, keys.Count).ToArray(), cancellationToken);
 
-    private async Task<string> AssembleCoreAsync(IReadOnlyList<string> keys, int pauseMs, bool chapter, CancellationToken cancellationToken)
+    /// <summary>Preserves original section numbers in embedded chapter cue labels.</summary>
+    public Task<string> AssembleChapterAsync(IReadOnlyList<string> keys, IReadOnlyList<int> sectionIndices, CancellationToken cancellationToken = default)
+        => AssembleCoreAsync(keys, 500, true, cancellationToken, sectionIndices);
+
+    private async Task<string> AssembleCoreAsync(IReadOnlyList<string> keys, int pauseMs, bool chapter, CancellationToken cancellationToken,
+        IReadOnlyList<int>? sectionIndices = null)
     {
         if (keys.Count == 0) throw new ArgumentException("Cannot assemble empty audio.", nameof(keys));
         ArgumentOutOfRangeException.ThrowIfNegative(pauseMs);
-        var key = chapter ? AudioCacheKey.Create("chapter-v2", new { sections = keys, pauseMs, profile = AudioCacheKey.AssemblyProfile })
+        if (chapter && (sectionIndices?.Count != keys.Count || sectionIndices.Any(i => i < 0)))
+            throw new ArgumentException("Expected an original section number for each audio input.", nameof(sectionIndices));
+        var key = chapter ? AudioCacheKey.Create("chapter-v3", new { sections = keys, sectionIndices, pauseMs, profile = AudioCacheKey.AssemblyProfile })
             : AudioCacheKey.Section(keys, pauseMs);
         using var lease = await artifacts.AcquireAsync(key, cancellationToken);
         await using (var cached = await artifacts.OpenReadAsync(key, cancellationToken))
@@ -73,6 +80,8 @@ public sealed class AudioArtifactAssembler(IAudioArtifactRepository artifacts, I
                 }
             }
             await PadDataChunkAsync(path, cancellationToken);
+            if (chapter)
+                await WaveSectionMarkers.AppendAsync(path, segmentFrames, sectionIndices!, format.SampleRate, pauseMs, cancellationToken);
             await using var completed = File.OpenRead(path);
             AudiobookStorage.EnsureSpace(directory, completed.Length);
             await artifacts.SaveAsync(key, completed, cancellationToken);

@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
 using System.Net;
+using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,6 +26,51 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 
 public sealed class AudiobookJobTests
 {
+    [Fact]
+    public async Task DownloadUpgradesLegacyZipAfterRestartWithoutCachedAudioOrUnchangedProse()
+    {
+        using var f = await Fixture.Create();
+        var status = await f.Start(await f.Preview());
+        await f.Worker.RunNextAsync(default);
+        var repository = f.Services.GetRequiredService<FileSystemAudiobookJobRepository>();
+        var job = (await repository.ReadAsync(f.NovelId, status.Id))!;
+        var archiveFolder = Path.Combine(f.Folder, "audiobooks", f.NovelId.ToString(), "archives");
+        var legacyKey = AudioCacheKey.Hash("legacy-archive");
+        var legacyPath = Path.Combine(archiveFolder, legacyKey + ".zip");
+        File.Copy(Path.Combine(archiveFolder, job.Archive!.Key + ".zip"), legacyPath);
+        using (var zip = ZipFile.Open(legacyPath, ZipArchiveMode.Update)) zip.GetEntry("sections.xspf")!.Delete();
+        var legacyBytes = await File.ReadAllBytesAsync(legacyPath);
+        job.Archive = new(legacyKey, Convert.ToHexStringLower(SHA256.HashData(legacyBytes)), legacyBytes.Length, job.Archive.FileName);
+        await repository.SaveAsync(job);
+        // Upgrade must use the frozen ZIP rather than rebuilding from the edited novel or invoking TTS.
+        foreach (var path in Directory.GetFiles(Path.Combine(f.Folder, "audio", "v1"), "*.wav")) File.Delete(path);
+        await f.SetProse("Changed prose.");
+        var speechCalls = f.Tts.Messages.Count;
+        f.Restart();
+        var download = await f.Call(s => s.DownloadAsync(f.NovelId, status.Id, default));
+        await using (var stream = download.Stream)
+        using (var zip = new ZipArchive(stream))
+        using (var legacy = ZipFile.OpenRead(legacyPath))
+        {
+            Assert.NotNull(zip.GetEntry("sections.xspf"));
+            foreach (var original in legacy.Entries)
+            {
+                await using var before = await original.OpenAsync();
+                await using var after = await zip.GetEntry(original.FullName)!.OpenAsync();
+                Assert.Equal(await SHA256.HashDataAsync(before), await SHA256.HashDataAsync(after));
+            }
+        }
+        var upgradedJob = (await f.Services.GetRequiredService<FileSystemAudiobookJobRepository>().ReadAsync(f.NovelId, status.Id))!;
+        Assert.NotEqual(legacyKey, upgradedJob.Archive!.Key);
+        Assert.Equal("completed", upgradedJob.State);
+        f.Restart();
+        var again = await f.Call(s => s.DownloadAsync(f.NovelId, status.Id, default));
+        await again.Stream.DisposeAsync();
+        Assert.Equal(upgradedJob.Archive, (await f.Services.GetRequiredService<FileSystemAudiobookJobRepository>().ReadAsync(f.NovelId, status.Id))!.Archive);
+        Assert.Equal(speechCalls, f.Tts.Messages.Count);
+        Assert.Empty(Directory.GetFiles(archiveFolder, "*.tmp"));
+    }
+
     [Fact]
     public async Task ExhaustedPlanningHasSpecificPublicCodeWithoutExposingProseInStatus()
     {
