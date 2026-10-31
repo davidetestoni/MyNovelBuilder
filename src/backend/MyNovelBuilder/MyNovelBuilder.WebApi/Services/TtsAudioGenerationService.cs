@@ -223,7 +223,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
             : null;
         var sourceKey = AudioCacheKey.Source(resolved.Request.Message, options, preparationKey);
         if (resolved.Request.PreparationScope is not null)
-            sourceKey = AudioCacheKey.Create("finite-tts-v2", new { sourceKey, splitter = AudiobookTextSplitter.Version });
+            sourceKey = AudioCacheKey.Create("finite-tts-v3", new { sourceKey, splitter = AudiobookTextSplitter.Version });
         using var sourceLease = await _artifacts.AcquireAsync(sourceKey, cancellationToken);
         var manifest = await _artifacts.ReadManifestAsync(sourceKey, cancellationToken);
         if (manifest is { ArtifactKeys.Length: 1 }) return manifest.ArtifactKeys[0];

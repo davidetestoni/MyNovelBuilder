@@ -13,7 +13,7 @@ public sealed record AudiobookArchiveReference(string Key, string Sha256, long L
 /// <param name="Author">Frozen author name.</param>
 /// <param name="SnapshotAt">Time the source inputs were captured.</param>
 /// <param name="Settings">Effective non-secret generation selections.</param>
-/// <param name="OutputProfile">PCM format used by all chapters.</param>
+/// <param name="OutputProfile">Format shared by chapters, or per-chapter when formats differ.</param>
 /// <param name="InterSectionGapMs">Silence between non-empty sections, never after the last section.</param>
 /// <param name="Chapters">Non-empty chapters in original novel order.</param>
 /// <param name="SkippedChapters">Zero-based positions of omitted empty chapters.</param>
@@ -31,8 +31,9 @@ public sealed record AudiobookArchiveManifest(int Version, string Title, string 
 /// <param name="Sha256">Checksum of the chapter WAV bytes.</param>
 /// <param name="DurationSeconds">Chapter duration including inter-section gaps.</param>
 /// <param name="Sections">Spoken sections in playback order.</param>
+/// <param name="OutputProfile">Actual WAV format of this chapter.</param>
 public sealed record AudiobookArchiveChapter(int ChapterIndex, string Title, string FileName, string ArtifactKey,
-    string Sha256, double DurationSeconds, AudiobookArchiveSection[] Sections);
+    string Sha256, double DurationSeconds, AudiobookArchiveSection[] Sections, string OutputProfile = "");
 
 /// <summary>Timing of one spoken section within a chapter.</summary>
 /// <param name="SectionIndex">Original zero-based section position.</param>

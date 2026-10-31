@@ -10,6 +10,50 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 
 public sealed class ProviderSynthesisGateTests
 {
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task AudiobookAllowanceIsBoundedAndRestoresSerialPlayback(int parallelism)
+    {
+        var gate = new ProviderSynthesisGate();
+        var provider = TtsProvider.OpenRouter;
+        using var allowance = gate.BeginAudiobookScope(provider, parallelism);
+        var leases = new List<IDisposable>();
+        using var cancellation = new CancellationTokenSource();
+        try
+        {
+            for (var i = 0; i < parallelism; i++) leases.Add(await gate.AcquireAsync(provider, default));
+            var overflow = gate.AcquireAsync(provider, cancellation.Token);
+            Assert.False(overflow.IsCompleted);
+            await cancellation.CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => overflow);
+            allowance.Dispose();
+            var playback = gate.AcquireAsync(provider, default);
+            for (var i = 0; i < leases.Count - 1; i++) leases[i].Dispose();
+            Assert.False(playback.IsCompleted);
+            leases[^1].Dispose();
+            using var first = await playback.WaitAsync(TimeSpan.FromSeconds(5));
+            var next = gate.AcquireAsync(provider, default);
+            Assert.False(next.IsCompleted);
+            first.Dispose();
+            using var second = await next.WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        finally { foreach (var lease in leases) lease.Dispose(); }
+    }
+
+    [Fact]
+    public async Task AudiobookAllowanceDoesNotChangeOtherProviders()
+    {
+        var gate = new ProviderSynthesisGate();
+        using var allowance = gate.BeginAudiobookScope(TtsProvider.OpenRouter, 3);
+        using var first = await gate.AcquireAsync(TtsProvider.Kokoro, default);
+        using var cancellation = new CancellationTokenSource();
+        var waiting = gate.AcquireAsync(TtsProvider.Kokoro, cancellation.Token);
+        Assert.False(waiting.IsCompleted);
+        await cancellation.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiting);
+    }
+
     public static IEnumerable<object[]> AllProviders => Enum.GetValues<TtsProvider>().Select(p => new object[] { p });
 
     [Theory]

@@ -1,4 +1,7 @@
 using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using MyNovelBuilder.WebApi.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -17,6 +20,162 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 
 public class ImmersiveTtsServiceTests
 {
+    [Theory]
+    [InlineData("She said, “Wait…”", "She said, \"Wait...\"")]
+    [InlineData("Don’t go.", "Don't go.")]
+    [InlineData("Café.", "Cafe\u0301.")]
+    public async Task EquivalentTypographyRestoresExactSourceWithoutAnotherPlanningCall(string source, string planned)
+    {
+        var planner = new FakeTextGenerationService(Plan(planned));
+        using var f = new PlanningFixture(planner, source);
+        var chunks = await f.Service.PrepareAudiobookAsync(f.Request);
+        Assert.Equal(source, string.Concat(chunks.Select(c => c.Text)));
+        Assert.Equal(1, planner.Calls);
+        Assert.Contains(f.Logger.Messages, m => m.Contains("Restored immersive planner typography", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task TypographyRepairPreservesSpeakerBoundariesAndExactSource()
+    {
+        var character = Guid.NewGuid();
+        var planner = new FakeTextGenerationService(JsonSerializer.Serialize(new[]
+        {
+            new { speakerKind = "character", characterRecordId = (string?)character.ToString(), text = "\"Wait...\"" },
+            new { speakerKind = "narrator", characterRecordId = (string?)null, text = " she said." }
+        }));
+        using var f = new PlanningFixture(planner, "“Wait…” she said.");
+        var request = f.Request with { Section = f.Request.Section with { VoiceAssignments = [new(character, "character-voice", DateTime.UtcNow, null)] } };
+        var chunks = await f.Service.PrepareAudiobookAsync(request);
+        Assert.Equal("character-voice", chunks[0].VoiceId);
+        Assert.Equal("narrator", chunks[1].VoiceId);
+        Assert.Equal("“Wait…” she said.", string.Concat(chunks.Select(c => c.Text)));
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("[]")]
+    [InlineData("[null]")]
+    [InlineData("[{\"speakerKind\":\"narrator\",\"text\":null}]")]
+    [InlineData("[{\"speakerKind\":\"alien\",\"text\":\"Stay here.\"}]")]
+    [InlineData("[{\"speakerKind\":\"narrator\",\"text\":\"Go away.\"}]")]
+    public async Task InvalidPlanIsRetriedWithFeedbackBeforeAnySynthesis(string invalid)
+    {
+        var planner = new FakeTextGenerationService(Plan("Stay here."));
+        planner.Outputs.Enqueue(invalid);
+        using var f = new PlanningFixture(planner, "Stay here.");
+        var chunks = await f.Service.PrepareAudiobookAsync(f.Request);
+        Assert.Equal("Stay here.", Assert.Single(chunks).Text);
+        Assert.Equal(2, planner.Calls);
+        Assert.Contains("previous plan failed validation", planner.Messages[^1].Message);
+        Assert.Empty(f.Tts.Requests);
+        Assert.Single(f.Logger.Messages, m => m.Contains("validation failed on attempt", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ExhaustedValidationReportsBoundedDiffWithContextAndDoesNotSynthesize()
+    {
+        var source = "Before. She stayed here. After.";
+        var planner = new FakeTextGenerationService(Plan("Before. She went away. After."));
+        using var f = new PlanningFixture(planner, source);
+        var error = await Assert.ThrowsAsync<ImmersivePlanningException>(() => f.Service.PrepareAudiobookAsync(f.Request));
+        Assert.Equal(3, planner.Calls);
+        Assert.Contains("3 attempts", error.Message);
+        Assert.Contains("Source excerpt:", error.Message);
+        Assert.Contains("stayed here", error.Message.Replace("⟦HERE⟧", ""));
+        Assert.Contains("went away", error.Message.Replace("⟦HERE⟧", ""));
+        Assert.Contains("⟦HERE⟧", error.Message);
+        Assert.All(f.Logger.Messages, m => Assert.Contains(f.Request.NovelId.ToString(), m));
+        Assert.Empty(f.Tts.Requests);
+    }
+
+    [Fact]
+    public async Task AnnotatedSourceIsPreparedOnceAndReusedAcrossPlanRetries()
+    {
+        var planner = new FakeTextGenerationService(Plan("[nervous]Stay here."));
+        planner.Outputs.Enqueue("[nervous]Stay here."); // Annotation pass.
+        planner.Outputs.Enqueue(Plan("Stay here.")); // Planner dropped the direction.
+        using var f = new PlanningFixture(planner, "Stay here.", emphasis: true);
+        var result = await f.Service.PrepareAudiobookAsync(f.Request);
+        Assert.Equal("[nervous]Stay here.", Assert.Single(result).Text);
+        Assert.Equal(3, planner.Calls); // One annotation call, two planning calls.
+        Assert.Empty(f.Tts.Requests);
+    }
+
+    [Fact]
+    public async Task ChangedDirectionsAndSplitWhisperScopesAreRetriedWithoutRelaxingValidation()
+    {
+        var planner = new FakeTextGenerationService(Plan("<whisper>Stay here.</whisper>"));
+        planner.Outputs.Enqueue("<whisper>Stay here.</whisper>");
+        planner.Outputs.Enqueue(Plan("<whisper>Stay", " here.</whisper>"));
+        using var f = new PlanningFixture(planner, "Stay here.", emphasis: true);
+        var result = await f.Service.PrepareAudiobookAsync(f.Request);
+        Assert.Equal("<whisper>Stay here.</whisper>", Assert.Single(result).Text);
+        Assert.Equal(3, planner.Calls);
+        Assert.Contains(f.Logger.Messages, m => m.Contains("whisper scope", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ValidationDiffExcerptsAreBoundedAndEscapeNewlines()
+    {
+        var source = new string('x', 1000) + "\nORIGINAL\n" + new string('y', 1000);
+        var planner = new FakeTextGenerationService(Plan(source.Replace("ORIGINAL", "CHANGED")));
+        using var f = new PlanningFixture(planner, source);
+        var error = await Assert.ThrowsAsync<ImmersivePlanningException>(() => f.Service.PrepareAudiobookAsync(f.Request));
+        Assert.True(error.Message.Length < 600);
+        Assert.Contains("\\n", error.Message);
+        Assert.DoesNotContain("\n", error.Message);
+    }
+
+    [Fact]
+    public async Task CallerCancellationStopsCorrectivePlanningAttempts()
+    {
+        var planner = new FakeTextGenerationService(Plan("Changed text."));
+        using var cancellation = new CancellationTokenSource();
+        planner.AfterCall = () => cancellation.Cancel();
+        using var f = new PlanningFixture(planner, "Stay here.");
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => f.Service.PrepareAudiobookAsync(f.Request, cancellation.Token));
+        Assert.Equal(1, planner.Calls);
+        Assert.Empty(f.Tts.Requests);
+    }
+
+    private static string Plan(params string[] text) => JsonSerializer.Serialize(text.Select(t => new
+    {
+        speakerKind = "narrator", speakerName = "Narrator", characterRecordId = (string?)null, text = t
+    }));
+
+    private sealed class PlanningFixture : IDisposable
+    {
+        private readonly ServiceProvider services;
+        public PlanningLogger Logger { get; } = new();
+        public RecordingTtsAudioGenerationService Tts { get; } = new(CreatePcmWavBytes([1, 2]));
+        public ImmersiveTtsService Service { get; }
+        public AudiobookRenderRequest Request { get; }
+        public PlanningFixture(FakeTextGenerationService planner, string source, bool emphasis = false)
+        {
+            services = new ServiceCollection().AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter, planner).BuildServiceProvider();
+            Service = new(new FakeNovelPromptCreatorService(new() { Messages = [], IncludedCompendiumRecordIds = [] }),
+                new FakeTextGenerationServiceResolver(planner), new FakeIntegrationsService(new()),
+                new FakeCompendiumRecordService([]), Tts, Logger, services, new NoRecordedVoices());
+            var settings = new ResolvedAudiobookSettings(TtsProvider.OpenRouter, "fish-audio/drama-3", "narrator",
+                emphasis, true, 0, TextGenerationProvider.OpenRouter, "planning-model", Guid.NewGuid(), null, null);
+            Request = new(Guid.NewGuid(), 0, settings, new(0, source,
+                [new(PromptMessageRole.User, "Plan <tts-source>" + source + "</tts-source>")], []));
+        }
+        public void Dispose() => services.Dispose();
+    }
+
+    private sealed class PlanningLogger : ILogger<ImmersiveTtsService>
+    {
+        public List<string> Messages { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Information;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (IsEnabled(logLevel)) Messages.Add(formatter(state, exception));
+        }
+    }
+
     [Fact]
     public async Task PrepareDebugAsync_FallsBackToNarrator_WhenCharacterHasNoMatchingVoiceAssignment()
     {
@@ -260,6 +419,9 @@ public class ImmersiveTtsServiceTests
     private sealed class FakeTextGenerationService(string generatedText) : ITextGenerationService
     {
         public string? Model { get; private set; }
+        public int Calls { get; private set; }
+        public Queue<string> Outputs { get; } = new();
+        public Action? AfterCall { get; set; }
         public List<PromptMessage> Messages { get; private set; } = [];
         public Task<string> GenerateAsync(
             string model,
@@ -268,8 +430,10 @@ public class ImmersiveTtsServiceTests
             CancellationToken cancellationToken = default)
         {
             Model = model;
+            Calls++;
             Messages = messages.ToList();
-            return Task.FromResult(generatedText);
+            AfterCall?.Invoke();
+            return Task.FromResult(Outputs.TryDequeue(out var output) ? output : generatedText);
         }
 
         public async IAsyncEnumerable<string> GenerateStreamedAsync(

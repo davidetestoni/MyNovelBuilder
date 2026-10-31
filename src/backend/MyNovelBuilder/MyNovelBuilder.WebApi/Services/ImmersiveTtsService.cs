@@ -325,50 +325,13 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
             throw new InvalidDataException("The immersive prompt must include {{sectionText}} to prepare annotations.");
         if (planningText is not null)
             planningMessages.Add(new PromptMessage { Role = PromptMessageRole.System,
-                Message = "Partition only the tts-source passage. Copy all characters and delivery annotations in order. Keep leading tags with their following speech and the correct character or narrator. Never create tag-only chunks or move directions between speakers." });
-        var rawPlan = await textGenerationService.GenerateAsync(
-            textGenerationModelId,
-            planningMessages,
-            contextInfo.GetStructuredOutputOptions(),
-            cancellationToken);
-        _logger.LogDebug(
-            "Immersive TTS planner returned raw plan for novel {NovelId}, chapter {ChapterIndex}, section {SectionIndex}: {RawPlan}",
-            request.NovelId,
-            request.ChapterIndex,
-            request.SectionIndex,
-            rawPlan);
-
-        List<StructuredImmersiveTtsChunk> structuredChunks;
-        try
-        {
-            structuredChunks = JsonSerializer.Deserialize<List<StructuredImmersiveTtsChunk>>(
-                                   rawPlan,
-                                   JsonDefaults.Options)
-                               ?? [];
-        }
-        catch (JsonException ex)
-        {
-            throw new ApiException(
-                ErrorCodes.ExternalServiceError,
-                $"Immersive TTS planning returned invalid JSON: {ex.Message}");
-        }
-
-        if (structuredChunks.Count == 0)
-        {
-            throw new ApiException(
-                ErrorCodes.ExternalServiceError,
-                "Immersive TTS planning returned no chunks.");
-        }
-        _logger.LogDebug(
-            "Immersive TTS planner produced {StructuredChunkCount} structured chunks.",
-            structuredChunks.Count);
-        if (planningText is not null && string.Concat(planningText.Where(c => !char.IsWhiteSpace(c))) !=
-            string.Concat(string.Concat(structuredChunks.Select(c => c.Text)).Where(c => !char.IsWhiteSpace(c))))
-            throw new InvalidDataException("Immersive planning changed source text or annotations.");
-        if (planningText is not null && structuredChunks.Any(chunk =>
-            System.Text.RegularExpressions.Regex.Matches(chunk.Text ?? "", "<whisper>").Count !=
-            System.Text.RegularExpressions.Regex.Matches(chunk.Text ?? "", "</whisper>").Count))
-            throw new InvalidDataException("Immersive planning moved a scoped direction across speakers.");
+                Message = "Partition only the tts-source passage. Copy all characters and delivery annotations in order. "
+                    + "Preserve quotation marks (including opening and closing dialogue quotes), apostrophes, punctuation and language exactly. "
+                    + "Do not paraphrase, correct spelling, normalize curly quotes, omit text, or add/remove delivery tags. "
+                    + "Keep leading tags with their following speech and the correct character or narrator. "
+                    + "Never create tag-only chunks or move directions between speakers. Keep each <whisper> scope balanced within one chunk." });
+        var structuredChunks = await GenerateValidatedPlanAsync(textGenerationService, textGenerationModelId,
+            planningMessages, contextInfo, planningText ?? audiobook?.Section.SpeechText, audiobook is not null, request, cancellationToken);
         var relevantRecords = audiobook?.Section is null && processedPrompt.IncludedCompendiumRecordIds.Any()
             ? await _compendiumRecordService.GetByIdsAsync(
                 processedPrompt.IncludedCompendiumRecordIds,
@@ -379,12 +342,6 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
 
         foreach (var structuredChunk in structuredChunks)
         {
-            if (structuredChunk is null)
-                throw new InvalidDataException("Immersive planning returned a null chunk.");
-            if (audiobook is not null && (structuredChunk.Text is null ||
-                (!string.Equals(structuredChunk.SpeakerKind, "narrator", StringComparison.OrdinalIgnoreCase) &&
-                 !string.Equals(structuredChunk.SpeakerKind, "character", StringComparison.OrdinalIgnoreCase))))
-                throw new InvalidDataException("Immersive planning returned an invalid speaker chunk.");
             var texts = preserveSpeechUnits
                 ? new List<string> { structuredChunk.Text ?? string.Empty }
                 : AudiobookTextSplitter.Split(structuredChunk.Text ?? string.Empty, _maxResolvedChunkLength, preserveTags: true).ToList();
@@ -433,6 +390,88 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
             PauseMs = pauseMs,
             Chunks = resolvedChunks
         };
+    }
+
+    private async Task<List<StructuredImmersiveTtsChunk>> GenerateValidatedPlanAsync(
+        TextGeneration.ITextGenerationService generator, string model, List<PromptMessage> messages,
+        PrepareImmersiveTtsContextInfoDto context, string? source, bool frozen,
+        ImmersiveTtsRequestDto request, CancellationToken cancellationToken)
+    {
+        const int attempts = 3;
+        var reason = "";
+        string? previousPlan = null;
+        for (var attempt = 1; attempt <= attempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var attemptMessages = messages.Select(m => new PromptMessage { Role = m.Role, Message = m.Message }).ToList();
+            if (previousPlan is not null)
+            {
+                attemptMessages.Add(new() { Role = PromptMessageRole.Assistant, Message = previousPlan });
+                attemptMessages.Add(new() { Role = PromptMessageRole.User,
+                    Message = "The previous plan failed validation: " + reason
+                        + " Return a corrected complete JSON plan, not a patch. Copy the tts-source exactly, including all quotation marks, "
+                        + "punctuation and delivery tags, in order. Do not add, delete or rewrite any prose or annotations. "
+                        + "Only partition it and assign speakers. Each whisper scope must stay balanced in one chunk." });
+            }
+            var rawPlan = await generator.GenerateAsync(model, attemptMessages, context.GetStructuredOutputOptions(), cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            _logger.LogDebug(
+                "Immersive TTS planner attempt {Attempt} for novel {NovelId}, chapter {ChapterIndex}, section {SectionIndex}: {RawPlan}",
+                attempt, request.NovelId, request.ChapterIndex, request.SectionIndex, rawPlan);
+            var validation = ValidatePlan(rawPlan, source, frozen, out var repairDetails);
+            if (validation.Error is null)
+            {
+                if (repairDetails is not null)
+                    _logger.LogInformation(
+                        "Restored immersive planner typography from source; novel {NovelId}, chapter {Chapter}, section {Section}, text model {ModelId}: {Difference}",
+                        request.NovelId, request.ChapterIndex + 1, request.SectionIndex + 1, model, repairDetails);
+                return validation.Chunks;
+            }
+            reason = validation.Error;
+            _logger.LogWarning(
+                "Immersive planning validation failed on attempt {Attempt}/{MaxAttempts}; novel {NovelId}, chapter {Chapter}, "
+                + "section {Section}, text model {ModelId}: {Reason}",
+                attempt, attempts, request.NovelId, request.ChapterIndex + 1, request.SectionIndex + 1, model, reason);
+            previousPlan = rawPlan;
+        }
+        throw new ImmersivePlanningException(attempts, reason);
+    }
+
+    private static (List<StructuredImmersiveTtsChunk> Chunks, string? Error) ValidatePlan(string rawPlan, string? source, bool frozen, out string? repairDetails)
+    {
+        repairDetails = null;
+        List<StructuredImmersiveTtsChunk> chunks;
+        try { chunks = JsonSerializer.Deserialize<List<StructuredImmersiveTtsChunk>>(rawPlan, JsonDefaults.Options) ?? []; }
+        catch (JsonException ex) { return ([], $"Invalid JSON at line {ex.LineNumber}, byte {ex.BytePositionInLine}."); }
+        if (chunks.Count == 0) return (chunks, "The plan contains no chunks.");
+        if (chunks.Any(c => c is null || c.Text is null)) return (chunks, "The plan contains a null chunk or null text.");
+        if (frozen && chunks.Any(c =>
+            !string.Equals(c.SpeakerKind, "narrator", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(c.SpeakerKind, "character", StringComparison.OrdinalIgnoreCase)))
+            return (chunks, "A chunk has an invalid speakerKind; use narrator or character.");
+        if (source is null) return (chunks, null);
+        var expected = string.Concat(source.Where(c => !char.IsWhiteSpace(c)));
+        var actual = string.Concat(string.Concat(chunks.Select(c => c.Text)).Where(c => !char.IsWhiteSpace(c)));
+        if (expected != actual)
+        {
+            var difference = ImmersivePlanText.DescribeDifference(source, string.Concat(chunks.Select(c => c.Text)));
+            if (!ImmersivePlanText.TryRestoreTypography(source, chunks.Select(c => c.Text).ToArray(), out var restored))
+                return (chunks, difference);
+            for (var index = 0; index < chunks.Count; index++) chunks[index].Text = restored[index];
+            repairDetails = difference;
+        }
+        foreach (var chunk in chunks)
+        {
+            var scoped = false;
+            foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(chunk.Text, "</?whisper>"))
+            {
+                var opening = match.Value == "<whisper>";
+                if (opening == scoped) return (chunks, "A whisper scope crosses chunks or is unbalanced; keep its opening and closing tags in one chunk.");
+                scoped = opening;
+            }
+            if (scoped) return (chunks, "A whisper scope crosses chunks or is unbalanced; keep its opening and closing tags in one chunk.");
+        }
+        return (chunks, null);
     }
 
     private static ResolvedImmersiveTtsChunk? ResolveChunk(

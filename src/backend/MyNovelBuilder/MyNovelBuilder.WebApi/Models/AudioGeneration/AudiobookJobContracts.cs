@@ -3,7 +3,11 @@ namespace MyNovelBuilder.WebApi.Models.AudioGeneration;
 /// <summary>Submits an unexpired in-memory preview for durable background execution.</summary>
 /// <param name="SnapshotId">Identifier returned by preview for the same novel. Starting uses those exact frozen inputs.</param>
 /// <param name="IdempotencyKey">Client key unique within the novel. Repeating it with the same snapshot returns the existing job.</param>
-public sealed record StartAudiobookJobRequest([property: System.Text.Json.Serialization.JsonRequired] Guid SnapshotId, string IdempotencyKey);
+/// <param name="MaxParallelSections">Maximum concurrent sections, from 1 to 8.</param>
+public sealed record StartAudiobookJobRequest([property: System.Text.Json.Serialization.JsonRequired] Guid SnapshotId, string IdempotencyKey, int MaxParallelSections = 1);
+/// <summary>Execution options for retrying original inputs; omitted parallelism retains the saved value.</summary>
+/// <param name="MaxParallelSections">Maximum concurrent sections, from 1 to 8, or null to retain the saved value.</param>
+public sealed record RetryAudiobookJobRequest(int? MaxParallelSections = null);
 /// <summary>Free preview of saved-novel generation scope and effective settings. Cache estimates are rechecked during execution.</summary>
 /// <param name="SnapshotId">Identifier of the frozen snapshot held in application memory.</param>
 /// <param name="ExpiresAt">Time after which an unsubmitted preview must be refreshed.</param>
@@ -53,7 +57,8 @@ public sealed record AudiobookAttemptStatus(int Number, string State, string Sta
 /// <param name="ErrorCode">Sanitized error code for the current attempt, or null.</param>
 /// <param name="Sections">Current attempt section statuses ordered by chapter and section position, including skipped sections.</param>
 /// <param name="Attempts">Attempt history ordered by one-based attempt number.</param>
+/// <param name="MaxParallelSections">Maximum concurrent sections for the current attempt.</param>
 public sealed record AudiobookJobStatus(Guid Id, Guid NovelId, DateTime SnapshotAt, string State, string Stage,
     int AttemptNumber, int CompletedSections, int ReusedSections, int GeneratedSections, int FailedSections,
     int SkippedSections, int CompletedChapters, int TotalChapters, bool DownloadAvailable, string? ErrorCode,
-    IReadOnlyList<AudiobookSectionStatus> Sections, IReadOnlyList<AudiobookAttemptStatus> Attempts);
+    IReadOnlyList<AudiobookSectionStatus> Sections, IReadOnlyList<AudiobookAttemptStatus> Attempts, int MaxParallelSections = 1);

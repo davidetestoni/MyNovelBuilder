@@ -9,7 +9,7 @@ namespace MyNovelBuilder.WebApi.Models.AudioGeneration;
 public sealed record AudiobookSpeechChunk(string Text, string VoiceId, string? VoiceRevision, bool IsNarratorFallback, double GainDb = 0);
 
 /// <summary>A complete section artifact and its ordered speech-unit checkpoints.</summary>
-/// <param name="ArtifactKey">Finite normalized WAV key.</param>
+/// <param name="ArtifactKey">Finite WAV key with the source format preserved where inputs match.</param>
 /// <param name="ChunkArtifactKeys">Ordered speech-unit keys, including duplicates.</param>
 /// <param name="Reused">Whether the completed source mapping was reused.</param>
 public sealed record AudiobookSectionRenderResult(string ArtifactKey, IReadOnlyList<string> ChunkArtifactKeys, bool Reused);

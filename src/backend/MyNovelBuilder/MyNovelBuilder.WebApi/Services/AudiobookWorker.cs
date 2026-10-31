@@ -1,4 +1,7 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
+using MyNovelBuilder.WebApi.Services.Tts;
+using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Models.AudioGeneration;
 using MyNovelBuilder.WebApi.Options;
 
@@ -74,7 +77,6 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
     {
         using var scope = scopes.CreateScope();
         var jobs = scope.ServiceProvider.GetRequiredService<FileSystemAudiobookJobRepository>();
-        var renderer = scope.ServiceProvider.GetRequiredService<AudiobookSectionRenderer>();
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
         AudiobookJob? job;
         AudiobookSnapshot? snapshot;
@@ -91,32 +93,53 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
             store.Register(job.Id, job.NovelId, cancellation);
         }
         finally { store.Mutations.Release(); }
-        AudiobookSectionProgress? active = null;
+        var failures = new ConcurrentQueue<SectionFailure>();
         try
         {
             if (snapshot is null) throw new SnapshotUnavailableException();
-            foreach (var section in job.Sections.OrderBy(s => s.ChapterIndex).ThenBy(s => s.SectionIndex))
-            {
-                cancellation.Token.ThrowIfCancellationRequested();
-                if (section.State == "skipped") continue;
-                active = section;
-                section.State = "running";
-                await CheckpointAsync("planning");
-                var chapter = snapshot.Chapters.Single(c => c.ChapterIndex == section.ChapterIndex);
-                var input = chapter.Sections.Single(s => s.SectionIndex == section.SectionIndex);
-                var result = await ProviderRetry.ExecuteAsync(
-                    () => renderer.RenderAsync(new(job.NovelId, chapter.ChapterIndex, snapshot.Settings, input),
-                        cancellation.Token, CheckpointAsync), cancellation.Token,
-                    onRetry: (attempt, delay, error) => logger.LogWarning(error,
-                        "Audiobook job {JobId}, chapter {Chapter}, section {Section}, stage {Stage}, "
-                        + "provider {Provider}, model {ModelId}: attempt {Attempt}/3 failed; retrying in {DelaySeconds}s.",
-                        job.Id, section.ChapterIndex + 1, section.SectionIndex + 1, job.Stage,
-                        snapshot.Settings.Provider, snapshot.Settings.ModelId, attempt, delay.TotalSeconds));
-                section.ArtifactKey = result.ArtifactKey;
-                section.State = result.Reused ? "reused" : "generated";
-                await CheckpointAsync("rendering");
-                active = null;
-            }
+            using var providerAllowance = scope.ServiceProvider.GetRequiredService<ProviderSynthesisGate>()
+                .BeginAudiobookScope(snapshot.Settings.Provider, job.MaxParallelSections);
+            await Parallel.ForEachAsync(job.Sections.Where(s => s.State != "skipped")
+                .OrderBy(s => s.ChapterIndex).ThenBy(s => s.SectionIndex),
+                new ParallelOptions { MaxDegreeOfParallelism = job.MaxParallelSections, CancellationToken = cancellation.Token },
+                async (section, sectionToken) =>
+                {
+                    // Each section gets its own scoped services and DbContext; only immutable frozen inputs are shared.
+                    using var sectionScope = scopes.CreateScope();
+                    var renderer = sectionScope.ServiceProvider.GetRequiredService<AudiobookSectionRenderer>();
+                    var stage = "planning";
+                    try
+                    {
+                        await SectionCheckpointAsync("planning", () => section.State = "running");
+                        var chapter = snapshot.Chapters.Single(c => c.ChapterIndex == section.ChapterIndex);
+                        var input = chapter.Sections.Single(s => s.SectionIndex == section.SectionIndex);
+                        var result = await ProviderRetry.ExecuteAsync(
+                            () => renderer.RenderAsync(new(job.NovelId, chapter.ChapterIndex, snapshot.Settings, input),
+                                sectionToken, current => SectionCheckpointAsync(current)), sectionToken,
+                            onRetry: (attempt, delay, error) => logger.LogWarning(error,
+                                "Audiobook job {JobId}, chapter {Chapter}, section {Section}, stage {Stage}, "
+                                + "provider {Provider}, model {ModelId}: attempt {Attempt}/3 failed; retrying in {DelaySeconds}s.",
+                                job.Id, section.ChapterIndex + 1, section.SectionIndex + 1, stage,
+                                snapshot.Settings.Provider, snapshot.Settings.ModelId, attempt, delay.TotalSeconds));
+                        await SectionCheckpointAsync("rendering", () =>
+                        {
+                            section.ArtifactKey = result.ArtifactKey;
+                            section.State = result.Reused ? "reused" : "generated";
+                        });
+                    }
+                    catch (OperationCanceledException) when (sectionToken.IsCancellationRequested) { throw; }
+                    catch (Exception ex)
+                    {
+                        failures.Enqueue(new(section, stage, ex));
+                        throw;
+                    }
+
+                    Task SectionCheckpointAsync(string current, Action? update = null)
+                    {
+                        stage = current;
+                        return CheckpointAsync(job.MaxParallelSections > 1 ? "rendering" : current, update, sectionToken);
+                    }
+                });
             var archives = scope.ServiceProvider.GetRequiredService<AudiobookArchiveService>();
             job.Archive = await archives.BuildAsync(snapshot, job.Sections, async (stage, count) =>
             {
@@ -126,46 +149,39 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
             cancellation.Token.ThrowIfCancellationRequested();
             await FinishAsync("completed", "ready", null);
         }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested && failures.IsEmpty)
         {
-            if (active is not null && active.State == "running") active.State = "pending";
+            foreach (var section in job.Sections.Where(s => s.State == "running")) section.State = "pending";
             await FinishAsync(stoppingToken.IsCancellationRequested ? "failed" : "cancelled",
                 stoppingToken.IsCancellationRequested ? "interrupted" : "cancelled",
                 stoppingToken.IsCancellationRequested ? "interrupted_requires_verified_retry" : null);
         }
         catch (Exception ex)
         {
-            if (active is not null) active.State = "failed";
-            // Keep stable codes in job records; preserve exception details in server logs.
-            var code = ex switch
+            foreach (var section in job.Sections.Where(s => s.State == "running")) section.State = "pending";
+            var errors = failures.IsEmpty ? [new SectionFailure(null, job.Stage, ex)] : failures.ToArray();
+            foreach (var failure in errors)
             {
-                SnapshotUnavailableException => "snapshot_unavailable_requires_verified_retry",
-                HttpRequestException => "provider_request_failed",
-                AudiobookExportException export => export.Code,
-                IOException io when (io.HResult & 0xffff) is 28 or 39 or 112 => "insufficient_disk_space",
-                IOException => "audio_storage_or_format_failed",
-                InvalidOperationException => "generation_inputs_or_plan_invalid",
-                _ => "generation_failed"
-            };
-            logger.LogError(ex,
-                "Audiobook job {JobId} failed with code {Code}; chapter {Chapter}, section {Section}, "
-                + "stage {Stage}, provider {Provider}, model {ModelId}.",
-                job.Id, code, active?.ChapterIndex + 1, active?.SectionIndex + 1, job.Stage,
-                snapshot?.Settings.Provider, snapshot?.Settings.ModelId);
+                if (failure.Section is not null) failure.Section.State = "failed";
+                LogFailure(job, snapshot, failure);
+            }
+            var code = FailureCode(errors[0].Error);
             await FinishAsync("failed", "failed", code);
         }
         finally { store.Unregister(job.Id); }
         return true;
 
-        async Task CheckpointAsync(string stage)
+        async Task CheckpointAsync(string stage, Action? update = null, CancellationToken? sectionToken = null)
         {
-            await store.Mutations.WaitAsync(cancellation.Token);
+            var token = sectionToken ?? cancellation.Token;
+            await store.Mutations.WaitAsync(token);
             try
             {
-                var state = (await jobs.ReadAsync(job.NovelId, job.Id, cancellation.Token))?.State;
+                var state = (await jobs.ReadAsync(job.NovelId, job.Id, token))?.State;
                 if (state is null or "cancelling") { await cancellation.CancelAsync(); cancellation.Token.ThrowIfCancellationRequested(); }
+                update?.Invoke();
                 job.Stage = stage;
-                await jobs.SaveAsync(job, cancellation.Token);
+                await jobs.SaveAsync(job, token);
             }
             finally { store.Mutations.Release(); }
         }
@@ -186,6 +202,23 @@ public sealed class AudiobookWorker(IServiceScopeFactory scopes, AudiobookSnapsh
             finally { store.Mutations.Release(); }
         }
     }
+    private void LogFailure(AudiobookJob job, AudiobookSnapshot? snapshot, SectionFailure failure) => logger.LogError(failure.Error,
+        "Audiobook job {JobId} failed with code {Code}; chapter {Chapter}, section {Section}, "
+        + "stage {Stage}, provider {Provider}, model {ModelId}.",
+        job.Id, FailureCode(failure.Error), failure.Section?.ChapterIndex + 1, failure.Section?.SectionIndex + 1, failure.Stage,
+        snapshot?.Settings.Provider, snapshot?.Settings.ModelId);
+    private sealed record SectionFailure(AudiobookSectionProgress? Section, string Stage, Exception Error);
+    private static string FailureCode(Exception error) => error switch
+    {
+        SnapshotUnavailableException => "snapshot_unavailable_requires_verified_retry",
+        ImmersivePlanningException => "immersive_planning_invalid",
+        HttpRequestException => "provider_request_failed",
+        AudiobookExportException export => export.Code,
+        IOException io when (io.HResult & 0xffff) is 28 or 39 or 112 => "insufficient_disk_space",
+        IOException => "audio_storage_or_format_failed",
+        InvalidOperationException => "generation_inputs_or_plan_invalid",
+        _ => "generation_failed"
+    };
     /// <summary>The frozen inputs for the queued audiobook are no longer available.</summary>
     public sealed class SnapshotUnavailableException : Exception;
 }

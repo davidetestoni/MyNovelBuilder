@@ -22,7 +22,7 @@ public sealed class FileSystemAudiobookJobRepository(IOptions<AppStorageOptions>
             if (job is null || job.Version != 1 || job.Id != jobId || job.NovelId != novelId ||
                 job.Settings is null || job.Sections is null || job.History is null ||
                 job.Sections.Any(s => s is null) || job.History.Any(a => a is null) ||
-                job.InputChecksum is not { Length: 64 } || job.AttemptNumber < 1 ||
+                job.InputChecksum is not { Length: 64 } || job.AttemptNumber < 1 || job.MaxParallelSections is < 1 or > 8 ||
                 job.State is not ("queued" or "running" or "cancelling" or "cancelled" or "failed" or "completed"))
                 throw new JsonException();
             return job;

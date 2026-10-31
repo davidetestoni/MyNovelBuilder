@@ -41,6 +41,9 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
   private readonly promptsService = inject(PromptService);
   readonly TtsProvider = TtsProvider;
   readonly textProviders = Object.values(TextGenerationProvider);
+  maxParallelSections = 1;
+  readonly parallelOptions = Array.from({ length: 8 }, (_, i) => ({ value: i + 1, label: `${i + 1} ${i ? 'sections' : 'section'}` }));
+  readonly retryParallelism: Partial<Record<string, number>> = {};
   settings: AudiobookSettings = {};
   defaults: AudiobookSettings = {};
   useDefaults = true;
@@ -220,7 +223,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
     if (!this.preview || this.previewExpired) await this.createPreview();
     if (!this.preview || this.previewExpired || this.closed) return;
     this.stopVoicePreview();
-    await this.run(this.api.start(this.data.novelId, this.preview.snapshotId, this.submissionKey));
+    await this.run(this.api.start(this.data.novelId, this.preview.snapshotId, this.submissionKey, this.maxParallelSections));
   }
 
   /** Streams the same localized sample as Integrations, using the selected provider/model/voice. */
@@ -269,7 +272,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
   }
 
   async cancel(job: AudiobookJob): Promise<void> { if (!this.busy) await this.run(this.api.cancel(this.data.novelId, job.id)); }
-  async retry(job: AudiobookJob): Promise<void> { if (!this.busy && !this.active) await this.run(this.api.retry(this.data.novelId, job.id)); }
+  async retry(job: AudiobookJob): Promise<void> { if (!this.busy && !this.active) await this.run(this.api.retry(this.data.novelId, job.id, this.retryParallelism[job.id] ?? job.maxParallelSections ?? 1)); }
 
   private async run(request: Observable<AudiobookJob>): Promise<void> {
     clearTimeout(this.estimateTimer);
@@ -316,6 +319,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
 
   jobError(job: AudiobookJob): string {
     const errors: Record<string, string> = {
+      immersive_planning_invalid: 'The narration planner changed text or delivery tags after three attempts. Retry; if it persists, use another text preparation model in a new run.',
       insufficient_disk_space: 'Free disk space, then retry. Completed audio will be reused.',
       wav_size_limit_split_chapter: 'A chapter exceeds the WAV size limit. Split it into smaller chapters and create a new preview.',
       interrupted_requires_verified_retry: 'The app stopped during generation. Retry checks that saved inputs still match.',

@@ -51,14 +51,14 @@ export class MockAudiobookService extends AudiobookService {
     }));
   }
   /** @inheritdoc */
-  start(novelId: string, snapshotId: string, key: string) {
+  start(novelId: string, snapshotId: string, key: string, maxParallelSections = 1) {
     const existing = [...this.jobs.values()].find(v => v.job.novelId === novelId && v.key === key);
     if (existing) return existing.snapshotId === snapshotId ? of(structuredClone(existing.job)) : throwError(() => new Error('Submission key belongs to another preview.'));
     const saved = this.previews.get(snapshotId);
     if (!saved || saved.novelId !== novelId || Date.parse(saved.preview.expiresAt) <= Date.now()) return throwError(() => new Error('Refresh the expired preview.'));
     if ([...this.jobs.values()].some(v => v.job.novelId === novelId && ['queued', 'running', 'cancelling'].includes(v.job.state))) return throwError(() => new Error('This novel already has an active job.'));
     const job: AudiobookJob = { id: uuid(), novelId, snapshotAt: saved.preview.snapshotAt, state: 'queued', stage: 'queued', attemptNumber: 1,
-      completedSections: 0, reusedSections: 0, generatedSections: 0, failedSections: 0, skippedSections: saved.preview.skippedSections,
+      maxParallelSections, completedSections: 0, reusedSections: 0, generatedSections: 0, failedSections: 0, skippedSections: saved.preview.skippedSections,
       completedChapters: 0, totalChapters: new Set(saved.sections.filter(s => s.state !== 'skipped').map(s => s.chapterIndex)).size,
       downloadAvailable: false, errorCode: null, sections: structuredClone(saved.sections), attempts: [] };
     this.jobs.set(job.id, { job, key, snapshotId, readyAt: Date.now() + 4000 });
@@ -89,9 +89,10 @@ export class MockAudiobookService extends AudiobookService {
     return of(structuredClone(saved.job));
   }
   /** @inheritdoc */
-  retry(novelId: string, jobId: string) {
+  retry(novelId: string, jobId: string, maxParallelSections?: number) {
     const saved = this.jobs.get(jobId);
     if (!saved || saved.job.novelId !== novelId || !['failed', 'cancelled'].includes(saved.job.state)) return throwError(() => new Error('Job cannot be retried.'));
+    saved.job.maxParallelSections = maxParallelSections ?? saved.job.maxParallelSections ?? 1;
     saved.job.state = 'queued'; saved.job.stage = 'queued'; saved.job.attemptNumber++;
     saved.readyAt = Date.now() + 4000;
     return of(structuredClone(saved.job));

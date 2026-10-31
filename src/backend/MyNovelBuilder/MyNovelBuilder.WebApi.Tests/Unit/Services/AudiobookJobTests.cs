@@ -25,6 +25,158 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public sealed class AudiobookJobTests
 {
     [Fact]
+    public async Task ExhaustedPlanningHasSpecificPublicCodeWithoutExposingProseInStatus()
+    {
+        using var f = await Fixture.Create();
+        var job = await f.Start(await f.Preview());
+        f.Tts.BeforeCall = (_, _) => Task.FromException(new ImmersivePlanningException(3, "Source excerpt: PRIVATE prose."));
+        await f.Worker.RunNextAsync(default);
+        var failed = await f.Status(job.Id);
+        Assert.Equal("immersive_planning_invalid", failed.ErrorCode);
+        Assert.DoesNotContain("PRIVATE", JsonSerializer.Serialize(failed));
+        Assert.Contains(f.Logger.Entries, e => e.Error?.Message.Contains("PRIVATE", StringComparison.Ordinal) == true);
+    }
+
+    [Fact]
+    public async Task OlderSavedJobDefaultsToOneAndCanResumeWithHigherParallelism()
+    {
+        using var f = await Fixture.Create();
+        var job = await f.Start(await f.Preview());
+        await f.Call(s => s.CancelAsync(f.NovelId, job.Id, default));
+        var path = Path.Combine(f.Folder, "audiobooks", f.NovelId.ToString(), "jobs", job.Id + ".json");
+        var saved = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(path))!.AsObject();
+        saved.Remove("MaxParallelSections");
+        await File.WriteAllTextAsync(path, saved.ToJsonString());
+        f.Restart();
+        Assert.Equal(1, (await f.Status(job.Id)).MaxParallelSections);
+        var retry = await f.Call(s => s.RetryAsync(f.NovelId, job.Id, default, 3));
+        Assert.Equal(3, retry.MaxParallelSections);
+        await f.Worker.RunNextAsync(default);
+        Assert.Equal("completed", (await f.Status(job.Id)).State);
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task ParallelSectionsReachSelectedLimitAndPersistAllProgress(int parallelism)
+    {
+        using var f = await Fixture.Create();
+        await f.SetProse("One.", "Two.", "Three.", "Four.", "Five.");
+        var job = await f.Start(await f.Preview(), parallelism: parallelism);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Tts.BeforeCall = async (n, _) =>
+        {
+            if (n == parallelism) entered.TrySetResult();
+            await release.Task;
+        };
+        var run = f.Worker.RunNextAsync(default);
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var running = await f.Status(job.Id);
+            Assert.Equal(parallelism, running.MaxParallelSections);
+            Assert.Equal(parallelism, running.Sections.Count(s => s.State == "running"));
+            Assert.Equal(parallelism, f.Tts.Messages.Count);
+            Assert.Equal(0, running.CompletedSections);
+        }
+        finally { release.TrySetResult(); }
+        await run.WaitAsync(TimeSpan.FromSeconds(10));
+        var complete = await f.Status(job.Id);
+        Assert.Equal("completed", complete.State);
+        Assert.Equal(5, complete.CompletedSections);
+        Assert.Equal(0, complete.FailedSections);
+        Assert.True(complete.DownloadAvailable);
+        Assert.Equal(parallelism, f.Tts.MaximumActiveCalls);
+        Assert.Equal(5, f.Tts.Messages.Count);
+    }
+
+    [Fact]
+    public async Task ParallelCancellationDrainsAllCalls_AndRetryCanChangeAndRetainConcurrencyAfterRestart()
+    {
+        using var f = await Fixture.Create();
+        await f.SetProse("One.", "Two.", "Three.", "Four.");
+        var job = await f.Start(await f.Preview(), parallelism: 2);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Tts.BeforeCall = async (n, _) =>
+        {
+            if (n == 2) entered.TrySetResult();
+            await release.Task;
+        };
+        var run = f.Worker.RunNextAsync(default);
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            await f.Call(s => s.CancelAsync(f.NovelId, job.Id, default));
+            Assert.False(run.IsCompleted);
+            Assert.Equal("cancelling", (await f.Status(job.Id)).State);
+        }
+        finally { release.TrySetResult(); }
+        await run.WaitAsync(TimeSpan.FromSeconds(10));
+        var cancelled = await f.Status(job.Id);
+        Assert.Equal("cancelled", cancelled.State);
+        Assert.DoesNotContain(cancelled.Sections, s => s.State == "running");
+        Assert.Equal(2, f.Tts.Messages.Count);
+        f.Tts.BeforeCall = null;
+        f.Restart();
+        var retry = await f.Call(s => s.RetryAsync(f.NovelId, job.Id, default, 3));
+        Assert.Equal(3, retry.MaxParallelSections);
+        f.Restart();
+        await f.Worker.RecoverAsync(default);
+        retry = await f.Call(s => s.RetryAsync(f.NovelId, job.Id, default));
+        Assert.Equal(3, retry.MaxParallelSections);
+        await f.Worker.RunNextAsync(default);
+        Assert.Equal("completed", (await f.Status(job.Id)).State);
+    }
+
+    [Fact]
+    public async Task ParallelFailureIsLoggedAndLeavesNoRunningSections()
+    {
+        using var f = await Fixture.Create();
+        await f.SetProse("One.", "Two.", "Three.", "Four.");
+        var job = await f.Start(await f.Preview(), parallelism: 2);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var fail = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Tts.BeforeCall = async (n, _) =>
+        {
+            if (n == 1) { await fail.Task; throw new InvalidOperationException("provider explanation"); }
+            entered.TrySetResult();
+            await release.Task;
+        };
+        var run = f.Worker.RunNextAsync(default);
+        try
+        {
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            fail.TrySetResult();
+            // The other provider operation must still drain before this job can finish.
+            Assert.False(run.IsCompleted);
+        }
+        finally { fail.TrySetResult(); release.TrySetResult(); }
+        await run.WaitAsync(TimeSpan.FromSeconds(10));
+        var failed = await f.Status(job.Id);
+        Assert.Equal("failed", failed.State);
+        Assert.Equal(1, failed.FailedSections);
+        Assert.DoesNotContain(failed.Sections, s => s.State == "running");
+        Assert.Contains(f.Logger.Entries, e => e.Error?.Message == "provider explanation");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(9)]
+    public async Task InvalidParallelismIsRejectedForStartAndRetry(int parallelism)
+    {
+        using var f = await Fixture.Create();
+        var preview = await f.Preview();
+        await Assert.ThrowsAsync<ApiException>(() => f.Start(preview, parallelism: parallelism));
+        var job = await f.Start(preview);
+        await f.Call(s => s.CancelAsync(f.NovelId, job.Id, default));
+        await Assert.ThrowsAsync<ApiException>(() => f.Call(s => s.RetryAsync(f.NovelId, job.Id, default, parallelism)));
+        Assert.Equal(1, (await f.Status(job.Id)).MaxParallelSections);
+    }
+
+    [Fact]
     public async Task FrequentEstimatesEvictOldPreviewsButKeepSubmittedSnapshots()
     {
         using var f = await Fixture.Create();
@@ -462,7 +614,7 @@ public sealed class AudiobookJobTests
             return await call(scope.ServiceProvider.GetRequiredService<AudiobookJobService>());
         }
         public Task<AudiobookPreview> Preview() => Call(s => s.PreviewAsync(NovelId, new(), default));
-        public Task<AudiobookJobStatus> Start(AudiobookPreview preview, string key = "start") => Call(s => s.StartAsync(NovelId, new(preview.SnapshotId, key), default));
+        public Task<AudiobookJobStatus> Start(AudiobookPreview preview, string key = "start", int parallelism = 1) => Call(s => s.StartAsync(NovelId, new(preview.SnapshotId, key, parallelism), default));
         public Task<AudiobookJobStatus> Status(Guid id) => Call(s => s.GetAsync(NovelId, id, default));
         public void Dispose() { Worker.Dispose(); Services.Dispose(); Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools(); Directory.Delete(Folder, true); }
     }
@@ -474,16 +626,30 @@ public sealed class AudiobookJobTests
     private sealed class FakeTts : ITtsService
     {
         public List<string> Messages { get; } = [];
+        private readonly object sync = new();
+        private int activeCalls;
+        public int MaximumActiveCalls { get; private set; }
         public Func<int, CancellationToken, Task>? BeforeCall;
         public AudioFormat OutputAudioFormat => AudioFormat.Wav;
         public async Task<byte[]> GenerateAudioAsync(TtsRequest request, CancellationToken cancellationToken = default)
         {
-            Messages.Add(request.Message);
-            if (BeforeCall is not null) await BeforeCall(Messages.Count, cancellationToken);
-            cancellationToken.ThrowIfCancellationRequested();
-            using var stream = new MemoryStream();
-            using (var writer = new WaveFileWriter(stream, new WaveFormat(24000, 16, 1))) await writer.WriteAsync(new byte[480]);
-            return stream.ToArray();
+            int call;
+            lock (sync)
+            {
+                Messages.Add(request.Message);
+                call = Messages.Count;
+                activeCalls++;
+                MaximumActiveCalls = Math.Max(MaximumActiveCalls, activeCalls);
+            }
+            try
+            {
+                if (BeforeCall is not null) await BeforeCall(call, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                using var stream = new MemoryStream();
+                using (var writer = new WaveFileWriter(stream, new WaveFormat(24000, 16, 1))) await writer.WriteAsync(new byte[480]);
+                return stream.ToArray();
+            }
+            finally { lock (sync) activeCalls--; }
         }
         public Task<Stream> GenerateAudioStreamAsync(TtsRequest request, CancellationToken cancellationToken = default) => Task.FromResult<Stream>(new MemoryStream(new byte[10]));
         public Task<IEnumerable<TtsModelDto>> GetModelsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IEnumerable<TtsModelDto>>([new() { ModelId = "model", Name = "Model", Voices = [new() { VoiceId = "voice", Name = "Voice", Language = WritingLanguage.English }] }]);

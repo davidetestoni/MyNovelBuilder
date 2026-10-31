@@ -26,6 +26,7 @@ public sealed class AudiobookSectionRenderer(
         var (sourceKey, preparationKey, narratorPreparation) = GetIdentity(request);
         using var lease = await artifacts.AcquireAsync(sourceKey, cancellationToken);
         var manifest = await artifacts.ReadManifestAsync(sourceKey, cancellationToken);
+        if (manifest?.RenderingProfile != AudioCacheKey.AssemblyProfile) manifest = null;
         var reused = manifest is not null;
         string[] keys;
         if (manifest is not null) keys = manifest.ArtifactKeys;
@@ -55,7 +56,7 @@ public sealed class AudiobookSectionRenderer(
             }
             keys = completed.ToArray();
             // Publish the durable planner-to-audio mapping only after every speech unit completed.
-            await artifacts.SaveManifestAsync(new(1, sourceKey, preparationKey ?? narratorPreparation, keys), cancellationToken);
+            await artifacts.SaveManifestAsync(new(1, sourceKey, preparationKey ?? narratorPreparation, keys, AudioCacheKey.AssemblyProfile), cancellationToken);
         }
         if (reportStage is not null) await reportStage("assembly");
         var artifact = await assembler.AssembleAsync(keys, settings.EnableImmersive ? settings.ImmersivePauseMs : 0, cancellationToken);
@@ -81,6 +82,6 @@ public sealed class AudiobookSectionRenderer(
     }
     /// <summary>Checks whether the section has a complete, valid audio artifact in the shared cache.</summary>
     public async Task<bool> IsReusableAsync(AudiobookRenderRequest request, CancellationToken cancellationToken = default) =>
-        await artifacts.ReadManifestAsync(GetIdentity(request).SourceKey, cancellationToken) is not null;
+        (await artifacts.ReadManifestAsync(GetIdentity(request).SourceKey, cancellationToken))?.RenderingProfile == AudioCacheKey.AssemblyProfile;
 
 }

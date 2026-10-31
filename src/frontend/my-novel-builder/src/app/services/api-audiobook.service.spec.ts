@@ -20,7 +20,18 @@ describe('ApiAudiobookService', () => {
   it('sends the snapshot and idempotency key and provides a streamed download URL', () => {
     service.start('novel', 'snapshot', 'key').subscribe();
     const request = http.expectOne('/api/novel/novel/audiobook/jobs');
-    expect(request.request.body).toEqual({ snapshotId: 'snapshot', idempotencyKey: 'key' }); request.flush({});
+    expect(request.request.body).toEqual({ snapshotId: 'snapshot', idempotencyKey: 'key', maxParallelSections: 1 }); request.flush({});
     expect(service.downloadUrl('novel', 'job')).toBe('/api/novel/novel/audiobook/jobs/job/download');
+  });
+  it('sends selected concurrency for creation and retry while allowing retries to retain their saved value', () => {
+    service.start('novel', 'snapshot', 'key', 3).subscribe();
+    const start = http.expectOne('/api/novel/novel/audiobook/jobs');
+    expect(start.request.body.maxParallelSections).toBe(3); start.flush({});
+    service.retry('novel', 'job', 2).subscribe();
+    const retry = http.expectOne('/api/novel/novel/audiobook/jobs/job/retry');
+    expect(retry.request.body).toEqual({ maxParallelSections: 2 }); retry.flush({});
+    service.retry('novel', 'job').subscribe();
+    const retained = http.expectOne('/api/novel/novel/audiobook/jobs/job/retry');
+    expect(retained.request.body).toEqual({}); retained.flush({});
   });
 });

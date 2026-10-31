@@ -41,6 +41,8 @@ export interface AudiobookJob {
   state: 'queued' | 'running' | 'cancelling' | 'cancelled' | 'failed' | 'completed';
   stage: string;
   attemptNumber: number;
+  /** Maximum sections generated concurrently; older servers/jobs default to one. */
+  maxParallelSections?: number;
   completedSections: number;
   reusedSections: number;
   generatedSections: number;

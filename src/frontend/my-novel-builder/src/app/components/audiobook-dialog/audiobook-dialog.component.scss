@@ -4,6 +4,7 @@
 .summary-column, .history-column { border-left: 1px solid var(--p-content-border-color); padding-left: 1.5rem; }
 h3 { margin: 0 0 .75rem; }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+fieldset + fieldset { margin-top: 1.5rem; }
 legend { font-weight: 600; margin-bottom: .5rem; font-size: 1.1rem; }
 label:not(.choice) { display: block; margin-bottom: .3rem; }
 .choice { display: flex; align-items: center; gap: .65rem; margin: .7rem 0; }

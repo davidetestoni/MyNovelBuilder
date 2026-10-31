@@ -122,10 +122,22 @@ public sealed class FileSystemAudioArtifactRepository(IOptions<AppStorageOptions
             if (manifest is null || manifest.Version != 1 || manifest.SourceKey != sourceKey ||
                 (manifest.PreprocessingKey is not null && !IsKey(manifest.PreprocessingKey)) ||
                 manifest.ArtifactKeys is not { Length: > 0 } || manifest.ArtifactKeys.Any(k => !IsKey(k))) return null;
-            foreach (var key in manifest.ArtifactKeys)
+            if (manifest.SegmentFrames is { } frames)
             {
-                await using var audio = await OpenReadAsync(key, cancellationToken);
+                if (manifest.RenderingProfile != Models.AudioGeneration.AudioCacheKey.AssemblyProfile ||
+                    frames.Length != manifest.ArtifactKeys.Length || frames.Any(f => f < 0)) return null;
+                // Complete assemblies remain reusable after cleanup removes their raw inputs.
+                // Timings belong to that validated output, rather than to its retained children.
+                await using var audio = await OpenReadAsync(sourceKey, cancellationToken);
                 if (audio is null) return null;
+            }
+            else
+            {
+                foreach (var key in manifest.ArtifactKeys)
+                {
+                    await using var audio = await OpenReadAsync(key, cancellationToken);
+                    if (audio is null) return null;
+                }
             }
             GeneratedAudioCleanup.RecordAccess(path);
             return manifest;

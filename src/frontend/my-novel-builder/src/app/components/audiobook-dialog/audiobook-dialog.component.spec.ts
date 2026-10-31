@@ -58,6 +58,24 @@ describe('AudiobookDialogComponent', () => {
   });
   afterEach(() => component.ngOnDestroy());
 
+  it('starts with selected parallelism without changing narration defaults', async () => {
+    await component.loadSettings(); await component.refreshJobs();
+    component.maxParallelSections = 3;
+    await component.start();
+    expect(api.start.calls.mostRecent().args[3]).toBe(3);
+    expect(integrations.updateIntegrationsConfig).not.toHaveBeenCalled();
+  });
+
+  it('restores saved concurrency for retry and permits changing it', async () => {
+    const failed = { ...audiobookJob('failed'), maxParallelSections: 3 };
+    await component.retry(failed);
+    expect(api.retry).toHaveBeenCalledWith('novel', 'job', 3);
+    component.jobs = [];
+    component.retryParallelism[failed.id] = 2;
+    await component.retry(failed);
+    expect(api.retry).toHaveBeenCalledWith('novel', 'job', 2);
+  });
+
   it('accepts and previews a custom OpenRouter narrator absent from the catalogue', async () => {
     await component.loadSettings();
     component.settings.provider = TtsProvider.OpenRouter;

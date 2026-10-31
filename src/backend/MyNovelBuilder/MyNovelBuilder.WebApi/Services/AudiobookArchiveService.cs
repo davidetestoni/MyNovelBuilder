@@ -30,7 +30,7 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
             ct.ThrowIfCancellationRequested();
             var keys = new List<string>();
             var offsets = new List<AudiobookArchiveSection>();
-            long frames = 0;
+            var sectionIndices = new List<int>();
             foreach (var section in chapter.Sections)
             {
                 if (string.IsNullOrWhiteSpace(section.SpeechText))
@@ -41,29 +41,37 @@ public sealed class AudiobookArchiveService(IAudioArtifactRepository artifacts, 
                 var saved = progress.Single(s => s.ChapterIndex == chapter.ChapterIndex && s.SectionIndex == section.SectionIndex);
                 if (saved.State is not ("generated" or "reused") || saved.ArtifactKey is null)
                     throw new InvalidDataException("A spoken section has not finished rendering.");
-                await using var input = await artifacts.OpenReadAsync(saved.ArtifactKey, ct)
-                    ?? throw new InvalidDataException("A completed section is missing or corrupt.");
-                using var wav = new WaveFileReader(input);
-                if (wav.WaveFormat.Encoding != WaveFormatEncoding.Pcm || wav.WaveFormat.SampleRate != 24000 ||
-                    wav.WaveFormat.Channels != 1 || wav.WaveFormat.BitsPerSample != 16)
-                    throw new InvalidDataException("Unexpected section output profile.");
-                if (keys.Count > 0) frames += 12000; // 500 ms at 24 kHz.
-                offsets.Add(new(section.SectionIndex, frames / 24000d, wav.Length / 48000d));
-                frames += wav.Length / 2;
                 keys.Add(saved.ArtifactKey);
+                sectionIndices.Add(section.SectionIndex);
             }
             if (keys.Count == 0) { skippedChapters.Add(chapter.ChapterIndex); continue; }
-            AudiobookStorage.EnsureWaveSize(0, frames * 2);
             var key = await assembler.AssembleChapterAsync(keys, ct);
+            var assembly = await artifacts.ReadManifestAsync(key, ct);
+            if (assembly?.SegmentFrames is not { } segmentFrames || segmentFrames.Length != keys.Count)
+                throw new InvalidDataException("Chapter segment timings are missing.");
             await using var audio = await artifacts.OpenReadAsync(key, ct) ?? throw new InvalidDataException("Chapter publication failed.");
             var hash = Convert.ToHexStringLower(await SHA256.HashDataAsync(audio, ct));
+            audio.Position = 0;
+            using var reader = new WaveFileReader(audio);
+            var format = reader.WaveFormat;
+            long frames = 0;
+            for (var index = 0; index < segmentFrames.Length; index++)
+            {
+                if (index > 0) frames += (long)format.SampleRate * 500 / 1000;
+                offsets.Add(new(sectionIndices[index], frames / (double)format.SampleRate, segmentFrames[index] / (double)format.SampleRate));
+                frames += segmentFrames[index];
+            }
+            if (frames != reader.Length / format.BlockAlign)
+                throw new InvalidDataException("Chapter segment timings do not match its audio.");
             var name = (chapter.ChapterIndex + 1).ToString("D" + digits, CultureInfo.InvariantCulture) + "-" + SafeName(chapter.Title, "chapter") + ".wav";
-            chapters.Add(new(chapter.ChapterIndex, chapter.Title, name, key, hash, frames / 24000d, offsets.ToArray()));
+            var profile = $"{(format.Encoding == WaveFormatEncoding.Pcm ? "pcm" : "float")}-{format.SampleRate}-{format.Channels}ch-{format.BitsPerSample}";
+            chapters.Add(new(chapter.ChapterIndex, chapter.Title, name, key, hash, frames / (double)format.SampleRate, offsets.ToArray(), profile));
             await report("assembly", chapters.Count);
         }
         if (chapters.Count == 0) throw new InvalidOperationException("The novel has no spoken prose.");
+        var profiles = chapters.Select(c => c.OutputProfile).Distinct().ToArray();
         var manifest = new AudiobookArchiveManifest(1, snapshot.Title, snapshot.Author, snapshot.CapturedAt,
-            AudiobookJobService.ToRequest(snapshot.Settings), "pcm-24000-mono-16", 500, chapters.ToArray(),
+            AudiobookJobService.ToRequest(snapshot.Settings), profiles.Length == 1 ? profiles[0] : "per-chapter", 500, chapters.ToArray(),
             skippedChapters.ToArray(), skippedSections.ToArray(),
             skippedChapters.Count + skippedSections.Count > 0 ? ["Empty chapters and sections were omitted; original numbering is preserved."] : []);
         var archiveKey = AudioCacheKey.Create("archive-v1", manifest);

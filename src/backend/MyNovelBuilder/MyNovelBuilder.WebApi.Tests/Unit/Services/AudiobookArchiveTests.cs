@@ -12,6 +12,29 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public sealed class AudiobookArchiveTests
 {
     [Fact]
+    public async Task NativeAndMixedChapterFormatsHaveActualFrameBasedOffsetsAndProfiles()
+    {
+        using var f = new Fixture();
+        var a = await f.Save(1, 8820, 44100, 1); // 100 ms, mono.
+        var b = await f.Save(2, 38400, 48000, 2); // 200 ms, stereo.
+        var progress = new List<AudiobookSectionProgress>
+        {
+            new() { ChapterIndex = 0, SectionIndex = 0, State = "generated", ArtifactKey = a },
+            new() { ChapterIndex = 0, SectionIndex = 2, State = "generated", ArtifactKey = b },
+            new() { ChapterIndex = 2, SectionIndex = 0, State = "generated", ArtifactKey = a }
+        };
+        var reference = await f.Build(progress);
+        var manifest = await f.Manifest(reference);
+        Assert.Equal("per-chapter", manifest.OutputProfile);
+        Assert.Equal("pcm-48000-2ch-16", manifest.Chapters[0].OutputProfile);
+        Assert.Equal("pcm-44100-1ch-16", manifest.Chapters[1].OutputProfile);
+        Assert.Equal(0.8, manifest.Chapters[0].DurationSeconds, 4);
+        Assert.Equal(0.6, manifest.Chapters[0].Sections[1].OffsetSeconds, 4);
+        Assert.Equal(0.2, manifest.Chapters[0].Sections[1].DurationSeconds, 6);
+        Assert.Equal(0.1, manifest.Chapters[1].DurationSeconds, 6);
+    }
+
+    [Fact]
     public async Task ChaptersPreservePcmOrderGapsOffsetsAndOriginalNumbering_ManifestExcludesPrivateInputs()
     {
         using var f = new Fixture();
@@ -210,11 +233,11 @@ public sealed class AudiobookArchiveTests
                     new() { ChapterIndex = 0, SectionIndex = 2, State = "generated", ArtifactKey = b },
                     new() { ChapterIndex = 2, SectionIndex = 0, State = "reused", ArtifactKey = a }];
         }
-        private async Task<string> Save(byte value, int count)
+        public async Task<string> Save(byte value, int count, int rate = 24000, int channels = 1)
         {
-            var key = AudioCacheKey.Hash(value.ToString());
+            var key = AudioCacheKey.Hash($"{value}-{rate}-{channels}");
             using var bytes = new MemoryStream();
-            using (var writer = new WaveFileWriter(bytes, new WaveFormat(24000, 16, 1))) await writer.WriteAsync(Enumerable.Repeat(value, count).ToArray());
+            using (var writer = new WaveFileWriter(bytes, new WaveFormat(rate, 16, channels))) await writer.WriteAsync(Enumerable.Repeat(value, count).ToArray());
             using var input = new MemoryStream(bytes.ToArray());
             await Artifacts.SaveAsync(key, input);
             return key;

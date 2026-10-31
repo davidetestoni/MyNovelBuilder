@@ -43,6 +43,7 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
     /// <summary>Queues a valid preview and pins its inputs. Repeated submissions with the same key return the existing job.</summary>
     public async Task<AudiobookJobStatus> StartAsync(Guid novelId, StartAudiobookJobRequest request, CancellationToken ct)
     {
+        ValidateParallelism(request.MaxParallelSections);
         if (string.IsNullOrWhiteSpace(request.IdempotencyKey) || request.IdempotencyKey.Length > 128) throw Bad("An idempotency key of 1–128 characters is required.");
         await store.Mutations.WaitAsync(ct);
         try
@@ -61,6 +62,7 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
                 Id = Guid.NewGuid(), NovelId = novelId, SnapshotId = request.SnapshotId,
                 IdempotencyKey = request.IdempotencyKey, InputChecksum = Checksum(snapshot),
                 Settings = ToRequest(snapshot.Settings),
+                MaxParallelSections = request.MaxParallelSections,
                 SnapshotAt = snapshot.CapturedAt.UtcDateTime, CreatedAt = clock.GetUtcNow().UtcDateTime
             };
             ResetProgress(job, snapshot);
@@ -72,8 +74,9 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
     }
 
     /// <summary>Queues failed, cancelled or unavailable completed work again; after restart, saved inputs must match the original checksum.</summary>
-    public async Task<AudiobookJobStatus> RetryAsync(Guid novelId, Guid jobId, CancellationToken ct)
+    public async Task<AudiobookJobStatus> RetryAsync(Guid novelId, Guid jobId, CancellationToken ct, int? maxParallelSections = null)
     {
+        if (maxParallelSections.HasValue) ValidateParallelism(maxParallelSections.Value);
         await store.Mutations.WaitAsync(ct);
         try
         {
@@ -94,6 +97,7 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
             }
             job.History.Add(AttemptStatus(job));
             job.AttemptNumber++;
+            job.MaxParallelSections = maxParallelSections ?? job.MaxParallelSections;
             ResetProgress(job, snapshot);
             await jobs.SaveAsync(job, ct);
             store.Restore(job.SnapshotId, snapshot);
@@ -183,7 +187,11 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
             sections.Count(s => s.State == "generated"), sections.Count(s => s.State == "failed"), sections.Count(s => s.State == "skipped"),
             job.CompletedChapters, chapters.Length, job.State == "completed" && archives.IsAvailable(job.NovelId, job.Archive), job.ErrorCode,
             sections.Select(s => new AudiobookSectionStatus(s.ChapterIndex, s.SectionIndex, s.State)).ToArray(),
-            job.History.Append(AttemptStatus(job)).ToArray());
+            job.History.Append(AttemptStatus(job)).ToArray(), job.MaxParallelSections);
+    }
+    private static void ValidateParallelism(int value)
+    {
+        if (value is < 1 or > 8) throw Bad("Parallel sections must be between 1 and 8.");
     }
     private static ApiException Bad(string message) => new(ErrorCodes.BadRequest, message);
 }

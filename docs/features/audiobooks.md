@@ -36,8 +36,13 @@ change the actual duration.
 
 Click **Generate audiobook**. Generation uses the last saved prose and freezes
 its inputs when the snapshot is created. Later edits do not change that run.
-Each provider generates one operation at a time, shared with playback and
-voice previews. External providers can charge for speech and text preparation.
+Under **Generation speed**, choose **Sections in parallel** (1–8). The default
+is 1; use 2 or 3 when your remote provider supports concurrent requests. Each
+section processes its speech chunks sequentially. Higher values allow more
+simultaneous speech and narration preparation calls, so choose a value that
+fits your providers' capacity and rate limits. Playback and previews share
+the speech provider's capacity. External providers can charge for speech and
+text preparation.
 
 ## Progress, cancellation and retry
 
@@ -55,6 +60,11 @@ restarting the app, retry reconstructs the saved inputs and checks their
 hashes. If prose, prompts, settings or voice references changed, create a new
 run. Incomplete emphasis or immersive planning may need another provider call
 after restart. The app never automatically resumes paid generation on startup.
+Use **Sections in parallel on retry** to change concurrency before resuming;
+it starts at the run's saved value. Concurrency changes do not change frozen
+narration inputs or invalidate cached audio. Older saved runs default to 1.
+Cancellation and terminal section failures stop scheduling more sections and
+wait for active speech calls to drain before the job finishes.
 
 Repeating unchanged generation reuses complete audio. Narrator edits normally
 regenerate only affected sections. Immersive planning uses story context, so
@@ -87,6 +97,18 @@ section is retried, though failed or incomplete provider operations may be charg
 again. Other SDK exceptions without a recognizable HTTP status are logged but
 are not automatically retried.
 
+Immersive plans get up to three validation attempts before any speech synthesis
+starts. Failed attempts receive corrective feedback using the same source and
+prepared annotations. Equivalent Unicode composition, curly/straight quotes,
+and ellipsis typography are restored from the exact source, preserving speaker
+boundaries. Changed words, omissions and changed delivery tags are rejected.
+Warning logs identify the text preparation model, novel, chapter and section,
+and show bounded source/planned excerpts around the first difference, marked
+with `⟦HERE⟧`, plus character codes and lengths. These excerpts can contain your
+prose. Successful typography repairs are logged at Information level. Exhausted
+planning shows a specific narration-planning error in the dialog; retry the run,
+or select another text preparation model in a new run if it keeps happening.
+
 ## Download
 
 A completed run offers **Download ZIP**. It contains one WAV file for each
@@ -94,15 +116,24 @@ non-empty chapter and a `manifest.json` with chapter titles, duration,
 checksums and section offsets. Chapter filenames retain their original order;
 empty chapters and sections are skipped. Titles name files but are not spoken.
 
-WAV chapters use 24 kHz mono 16-bit PCM with a 500 ms gap between sections and
-no trailing gap. Higher-rate provider audio is downsampled with a sinc low-pass
-filter to suppress aliasing; matching PCM is copied without requantization.
-After upgrading from the earlier assembly filter, create a new run to use the
-improved conversion. Existing downloads and completed section checkpoints in
-old runs keep their original audio. New runs reuse cached provider synthesis
-where its inputs match, but may need new narration planning.
-Expect about 2.9 MB per audio minute (173 MB per hour), plus
-small file/ZIP headers. WAV entries are not compressed, so book-sized exports
+WAV assembly preserves the provider's sample rate, channel count and sample
+format when inputs match, copying the audio samples byte-for-byte. Chapters
+can have different formats; `manifest.json` records each chapter's actual
+output profile and frame-based section timings. There is a 500 ms gap between
+sections and no trailing gap. If formats differ within a section or chapter,
+assembly uses the highest sample rate present and stereo if needed. Only
+mismatching inputs are converted, using a sinc filter for resampling. Mixed
+16-bit PCM stays 16-bit PCM; other mixed sample formats use 32-bit float.
+
+Existing downloads retain their original audio. Generate a new run to replace
+an older downsampled download, or retry a failed/cancelled run. Old rendering
+checkpoints are rebuilt using retained provider synthesis where available;
+narration planning may run again. Frozen narration identities stay unchanged
+so saved jobs can still be verified after restart.
+
+File size depends on the provider format: 44.1 kHz mono 16-bit uses about
+5.3 MB/minute; 48 kHz stereo 16-bit uses about 11.5 MB/minute, plus small
+file/ZIP headers. WAV entries are not compressed, so book-sized exports
 can be large. A chapter exceeding the WAV container limit must be split into
 smaller chapters before generating again.
 

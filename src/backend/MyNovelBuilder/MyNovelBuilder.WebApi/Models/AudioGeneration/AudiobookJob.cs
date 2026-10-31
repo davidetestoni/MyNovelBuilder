@@ -27,6 +27,8 @@ public sealed class AudiobookJob
     public string Stage { get; set; } = "queued";
     /// <summary>One-based execution count, incremented for explicit retries.</summary>
     public int AttemptNumber { get; set; } = 1;
+    /// <summary>Maximum concurrent sections for this execution attempt. Older saved jobs default to one.</summary>
+    public int MaxParallelSections { get; set; } = 1;
     /// <summary>UTC time when the current attempt was queued.</summary>
     public DateTime AttemptCreatedAt { get; set; }
     /// <summary>UTC finish time, or null while the current attempt is active.</summary>

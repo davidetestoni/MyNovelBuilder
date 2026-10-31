@@ -21,6 +21,52 @@ namespace MyNovelBuilder.WebApi.Tests.Integration;
 public sealed class AudiobookApiIntegrationTests
 {
     [Fact]
+    public async Task ConcurrencyCanBeSelectedAndChangedOnRetry_WithBackwardCompatibleDefaults()
+    {
+        using var baseFactory = new TestWebApplicationFactory<Program>();
+        using var factory = baseFactory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            services.AddKeyedSingleton<ITtsService>(TtsProvider.ElevenLabs, new Provider())));
+        using var client = factory.CreateClient();
+        var novelId = Guid.NewGuid();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            db.Novels.Add(new Novel { Id = novelId, Title = "Concurrent audiobook" });
+            await db.SaveChangesAsync();
+            await scope.ServiceProvider.GetRequiredService<INovelService>().UpdateProseAsync(novelId,
+                new Prose { Chapters = [new Chapter { Title = "One", Sections = [new Section { Text = "Test speech." }] }] });
+        }
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+        var root = $"/api/novel/{novelId}/audiobook";
+        var response = await client.PostAsJsonAsync(root + "/preview",
+            new AudiobookSettingsRequest(TtsProvider.ElevenLabs, "model", "voice", false, false, 0));
+        response.EnsureSuccessStatusCode();
+        var preview = (await response.Content.ReadFromJsonAsync<AudiobookPreview>(options))!;
+        var invalid = await client.PostAsJsonAsync(root + "/jobs", new StartAudiobookJobRequest(preview.SnapshotId, "invalid", 9));
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        var start = await client.PostAsJsonAsync(root + "/jobs", new StartAudiobookJobRequest(preview.SnapshotId, "parallel", 3));
+        Assert.Equal(HttpStatusCode.Accepted, start.StatusCode);
+        var job = (await start.Content.ReadFromJsonAsync<AudiobookJobStatus>(options))!;
+        Assert.Equal(3, job.MaxParallelSections);
+        var jobRoot = root + $"/jobs/{job.Id}";
+        (await client.PostAsJsonAsync(jobRoot + "/cancel", new { })).EnsureSuccessStatusCode();
+        var invalidRetry = await client.PostAsJsonAsync(jobRoot + "/retry", new { maxParallelSections = 0 });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidRetry.StatusCode);
+        var retry = await client.PostAsJsonAsync(jobRoot + "/retry", new { maxParallelSections = 2 });
+        Assert.Equal(HttpStatusCode.Accepted, retry.StatusCode);
+        Assert.Equal(2, (await retry.Content.ReadFromJsonAsync<AudiobookJobStatus>(options))!.MaxParallelSections);
+        (await client.PostAsJsonAsync(jobRoot + "/cancel", new { })).EnsureSuccessStatusCode();
+        var withoutBody = await client.PostAsync(jobRoot + "/retry", null);
+        Assert.Equal(HttpStatusCode.Accepted, withoutBody.StatusCode);
+        Assert.Equal(2, (await withoutBody.Content.ReadFromJsonAsync<AudiobookJobStatus>(options))!.MaxParallelSections);
+        (await client.PostAsJsonAsync(jobRoot + "/cancel", new { })).EnsureSuccessStatusCode();
+        var legacy = await client.PostAsJsonAsync(root + "/jobs", new { preview.SnapshotId, idempotencyKey = "legacy" });
+        Assert.Equal(HttpStatusCode.Accepted, legacy.StatusCode);
+        Assert.Equal(1, (await legacy.Content.ReadFromJsonAsync<AudiobookJobStatus>(options))!.MaxParallelSections);
+    }
+
+    [Fact]
     public async Task ApiStartsHostedJob_ReturnsDurableStatusAndIdempotentLocation_AndRejectsInvalidInput()
     {
         using var baseFactory = new TestWebApplicationFactory<Program>();

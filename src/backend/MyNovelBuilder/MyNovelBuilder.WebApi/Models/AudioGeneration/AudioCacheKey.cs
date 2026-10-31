@@ -9,6 +9,8 @@ namespace MyNovelBuilder.WebApi.Models.AudioGeneration;
 /// <summary>Versioned canonical fingerprints. Inputs are hashed, never persisted as JSON.</summary>
 public static class AudioCacheKey
 {
+    /// <summary>Assembly policy version; matching provider formats are preserved without conversion.</summary>
+    public const string AssemblyProfile = "source-native-v1";
     /// <summary>Hashes UTF-8 text without retaining it.</summary>
     public static string Hash(string value) => Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
@@ -85,8 +87,8 @@ public static class AudioCacheKey
     });
 
     /// <summary>Identifies ordered audio, inter-chunk pause and output profile.</summary>
-    public static string Section(IEnumerable<string> chunks, int pauseMs) => Create("section-v2", new
+    public static string Section(IEnumerable<string> chunks, int pauseMs) => Create("section-v3", new
     {
-        chunks, pauseMs, profile = "pcm-24000-mono-16"
+        chunks, pauseMs, profile = AssemblyProfile
     });
 }

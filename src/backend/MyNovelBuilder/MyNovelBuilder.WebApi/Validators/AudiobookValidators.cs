@@ -25,5 +25,15 @@ public sealed class StartAudiobookJobRequestValidator : AbstractValidator<StartA
     {
         RuleFor(x => x.SnapshotId).NotEmpty();
         RuleFor(x => x.IdempotencyKey).NotEmpty().MaximumLength(128);
+        RuleFor(x => x.MaxParallelSections).InclusiveBetween(1, 8);
+    }
+}
+/// <summary>Validates optional execution settings when resuming a saved job.</summary>
+public sealed class RetryAudiobookJobRequestValidator : AbstractValidator<RetryAudiobookJobRequest>
+{
+    /// <summary>Limits concurrency while allowing omitted values to retain the saved selection.</summary>
+    public RetryAudiobookJobRequestValidator()
+    {
+        RuleFor(x => x.MaxParallelSections).InclusiveBetween(1, 8);
     }
 }

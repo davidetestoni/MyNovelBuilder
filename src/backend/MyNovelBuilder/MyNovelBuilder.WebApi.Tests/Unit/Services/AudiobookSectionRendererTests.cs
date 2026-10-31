@@ -20,6 +20,29 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 
 public sealed class AudiobookSectionRendererTests
 {
+    [Fact]
+    public async Task LegacyRenderProfileRebuildsWithoutChangingFrozenIdentityOrRepeatingSpeech()
+    {
+        using var fixture = new Fixture();
+        fixture.Tts.SampleRate = 44100;
+        var request = Fixture.Request("Original speech.", true, false);
+        fixture.Text.PlannerResponse = Plan(("Original speech.", null));
+        await fixture.Renderer.RenderAsync(request);
+        var identity = fixture.Renderer.GetIdentity(request);
+        var manifest = (await fixture.Artifacts.ReadManifestAsync(identity.SourceKey))!;
+        await fixture.Artifacts.SaveManifestAsync(manifest with { RenderingProfile = null });
+        fixture.Restart();
+        Assert.False(await fixture.Renderer.IsReusableAsync(request));
+        var rebuilt = await fixture.Renderer.RenderAsync(request);
+        Assert.Equal(identity.SourceKey, fixture.Renderer.GetIdentity(request).SourceKey);
+        Assert.Single(fixture.Tts.Requests);
+        Assert.Equal(2, fixture.Text.PlannerCalls);
+        Assert.True(await fixture.Renderer.IsReusableAsync(request));
+        await using var stream = await fixture.Artifacts.OpenReadAsync(rebuilt.ArtifactKey);
+        using var reader = new WaveFileReader(stream!);
+        Assert.Equal(44100, reader.WaveFormat.SampleRate);
+    }
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -160,9 +183,10 @@ public sealed class AudiobookSectionRendererTests
         fixture.Text.PlannerResponse = invalid;
         await Assert.ThrowsAnyAsync<Exception>(() => fixture.Renderer.RenderAsync(request));
         Assert.Empty(fixture.Tts.Requests);
+        Assert.Equal(3, fixture.Text.PlannerCalls);
         fixture.Text.PlannerResponse = Plan(("Original speech.", null));
         await fixture.Renderer.RenderAsync(request);
-        Assert.Equal(2, fixture.Text.PlannerCalls);
+        Assert.Equal(4, fixture.Text.PlannerCalls);
         Assert.Single(fixture.Tts.Requests);
     }
 
@@ -199,7 +223,7 @@ public sealed class AudiobookSectionRendererTests
     }
 
     [Fact]
-    public async Task AssemblyResamplesStereoAndPlacesExactSilenceOnlyBetweenUnits()
+    public async Task AssemblyPreservesNativeStereoAndPlacesExactSilenceOnlyBetweenUnits()
     {
         using var fixture = new Fixture();
         fixture.Tts.SampleRate = 48000;
@@ -207,14 +231,14 @@ public sealed class AudiobookSectionRendererTests
         var request = Fixture.Request("First. Second.", true, false);
         fixture.Text.PlannerResponse = Plan(("First. ", null), ("Second.", null));
         var result = await fixture.Renderer.RenderAsync(request);
-        Assert.Equal(960 + 150 * 48, await fixture.PcmLength(result.ArtifactKey));
+        Assert.Equal(3840 + 150 * 192, await fixture.PcmLength(result.ArtifactKey, 48000, 2));
         await using var stream = await fixture.Artifacts.OpenReadAsync(result.ArtifactKey);
         using var reader = new WaveFileReader(stream!);
         var pcm = new byte[(int)reader.Length];
         Assert.Equal(pcm.Length, await reader.ReadAsync(pcm));
-        Assert.Contains(pcm[..480], b => b != 0);
-        Assert.All(pcm[480..(480 + 150 * 48)], b => Assert.Equal(0, b));
-        Assert.Contains(pcm[(480 + 150 * 48)..], b => b != 0);
+        Assert.Contains(pcm[..1920], b => b != 0);
+        Assert.All(pcm[1920..(1920 + 150 * 192)], b => Assert.Equal(0, b));
+        Assert.Contains(pcm[(1920 + 150 * 192)..], b => b != 0);
     }
 
     [Fact]
@@ -290,13 +314,13 @@ public sealed class AudiobookSectionRendererTests
             new(TtsProvider.ElevenLabs, "eleven_v3", "narrator", emphasis, immersive, 150,
                 TextGenerationProvider.OpenRouter, "auxiliary", Guid.NewGuid(), null, null),
             new(0, text, [new(PromptMessageRole.User, "<tts-source>" + text + "</tts-source>")], []));
-        public async Task<long> PcmLength(string key)
+        public async Task<long> PcmLength(string key, int rate = 24000, int channels = 1)
         {
             await using var stream = await Artifacts.OpenReadAsync(key);
             Assert.NotNull(stream);
             using var reader = new WaveFileReader(stream);
-            Assert.Equal(24000, reader.WaveFormat.SampleRate);
-            Assert.Equal(1, reader.WaveFormat.Channels);
+            Assert.Equal(rate, reader.WaveFormat.SampleRate);
+            Assert.Equal(channels, reader.WaveFormat.Channels);
             Assert.Equal(16, reader.WaveFormat.BitsPerSample);
             Assert.Equal(stream.Length - 8, ReadRiffLength(stream));
             return reader.Length;
@@ -354,7 +378,7 @@ public sealed class AudiobookSectionRendererTests
             {
                 PlannerCalls++;
                 var annotated = messages.LastOrDefault(m => m.Message.Contains("<tts-source>"))?.Message.Contains("[warm]") == true;
-                var plan = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(PlannerResponse);
+                var plan = annotated ? JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(PlannerResponse) : null;
                 if (annotated && plan?.Count > 0)
                 {
                     var text = plan[0]["text"].GetString();

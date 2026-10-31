@@ -5,7 +5,10 @@ namespace MyNovelBuilder.WebApi.Services;
 /// <param name="SourceKey">Canonical source fingerprint.</param>
 /// <param name="PreprocessingKey">Optional preprocessing fingerprint; never a text-bearing plan.</param>
 /// <param name="ArtifactKeys">Ordered completed audio references.</param>
-public sealed record AudioSourceManifest(int Version, string SourceKey, string? PreprocessingKey, string[] ArtifactKeys);
+/// <param name="RenderingProfile">Optional rendering policy version, separate from frozen narration identity.</param>
+/// <param name="SegmentFrames">Exact output frame counts of assembly inputs, excluding gaps.</param>
+public sealed record AudioSourceManifest(int Version, string SourceKey, string? PreprocessingKey, string[] ArtifactKeys,
+    string? RenderingProfile = null, long[]? SegmentFrames = null);
 
 /// <summary>Versioned cache, separate from untrusted legacy playback entries.</summary>
 public interface IAudioArtifactRepository
@@ -18,7 +21,7 @@ public interface IAudioArtifactRepository
     Task<byte[]?> ReadBytesAsync(string key, CancellationToken cancellationToken = default);
     /// <summary>Publishes complete WAV content and integrity metadata atomically per file.</summary>
     Task SaveAsync(string key, Stream wav, CancellationToken cancellationToken = default);
-    /// <summary>Reads a hash-only mapping only when every referenced artifact is intact.</summary>
+    /// <summary>Validates source mappings against their audio references, and assembly timings against the completed output.</summary>
     Task<AudioSourceManifest?> ReadManifestAsync(string sourceKey, CancellationToken cancellationToken = default);
     /// <summary>Publishes a hash-only mapping after validating every referenced artifact.</summary>
     Task SaveManifestAsync(AudioSourceManifest manifest, CancellationToken cancellationToken = default);

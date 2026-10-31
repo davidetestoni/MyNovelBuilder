@@ -30,9 +30,10 @@ public sealed class AudiobookController(AudiobookJobService jobs) : ControllerBa
     public Task<AudiobookJobStatus> Cancel(Guid novelId, Guid jobId, CancellationToken ct) => jobs.CancelAsync(novelId, jobId, ct);
     /// <summary>Retries failed or cancelled work after verifying its original inputs are available.</summary>
     [HttpPost("jobs/{jobId:guid}/retry")]
-    public async Task<ActionResult<AudiobookJobStatus>> Retry(Guid novelId, Guid jobId, CancellationToken ct)
+    public async Task<ActionResult<AudiobookJobStatus>> Retry(Guid novelId, Guid jobId, CancellationToken ct,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] RetryAudiobookJobRequest? request = null)
     {
-        var job = await jobs.RetryAsync(novelId, jobId, ct);
+        var job = await jobs.RetryAsync(novelId, jobId, ct, request?.MaxParallelSections);
         return AcceptedAtAction(nameof(Get), new { novelId, jobId }, job);
     }
     /// <summary>Streams a completed, validated archive with support for HTTP range requests.</summary>

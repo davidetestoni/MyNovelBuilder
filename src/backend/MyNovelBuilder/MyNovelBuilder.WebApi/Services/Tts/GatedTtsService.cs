@@ -6,7 +6,7 @@ using MyNovelBuilder.WebApi.Services.TextGeneration;
 
 namespace MyNovelBuilder.WebApi.Services.Tts;
 
-/// <summary>Serializes synthesis for every provider, retaining its slot until generation and streamed response consumption finish.</summary>
+/// <summary>Limits provider synthesis, retaining its slot until generation and streamed response consumption finish.</summary>
 public sealed class GatedTtsService(ITtsService inner, TtsProvider provider, ProviderSynthesisGate gate) : ITtsService
 {
     /// <inheritdoc/>

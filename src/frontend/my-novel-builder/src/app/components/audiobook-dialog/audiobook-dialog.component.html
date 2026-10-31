@@ -60,6 +60,13 @@
         <p class="notice">Characters without an assigned voice use the narrator.</p>
       }
     </fieldset>
+    <fieldset [disabled]="busy || active">
+      <legend>Generation speed</legend>
+      <label for="ab-parallel">Sections in parallel</label>
+      <p-select inputId="ab-parallel" [options]="parallelOptions" optionLabel="label" optionValue="value"
+        [(ngModel)]="maxParallelSections" [disabled]="busy || active" appendTo="body" />
+      <p class="muted">Use 1 for providers that need one request at a time. Higher values also increase simultaneous speech and narration preparation requests.</p>
+    </fieldset>
     </section>
     <section class="summary-column" aria-label="Audiobook scope and progress">
       <h3>Your audiobook</h3>
@@ -108,12 +115,19 @@
             <div role="status" aria-live="polite" aria-atomic="true">
               <p><strong>{{ stageLabel(job.stage) }}</strong></p>
               <p>{{ job.completedSections }} sections complete · {{ job.reusedSections }} reused · {{ job.failedSections }} failed</p>
+              <p>Up to {{ job.maxParallelSections ?? 1 }} sections in parallel</p>
               <p>{{ job.completedChapters }} / {{ job.totalChapters }} chapters assembled</p>
             </div>
             @if (savedAfter(job)) { <p class="muted">The novel was saved after this run; it may not include your latest edits.</p> }
             @if (job.errorCode) {
               <p class="error" role="alert">{{ jobError(job) }}</p>
               <p class="muted">Check the server logs for failure details. Job ID: <code>{{ job.id }}</code></p>
+            }
+            @if (job.state === 'failed' || job.state === 'cancelled' || (job.state === 'completed' && !job.downloadAvailable)) {
+              <label for="ab-retry-parallel">Sections in parallel on retry</label>
+              <p-select inputId="ab-retry-parallel" [options]="parallelOptions" optionLabel="label" optionValue="value"
+                [ngModel]="retryParallelism[job.id] ?? job.maxParallelSections ?? 1" (ngModelChange)="retryParallelism[job.id] = $event"
+                [disabled]="busy || active || loadingJobs || !!historyError" appendTo="body" />
             }
             <div class="actions">
               @if (isActive(job)) {

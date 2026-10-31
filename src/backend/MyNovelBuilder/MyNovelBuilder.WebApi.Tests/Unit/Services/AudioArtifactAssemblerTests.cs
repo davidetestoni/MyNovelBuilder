@@ -9,55 +9,106 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public sealed class AudioArtifactAssemblerTests
 {
     [Theory]
-    [InlineData(44100, 8000, 0.95, 1.01)]
-    [InlineData(48000, 8000, 0.95, 1.01)]
-    [InlineData(44100, 15000, 0, 0.001)]
-    [InlineData(48000, 15000, 0, 0.001)]
-    public async Task DownsamplingPreservesSpeechBandAndRejectsAliasedHighFrequencies(
-        int rate, int frequency, double minimum, double maximum)
+    [InlineData(24000, 1, 16, false)]
+    [InlineData(44100, 1, 16, false)]
+    [InlineData(48000, 2, 16, false)]
+    [InlineData(44100, 2, 24, false)]
+    [InlineData(48000, 1, 32, false)]
+    [InlineData(22050, 1, 8, false)]
+    [InlineData(44100, 2, 32, true)]
+    public async Task MatchingProviderFormatsArePreservedByteExactlyAcrossSectionAndChapterBuffers(int rate, int channels, int bits, bool floating)
     {
-        var pcm = new byte[rate * 2];
-        for (var i = 0; i < rate; i++)
-            BinaryPrimitives.WriteInt16LittleEndian(pcm.AsSpan(i * 2), (short)(16000 * Math.Sin(2 * Math.PI * frequency * i / rate)));
-        var output = await Assemble(pcm, rate);
-        Assert.Equal(24000 * sizeof(short), output.Length);
-        // Ignore filter startup/end transients; inspect the middle across multiple assembly buffers.
-        var samples = Enumerable.Range(2400, 19200)
-            .Select(i => (double)BinaryPrimitives.ReadInt16LittleEndian(output.AsSpan(i * 2))).ToArray();
-        var relativeRms = Math.Sqrt(samples.Average(s => s * s)) / (16000 / Math.Sqrt(2));
-        Assert.InRange(relativeRms, minimum, maximum);
+        using var f = new Fixture();
+        var format = floating ? WaveFormat.CreateIeeeFloatWaveFormat(rate, channels) : new WaveFormat(rate, bits, channels);
+        var pcm = new byte[50002 * format.BlockAlign];
+        new Random(42).NextBytes(pcm);
+        if (floating)
+            for (var i = 0; i < pcm.Length; i += 4) BinaryPrimitives.WriteSingleLittleEndian(pcm.AsSpan(i), (float)Math.Sin(i * 0.001));
+        var source = await f.Save(pcm, format);
+        var section = await f.Assembler.AssembleAsync([source], 0);
+        var chapter = await f.Assembler.AssembleChapterAsync([section]);
+        var (actual, output) = await f.Read(chapter);
+        Assert.Equal(format, actual);
+        Assert.Equal(pcm, output);
     }
 
     [Fact]
-    public async Task AlreadyNormalizedPcmIsPreservedExactlyAcrossBuffersAndChapterAssembly()
+    public async Task MixedRatesUpsampleOnlyLowerRateAndPreserveNativeStereoSegmentAndExactGaps()
     {
-        var pcm = new byte[96000];
-        new Random(42).NextBytes(pcm);
-        Assert.Equal(pcm, await Assemble(pcm, 24000));
+        using var f = new Fixture();
+        var low = new byte[2400 * 2];
+        for (var i = 0; i < 2400; i++)
+            BinaryPrimitives.WriteInt16LittleEndian(low.AsSpan(i * 2), (short)(8000 * Math.Sin(2 * Math.PI * 440 * i / 24000)));
+        var native = new byte[4800 * 4];
+        new Random(42).NextBytes(native);
+        var a = await f.Save(low, new WaveFormat(24000, 16, 1));
+        var b = await f.Save(native, new WaveFormat(48000, 16, 2));
+        var key = await f.Assembler.AssembleAsync([a, b], 150);
+        var (format, output) = await f.Read(key);
+        Assert.Equal(new WaveFormat(48000, 16, 2), format);
+        var manifest = (await f.Artifacts.ReadManifestAsync(key))!;
+        Assert.Equal(new long[] { 4800, 4800 }, manifest.SegmentFrames);
+        var firstBytes = (int)manifest.SegmentFrames![0] * 4;
+        var gapBytes = 7200 * 4;
+        Assert.Equal(firstBytes + gapBytes + native.Length, output.Length);
+        Assert.All(output.Skip(firstBytes).Take(gapBytes), b => Assert.Equal((byte)0, b));
+        Assert.Equal(native, output[(firstBytes + gapBytes)..]);
     }
 
-    private static async Task<byte[]> Assemble(byte[] pcm, int rate)
+    [Fact]
+    public async Task UnsignedEightBitSilenceAndOddRateGapsUseWholeFrames()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "assembly-fidelity-" + Guid.NewGuid());
-        try
+        using var f = new Fixture();
+        var source = await f.Save([1, 2, 3, 4], new WaveFormat(22051, 8, 1));
+        var key = await f.Assembler.AssembleChapterAsync([source, source]);
+        var (_, output) = await f.Read(key);
+        Assert.Equal(4 + 11025 + 4, output.Length);
+        Assert.All(output.Skip(4).Take(11025), b => Assert.Equal((byte)128, b));
+        Assert.Equal(new byte[] { 1, 2, 3, 4 }, output[^4..]);
+    }
+
+    [Fact]
+    public async Task LegacyDownsampledAssemblyIsNotServedForNativeRequest()
+    {
+        using var f = new Fixture();
+        var source = await f.Save(new byte[48000], new WaveFormat(48000, 16, 1));
+        var legacy = AudioCacheKey.Create("section-v2", new { chunks = new[] { source }, pauseMs = 0, profile = "pcm-24000-mono-16" });
+        await f.Save(new byte[24000], new WaveFormat(24000, 16, 1), legacy);
+        var key = await f.Assembler.AssembleAsync([source], 0);
+        Assert.NotEqual(legacy, key);
+        Assert.Equal(48000, (await f.Read(key)).Format.SampleRate);
+    }
+
+    private sealed class Fixture : IDisposable
+    {
+        private readonly string folder = Path.Combine(Path.GetTempPath(), "assembly-fidelity-" + Guid.NewGuid());
+        public FileSystemAudioArtifactRepository Artifacts { get; }
+        public AudioArtifactAssembler Assembler { get; }
+        public Fixture()
         {
             var options = Microsoft.Extensions.Options.Options.Create(new AppStorageOptions { DataFolder = folder });
-            var artifacts = new FileSystemAudioArtifactRepository(options);
-            var assembler = new AudioArtifactAssembler(artifacts, options);
+            Artifacts = new(options);
+            Assembler = new(Artifacts, options);
+        }
+        public async Task<string> Save(byte[] pcm, WaveFormat format, string? key = null)
+        {
             using var wav = new MemoryStream();
-            using (var writer = new WaveFileWriter(wav, new WaveFormat(rate, 16, 1)))
-                await writer.WriteAsync(pcm.AsMemory());
-            var key = AudioCacheKey.Hash("source");
+            using (var writer = new WaveFileWriter(wav, format)) await writer.WriteAsync(pcm.AsMemory());
+            key ??= AudioCacheKey.Hash(Guid.NewGuid().ToString());
             using var source = new MemoryStream(wav.ToArray());
-            await artifacts.SaveAsync(key, source);
-            var section = await assembler.AssembleAsync([key], 0);
-            var chapter = await assembler.AssembleChapterAsync([section]);
-            await using var result = await artifacts.OpenReadAsync(chapter);
+            await Artifacts.SaveAsync(key, source);
+            return key;
+        }
+        public async Task<(WaveFormat Format, byte[] Pcm)> Read(string key)
+        {
+            await using var result = await Artifacts.OpenReadAsync(key);
             using var reader = new WaveFileReader(result!);
             using var output = new MemoryStream();
-            await reader.CopyToAsync(output);
-            return output.ToArray();
+            var buffer = new byte[16384 - 16384 % reader.WaveFormat.BlockAlign];
+            int read;
+            while ((read = await reader.ReadAsync(buffer.AsMemory())) > 0) await output.WriteAsync(buffer.AsMemory(0, read));
+            return (reader.WaveFormat, output.ToArray());
         }
-        finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+        public void Dispose() { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
     }
 }
