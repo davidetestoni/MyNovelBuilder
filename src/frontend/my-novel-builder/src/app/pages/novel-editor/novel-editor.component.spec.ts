@@ -131,6 +131,43 @@ describe('NovelEditorComponent workflows', () => {
     localStorage.clear();
   });
 
+  it('remembers the prose lock per novel without updating the backend', () => {
+    component = createComponent();
+    component.ngOnInit();
+    expect(component.isProseReadOnly).toBeFalse();
+
+    component.toggleProseReadOnly();
+    const restored = TestBed.runInInjectionContext(() => new NovelEditorComponent());
+    restored.ngOnInit();
+    expect(restored.isProseReadOnly).toBeTrue();
+    expect(localStorage.getItem('novel-editor-prose-read-only:novel-id')).toBe('true');
+    expect(localStorage.getItem('novel-editor-prose-read-only:other-novel')).toBeNull();
+
+    Object.assign(TestBed.inject(ActivatedRoute).snapshot, {
+      paramMap: convertToParamMap({ id: 'other-novel' }),
+    });
+    const otherNovel = TestBed.runInInjectionContext(() => new NovelEditorComponent());
+    otherNovel.ngOnInit();
+    expect(otherNovel.isProseReadOnly).toBeFalse();
+
+    restored.toggleProseReadOnly();
+    expect(localStorage.getItem('novel-editor-prose-read-only:novel-id')).toBe('false');
+    expect(novelService.updateNovelProse).not.toHaveBeenCalled();
+  });
+
+  it('keeps the prose lock usable when local storage is blocked', () => {
+    spyOn(Storage.prototype, 'getItem').and.callFake((key: string) => {
+      if (key.startsWith('novel-editor-prose-read-only:')) throw new Error('Storage blocked');
+      return null;
+    });
+    spyOn(Storage.prototype, 'setItem').and.throwError('Storage blocked');
+    component = createComponent();
+    component.ngOnInit();
+    expect(component.isProseReadOnly).toBeFalse();
+    expect(() => component.toggleProseReadOnly()).not.toThrow();
+    expect(component.isProseReadOnly).toBeTrue();
+  });
+
   it('loads the novel context and applies a valid chapter query', () => {
     queryParams = { chapter: '1' };
     const floatedMedia: CompendiumRecordMediaDto[] = [

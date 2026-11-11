@@ -103,6 +103,20 @@ export class ProseEditorComponent implements OnDestroy {
   @Input() novelId!: string;
   @Input() prose!: Prose;
   @Input() selectedChapterIndex: number | null = null;
+  private isReadOnly = false;
+  @Input() set readOnly(value: boolean) {
+    if (value && !this.isReadOnly) {
+      this.cancelRpgGeneration();
+      for (const key of this.summaryGenerations.keys()) {
+        const [chapterIndex, sectionIndex] = key.split(':').map(Number);
+        this.cancelSectionSummary(chapterIndex, sectionIndex);
+      }
+    }
+    this.isReadOnly = value;
+  }
+  get readOnly(): boolean {
+    return this.isReadOnly;
+  }
   @Input() rpgMode = false;
   @Input() prompts!: PromptDto[];
   @Input() compendia: CompendiumDto[] | null = null;
@@ -138,6 +152,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   addChapter() {
+    if (this.readOnly) {
+      return;
+    }
     this.prose.chapters = this.prose.chapters.concat({
       title: `Chapter ${this.prose.chapters.length + 1}`,
       sections: [],
@@ -147,6 +164,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   removeChapter(chapterIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     // To remove a chapter, it must be empty to avoid user data loss
     if (this.prose.chapters[chapterIndex].sections.length > 0) {
       this.toastr.error(
@@ -162,6 +182,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   addSection(chapterIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     // For now:
     // - a section is always added at the end of the chapter
     // - a section is only made up of a single text item, since the
@@ -179,6 +202,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   removeSection(chapterIndex: number, sectionIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     this.confirmationService.confirm({
       message:
         'Are you sure you want to remove this section? This action cannot be undone.',
@@ -186,6 +212,9 @@ export class ProseEditorComponent implements OnDestroy {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
+        if (this.readOnly) {
+          return;
+        }
         this.prose.chapters[chapterIndex].sections = this.prose.chapters[
           chapterIndex
         ].sections.filter((_, index) => index !== sectionIndex);
@@ -195,6 +224,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   updateChapterTitle(chapterIndex: number, event: Event) {
+    if (this.readOnly) {
+      return;
+    }
     const elem = event.target as HTMLInputElement;
 
     // If the user tries to remove the title, restore it
@@ -208,11 +240,17 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   updateSectionText(section: Section, event: Blur) {
+    if (this.readOnly) {
+      return;
+    }
     section.text = event.editor.getSemanticHTML();
     this.saveProse();
   }
 
   updateSectionSummary(section: Section, event: Event) {
+    if (this.readOnly) {
+      return;
+    }
     const elem = event.target as HTMLInputElement;
 
     // HACK: This is an ugly workaround to avoid empty summaries, otherwise
@@ -226,6 +264,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   saveProse() {
+    if (this.readOnly) {
+      return;
+    }
     // TODO: This should be debounced to avoid sending too many requests
     // TODO: Don't send the entire prose, only the changed parts
     this.proseChange.emit(this.prose);
@@ -235,6 +276,9 @@ export class ProseEditorComponent implements OnDestroy {
     command: ProseRpgCommand,
     panel: ProseRpgPanelComponent,
   ): void {
+    if (this.readOnly) {
+      return;
+    }
     const target = this.getRpgAppendTarget();
     if (!target) {
       return;
@@ -248,7 +292,7 @@ export class ProseEditorComponent implements OnDestroy {
 
     this.rpgGenerationSubscription = this.generateTextService.generateText(request).subscribe({
       next: async (update) => {
-        if (!update.isComplete) {
+        if (this.readOnly || !update.isComplete) {
           return;
         }
 
@@ -516,6 +560,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   openGenerateSectionSummaryDialog(chapterIndex: number, sectionIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     const prompts = this.prompts.filter(
       (p) => p.type === PromptType.SummarizeText,
     );
@@ -548,6 +595,9 @@ export class ProseEditorComponent implements OnDestroy {
     sectionIndex: number,
     request: GenerateTextRequestDto,
   ) {
+    if (this.readOnly) {
+      return;
+    }
     const key = `${chapterIndex}:${sectionIndex}`;
     this.cancelSectionSummary(chapterIndex, sectionIndex);
     const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
@@ -557,6 +607,9 @@ export class ProseEditorComponent implements OnDestroy {
 
     const subscription = this.generateTextService.generateText(request).subscribe({
       next: (update) => {
+        if (this.readOnly) {
+          return;
+        }
         if (update.content.length > 0) {
           section.summary = update.content;
         }
@@ -596,6 +649,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   openGenerateTextDialog(prefill: GenerateTextDialogPrefill = {}) {
+    if (this.readOnly) {
+      return;
+    }
     const selection = this.requireLastSelection();
     if (!selection) {
       return;
@@ -638,6 +694,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   openGenerateTextResultDialog(request: GenerateTextRequestDto) {
+    if (this.readOnly) {
+      return;
+    }
     this.proseGenerationDialogService
       .openTextResultDialog('Generate Text', {
         request: request,
@@ -652,7 +711,7 @@ export class ProseEditorComponent implements OnDestroy {
             initialModel: request.model,
             initialInstructions: contextInfo.instructions ?? undefined,
           });
-        } else if (result) {
+        } else if (result && !this.readOnly) {
           const selection = this.lastSelection;
           if (!selection) {
             this.toastr.error('Selection is no longer available.');
@@ -722,6 +781,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   openReplaceTextDialog() {
+    if (this.readOnly) {
+      return;
+    }
     const selection = this.requireLastSelection();
     if (!selection) {
       return;
@@ -762,6 +824,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   openReplaceTextResultDialog(request: GenerateTextRequestDto) {
+    if (this.readOnly) {
+      return;
+    }
     this.proseGenerationDialogService
       .openTextResultDialog('Replace Text', {
         request: request,
@@ -770,7 +835,7 @@ export class ProseEditorComponent implements OnDestroy {
       .subscribe(async (result) => {
         if (result === 'back') {
           this.openReplaceTextDialog();
-        } else if (result) {
+        } else if (result && !this.readOnly) {
           const selection = this.lastSelection;
           if (!selection) {
             this.toastr.error('Selection is no longer available.');
@@ -860,6 +925,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   addProseImage(chapterIndex: number, sectionIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     this.proseMediaService.selectSource().subscribe((source) => {
       if (source === 'upload') {
         this.uploadProseImageFile(chapterIndex, sectionIndex);
@@ -872,6 +940,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   uploadProseImageFile(chapterIndex: number, sectionIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     this.proseMediaService
       .selectFileAndUpload(this.novelId)
       .subscribe((location) => {
@@ -883,6 +954,9 @@ export class ProseEditorComponent implements OnDestroy {
     chapterIndex: number,
     sectionIndex: number,
   ): Promise<void> {
+    if (this.readOnly) {
+      return;
+    }
     try {
       const location = await this.proseMediaService.uploadClipboardImage(
         this.novelId,
@@ -898,6 +972,9 @@ export class ProseEditorComponent implements OnDestroy {
   }
 
   generateProseImage(chapterIndex: number, sectionIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     this.proseMediaService
       .generateAndUpload(this.novelId)
       .subscribe((location) => {
@@ -910,11 +987,17 @@ export class ProseEditorComponent implements OnDestroy {
     sectionIndex: number,
     imageId: string,
   ) {
+    if (this.readOnly) {
+      return;
+    }
     this.confirmationService.confirm({
       message: 'Are you sure you want to remove this image?',
       header: 'Confirm Image Removal',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
+        if (this.readOnly) {
+          return;
+        }
         this.proseMediaService.deleteImage(this.novelId, imageId).subscribe({
           next: () => {
             this.prose.chapters[chapterIndex].sections[sectionIndex].images =
@@ -936,12 +1019,18 @@ export class ProseEditorComponent implements OnDestroy {
     sectionIndex: number,
     location: string,
   ): void {
+    if (this.readOnly) {
+      return;
+    }
     const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
     section.images = section.images.concat(location);
     this.saveProse();
   }
 
   openRecordOverridesDialog(chapterIndex: number, sectionIndex: number) {
+    if (this.readOnly) {
+      return;
+    }
     const section = this.prose.chapters[chapterIndex].sections[sectionIndex];
     const availableRecords = this.compendia
       ? this.compendia.flatMap((c) => c.records)
@@ -956,7 +1045,7 @@ export class ProseEditorComponent implements OnDestroy {
         sectionIndex,
       })
       .subscribe((overrides) => {
-        if (overrides) {
+        if (overrides && !this.readOnly) {
           section.recordOverrides = overrides;
           this.saveProse();
         }

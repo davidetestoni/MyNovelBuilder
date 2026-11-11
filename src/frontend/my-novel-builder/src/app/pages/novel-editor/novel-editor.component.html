@@ -17,6 +17,16 @@
       </div>
       <div class="novel-editor-header-actions">
         @if (prose() !== null) {
+          <button
+            pButton
+            type="button"
+            [icon]="isProseReadOnly ? 'pi pi-lock' : 'pi pi-lock-open'"
+            [attr.aria-label]="isProseReadOnly ? 'Unlock prose editing' : 'Lock prose editing'"
+            [title]="isProseReadOnly ? 'Unlock prose editing' : 'Lock prose editing'"
+            [attr.aria-pressed]="isProseReadOnly"
+            [text]="true"
+            (click)="toggleProseReadOnly()"
+          ></button>
           <p-select
             [(ngModel)]="selectedChapterIndex"
             (ngModelChange)="onChapterSelectionChange($event)"
@@ -215,6 +225,7 @@
         [appRememberScroll]="'novel-scroll:' + novelId + ':' + (selectedChapterIndex ?? 'all')">
         @if (prose() !== null) {
           <app-prose-editor
+            [readOnly]="isProseReadOnly"
             [novelId]="novelId"
             [prose]="prose()!"
             [prompts]="prompts"

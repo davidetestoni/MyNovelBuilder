@@ -63,22 +63,17 @@
           height: 20px;
           filter: $grey5filter;
           cursor: pointer;
-          display: none;
+          visibility: hidden;
         }
 
         .remove-chapter-button-placeholder {
           width: 20px;
           height: 20px;
+          flex-shrink: 0;
         }
 
-        &:hover {
-          .remove-chapter-button-placeholder {
-            display: none;
-          }
-
-          i {
-            display: block;
-          }
+        &:hover i {
+          visibility: visible;
         }
       }
 

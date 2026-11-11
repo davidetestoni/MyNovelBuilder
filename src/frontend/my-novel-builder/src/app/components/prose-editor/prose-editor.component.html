@@ -11,7 +11,7 @@
             <div class="chapter-heading-main">
               <div class="chapter-meta chapter-index">CHAPTER {{ chapterIndex + 1 }}</div>
               <h2
-                contenteditable="true"
+                [attr.contenteditable]="!readOnly"
                 (keydown)="preventReturnKey($event)"
                 (blur)="updateChapterTitle(chapterIndex, $event)"
                 spellcheck="false"
@@ -30,11 +30,14 @@
                 READ
               </div>
             </div>
-            <div class="remove-chapter-button-placeholder"></div>
-            <i
-              class="icon icon-close"
-              (click)="removeChapter(chapterIndex)"
-            ></i>
+            <div class="remove-chapter-button-placeholder">
+              @if (!readOnly) {
+                <i
+                  class="icon icon-close"
+                  (click)="removeChapter(chapterIndex)"
+                ></i>
+              }
+            </div>
           </div>
           <div class="sections">
             @for (
@@ -46,6 +49,7 @@
                 <div class="section-body">
                   <div class="section-text">
                     <quill-editor
+                      [readOnly]="readOnly"
                       [styles]="{
                         width: '100%',
                         textIndent: '3rem',
@@ -74,12 +78,14 @@
                           alt="Section Image"
                           (click)="proseImageClicked.emit(getImageUrl(image))"
                         />
-                        <i
-                          class="section-image-remove icon icon-close"
-                          (click)="
-                            removeProseImage(chapterIndex, sectionIndex, image)
-                          "
-                        ></i>
+                        @if (!readOnly) {
+                          <i
+                            class="section-image-remove icon icon-close"
+                            (click)="
+                              removeProseImage(chapterIndex, sectionIndex, image)
+                            "
+                          ></i>
+                        }
                       </div>
                     }
                   </div>
@@ -90,7 +96,7 @@
                   </div>
                   <div
                     class="section-summary-content"
-                    contenteditable="true"
+                    [attr.contenteditable]="!readOnly"
                     spellcheck="false"
                     (keydown)="preventReturnKey($event)"
                     (blur)="updateSectionSummary(section, $event)"
@@ -105,19 +111,21 @@
                         <i class="pi pi-stop" pTooltip="Cancel summary generation" tooltipPosition="bottom" (click)="cancelSectionSummary(chapterIndex, sectionIndex)" role="button" aria-label="Cancel summary generation"></i>
                       </div>
                     }
-                    <div class="section-action">
-                      <i
-                        pTooltip="Generate Summary"
-                        tooltipPosition="bottom"
-                        class="icon icon-ai"
-                        (click)="
-                          openGenerateSectionSummaryDialog(
-                            chapterIndex,
-                            sectionIndex
-                          )
-                        "
-                      ></i>
-                    </div>
+                    @if (!readOnly) {
+                      <div class="section-action">
+                        <i
+                          pTooltip="Generate Summary"
+                          tooltipPosition="bottom"
+                          class="icon icon-ai"
+                          (click)="
+                            openGenerateSectionSummaryDialog(
+                              chapterIndex,
+                              sectionIndex
+                            )
+                          "
+                        ></i>
+                      </div>
+                    }
                     <div class="section-action">
                       <i
                         pTooltip="Text to Speech"
@@ -126,53 +134,61 @@
                         (click)="textToSpeech(chapterIndex, sectionIndex)"
                       ></i>
                     </div>
-                    <div class="section-action">
-                      <i
-                        pTooltip="Add Image"
-                        tooltipPosition="bottom"
-                        class="pi pi-image"
-                        (click)="addProseImage(chapterIndex, sectionIndex)"
-                      ></i>
-                    </div>
-                    <div
-                      class="section-action"
-                      [class.has-overrides]="
-                        (section.recordOverrides.length || 0) > 0
-                      "
-                    >
-                      <i
-                        [pTooltip]="
+                    @if (!readOnly) {
+                      <div class="section-action">
+                        <i
+                          pTooltip="Add Image"
+                          tooltipPosition="bottom"
+                          class="pi pi-image"
+                          (click)="addProseImage(chapterIndex, sectionIndex)"
+                        ></i>
+                      </div>
+                    }
+                    @if (!readOnly) {
+                      <div
+                        class="section-action"
+                        [class.has-overrides]="
                           (section.recordOverrides.length || 0) > 0
-                            ? section.recordOverrides.length +
-                              ' Record Override' +
-                              (section.recordOverrides.length === 1 ? '' : 's')
-                            : 'Record Overrides'
                         "
-                        tooltipPosition="bottom"
-                        class="pi pi-tags"
-                        (click)="
-                          openRecordOverridesDialog(chapterIndex, sectionIndex)
-                        "
-                      ></i>
-                    </div>
-                    <div class="section-action">
-                      <i
-                        pTooltip="Remove Section"
-                        tooltipPosition="bottom"
-                        class="icon icon-close"
-                        (click)="removeSection(chapterIndex, sectionIndex)"
-                      ></i>
-                    </div>
+                      >
+                        <i
+                          [pTooltip]="
+                            (section.recordOverrides.length || 0) > 0
+                              ? section.recordOverrides.length +
+                                ' Record Override' +
+                                (section.recordOverrides.length === 1 ? '' : 's')
+                              : 'Record Overrides'
+                          "
+                          tooltipPosition="bottom"
+                          class="pi pi-tags"
+                          (click)="
+                            openRecordOverridesDialog(chapterIndex, sectionIndex)
+                          "
+                        ></i>
+                      </div>
+                    }
+                    @if (!readOnly) {
+                      <div class="section-action">
+                        <i
+                          pTooltip="Remove Section"
+                          tooltipPosition="bottom"
+                          class="icon icon-close"
+                          (click)="removeSection(chapterIndex, sectionIndex)"
+                        ></i>
+                      </div>
+                    }
                   </div>
                 </div>
               </div>
             }
             <!-- Fake section for padding -->
             <div class="add-section-card-wrapper">
-              <div class="add-block-card" (click)="addSection(chapterIndex)">
-                <i class="icon icon-plus"></i>
-                <span>Add Section</span>
-              </div>
+              @if (!readOnly) {
+                <div class="add-block-card" (click)="addSection(chapterIndex)">
+                  <i class="icon icon-plus"></i>
+                  <span>Add Section</span>
+                </div>
+              }
             </div>
           </div>
         </div>
@@ -180,16 +196,18 @@
     }
     @if (selectedChapterIndex === null) {
       <div class="add-chapter-card-wrapper">
-        <div class="add-block-card" (click)="addChapter()">
-          <i class="icon icon-plus"></i>
-          <span>Add Chapter</span>
-        </div>
+        @if (!readOnly) {
+          <div class="add-block-card" (click)="addChapter()">
+            <i class="icon icon-plus"></i>
+            <span>Add Chapter</span>
+          </div>
+        }
       </div>
     }
   </div>
   <app-prose-rpg-panel
     #rpgPanel
-    [visible]="rpgMode"
+    [visible]="rpgMode && !readOnly"
     [prompts]="prompts"
     [isGenerating]="isRpgGenerating"
     [isLastChapterSelected]="
@@ -200,7 +218,7 @@
     (generationCancelled)="cancelRpgGeneration()"
     (promptPreviewed)="previewRpgPrompt($event)"
   />
-  @if (showEditorControls) {
+  @if (showEditorControls && (!readOnly || (lastSelection && lastSelection.range.length > 0))) {
     <div
       class="tooltip-controls"
       [ngStyle]="{
@@ -208,11 +226,13 @@
         top: editorControlsPosition.y + 'px',
       }"
     >
-      <div class="tooltip-control" (mousedown)="openGenerateTextDialog()">
-        <i class="icon icon-ai"> </i>
-        <span>Generate</span>
-      </div>
-      @if (lastSelection != null && lastSelection.range.length === 0) {
+      @if (!readOnly) {
+        <div class="tooltip-control" (mousedown)="openGenerateTextDialog()">
+          <i class="icon icon-ai"> </i>
+          <span>Generate</span>
+        </div>
+      }
+      @if (!readOnly && lastSelection != null && lastSelection.range.length === 0) {
         <div
           pTooltip="Suggestions"
           tooltipPosition="bottom"
@@ -223,14 +243,16 @@
         </div>
       }
       @if (lastSelection != null && lastSelection.range.length > 0) {
-        <div
-          pTooltip="Replace"
-          tooltipPosition="bottom"
-          class="tooltip-control"
-          (mousedown)="openReplaceTextDialog()"
-        >
-          <i class="pi pi-refresh"> </i>
-        </div>
+        @if (!readOnly) {
+          <div
+            pTooltip="Replace"
+            tooltipPosition="bottom"
+            class="tooltip-control"
+            (mousedown)="openReplaceTextDialog()"
+          >
+            <i class="pi pi-refresh"> </i>
+          </div>
+        }
         <div
           pTooltip="New record"
           tooltipPosition="bottom"

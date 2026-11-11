@@ -228,6 +228,66 @@ describe('ProseEditorComponent', () => {
     component.prompts = [];
   });
 
+  describe('read-only mode', () => {
+    it('blocks prose mutations and saves while retaining both TTS actions', async () => {
+      const original = structuredClone(component.prose);
+      const emit = spyOn(component.proseChange, 'emit');
+      component.readOnly = true;
+      component.addChapter();
+      component.removeChapter(0);
+      component.addSection(0);
+      component.removeSection(0, 0);
+      component.updateChapterTitle(0, { target: { innerText: 'Changed' } } as unknown as Event);
+      component.updateSectionSummary(component.prose.chapters[0].sections[0], { target: { innerText: 'Changed' } } as unknown as Event);
+      component.updateSectionText(component.prose.chapters[0].sections[0], { editor: createQuill() } as Blur);
+      component.openGenerateTextDialog();
+      component.openReplaceTextDialog();
+      component.addProseImage(0, 0);
+      component.openRecordOverridesDialog(0, 0);
+      component.saveProse();
+      expect(component.prose).toEqual(original);
+      expect(emit).not.toHaveBeenCalled();
+      expect(confirmationService.confirm).not.toHaveBeenCalled();
+      expect(proseMediaService.selectSource).not.toHaveBeenCalled();
+
+      await component.textToSpeech(0, 0);
+      setSelection();
+      await component.selectedTextToSpeech();
+      expect(proseTtsService.playSection).toHaveBeenCalledTimes(2);
+
+      component.readOnly = false;
+      component.addSection(0);
+      expect(component.prose.chapters[0].sections.length).toBe(2);
+      expect(emit).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a generation result or removal confirmation opened before locking', async () => {
+      const result = new Subject<string>();
+      proseGenerationDialogService.openTextResultDialog.and.returnValue(result);
+      const quill = setSelection();
+      component.openReplaceTextResultDialog(createRequest(NovelTextGenerationType.ReplaceText));
+      component.removeSection(0, 0);
+      const confirmation = confirmationService.confirm.calls.mostRecent().args[0];
+      component.readOnly = true;
+      confirmation.accept!();
+      result.next('Replacement');
+      await flushAsyncSubscriber();
+      expect(component.prose.chapters[0].sections.length).toBe(1);
+      expect(quill.deleteText).not.toHaveBeenCalled();
+      expect(quill.clipboard.dangerouslyPasteHTML).not.toHaveBeenCalled();
+    });
+
+    it('cancels active summary generation when locked', () => {
+      const updates = new Subject<GenerateTextStreamUpdate>();
+      generateTextService.generateText.and.returnValue(updates);
+      component.generateSectionSummary(0, 0, createRequest());
+      component.readOnly = true;
+      updates.next({ content: 'Late summary', isComplete: true });
+      expect(updates.observed).toBeFalse();
+      expect(component.prose.chapters[0].sections[0].summary).toBe('Summary');
+    });
+  });
+
   describe('prose mutations and derived values', () => {
     it('adds a chapter with initialized collections and emits the prose', () => {
       const originalChapters = component.prose.chapters;
@@ -1121,6 +1181,13 @@ describe('ProseEditorComponent layout', () => {
     });
 
     const fixture = TestBed.createComponent(ProseEditorComponent);
+    const initializeEditor = fixture.componentInstance.editorInit.bind(fixture.componentInstance);
+    const editorCreated = new Promise<void>((resolve) => {
+      spyOn(fixture.componentInstance, 'editorInit').and.callFake((...args) => {
+        initializeEditor(...args);
+        resolve();
+      });
+    });
     fixture.componentRef.setInput('novelId', 'novel-1');
     fixture.componentRef.setInput('prose', {
       chapters: [
@@ -1146,6 +1213,8 @@ describe('ProseEditorComponent layout', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
+    await editorCreated;
+
     const section = fixture.nativeElement.querySelector(
       '.section',
     ) as HTMLElement;
@@ -1165,5 +1234,31 @@ describe('ProseEditorComponent layout', () => {
     expect(summaryBounds.width).toBe(250);
     expect(summaryBounds.right).toBeLessThanOrEqual(sectionBounds.right);
     expect(summary.textContent).toContain('Visible summary');
+
+    const title = fixture.nativeElement.querySelector('.chapter-heading-main') as HTMLElement;
+    const titleLeft = title.getBoundingClientRect().left;
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const editor = fixture.nativeElement.querySelector('.ql-editor') as HTMLElement;
+    expect(editor.contentEditable).toBe('false');
+    expect(title.getBoundingClientRect().left).toBe(titleLeft);
+    expect(fixture.nativeElement.querySelector('.remove-chapter-button-placeholder').getBoundingClientRect().width).toBe(20);
+    expect(fixture.nativeElement.querySelector('h2').contentEditable).toBe('false');
+    expect(fixture.nativeElement.querySelector('.section-summary-content').contentEditable).toBe('false');
+    expect(fixture.nativeElement.querySelector('.add-block-card')).toBeNull();
+    const tts = fixture.nativeElement.querySelector('.section-actions .icon-headphones') as HTMLElement;
+    expect(tts).not.toBeNull();
+    tts.click();
+    expect(proseTtsService.playSection).toHaveBeenCalled();
+
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(editor.contentEditable).toBe('true');
+    expect(fixture.nativeElement.querySelector('h2').contentEditable).toBe('true');
+    expect(fixture.nativeElement.querySelector('.add-block-card')).not.toBeNull();
+
   });
 });

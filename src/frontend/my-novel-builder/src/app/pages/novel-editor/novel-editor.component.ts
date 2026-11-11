@@ -73,6 +73,7 @@ export class NovelEditorComponent {
   readonly compendiumService: CompendiumService = inject(CompendiumService);
   readonly toastrService: ToastrService = inject(ToastrService);
   novelId!: string;
+  isProseReadOnly = false;
   recordsFilter = '';
   selectedCompendium: CompendiumDto | null = null;
   selectedRecordOverview: CompendiumRecordOverviewDto | null = null;
@@ -101,11 +102,37 @@ export class NovelEditorComponent {
 
   ngOnInit(): void {
     this.novelId = this.route.snapshot.paramMap.get('id')!;
+    this.readProseReadOnlyState();
     this.chapterSelectionFromQuery = this.readChapterSelectionFromQuery();
     this.getNovel();
     this.getProse();
     this.getPrompts();
     this.restoreFloatedMedia();
+  }
+
+  private get proseReadOnlyStorageKey(): string {
+    return `novel-editor-prose-read-only:${this.novelId}`;
+  }
+
+  private readProseReadOnlyState(): void {
+    try {
+      this.isProseReadOnly =
+        localStorage.getItem(this.proseReadOnlyStorageKey) === 'true';
+    } catch {
+      this.isProseReadOnly = false;
+    }
+  }
+
+  toggleProseReadOnly(): void {
+    this.isProseReadOnly = !this.isProseReadOnly;
+    try {
+      localStorage.setItem(
+        this.proseReadOnlyStorageKey,
+        String(this.isProseReadOnly),
+      );
+    } catch {
+      // Keep the toggle usable when browser storage is unavailable.
+    }
   }
 
   getNovel(): void {
