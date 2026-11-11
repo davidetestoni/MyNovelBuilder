@@ -192,7 +192,16 @@
             </div>
           }
           <div class="record-context">
-            <p>{{ selectedRecord.context }}</p>
+            @for (section of selectedRecord.context | recordContextSections; track $index) {
+              @if (section.heading !== null) {
+                <section class="record-context-section">
+                  <h3>{{ section.heading | spaced }}</h3>
+                  <p>{{ section.text }}</p>
+                </section>
+              } @else {
+                <p>{{ section.text }}</p>
+              }
+            }
             <div class="record-context-token-count">
               <span>{{ selectedRecord.contextTokenCount }} tokens</span>
             </div>

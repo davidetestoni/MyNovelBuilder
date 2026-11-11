@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { CompendiumRecordOverviewDto } from '../../types/dtos/compendium-record/compendium-record-overview.dto';
 import { CompendiumRecordDto } from '../../types/dtos/compendium-record/compendium-record.dto';
 import { SpacedPipe } from '../../pipes/spaced.pipe';
+import { RecordContextSectionsPipe } from '../../pipes/record-context-sections.pipe';
 import { CompendiumRecordType } from '../../types/enums/compendium-record-type';
 import { CompendiumRecordMediaDto } from '../../types/dtos/compendium-record/compendium-record-media.dto';
 import { ProseEditorComponent } from '../../components/prose-editor/prose-editor.component';
@@ -31,6 +32,7 @@ import { CompendiumOptionPreviewComponent } from '../../components/compendium-op
     FormsModule,
     RouterModule,
     SpacedPipe,
+    RecordContextSectionsPipe,
     ProseEditorComponent,
     StorylineComponent,
     ButtonModule,
