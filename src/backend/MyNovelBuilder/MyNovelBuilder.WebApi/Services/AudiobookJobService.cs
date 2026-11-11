@@ -5,7 +5,8 @@ namespace MyNovelBuilder.WebApi.Services;
 
 /// <summary>Job lifecycle over JSON metadata and the shared hash-addressed audio cache. Story snapshots stay in memory.</summary>
 public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, INovelService novels, AudiobookSnapshotBuilder builder,
-    AudiobookSectionRenderer renderer, AudiobookSnapshotStore store, TimeProvider clock, AudiobookArchiveService archives)
+    AudiobookSectionRenderer renderer, AudiobookSnapshotStore store, TimeProvider clock, AudiobookArchiveService archives,
+    AudiobookCostEstimator costEstimator)
 {
     /// <summary>Freezes saved inputs and estimates uncached source characters without calling generation providers.</summary>
     public async Task<AudiobookPreview> PreviewAsync(Guid novelId, AudiobookSettingsRequest request, CancellationToken ct)
@@ -16,11 +17,17 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
         if (eligible.Length == 0) throw Bad("The novel has no spoken prose. Add prose before generating an audiobook.");
         int reused = 0;
         long characters = 0;
+        var pending = new List<AudiobookSectionSnapshot>();
         foreach (var section in eligible)
         {
             if (await renderer.IsReusableAsync(section, ct)) reused++;
-            else characters += section.Section.SpeechText.Length;
+            else
+            {
+                characters += section.Section.SpeechText.Length;
+                pending.Add(section.Section);
+            }
         }
+        var cost = await costEstimator.EstimateAsync(snapshot.Settings, pending, ct);
         await store.Mutations.WaitAsync(ct);
         try
         {
@@ -35,7 +42,7 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
                  "Downloads contain uncompressed PCM WAV chapters and may be large."],
                 snapshot.Chapters.Count(c => c.Sections.Any(s => !string.IsNullOrWhiteSpace(s.SpeechText))),
                 eligible.Sum(s => (long)s.Section.SpeechText.Length),
-                eligible.Sum(s => (long)System.Text.RegularExpressions.Regex.Count(s.Section.SpeechText, @"\S+")));
+                eligible.Sum(s => (long)System.Text.RegularExpressions.Regex.Count(s.Section.SpeechText, @"\S+")), cost);
         }
         finally { store.Mutations.Release(); }
     }

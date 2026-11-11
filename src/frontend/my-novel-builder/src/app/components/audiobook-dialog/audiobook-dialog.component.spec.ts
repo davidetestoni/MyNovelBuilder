@@ -260,6 +260,34 @@ describe('AudiobookDialogComponent', () => {
     expect(component.estimating).toBeFalse();
   });
 
+  it('shows partial costs beneath Generate and removes stale prices when settings change', async () => {
+    component.ngOnDestroy();
+    const priced = preview();
+    priced.costEstimate = {
+      pricingAsOf: new Date().toISOString(), total: { low: 1, high: 2 }, isPartial: true,
+      stages: [
+        { label: 'Speech synthesis', status: 'unavailable', cost: null, basis: 'Unknown provider' },
+        { label: 'Emphasis', status: 'disabled', cost: null, basis: 'Off' },
+        { label: 'Dialogue / narration planning', status: 'estimated', cost: { low: 1, high: 2 }, basis: 'Token rates' },
+      ], notes: ['Rough estimate'],
+    };
+    api.preview.and.returnValue(of(priced));
+    const fixture = TestBed.createComponent(AudiobookDialogComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+    const element: HTMLElement = fixture.nativeElement;
+    const summary = element.querySelector('.summary-column')!;
+    const cost = summary.querySelector('.cost-estimate')!;
+    expect(cost.textContent).toContain('Known costs only:');
+    expect(cost.textContent).toContain('Unavailable');
+    expect(cost.textContent).toContain('Off');
+    expect(cost.textContent).toContain('$1.00–$2.00');
+    expect(summary.querySelector('.actions')!.compareDocumentPosition(cost) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    component.changed(); fixture.detectChanges();
+    expect(summary.querySelector('.cost-estimate')).toBeNull();
+    fixture.destroy();
+  });
+
   it('renders labelled controls and downloads through the standard button component', async () => {
     component.ngOnDestroy();
     api.list.and.returnValue(of([audiobookJob('completed')]));

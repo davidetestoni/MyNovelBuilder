@@ -33,3 +33,8 @@ dt { color: var(--p-text-muted-color); } dd { margin: 0; font-weight: 600; overf
 @media (max-width: 480px) { .settings-grid { grid-template-columns: 1fr; } }
 
 .estimate-note { color: var(--p-text-muted-color); font-size: .75rem; line-height: 1.4; }
+.cost-estimate { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--p-content-border-color); }
+.cost-estimate h3 { font-size: 1rem; }
+.cost-total { font-size: 1.15rem; font-weight: 600; margin: .5rem 0; }
+.cost-estimate dl { font-size: .85rem; gap: .6rem; }
+.cost-estimate summary { cursor: pointer; color: var(--p-text-muted-color); font-size: .8rem; }

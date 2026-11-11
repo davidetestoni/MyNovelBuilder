@@ -31,6 +31,21 @@ export interface AudiobookPreview {
   reusableSections: number;
   charactersNeedingSynthesis: number;
   warnings: string[];
+  costEstimate?: AudiobookCostEstimate | null;
+}
+
+/** Rough USD inference charges; unknown stages are excluded from a partial total. */
+export interface AudiobookCostEstimate {
+  pricingAsOf: string | null;
+  total: { low: number; high: number } | null;
+  isPartial: boolean;
+  stages: {
+    label: string;
+    status: 'estimated' | 'disabled' | 'unavailable';
+    cost: { low: number; high: number } | null;
+    basis: string;
+  }[];
+  notes: string[];
 }
 
 /** Durable job progress; completed chapter counts refer to assembled audio files. */

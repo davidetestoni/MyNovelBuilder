@@ -22,9 +22,11 @@ public sealed record RetryAudiobookJobRequest(int? MaxParallelSections = null);
 /// <param name="EligibleChapters">Number of chapters containing spoken prose and therefore included in the ZIP.</param>
 /// <param name="TotalCharacters">UTF-16 character count of all normalized spoken prose, including cached sections.</param>
 /// <param name="SpokenWords">Whitespace-delimited word count across all spoken sections, used for rough narration estimates.</param>
+/// <param name="CostEstimate">Optional rough USD charges for uncached sections; unavailable stages are explicitly marked.</param>
 public sealed record AudiobookPreview(Guid SnapshotId, DateTimeOffset ExpiresAt, DateTimeOffset SnapshotAt,
     AudiobookSettingsRequest Settings, int EligibleSections, int SkippedSections, int SkippedChapters,
-    int ReusableSections, long CharactersNeedingSynthesis, string[] Warnings, int EligibleChapters, long TotalCharacters, long SpokenWords);
+    int ReusableSections, long CharactersNeedingSynthesis, string[] Warnings, int EligibleChapters, long TotalCharacters, long SpokenWords,
+    AudiobookCostEstimate? CostEstimate = null);
 /// <summary>Progress of one section in the current attempt, without source text or internal artifact references.</summary>
 /// <param name="ChapterIndex">Zero-based chapter position in the frozen snapshot.</param>
 /// <param name="SectionIndex">Zero-based section position within the frozen chapter.</param>

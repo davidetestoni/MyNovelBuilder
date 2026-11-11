@@ -34,6 +34,19 @@ characters needing generation. The rough audio estimate uses 150 words per
 minute plus the gaps between sections; voice pacing and immersive pauses can
 change the actual duration.
 
+Below **Generate audiobook**, **Estimated cost (USD)** shows a rough range for
+speech synthesis, text emphasis, and immersive dialogue/narration planning.
+It updates with the preview and excludes fully reusable sections. Text preparation
+includes the rendered prompts and story context, with estimated output sizes.
+OpenRouter rates are fetched without paid generation and cached for five minutes.
+Supported speech billing includes per-character models, Seed Audio 1.0 per-second
+pricing, and Gemini TTS text/audio tokens. Other providers or unsupported billing
+units show **Unavailable**; any known subtotal is clearly labelled as partial.
+Unknown pricing is never treated as free. Fully cached exports show $0.00.
+Expand **How this is estimated** for assumptions. Partial chunk/preparation reuse
+can reduce the bill; retries, reasoning tokens, routing differences, fees and taxes
+can increase it. The displayed range is not a spending limit or a quote.
+
 Click **Generate audiobook**. Generation uses the last saved prose and freezes
 its inputs when the snapshot is created. Later edits do not change that run.
 Under **Generation speed**, choose **Sections in parallel** (1–8). The default

@@ -91,6 +91,37 @@
         <p-button [label]="jobs.length ? 'Generate again' : 'Generate audiobook'" icon="pi pi-play" [loading]="busy"
           [disabled]="!valid || busy || estimating || active || loadingJobs || !!historyError" (onClick)="start()" />
       </div>
+      @if (preview?.costEstimate; as cost) {
+        <section class="cost-estimate" aria-label="Estimated generation cost">
+          <h3>Estimated cost (USD)</h3>
+          @if (cost.total; as total) {
+            <p class="cost-total">
+              {{ cost.isPartial ? 'Known costs only:' : 'About' }}
+              @if (total.high === 0) { $0.00 }
+              @else if (total.high < 0.01) { &lt; $0.01 }
+              @else { {{ total.low | currency:'USD':'symbol':'1.2-2' }}–{{ total.high | currency:'USD':'symbol':'1.2-2' }} }
+            </p>
+          } @else { <p class="muted">Pricing unavailable for the selected providers or models.</p> }
+          <dl>
+            @for (stage of cost.stages; track stage.label) {
+              <dt [title]="stage.basis">{{ stage.label }}</dt>
+              <dd [title]="stage.basis">
+                @if (stage.cost; as amount) {
+                  @if (amount.high === 0) { $0.00 }
+                  @else if (amount.high < 0.01) { &lt; $0.01 }
+                  @else { {{ amount.low | currency:'USD':'symbol':'1.2-2' }}–{{ amount.high | currency:'USD':'symbol':'1.2-2' }} }
+                } @else { {{ stage.status === 'disabled' ? 'Off' : 'Unavailable' }} }
+              </dd>
+            }
+          </dl>
+          @if (cost.isPartial) { <p class="estimate-note">Partial estimate: unavailable charges are excluded from the total.</p> }
+          @if (cost.pricingAsOf) { <p class="estimate-note">OpenRouter rates checked {{ cost.pricingAsOf | date:'short' }}.</p> }
+          <details>
+            <summary>How this is estimated</summary>
+            @for (note of cost.notes; track note) { <p class="estimate-note">{{ note }}</p> }
+          </details>
+        </section>
+      }
       @if (estimating && summary) { <p class="muted" role="status">Updating estimate…</p> }
       @if (active) { <p class="muted">Generation continues when you close this dialog.</p> }
     </section>

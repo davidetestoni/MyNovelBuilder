@@ -175,6 +175,8 @@ builder.Services.AddSingleton<AudiobookSnapshotStore>();
 builder.Services.AddSingleton<FileSystemAudiobookJobRepository>();
 builder.Services.AddSingleton<GeneratedAudioCleanup>();
 builder.Services.AddScoped<AudiobookJobService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<AudiobookCostEstimator>(client => client.Timeout = TimeSpan.FromSeconds(8));
 builder.Services.AddHostedService<AudiobookWorker>();
 builder.Services.AddSingleton<ProviderSynthesisGate>();
 builder.Services.AddTransient<ProviderRetryHintHandler>();
