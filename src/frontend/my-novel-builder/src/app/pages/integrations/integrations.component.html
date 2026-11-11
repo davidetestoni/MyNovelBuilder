@@ -340,6 +340,12 @@
       </div>
 
       <div class="form-group">
+        <label for="ttsPreviewLanguage">Default preview language:</label>
+        <p-select inputId="ttsPreviewLanguage" formControlName="ttsPreviewLanguage"
+          [options]="previewLanguageOptions" optionLabel="label" optionValue="value" />
+      </div>
+
+      <div class="form-group">
         <label for="ttsGainDb">Volume adjustment:</label>
         <p-inputgroup class="pause-input-group">
           <input

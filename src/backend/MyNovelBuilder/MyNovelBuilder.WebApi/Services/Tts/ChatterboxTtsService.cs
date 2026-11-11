@@ -217,6 +217,7 @@ public class ChatterboxTtsService : ITtsService
             {
                 VoiceId = v.Id.ToString(),
                 Name = v.Name,
+                IsRegistered = true,
                 Language = v.Language
             })
             .ToListAsync(cancellationToken);

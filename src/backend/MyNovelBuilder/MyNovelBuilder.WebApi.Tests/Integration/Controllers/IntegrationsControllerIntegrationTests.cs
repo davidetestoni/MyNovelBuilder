@@ -116,6 +116,7 @@ public class IntegrationsControllerIntegrationTests(
             VideoGenerationProvider = VideoGenerationProvider.DeApi,
             TtsModelId = "new-model",
             TtsVoiceId = "new-voice",
+            TtsPreviewLanguage = WritingLanguage.Italian,
             TtsEnableTextEmphasis = true,
             TtsEnableImmersive = true,
             TtsImmersivePauseMs = 480
@@ -143,9 +144,21 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(updateDto.VideoGenerationProvider, updatedConfig.VideoGenerationProvider);
         Assert.Equal(updateDto.TtsModelId, updatedConfig.TtsModelId);
         Assert.Equal(updateDto.TtsVoiceId, updatedConfig.TtsVoiceId);
+        Assert.Equal(WritingLanguage.Italian, updatedConfig.TtsPreviewLanguage);
+        Assert.Equal(WritingLanguage.Italian, dto.TtsPreviewLanguage);
         Assert.Equal(updateDto.TtsEnableTextEmphasis, updatedConfig.TtsEnableTextEmphasis);
         Assert.Equal(updateDto.TtsEnableImmersive, updatedConfig.TtsEnableImmersive);
         Assert.Equal(480, updatedConfig.TtsImmersivePauseMs);
+    }
+
+    [Fact]
+    public async Task UpdatePreviewLanguage_RejectsInvalidLanguage()
+    {
+        using var client = Factory.CreateClient();
+        var result = await PutJsonAsync<object>(client, "api/integrations/config",
+            new UpdateIntegrationsConfigDto { TtsPreviewLanguage = (WritingLanguage)999 });
+        Assert.NotNull(result.Error);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, result.Error.Response.StatusCode);
     }
 
     [Theory]

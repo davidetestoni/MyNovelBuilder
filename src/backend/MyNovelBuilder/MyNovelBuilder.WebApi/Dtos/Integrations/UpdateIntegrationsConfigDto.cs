@@ -7,6 +7,9 @@ namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 /// </summary>
 public class UpdateIntegrationsConfigDto
 {
+    /// <summary>Language for previews of voices without a registered language.</summary>
+    public WritingLanguage? TtsPreviewLanguage { get; init; }
+
     /// <summary>Default speech playback gain in decibels.</summary>
     public double? TtsGainDb { get; init; }
 
@@ -166,6 +169,9 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.TextGenerationModelId).MaximumLength(200);
         RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.TtsVoiceId).MaximumLength(200);
+        RuleFor(x => x.TtsPreviewLanguage)
+            .Must(v => !v.HasValue || Enum.IsDefined(v.Value))
+            .WithMessage("TTS preview language is invalid.");
 
         RuleFor(x => x.TextGenerationProvider)
             .Must(v => !v.HasValue || Enum.IsDefined(v.Value))

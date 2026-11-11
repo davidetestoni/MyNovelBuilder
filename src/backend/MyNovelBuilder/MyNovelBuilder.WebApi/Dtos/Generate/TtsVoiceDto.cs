@@ -5,6 +5,9 @@ namespace MyNovelBuilder.WebApi.Dtos.Generate;
 /// </summary>
 public class TtsVoiceDto
 {
+    /// <summary>Whether this voice uses the language saved during registration.</summary>
+    public bool IsRegistered { get; set; }
+
     /// <summary>
     /// The ID of the voice.
     /// </summary>

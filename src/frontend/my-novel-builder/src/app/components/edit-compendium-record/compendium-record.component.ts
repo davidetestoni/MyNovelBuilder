@@ -40,6 +40,7 @@ import { IntegrationsService } from '../../services/integrations.service';
 import { TtsProvider } from '../../types/enums/tts-provider';
 import { TtsModelDto } from '../../types/dtos/generate/tts-model.dto';
 import { CharacterVoiceAssignmentDto } from '../../types/dtos/compendium-record/character-voice-assignment.dto';
+import { getVoicePreviewLanguage, getVoicePreviewText } from '../../utils/tts-preview.utils';
 import { WritingLanguage } from '../../types/enums/writing-language';
 import { finalize, firstValueFrom } from 'rxjs';
 import {
@@ -140,6 +141,8 @@ export class CompendiumRecordComponent {
     );
   }
 
+  private previewLanguage = WritingLanguage.English;
+
   ngOnInit(): void {
     this.record.characterVoiceAssignments ??= [];
 
@@ -149,6 +152,7 @@ export class CompendiumRecordComponent {
 
     this.integrationsService.getIntegrationsConfig().subscribe({
       next: (config) => {
+        this.previewLanguage = config.ttsPreviewLanguage ?? WritingLanguage.English;
         const matchingAssignment = this.record.characterVoiceAssignments.find(
           (assignment) =>
             assignment.provider === config.ttsProvider &&
@@ -628,7 +632,7 @@ export class CompendiumRecordComponent {
       return this.getVoiceLanguage(models, modelId, voiceId);
     } catch (error) {
       console.error('Error loading TTS models for character voice preview:', error);
-      return WritingLanguage.English;
+      return this.previewLanguage;
     }
   }
 
@@ -637,11 +641,9 @@ export class CompendiumRecordComponent {
     modelId: string,
     voiceId: string,
   ): WritingLanguage {
-    return (
-      models
-        .find((model) => model.modelId === modelId)
-        ?.voices.find((voice) => voice.voiceId === voiceId)?.language ??
-      WritingLanguage.English
+    return getVoicePreviewLanguage(
+      models.find(model => model.modelId === modelId)?.voices.find(voice => voice.voiceId === voiceId),
+      this.previewLanguage,
     );
   }
 
@@ -654,21 +656,7 @@ export class CompendiumRecordComponent {
   }
 
   private getPreviewSampleText(language: WritingLanguage): string {
-    switch (language) {
-      case WritingLanguage.Italian:
-        return "Ciao, questo è un breve esempio per ascoltare l'anteprima della voce selezionata.";
-      case WritingLanguage.French:
-        return 'Bonjour, ceci est un court exemple pour prévisualiser la voix sélectionnée.';
-      case WritingLanguage.Spanish:
-        return 'Hola, este es un ejemplo rápido para previsualizar la voz seleccionada.';
-      case WritingLanguage.German:
-        return 'Hallo, dies ist ein kurzes Beispiel, um die ausgewählte Stimme vorzuhören.';
-      case WritingLanguage.Russian:
-        return 'Привет, это короткий пример для предварительного прослушивания выбранного голоса.';
-      case WritingLanguage.English:
-      default:
-        return 'Hello, this is a quick sample to preview the selected voice.';
-    }
+    return getVoicePreviewText(language);
   }
 
   editImage(media: CompendiumRecordMediaDto) {

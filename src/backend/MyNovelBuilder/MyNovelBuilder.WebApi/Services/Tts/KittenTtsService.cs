@@ -132,6 +132,7 @@ public class KittenTtsService : ITtsService
             {
                 VoiceId = voice.Id.ToString(),
                 Name = voice.Name,
+                IsRegistered = true,
                 Language = voice.Language
             }).ToListAsync(cancellationToken);
 

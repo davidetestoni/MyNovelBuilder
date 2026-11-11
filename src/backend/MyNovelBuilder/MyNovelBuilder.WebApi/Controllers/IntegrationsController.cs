@@ -59,6 +59,7 @@ public class IntegrationsController : ControllerBase
             VideoGenerationProvider = config.VideoGenerationProvider,
             TtsModelId = config.TtsModelId,
             TtsVoiceId = config.TtsVoiceId,
+            TtsPreviewLanguage = config.TtsPreviewLanguage,
             TtsGainDb = config.TtsGainDb,
             TtsEnableTextEmphasis = config.TtsEnableTextEmphasis,
             TtsEnableImmersive = config.TtsEnableImmersive,
@@ -215,6 +216,8 @@ public class IntegrationsController : ControllerBase
         {
             config.TtsVoiceId = dto.TtsVoiceId;
         }
+
+        if (dto.TtsPreviewLanguage.HasValue) config.TtsPreviewLanguage = dto.TtsPreviewLanguage.Value;
 
         if (dto.TtsGainDb.HasValue) config.TtsGainDb = dto.TtsGainDb.Value;
 

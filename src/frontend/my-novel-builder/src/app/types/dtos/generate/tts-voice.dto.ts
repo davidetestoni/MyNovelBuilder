@@ -5,4 +5,5 @@ export interface TtsVoiceDto {
   name: string;
   previewUrl: string | null;
   language: WritingLanguage;
+  isRegistered?: boolean;
 }

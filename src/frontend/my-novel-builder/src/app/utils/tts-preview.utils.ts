@@ -1,3 +1,4 @@
+import { TtsVoiceDto } from '../types/dtos/generate/tts-voice.dto';
 import { WritingLanguage } from '../types/enums/writing-language';
 
 /** Short localized sample shared by voice previews. */
@@ -17,4 +18,12 @@ export function getVoicePreviewText(language: WritingLanguage): string {
       default:
         return 'Hello, this is a quick sample to preview the selected voice.';
     }
+}
+
+/** Registered voices keep their saved language; provider voices use the preview preference. */
+export function getVoicePreviewLanguage(
+  voice: TtsVoiceDto | undefined,
+  preferredLanguage: WritingLanguage | null | undefined,
+): WritingLanguage {
+  return voice?.isRegistered ? voice.language : preferredLanguage ?? WritingLanguage.English;
 }

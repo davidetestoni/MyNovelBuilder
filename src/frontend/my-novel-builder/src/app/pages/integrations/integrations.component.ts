@@ -1,5 +1,5 @@
 import { VoiceSelectorComponent } from '../../components/voice-selector/voice-selector.component';
-import { getVoicePreviewText } from '../../utils/tts-preview.utils';
+import { getVoicePreviewText, getVoicePreviewLanguage } from '../../utils/tts-preview.utils';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import {
   FormControl,
@@ -85,6 +85,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     mingBaseUrl: new FormControl<string>('', Validators.maxLength(2000)),
     ttsModelId: new FormControl<string>(''),
     ttsVoiceId: new FormControl<string>(''),
+    ttsPreviewLanguage: new FormControl<WritingLanguage>(WritingLanguage.English, { nonNullable: true }),
     ttsGainDb: new FormControl<number>(0),
     ttsEnableTextEmphasis: new FormControl<boolean>(false),
     ttsEnableImmersive: new FormControl<boolean>(false),
@@ -109,6 +110,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
   isLoadingNanoGptBalance: boolean = false;
   isPreviewingTtsVoice: boolean = false;
   private previewPlayer: StreamingWavPlayerHandle | null = null;
+
+  previewLanguageOptions = Object.values(WritingLanguage).map(value => ({
+    label: value.charAt(0).toUpperCase() + value.slice(1), value,
+  }));
 
   ttsProviderOptions = Object.values(TtsProvider).map((provider) => ({
     // camelCase to spaced Pascal Case for display
@@ -208,6 +213,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
           audio8BaseUrl: config.audio8BaseUrl,
           kittenTtsBaseUrl: config.kittenTtsBaseUrl,
           mingBaseUrl: config.mingBaseUrl,
+          ttsPreviewLanguage: config.ttsPreviewLanguage ?? WritingLanguage.English,
           ttsGainDb: config.ttsGainDb ?? 0,
           ttsEnableTextEmphasis: config.ttsEnableTextEmphasis,
           ttsEnableImmersive: config.ttsEnableImmersive,
@@ -592,10 +598,10 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
 
   private getPreviewSampleTextForSelectedVoice(): string {
     const selectedVoiceId = this.integrationsForm.value.ttsVoiceId;
-    const language =
-      this.getSelectedModel()
-        ?.voices.find((voice) => voice.voiceId === selectedVoiceId)?.language ??
-      WritingLanguage.English;
+    const language = getVoicePreviewLanguage(
+      this.getSelectedModel()?.voices.find(voice => voice.voiceId === selectedVoiceId),
+      this.integrationsForm.controls.ttsPreviewLanguage.value,
+    );
 
     return this.getPreviewSampleText(language);
   }
@@ -698,6 +704,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       ttsProvider: this.integrationsForm.value.ttsProvider,
       ttsModelId: this.integrationsForm.value.ttsModelId,
       ttsVoiceId: this.integrationsForm.value.ttsVoiceId,
+      ttsPreviewLanguage: this.integrationsForm.controls.ttsPreviewLanguage.value,
       ttsGainDb: this.integrationsForm.value.ttsGainDb ?? 0,
       ttsEnableTextEmphasis:
         this.supportsSelectedTtsModelTextEmphasis

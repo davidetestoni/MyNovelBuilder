@@ -99,6 +99,7 @@ describe('CompendiumRecordComponent workflows', () => {
       name: `Voice ${voiceId}`,
       previewUrl: null,
       language,
+      isRegistered: true,
     })),
   });
 
@@ -519,6 +520,7 @@ describe('CompendiumRecordComponent workflows', () => {
         message: jasmine.stringMatching(/^Ciao/),
         modelId: 'model',
         voiceId: 'voice',
+        gainDb: 0,
         provider: TtsProvider.ElevenLabs,
       },
     );

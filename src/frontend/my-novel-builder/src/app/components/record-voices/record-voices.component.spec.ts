@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { IntegrationsService } from '../../services/integrations.service';
 import { GenerateAudioService } from '../../services/generate-audio.service';
 import { STREAMING_WAV_PLAYER_FACTORY } from '../../utils/streaming-wav-player.factory';
 import { getVoicePreviewText } from '../../utils/tts-preview.utils';
@@ -11,6 +12,7 @@ import { RecordVoicesComponent } from './record-voices.component';
 describe('RecordVoicesComponent', () => {
   let fixture: ComponentFixture<RecordVoicesComponent>;
   let component: RecordVoicesComponent;
+  let previewLanguage: WritingLanguage;
   let audio: jasmine.SpyObj<GenerateAudioService>;
   let player: jasmine.SpyObj<{ addChunk(chunk: Uint8Array): void; stop(): void }>;
   const assignment: CharacterVoiceAssignmentDto = {
@@ -23,17 +25,19 @@ describe('RecordVoicesComponent', () => {
   }));
 
   beforeEach(async () => {
+    previewLanguage = WritingLanguage.English;
     audio = jasmine.createSpyObj('GenerateAudioService', ['getAvailableModels', 'textToSpeechStreamResponse']);
     player = jasmine.createSpyObj('player', ['addChunk', 'stop']);
     audio.getAvailableModels.and.returnValue(of([{
       modelId: 'model', name: 'Model', supportsTextEmphasis: false,
-      voices: [{ voiceId: 'voice', name: 'Mira', language: WritingLanguage.Italian, previewUrl: null }],
+      voices: [{ voiceId: 'voice', name: 'Mira', isRegistered: true, language: WritingLanguage.Italian, previewUrl: null }],
     }]));
     audio.textToSpeechStreamResponse.and.callFake(async () => sample());
     await TestBed.configureTestingModule({
       imports: [RecordVoicesComponent],
       providers: [
         { provide: GenerateAudioService, useValue: audio },
+        { provide: IntegrationsService, useValue: { getIntegrationsConfig: () => of({ ttsPreviewLanguage: previewLanguage }) } },
         { provide: STREAMING_WAV_PLAYER_FACTORY, useValue: () => player },
       ],
     }).compileComponents();
@@ -57,6 +61,19 @@ describe('RecordVoicesComponent', () => {
       message: getVoicePreviewText(WritingLanguage.Italian),
     }, jasmine.any(AbortSignal));
     expect(player.addChunk).toHaveBeenCalledWith(chunk);
+  });
+
+  it('uses the preference for provider voices while registered voices keep their language', async () => {
+    previewLanguage = WritingLanguage.French;
+    await component.preview(assignment);
+    expect(audio.textToSpeechStreamResponse.calls.mostRecent().args[0].message).toBe(getVoicePreviewText(WritingLanguage.Italian));
+    component.stop();
+    audio.getAvailableModels.and.returnValue(of([{
+      modelId: 'model', name: 'Model', supportsTextEmphasis: false,
+      voices: [{ voiceId: 'voice', name: 'Mira', language: WritingLanguage.English, previewUrl: null }],
+    }]));
+    await component.preview(assignment);
+    expect(audio.textToSpeechStreamResponse.calls.mostRecent().args[0].message).toBe(getVoicePreviewText(WritingLanguage.French));
   });
 
   it('stops the active preview when clicked again', async () => {
@@ -90,8 +107,7 @@ describe('RecordVoicesComponent', () => {
     let resolve!: (response: Response) => void;
     audio.textToSpeechStreamResponse.and.returnValue(new Promise<Response>(done => resolve = done));
     const preview = component.preview(assignment);
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let i = 0; i < 10; i++) await Promise.resolve();
     component.ngOnDestroy();
     resolve(sample());
     await preview;

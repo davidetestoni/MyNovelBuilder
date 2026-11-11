@@ -1,6 +1,6 @@
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 import { STREAMING_WAV_PLAYER_FACTORY, StreamingWavPlayerHandle } from '../../utils/streaming-wav-player.factory';
-import { getVoicePreviewText } from '../../utils/tts-preview.utils';
+import { getVoicePreviewText, getVoicePreviewLanguage } from '../../utils/tts-preview.utils';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -62,6 +62,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
   get overrideSettings(): boolean { return !this.useDefaults; }
   set overrideSettings(value: boolean) { this.useDefaults = !value; }
   previewingVoice = false;
+  private previewLanguage = WritingLanguage.English;
   loadingVoice = false;
   private readonly createVoicePlayer = inject(STREAMING_WAV_PLAYER_FACTORY);
   private voicePlayer?: StreamingWavPlayerHandle;
@@ -115,6 +116,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
         this.read(this.integrations.getIntegrationsConfig()), this.read(this.audio.getAvailableProviders()), this.read(this.promptsService.getPrompts()),
       ]);
       if (this.closed) return;
+      this.previewLanguage = config.ttsPreviewLanguage ?? WritingLanguage.English;
       this.providers = providers;
       this.prompts = prompts.filter(p => p.type === PromptType.PrepareImmersiveTts);
       this.defaults = { provider: config.ttsProvider, modelId: config.ttsModelId, voiceId: config.ttsVoiceId,
@@ -238,7 +240,7 @@ export class AudiobookDialogComponent implements OnInit, OnDestroy {
     this.loadingVoice = this.previewingVoice = true;
     try {
       const response = await this.audio.textToSpeechStreamResponse({
-        message: getVoicePreviewText(voice?.language ?? WritingLanguage.English), provider: this.settings.provider,
+        message: getVoicePreviewText(getVoicePreviewLanguage(voice, this.previewLanguage)), provider: this.settings.provider,
         modelId: this.settings.modelId, voiceId: this.settings.voiceId,
       }, abort.signal);
       if (abort.signal.aborted) { await response.body?.cancel(); return; }

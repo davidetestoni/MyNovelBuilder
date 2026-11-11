@@ -82,12 +82,14 @@ describe('IntegrationsComponent workflows', () => {
           voiceId: 'italian-voice',
           name: 'Italian voice',
           previewUrl: null,
+          isRegistered: true,
           language: WritingLanguage.Italian,
         },
         {
           voiceId: 'spanish-voice',
           name: 'Spanish voice',
           previewUrl: null,
+          isRegistered: true,
           language: WritingLanguage.Spanish,
         },
       ],
@@ -643,6 +645,7 @@ describe('IntegrationsComponent workflows', () => {
       ttsProvider: TtsProvider.Qwen3,
       ttsModelId: 'expressive',
       ttsVoiceId: 'spanish-voice',
+      ttsPreviewLanguage: WritingLanguage.French,
     });
     generateAudioService.textToSpeechStreamResponse.and.resolveTo(
       responseWithChunks(firstChunk, secondChunk),
@@ -657,6 +660,7 @@ describe('IntegrationsComponent workflows', () => {
         'Hola, este es un ejemplo rápido para previsualizar la voz seleccionada.',
       modelId: 'expressive',
       voiceId: 'spanish-voice',
+      gainDb: 0,
       provider: TtsProvider.Qwen3,
     });
     expect(player.addChunk.calls.allArgs()).toEqual([
@@ -664,6 +668,22 @@ describe('IntegrationsComponent workflows', () => {
       [secondChunk],
     ]);
     expect(component.isPreviewingTtsVoice).toBeFalse();
+  });
+
+  it('uses the configured language for provider voices and persists the selection', async () => {
+    integrationsService.getIntegrationsConfig.and.returnValue(of(config({ ttsPreviewLanguage: WritingLanguage.French })));
+    component.ngOnInit();
+    expect(component.integrationsForm.controls.ttsPreviewLanguage.value).toBe(WritingLanguage.French);
+    component.integrationsForm.patchValue({ ttsModelId: 'basic', ttsVoiceId: 'english-voice' });
+    generateAudioService.textToSpeechStreamResponse.and.resolveTo(responseWithChunks());
+    await component.previewTtsVoice();
+    expect(generateAudioService.textToSpeechStreamResponse).toHaveBeenCalledWith(jasmine.objectContaining({
+      message: jasmine.stringMatching(/^Bonjour/),
+    }));
+    component.onSubmit();
+    expect(integrationsService.updateIntegrationsConfig).toHaveBeenCalledWith(jasmine.objectContaining({
+      ttsPreviewLanguage: WritingLanguage.French,
+    }));
   });
 
   it('uses an English preview sample when the selected voice is unknown', async () => {

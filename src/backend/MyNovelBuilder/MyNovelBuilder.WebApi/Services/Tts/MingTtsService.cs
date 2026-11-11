@@ -138,7 +138,7 @@ public class MingTtsService : ITtsService
                 .OrderBy(voice => voice.Name)
                 .Select(voice => new TtsVoiceDto
                 {
-                    VoiceId = voice.Id.ToString(), Name = voice.Name, Language = voice.Language
+                    VoiceId = voice.Id.ToString(), Name = voice.Name, IsRegistered = true, Language = voice.Language
                 }).ToListAsync(cancellationToken));
         }
 

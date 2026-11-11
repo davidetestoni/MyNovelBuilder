@@ -7,6 +7,9 @@ namespace MyNovelBuilder.WebApi.Dtos.Integrations;
 /// </summary>
 public class IntegrationsConfigDto
 {
+    /// <summary>Language for previews of voices without a registered language.</summary>
+    public WritingLanguage TtsPreviewLanguage { get; init; } = WritingLanguage.English;
+
     /// <summary>Default speech playback gain in decibels.</summary>
     public double TtsGainDb { get; init; }
 

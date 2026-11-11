@@ -51,6 +51,9 @@ public class Audio8TtsServiceTests
         var model = Assert.Single(await test.Service.GetModelsAsync());
 
         Assert.Equal("Audio8-TTS-Preview-0.6b", model.ModelId);
+        Assert.False(model.Voices.First().IsRegistered);
+        Assert.True(model.Voices.Last().IsRegistered);
+        Assert.Equal(readyVoice.Language, model.Voices.Last().Language);
         Assert.Collection(
             model.Voices,
             voice => Assert.Equal("default", voice.VoiceId),
