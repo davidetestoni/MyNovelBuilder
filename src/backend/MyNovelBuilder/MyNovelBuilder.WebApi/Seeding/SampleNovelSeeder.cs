@@ -7,7 +7,6 @@ using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Novels;
 using MyNovelBuilder.WebApi.Options;
 using MyNovelBuilder.WebApi.Services;
-using SixLabors.ImageSharp;
 
 namespace MyNovelBuilder.WebApi.Seeding;
 
@@ -308,8 +307,9 @@ internal sealed class SampleNovelSeeder
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-            using var image = await Image.LoadAsync(sourcePath, cancellationToken);
-            await image.SaveAsPngAsync(destinationPath, cancellationToken);
+            var sourceBytes = await File.ReadAllBytesAsync(sourcePath, cancellationToken);
+            var pngBytes = ImageConversionHelper.ConvertToPng(sourceBytes);
+            await File.WriteAllBytesAsync(destinationPath, pngBytes, cancellationToken);
         }
     }
 

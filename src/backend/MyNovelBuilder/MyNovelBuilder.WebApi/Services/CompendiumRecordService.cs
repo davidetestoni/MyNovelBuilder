@@ -1,9 +1,9 @@
-﻿using MyNovelBuilder.WebApi.Data;
+using MyNovelBuilder.WebApi.Data;
 using MyNovelBuilder.WebApi.Data.Entities;
 using MyNovelBuilder.WebApi.Exceptions;
+using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Media;
 using MyNovelBuilder.WebApi.Options;
-using SixLabors.ImageSharp;
 using Microsoft.Extensions.Options;
 
 namespace MyNovelBuilder.WebApi.Services;
@@ -135,14 +135,12 @@ public class CompendiumRecordService : ICompendiumRecordService
         var mediaBytes = memoryStream.ToArray();
         var extension = Path.GetExtension(file.FileName);
         
-        // If it's not a PNG file, convert it to PNG using ImageSharp.
+        // If it's not a PNG file, convert it to PNG using SkiaSharp.
         if (file.ContentType.StartsWith("image/") && 
             file.ContentType != "image/png")
         {
-            using var image = Image.Load(mediaBytes);
-            using var outputStream = new MemoryStream();
-            await image.SaveAsPngAsync(outputStream, cancellationToken);
-            mediaBytes = outputStream.ToArray();
+            cancellationToken.ThrowIfCancellationRequested();
+            mediaBytes = ImageConversionHelper.ConvertToPng(mediaBytes);
             extension = ".png";
         }
 

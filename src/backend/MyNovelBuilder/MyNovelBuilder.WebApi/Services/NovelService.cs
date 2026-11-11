@@ -7,7 +7,6 @@ using MyNovelBuilder.WebApi.Exceptions;
 using MyNovelBuilder.WebApi.Helpers;
 using MyNovelBuilder.WebApi.Models.Novels;
 using MyNovelBuilder.WebApi.Options;
-using SixLabors.ImageSharp;
 
 namespace MyNovelBuilder.WebApi.Services;
 
@@ -160,13 +159,11 @@ public class NovelService : INovelService
         await file.CopyToAsync(memoryStream, cancellationToken);
         var imageBytes = memoryStream.ToArray();
         
-        // If it's not a PNG file, convert it to PNG using ImageSharp.
+        // If it's not a PNG file, convert it to PNG using SkiaSharp.
         if (file.ContentType != "image/png")
         {
-            using var image = Image.Load(imageBytes);
-            using var outputStream = new MemoryStream();
-            await image.SaveAsPngAsync(outputStream, cancellationToken);
-            imageBytes = outputStream.ToArray();
+            cancellationToken.ThrowIfCancellationRequested();
+            imageBytes = ImageConversionHelper.ConvertToPng(imageBytes);
         }
         
         // Delete the existing cover
@@ -236,13 +233,11 @@ public class NovelService : INovelService
 
         var filePath = Path.Combine(path, $"{Guid.NewGuid()}.png");
 
-        // Convert to PNG using ImageSharp.
+        // Convert to PNG using SkiaSharp.
         if (file.ContentType != "image/png")
         {
-            using var image = Image.Load(mediaBytes);
-            using var outputStream = new MemoryStream();
-            await image.SaveAsPngAsync(outputStream, cancellationToken);
-            mediaBytes = outputStream.ToArray();
+            cancellationToken.ThrowIfCancellationRequested();
+            mediaBytes = ImageConversionHelper.ConvertToPng(mediaBytes);
         }
         
         await File.WriteAllBytesAsync(filePath, mediaBytes, cancellationToken);

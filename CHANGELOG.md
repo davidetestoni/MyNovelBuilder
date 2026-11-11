@@ -9,6 +9,10 @@
 
 ### Fixed
 
+- Replaced the vulnerable ImageSharp dependency with SkiaSharp for image
+  conversion. PNG prompt metadata now preserves existing image chunks without
+  re-encoding pixels. TIFF uploads are no longer supported; use PNG, JPEG, or
+  WebP instead.
 - Downloading an older completed audiobook now adds the VLC section playlist
   from its saved ZIP without regenerating speech or requiring unchanged prose.
 
