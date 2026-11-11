@@ -23,6 +23,7 @@ import { StorylineComponent } from '../../components/storyline/storyline.compone
 import { ToastrService } from 'ngx-toastr';
 import * as ExifReader from 'exifreader';
 import { CompendiumOptionPreviewComponent } from '../../components/compendium-option-preview/compendium-option-preview.component';
+import { RecordVoicesComponent } from '../../components/record-voices/record-voices.component';
 
 @Component({
   selector: 'app-novel-editor',
@@ -39,6 +40,7 @@ import { CompendiumOptionPreviewComponent } from '../../components/compendium-op
     SelectModule,
     InputTextModule,
     CompendiumOptionPreviewComponent,
+    RecordVoicesComponent,
   ],
   templateUrl: './novel-editor.component.html',
   styleUrl: './novel-editor.component.scss',

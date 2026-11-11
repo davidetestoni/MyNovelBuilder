@@ -1,0 +1,46 @@
+@use '../../../styles/colors' as *;
+
+:host { display: block; }
+
+section {
+  padding: 1rem;
+  border-top: 1px solid $grey4;
+}
+
+h3 {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.voice-assignment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid $grey4;
+  border-radius: 5px;
+  color: inherit;
+  background: $grey2;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover, &[aria-pressed='true'] { background: $grey5; }
+  &:focus-visible { outline: 2px solid $grey18; outline-offset: 2px; }
+}
+
+.voice-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  font-size: 0.8rem;
+
+  span { font-size: 0.7rem; color: $grey11; }
+}
+
+p { font-size: 0.8rem; }

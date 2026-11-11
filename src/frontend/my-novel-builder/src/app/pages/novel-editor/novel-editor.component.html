@@ -206,6 +206,9 @@
               <span>{{ selectedRecord.contextTokenCount }} tokens</span>
             </div>
           </div>
+          @if (selectedRecord.type === CompendiumRecordType.Character) {
+            <app-record-voices [assignments]="selectedRecord.characterVoiceAssignments || []" />
+          }
         </div>
       }
       <div class="prose-editor-wrapper"

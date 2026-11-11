@@ -1,0 +1,27 @@
+@if (assignments.length > 0) {
+  <section aria-label="Assigned voices">
+    <h3>Assigned voices</h3>
+    @for (assignment of assignments; track assignment.provider + ':' + assignment.modelId) {
+      <button type="button" class="voice-assignment"
+        [attr.aria-label]="(activeAssignment === assignment ? 'Stop preview: ' : 'Preview voice: ') + (assignment.voiceName || assignment.voiceId)"
+        [attr.aria-pressed]="activeAssignment === assignment"
+        (click)="preview(assignment)">
+        <span class="voice-details">
+          <strong>{{ assignment.voiceName || assignment.voiceId }}</strong>
+          <span>{{ assignment.provider | spaced }} · {{ assignment.modelId }}</span>
+          @if (assignment.gainDb) {
+            <span>Volume adjustment: {{ assignment.gainDb }} dB</span>
+          }
+        </span>
+        <i aria-hidden="true" class="pi"
+          [class.pi-play]="activeAssignment !== assignment"
+          [class.pi-stop]="activeAssignment === assignment && !loading"
+          [class.pi-spinner]="activeAssignment === assignment && loading"
+          [class.pi-spin]="activeAssignment === assignment && loading"></i>
+      </button>
+    }
+    @if (error) {
+      <p role="alert">{{ error }}</p>
+    }
+  </section>
+}
