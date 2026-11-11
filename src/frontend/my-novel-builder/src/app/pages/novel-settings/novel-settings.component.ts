@@ -260,6 +260,8 @@ export class NovelSettingsComponent implements OnDestroy {
         header: 'Generate audiobook', width: '76rem',
         breakpoints: { '1280px': '94vw', '800px': '96vw' },
         contentStyle: { overflow: 'auto' }, modal: true, closable: true,
+        // Loading disables the top controls; autofocus would scroll to a control further down.
+        focusOnShow: false,
         closeOnEscape: true, dismissableMask: true,
         data: { novelId: this.novelId, updatedAt: this.novel.updatedAt },
       });
