@@ -96,6 +96,9 @@ public class IntegrationsConfigDto
     /// </summary>
     public required string TextGenerationModelId { get; init; }
 
+    /// <summary>Default reasoning effort for text generation.</summary>
+    public ReasoningEffort TextGenerationReasoningEffort { get; init; } = ReasoningEffort.None;
+
     /// <summary>
     /// The configured Text-to-Speech provider.
     /// </summary>

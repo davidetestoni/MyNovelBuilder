@@ -98,6 +98,9 @@ public sealed class TtsAnnotationTests
     {
         public List<string> Prompts { get; } = [];
         public Task<string> GenerateAsync(string model, IEnumerable<PromptMessage> messages,
+            StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Annotation must explicitly select reasoning effort.");
+        public Task<string> GenerateWithReasoningAsync(string model, IEnumerable<PromptMessage> messages, ReasoningEffort reasoningEffort,
             StructuredOutputOptions? structuredOutputOptions = null, CancellationToken cancellationToken = default)
         {
             Prompts.Add(messages.First().Message);

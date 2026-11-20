@@ -365,11 +365,13 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
                 ModelId = effectiveModelId,
                 VoiceId = effectiveVoiceId,
                 TextGenerationModelId = effectiveTextGenerationModelId,
+                TextGenerationReasoningEffort = options?.TextGenerationReasoningEffort ?? config.TextGenerationReasoningEffort,
                 TextGenerationProvider = options?.TextGenerationProvider ?? config.TextGenerationProvider,
                 EnableTextEmphasis = enableTextEmphasis
             },
             EnableTextEmphasis = enableTextEmphasis,
             TextGenerationProvider = options?.TextGenerationProvider,
+            ReasoningEffort = options?.TextGenerationReasoningEffort ?? config.TextGenerationReasoningEffort,
             EffectiveTextGenerationModelId = effectiveTextGenerationModelId,
             EffectiveTtsModelId = effectiveModelId,
             EffectiveVoiceId = effectiveVoiceId
@@ -400,7 +402,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
             : await _textGenerationServiceResolver.GetConfiguredServiceAsync(cancellationToken);
         var emphasizedText = await TtsAnnotationService.AnnotateAsync(ttsRequest.Message,
             TtsAnnotationProfile.Resolve(resolved.AudioParameters.Provider, resolved.EffectiveTtsModelId),
-            generator, resolved.EffectiveTextGenerationModelId!, cancellationToken, _logger);
+            generator, resolved.EffectiveTextGenerationModelId!, cancellationToken, _logger, resolved.ReasoningEffort);
         ttsRequest.Message = emphasizedText;
 
         if (!string.Equals(ttsRequest.Message, resolved.Request.Message, StringComparison.Ordinal))
@@ -430,5 +432,7 @@ public class TtsAudioGenerationService : ITtsAudioGenerationService, IAudiobookT
         public required string EffectiveVoiceId { get; init; }
 
         public required string EffectiveTextGenerationModelId { get; init; }
+
+        public ReasoningEffort ReasoningEffort { get; init; }
     }
 }

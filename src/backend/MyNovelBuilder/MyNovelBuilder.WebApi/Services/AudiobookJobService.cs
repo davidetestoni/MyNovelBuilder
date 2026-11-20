@@ -98,7 +98,11 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
             var snapshot = store.Get(job.SnapshotId, novelId);
             if (snapshot is null)
             {
-                snapshot = await builder.BuildAsync(novelId, job.Settings, ct);
+                snapshot = await builder.BuildAsync(novelId, job.Settings with
+                {
+                    // Jobs saved before effort was configurable used no reasoning.
+                    TextGenerationReasoningEffort = job.Settings.TextGenerationReasoningEffort ?? Enums.ReasoningEffort.None
+                }, ct);
                 if (Checksum(snapshot) != job.InputChecksum) throw Bad("Saved inputs changed since this snapshot. Create a new preview.");
                 snapshot = snapshot with { CapturedAt = new DateTimeOffset(job.SnapshotAt, TimeSpan.Zero) };
             }
@@ -194,7 +198,7 @@ public sealed class AudiobookJobService(FileSystemAudiobookJobRepository jobs, I
         new(job.AttemptNumber, job.State, job.Stage, job.ErrorCode, job.AttemptCreatedAt, job.FinishedAt);
     /// <summary>Copies resolved settings into explicit selections that can reconstruct inputs after restart.</summary>
     public static AudiobookSettingsRequest ToRequest(ResolvedAudiobookSettings s) => new(s.Provider, s.ModelId, s.VoiceId,
-        s.EnableTextEmphasis, s.EnableImmersive, s.ImmersivePauseMs, s.TextGenerationProvider, s.TextGenerationModelId, s.ImmersivePromptId);
+        s.EnableTextEmphasis, s.EnableImmersive, s.ImmersivePauseMs, s.TextGenerationProvider, s.TextGenerationModelId, s.ImmersivePromptId, s.TextGenerationReasoningEffort);
     /// <summary>Projects saved progress and attempt summaries, checking whether the published archive is still present.</summary>
     public AudiobookJobStatus Status(AudiobookJob job)
     {

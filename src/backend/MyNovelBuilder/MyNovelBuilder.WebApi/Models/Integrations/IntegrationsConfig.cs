@@ -144,6 +144,9 @@ public class IntegrationsConfig
     /// </summary>
     public string TextGenerationModelId { get; set; } = DefaultTextGenerationModelId;
 
+    /// <summary>Default reasoning effort for text generation.</summary>
+    public ReasoningEffort TextGenerationReasoningEffort { get; set; } = ReasoningEffort.None;
+
     /// <summary>
     /// The Text-to-Speech provider to use to generate speech.
     /// </summary>

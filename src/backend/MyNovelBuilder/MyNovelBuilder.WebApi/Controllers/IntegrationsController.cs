@@ -54,6 +54,7 @@ public class IntegrationsController : ControllerBase
             MingBaseUrl = config.MingBaseUrl,
             TextGenerationProvider = config.TextGenerationProvider,
             TextGenerationModelId = config.TextGenerationModelId,
+            TextGenerationReasoningEffort = config.TextGenerationReasoningEffort,
             TtsProvider = config.TtsProvider,
             ImageGenerationProvider = config.ImageGenerationProvider,
             VideoGenerationProvider = config.VideoGenerationProvider,
@@ -191,6 +192,9 @@ public class IntegrationsController : ControllerBase
         {
             config.TextGenerationModelId = dto.TextGenerationModelId;
         }
+
+        if (dto.TextGenerationReasoningEffort.HasValue)
+            config.TextGenerationReasoningEffort = dto.TextGenerationReasoningEffort.Value;
 
         if (dto.TtsProvider.HasValue)
         {

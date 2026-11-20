@@ -311,9 +311,11 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
             {
                 planningText = await _annotationPreparations.GetOrCreateAsync(audiobook?.Section,
                     AudioCacheKey.Create("section-annotation-v1", new { source, profile, textGenerationModelId,
-                        textProvider = settings?.TextGenerationProvider ?? config.TextGenerationProvider }),
+                        textProvider = settings?.TextGenerationProvider ?? config.TextGenerationProvider,
+                        reasoningEffort = settings?.TextGenerationReasoningEffort ?? config.TextGenerationReasoningEffort }),
                     () => TtsAnnotationService.AnnotateAsync(source, profile,
-                        textGenerationService, textGenerationModelId, cancellationToken, _logger));
+                        textGenerationService, textGenerationModelId, cancellationToken, _logger,
+                        settings?.TextGenerationReasoningEffort ?? config.TextGenerationReasoningEffort));
                 annotatedSources.Add(source, planningText);
             }
             message.Message = message.Message[..begin] + planningText + message.Message[end..];
@@ -331,7 +333,8 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                     + "Keep leading tags with their following speech and the correct character or narrator. "
                     + "Never create tag-only chunks or move directions between speakers. Keep each <whisper> scope balanced within one chunk." });
         var structuredChunks = await GenerateValidatedPlanAsync(textGenerationService, textGenerationModelId,
-            planningMessages, contextInfo, planningText ?? audiobook?.Section.SpeechText, audiobook is not null, request, cancellationToken);
+            planningMessages, contextInfo, planningText ?? audiobook?.Section.SpeechText, audiobook is not null, request, cancellationToken,
+            settings?.TextGenerationReasoningEffort ?? config.TextGenerationReasoningEffort);
         var relevantRecords = audiobook?.Section is null && processedPrompt.IncludedCompendiumRecordIds.Any()
             ? await _compendiumRecordService.GetByIdsAsync(
                 processedPrompt.IncludedCompendiumRecordIds,
@@ -395,7 +398,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
     private async Task<List<StructuredImmersiveTtsChunk>> GenerateValidatedPlanAsync(
         TextGeneration.ITextGenerationService generator, string model, List<PromptMessage> messages,
         PrepareImmersiveTtsContextInfoDto context, string? source, bool frozen,
-        ImmersiveTtsRequestDto request, CancellationToken cancellationToken)
+        ImmersiveTtsRequestDto request, CancellationToken cancellationToken, ReasoningEffort reasoningEffort)
     {
         const int attempts = 3;
         var reason = "";
@@ -413,7 +416,7 @@ public class ImmersiveTtsService : IImmersiveTtsService, IAudiobookImmersivePlan
                         + "punctuation and delivery tags, in order. Do not add, delete or rewrite any prose or annotations. "
                         + "Only partition it and assign speakers. Each whisper scope must stay balanced in one chunk." });
             }
-            var rawPlan = await generator.GenerateAsync(model, attemptMessages, context.GetStructuredOutputOptions(), cancellationToken);
+            var rawPlan = await generator.GenerateWithReasoningAsync(model, attemptMessages, reasoningEffort, context.GetStructuredOutputOptions(), cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             _logger.LogDebug(
                 "Immersive TTS planner attempt {Attempt} for novel {NovelId}, chapter {ChapterIndex}, section {SectionIndex}: {RawPlan}",

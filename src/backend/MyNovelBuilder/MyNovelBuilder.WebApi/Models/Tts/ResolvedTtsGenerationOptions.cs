@@ -11,4 +11,4 @@ public sealed record ResolvedTtsGenerationOptions(
     string TextGenerationModelId,
     bool EnableTextEmphasis,
     string? EndpointIdentity,
-    string? VoiceRevision, double GainDb = 0);
+    string? VoiceRevision, double GainDb = 0, ReasoningEffort TextGenerationReasoningEffort = ReasoningEffort.None);

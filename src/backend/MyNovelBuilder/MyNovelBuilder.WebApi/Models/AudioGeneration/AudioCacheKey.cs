@@ -55,11 +55,11 @@ public static class AudioCacheKey
 
     /// <summary>Identifies emphasis input, exact prompt identity and auxiliary model.</summary>
     public static string Emphasis(string speech, ResolvedTtsGenerationOptions options, string promptIdentity) =>
-        Create("emphasis-v1", new
+        WithReasoning(Create("emphasis-v1", new
         {
             annotationVersion = Services.TtsAnnotationProfile.Version,
             speech = Hash(speech), promptIdentity, options.TextGenerationProvider, options.TextGenerationModelId
-        });
+        }), options.TextGenerationReasoningEffort);
 
     /// <summary>Links original speech and preparation identity to completed synthesis.</summary>
     public static string Source(string speech, ResolvedTtsGenerationOptions options, string? preparationKey) =>
@@ -67,13 +67,13 @@ public static class AudioCacheKey
 
     /// <summary>Identifies frozen planner messages, schema and auxiliary model.</summary>
     public static string ImmersivePreparation(AudiobookSectionSnapshot section, ResolvedAudiobookSettings settings,
-        StructuredOutputOptions schema) => Create("immersive-preparation-v1", new
+        StructuredOutputOptions schema) => WithReasoning(Create("immersive-preparation-v1", new
     {
         speech = Hash(section.SpeechText), messages = section.ImmersivePrompt,
         annotation = Services.TtsAnnotationProfile.Resolve(settings.Provider, settings.ModelId),
         annotationVersion = Services.TtsAnnotationProfile.Version, settings.EnableTextEmphasis,
         settings.TextGenerationProvider, settings.TextGenerationModelId, schema
-    });
+    }), settings.TextGenerationReasoningEffort);
 
     /// <summary>Identifies planner inputs and frozen speaker assignments, excluding assembly pauses.</summary>
     public static string ImmersiveSource(AudiobookSectionSnapshot section, ResolvedAudiobookSettings settings,
@@ -85,6 +85,10 @@ public static class AudioCacheKey
         assignments = section.VoiceAssignments.OrderBy(a => a.CharacterRecordId)
             .Select(a => new { a.CharacterRecordId, a.VoiceId, a.VoiceRevision, a.GainDb })
     });
+
+    // Keep the previously hardcoded no-reasoning cache identity for existing jobs.
+    private static string WithReasoning(string key, Enums.ReasoningEffort effort) =>
+        effort == Enums.ReasoningEffort.None ? key : Create("reasoning-v1", new { key, effort });
 
     /// <summary>Identifies ordered audio, inter-chunk pause and output profile.</summary>
     public static string Section(IEnumerable<string> chunks, int pauseMs) => Create("section-v3", new

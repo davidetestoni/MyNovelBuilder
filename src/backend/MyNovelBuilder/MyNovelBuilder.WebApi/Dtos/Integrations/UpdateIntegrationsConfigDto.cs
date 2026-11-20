@@ -95,6 +95,9 @@ public class UpdateIntegrationsConfigDto
     /// The default text generation model ID.
     /// </summary>
     public string? TextGenerationModelId { get; init; }
+
+    /// <summary>Default reasoning effort for text generation.</summary>
+    public ReasoningEffort? TextGenerationReasoningEffort { get; init; }
     
     /// <summary>
     /// The Text-to-Speech provider to use to generate speech.
@@ -167,6 +170,8 @@ internal class UpdateIntegrationsConfigDtoValidator : AbstractValidator<UpdateIn
         RuleFor(x => x.MingBaseUrl).MaximumLength(2000).Must(BeValidHttpBaseUrl)
             .WithMessage("Ming base URL must be a valid absolute HTTP or HTTPS URL.");
         RuleFor(x => x.TextGenerationModelId).MaximumLength(200);
+        RuleFor(x => x.TextGenerationReasoningEffort).Must(v => !v.HasValue || Enum.IsDefined(v.Value))
+            .WithMessage("Reasoning effort is invalid.");
         RuleFor(x => x.TtsModelId).MaximumLength(200);
         RuleFor(x => x.TtsVoiceId).MaximumLength(200);
         RuleFor(x => x.TtsPreviewLanguage)

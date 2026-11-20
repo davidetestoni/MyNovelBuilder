@@ -35,6 +35,16 @@ public class ImmersiveTtsServiceTests
     }
 
     [Fact]
+    public async Task AnnotationAndPlanningUseFrozenReasoningEffort()
+    {
+        var planner = new FakeTextGenerationService(Plan("Stay here."));
+        planner.Outputs.Enqueue("Stay here.");
+        using var fixture = new PlanningFixture(planner, "Stay here.", emphasis: true, effort: ReasoningEffort.Low);
+        await fixture.Service.PrepareAudiobookAsync(fixture.Request);
+        Assert.Equal([ReasoningEffort.Low, ReasoningEffort.Low], planner.Efforts);
+    }
+
+    [Fact]
     public async Task TypographyRepairPreservesSpeakerBoundariesAndExactSource()
     {
         var character = Guid.NewGuid();
@@ -150,14 +160,14 @@ public class ImmersiveTtsServiceTests
         public RecordingTtsAudioGenerationService Tts { get; } = new(CreatePcmWavBytes([1, 2]));
         public ImmersiveTtsService Service { get; }
         public AudiobookRenderRequest Request { get; }
-        public PlanningFixture(FakeTextGenerationService planner, string source, bool emphasis = false)
+        public PlanningFixture(FakeTextGenerationService planner, string source, bool emphasis = false, ReasoningEffort effort = ReasoningEffort.None)
         {
             services = new ServiceCollection().AddKeyedSingleton<ITextGenerationService>(TextGenerationProvider.OpenRouter, planner).BuildServiceProvider();
             Service = new(new FakeNovelPromptCreatorService(new() { Messages = [], IncludedCompendiumRecordIds = [] }),
                 new FakeTextGenerationServiceResolver(planner), new FakeIntegrationsService(new()),
                 new FakeCompendiumRecordService([]), Tts, Logger, services, new NoRecordedVoices());
             var settings = new ResolvedAudiobookSettings(TtsProvider.OpenRouter, "fish-audio/drama-3", "narrator",
-                emphasis, true, 0, TextGenerationProvider.OpenRouter, "planning-model", Guid.NewGuid(), null, null);
+                emphasis, true, 0, TextGenerationProvider.OpenRouter, "planning-model", Guid.NewGuid(), null, null, TextGenerationReasoningEffort: effort);
             Request = new(Guid.NewGuid(), 0, settings, new(0, source,
                 [new(PromptMessageRole.User, "Plan <tts-source>" + source + "</tts-source>")], []));
         }
@@ -399,6 +409,7 @@ public class ImmersiveTtsServiceTests
     private sealed class FakeNovelPromptCreatorService(ProcessedPrompt processedPrompt) : INovelPromptCreatorService
     {
         public int Calls { get; private set; }
+        public List<ReasoningEffort> Efforts { get; } = [];
         public Task<ProcessedPrompt> CreatePromptAsync(
             GenerateTextRequestDto request,
             CancellationToken cancellationToken = default)
@@ -420,6 +431,7 @@ public class ImmersiveTtsServiceTests
     {
         public string? Model { get; private set; }
         public int Calls { get; private set; }
+        public List<ReasoningEffort> Efforts { get; } = [];
         public Queue<string> Outputs { get; } = new();
         public Action? AfterCall { get; set; }
         public List<PromptMessage> Messages { get; private set; } = [];
@@ -427,9 +439,17 @@ public class ImmersiveTtsServiceTests
             string model,
             IEnumerable<PromptMessage> messages,
             StructuredOutputOptions? structuredOutputOptions = null,
+            CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("Immersive planning must explicitly select reasoning effort.");
+        public Task<string> GenerateWithReasoningAsync(
+            string model,
+            IEnumerable<PromptMessage> messages,
+            ReasoningEffort reasoningEffort,
+            StructuredOutputOptions? structuredOutputOptions = null,
             CancellationToken cancellationToken = default)
         {
             Model = model;
+            Efforts.Add(reasoningEffort);
             Calls++;
             Messages = messages.ToList();
             AfterCall?.Invoke();

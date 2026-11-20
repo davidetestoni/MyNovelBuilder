@@ -34,6 +34,7 @@ public class IntegrationsControllerIntegrationTests(
             MingBaseUrl = "http://ming.test/",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/gpt-test",
+            TextGenerationReasoningEffort = ReasoningEffort.Low,
             TtsProvider = TtsProvider.PocketTts,
             VideoGenerationProvider = VideoGenerationProvider.DeApi,
             TtsModelId = "test-model-id",
@@ -59,6 +60,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(config.MingBaseUrl, dto.MingBaseUrl);
         Assert.Equal(TextGenerationProvider.OpenRouter, dto.TextGenerationProvider);
         Assert.Equal(config.TextGenerationModelId, dto.TextGenerationModelId);
+        Assert.Equal(ReasoningEffort.Low, dto.TextGenerationReasoningEffort);
         Assert.Equal(TtsProvider.PocketTts, dto.TtsProvider);
         Assert.Equal(VideoGenerationProvider.DeApi, dto.VideoGenerationProvider);
         Assert.Equal(config.TtsModelId, dto.TtsModelId);
@@ -96,6 +98,7 @@ public class IntegrationsControllerIntegrationTests(
             OpenRouterApiKey = "test-api-key",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/old-model",
+            TextGenerationReasoningEffort = ReasoningEffort.High,
             TtsProvider = TtsProvider.PocketTts,
             VideoGenerationProvider = VideoGenerationProvider.DeApi,
             TtsModelId = "test-model-id",
@@ -112,6 +115,7 @@ public class IntegrationsControllerIntegrationTests(
             MingBaseUrl = "http://new-ming.test/",
             TextGenerationProvider = TextGenerationProvider.OpenRouter,
             TextGenerationModelId = "openrouter/new-model",
+            TextGenerationReasoningEffort = ReasoningEffort.None,
             TtsProvider = TtsProvider.Kokoro,
             VideoGenerationProvider = VideoGenerationProvider.DeApi,
             TtsModelId = "new-model",
@@ -140,6 +144,7 @@ public class IntegrationsControllerIntegrationTests(
         Assert.Equal(updateDto.MingBaseUrl, dto.MingBaseUrl);
         Assert.Equal(updateDto.TextGenerationProvider, updatedConfig.TextGenerationProvider);
         Assert.Equal(updateDto.TextGenerationModelId, updatedConfig.TextGenerationModelId);
+        Assert.Equal(ReasoningEffort.None, updatedConfig.TextGenerationReasoningEffort);
         Assert.Equal(updateDto.TtsProvider, updatedConfig.TtsProvider);
         Assert.Equal(updateDto.VideoGenerationProvider, updatedConfig.VideoGenerationProvider);
         Assert.Equal(updateDto.TtsModelId, updatedConfig.TtsModelId);

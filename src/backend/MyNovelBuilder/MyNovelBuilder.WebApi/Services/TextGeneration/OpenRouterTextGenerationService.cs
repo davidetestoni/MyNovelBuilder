@@ -1,5 +1,6 @@
 ﻿using System.ClientModel;
 using System.Net.Http.Headers;
+using System.ClientModel.Primitives;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 using MyNovelBuilder.WebApi.Enums;
@@ -33,7 +34,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
     }
     
     private async ValueTask<OpenAIClient> GetOpenAiClientAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, ReasoningEffort? reasoningEffort = null)
     {
         if (_openAiClient is not null)
         {
@@ -48,10 +49,15 @@ public class OpenRouterTextGenerationService : ITextGenerationService
                 "OpenRouter API key is missing in integrations configuration.");
         }
 
-        return new OpenAIClient(new ApiKeyCredential(config.OpenRouterApiKey), new OpenAIClientOptions
+        var options = new OpenAIClientOptions
         {
-            Endpoint = new Uri("https://openrouter.ai/api/v1")
-        });
+            Endpoint = new Uri("https://openrouter.ai/api/v1"),
+            Transport = new HttpClientPipelineTransport(_httpClient)
+        };
+        var effort = reasoningEffort ?? config.TextGenerationReasoningEffort;
+        if (effort != ReasoningEffort.ProviderDefault)
+            options.AddPolicy(new OpenRouterReasoningPolicy(effort), PipelinePosition.PerCall);
+        return new OpenAIClient(new ApiKeyCredential(config.OpenRouterApiKey), options);
     }
 
     /// <inheritdoc />
@@ -61,7 +67,20 @@ public class OpenRouterTextGenerationService : ITextGenerationService
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
-        var client = await GetOpenAiClientAsync(cancellationToken);
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        return await GenerateWithReasoningAsync(model, messages, config.TextGenerationReasoningEffort,
+            structuredOutputOptions, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> GenerateWithReasoningAsync(
+        string model,
+        IEnumerable<PromptMessage> messages,
+        ReasoningEffort reasoningEffort,
+        StructuredOutputOptions? structuredOutputOptions = null,
+        CancellationToken cancellationToken = default)
+    {
+        var client = await GetOpenAiClientAsync(cancellationToken, reasoningEffort);
         var chatClient = client.GetChatClient(model);
         
         var chatMessages = messages.Select(ToChatMessage).ToList();
@@ -80,8 +99,7 @@ public class OpenRouterTextGenerationService : ITextGenerationService
             throw ToApiException(ex);
         }
 
-        return response?.Value.Content[0].Text
-            ?? throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
+        return GetResponseText(response?.Value);
     }
 
     /// <inheritdoc />
@@ -185,8 +203,30 @@ public class OpenRouterTextGenerationService : ITextGenerationService
             throw ToApiException(ex);
         }
 
-        return response?.Value.Content[0].Text
-               ?? throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
+        return GetResponseText(response?.Value);
+    }
+
+    internal static string GetResponseText(ChatCompletion? completion)
+    {
+        if (completion is null)
+        {
+            throw new ApiException(ErrorCodes.ExternalServiceError, "OpenRouter returned no response.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(completion.Refusal))
+        {
+            throw new ApiException(ErrorCodes.ExternalServiceError,
+                $"OpenRouter refused to generate text: {completion.Refusal}");
+        }
+
+        var text = string.Concat(completion.Content.Select(part => part.Text));
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            throw new ApiException(ErrorCodes.ExternalServiceError,
+                $"OpenRouter returned no text content (finish reason: {completion.FinishReason}).");
+        }
+
+        return text;
     }
 
     /// <inheritdoc />

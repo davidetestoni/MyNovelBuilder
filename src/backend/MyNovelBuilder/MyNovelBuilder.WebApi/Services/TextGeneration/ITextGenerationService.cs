@@ -1,5 +1,6 @@
 ﻿using MyNovelBuilder.WebApi.Dtos.Prompt;
 using MyNovelBuilder.WebApi.Models.Prompts;
+using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Models.TextGeneration;
 
 namespace MyNovelBuilder.WebApi.Services.TextGeneration;
@@ -26,6 +27,15 @@ public interface ITextGenerationService
         IEnumerable<PromptMessage> messages,
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Generate text with an explicit reasoning effort, overriding integration defaults.</summary>
+    Task<string> GenerateWithReasoningAsync(
+        string model,
+        IEnumerable<PromptMessage> messages,
+        ReasoningEffort reasoningEffort,
+        StructuredOutputOptions? structuredOutputOptions = null,
+        CancellationToken cancellationToken = default) =>
+        GenerateAsync(model, messages, structuredOutputOptions, cancellationToken);
 
     /// <summary>
     /// Describe an image.

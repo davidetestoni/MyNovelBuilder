@@ -139,6 +139,24 @@ public sealed class AudioArtifactCacheTests : IDisposable
             false, true, 150, Settings.TextGenerationProvider, Settings.TextGenerationModelId, Guid.NewGuid(), null, null);
         var schema = new MyNovelBuilder.WebApi.Models.TextGeneration.StructuredOutputOptions { SchemaName = "plan", JsonSchema = "{}" };
         var preparation = AudioCacheKey.ImmersivePreparation(section, settings, schema);
+        var legacyPreparation = AudioCacheKey.Create("immersive-preparation-v1", new
+        {
+            speech = AudioCacheKey.Hash(section.SpeechText), messages = section.ImmersivePrompt,
+            annotation = TtsAnnotationProfile.Resolve(settings.Provider, settings.ModelId),
+            annotationVersion = TtsAnnotationProfile.Version, settings.EnableTextEmphasis,
+            settings.TextGenerationProvider, settings.TextGenerationModelId, schema
+        });
+        Assert.Equal(legacyPreparation, preparation);
+        var serialized = System.Text.Json.JsonSerializer.SerializeToElement(settings);
+        Assert.False(serialized.TryGetProperty("TextGenerationReasoningEffort", out _));
+        Assert.Equal(ReasoningEffort.None, System.Text.Json.JsonSerializer.Deserialize<ResolvedAudiobookSettings>(serialized)!.TextGenerationReasoningEffort);
+
+        Assert.NotEqual(preparation, AudioCacheKey.ImmersivePreparation(section,
+            settings with { TextGenerationReasoningEffort = ReasoningEffort.High }, schema));
+        Assert.NotEqual(AudioCacheKey.Emphasis(Story, Settings, "prompt"),
+            AudioCacheKey.Emphasis(Story, Settings with { TextGenerationReasoningEffort = ReasoningEffort.High }, "prompt"));
+        Assert.Equal(AudioCacheKey.Synthesis(Story, Settings),
+            AudioCacheKey.Synthesis(Story, Settings with { TextGenerationReasoningEffort = ReasoningEffort.High }));
         var source = AudioCacheKey.ImmersiveSource(section, settings, preparation, null);
         Assert.Equal(source, AudioCacheKey.ImmersiveSource(section with { SectionIndex = 5 }, settings with { ImmersivePauseMs = 0 }, preparation, null));
         Assert.NotEqual(preparation, AudioCacheKey.ImmersivePreparation(section with

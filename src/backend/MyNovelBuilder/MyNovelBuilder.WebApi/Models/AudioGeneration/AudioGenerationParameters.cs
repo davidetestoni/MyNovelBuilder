@@ -19,6 +19,9 @@ public class AudioGenerationParameters
     /// <summary>Text generation model used to prepare immersive speech.</summary>
     public string? TextGenerationModelId { get; set; }
 
+    /// <summary>Reasoning effort used for auxiliary preprocessing.</summary>
+    public ReasoningEffort TextGenerationReasoningEffort { get; set; } = ReasoningEffort.None;
+
     /// <summary>
     /// The text to be converted to audio.
     /// </summary>
@@ -58,6 +61,7 @@ public class AudioGenerationParameters
             VoiceId,
             TextGenerationModelId,
             TextGenerationProvider,
+            TextGenerationReasoningEffort,
             EnableTextEmphasis,
             Text
         };

@@ -80,6 +80,23 @@ public class AudiobookSettingsResolverTests
     }
 
     [Fact]
+    public async Task ReasoningEffortIsFrozenAndCanBeOverridden()
+    {
+        var defaults = new IntegrationsConfig
+        {
+            TtsProvider = TtsProvider.PocketTts, TtsModelId = "model-a", TtsVoiceId = "voice-a",
+            TextGenerationReasoningEffort = ReasoningEffort.Low
+        };
+        var resolver = CreateResolver(defaults);
+        var frozen = await resolver.ResolveAsync(new AudiobookSettingsRequest());
+        var overridden = await resolver.ResolveAsync(new AudiobookSettingsRequest(TextGenerationReasoningEffort: ReasoningEffort.None));
+        defaults.TextGenerationReasoningEffort = ReasoningEffort.High;
+        Assert.Equal(ReasoningEffort.Low, frozen.TextGenerationReasoningEffort);
+        Assert.Equal(ReasoningEffort.Low, frozen.ToTtsOptions().TextGenerationReasoningEffort);
+        Assert.Equal(ReasoningEffort.None, overridden.TextGenerationReasoningEffort);
+    }
+
+    [Fact]
     public async Task OpenRouterAcceptsCustomVoiceIdsOutsideItsCatalogue()
     {
         var resolver = CreateResolver(new IntegrationsConfig

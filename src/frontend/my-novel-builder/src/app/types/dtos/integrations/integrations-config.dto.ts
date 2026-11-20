@@ -1,3 +1,5 @@
+export type ReasoningEffort = 'providerDefault' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xHigh' | 'max';
+
 import { TextGenerationProvider } from '../../enums/text-generation-provider';
 import { ImageGenerationProvider } from '../../enums/image-generation-provider';
 import { VideoGenerationProvider } from '../../enums/video-generation-provider';
@@ -22,6 +24,7 @@ export interface IntegrationsConfigDto {
   mingBaseUrl: string;
   textGenerationProvider: TextGenerationProvider;
   textGenerationModelId: string;
+  textGenerationReasoningEffort?: ReasoningEffort;
   ttsProvider: TtsProvider;
   imageGenerationProvider: ImageGenerationProvider;
   videoGenerationProvider: VideoGenerationProvider;
@@ -52,6 +55,7 @@ export interface UpdateIntegrationsConfigDto {
   mingBaseUrl?: string | null;
   textGenerationProvider?: TextGenerationProvider | null;
   textGenerationModelId?: string | null;
+  textGenerationReasoningEffort?: ReasoningEffort | null;
   ttsProvider?: TtsProvider | null;
   imageGenerationProvider?: ImageGenerationProvider | null;
   videoGenerationProvider?: VideoGenerationProvider | null;

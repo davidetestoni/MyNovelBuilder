@@ -53,27 +53,7 @@
           />
         </div>
 
-        @if (textGenerationModelsUnavailableMessage; as message) {
-          <p class="field-help">{{ message }}</p>
-        } @else if (textGenerationModelOptions.length > 0) {
-          <div class="form-group">
-            <label for="textGenerationModelId"
-              >Default Text Generation Model:</label
-            >
-            <p class="field-help">
-              Used as the default structured-output model for immersive TTS and
-              for TTS text emphasis.
-            </p>
-            <p-select
-              id="textGenerationModelId"
-              [options]="textGenerationModelOptions"
-              formControlName="textGenerationModelId"
-              placeholder="Select a text generation model"
-              [style]="{ width: '100%' }"
-              [filter]="true"
-            />
-          </div>
-        }
+
       }
 
       @if (
@@ -102,6 +82,43 @@
           />
         </div>
       }
+
+      @if (textGenerationModelsUnavailableMessage; as message) {
+        <p class="field-help">{{ message }}</p>
+      } @else if (textGenerationModelOptions.length > 0) {
+        <div class="form-group">
+          <label for="textGenerationModelId"
+            >Default Text Generation Model:</label
+          >
+          <p class="field-help">
+            Used as the default structured-output model for immersive TTS and
+            for TTS text emphasis.
+          </p>
+          <p-select
+            id="textGenerationModelId"
+            [options]="textGenerationModelOptions"
+            formControlName="textGenerationModelId"
+            placeholder="Select a text generation model"
+            [style]="{ width: '100%' }"
+            [filter]="true"
+          />
+        </div>
+      }
+
+      <div class="form-group">
+        <label for="textGenerationReasoningEffort">Default Reasoning Effort:</label>
+        <p-select
+          id="textGenerationReasoningEffort"
+          [options]="reasoningEffortOptions"
+          formControlName="textGenerationReasoningEffort"
+          [style]="{ width: '100%' }"
+        />
+        <p class="field-help">
+          Used for text generation, TTS annotation and immersive planning. Higher effort can take longer.
+          Provider default leaves the choice to the model. Google uses the closest supported setting;
+          models that require thinking use their lowest level when None is selected.
+        </p>
+      </div>
     </section>
 
     <section class="integration-card">

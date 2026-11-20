@@ -18,6 +18,16 @@ Choose narrator-only or immersive narration. Immersive mode needs a
 character voice assignments where available; unassigned characters use the
 narrator. Text emphasis is available only for models that support it.
 
+Set **Integrations → Text Generation → Default Reasoning Effort** to control
+reasoning for text generation, annotation and speaker planning. **None** is the
+default for faster preparation; **Provider default** leaves the choice to the
+model. OpenRouter receives the requested effort. Google uses thinking levels
+for Gemini 3+ and token budgets for Gemini 2.5, mapping to the closest supported
+setting. Models that require thinking use their lowest setting for **None**.
+Audiobook jobs retain the effort selected when their preview was created;
+create a new preview and job to use a different effort. Cached synthesis can
+still be reused when the resulting speech and voice settings match.
+
 Annotations guide delivery in both narration and dialogue. Supported profiles
 include ElevenLabs v3, ElevenLabs v3 through NanoGPT, OmniVoice, and Fish Audio
 Drama 3 through OpenRouter. Emphasis is off by default. When enabled, it applies to narration and dialogue;

@@ -56,6 +56,19 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
         StructuredOutputOptions? structuredOutputOptions = null,
         CancellationToken cancellationToken = default)
     {
+        var config = await _integrationsService.GetConfigAsync(cancellationToken);
+        return await GenerateWithReasoningAsync(model, messages, config.TextGenerationReasoningEffort,
+            structuredOutputOptions, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<string> GenerateWithReasoningAsync(
+        string model,
+        IEnumerable<PromptMessage> messages,
+        ReasoningEffort reasoningEffort,
+        StructuredOutputOptions? structuredOutputOptions = null,
+        CancellationToken cancellationToken = default)
+    {
         var client = await GetGoogleGenAiClientAsync(cancellationToken);
         
         var messageList = messages.ToList();
@@ -67,10 +80,12 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
                 .Where(m => m.Role is not PromptMessageRole.System)
                 .Select(ToContent)
                 .ToList(),
-            CreateGenerateContentConfig(systemPrompt, structuredOutputOptions))
+            CreateGenerateContentConfig(systemPrompt, structuredOutputOptions, model, reasoningEffort))
             .WaitAsync(cancellationToken);
 
-        return response.Candidates![0].Content!.Parts![0].Text!;
+        return string.Concat((response.Candidates?.FirstOrDefault()?.Content?.Parts ?? [])
+            .Where(part => part.Thought != true).Select(part => part.Text)) is { Length: > 0 } text
+            ? text : throw new ApiException(ErrorCodes.ExternalServiceError, "Google GenAI returned no text response.");
     }
 
     /// <inheritdoc />
@@ -120,6 +135,13 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
             };
         }
 
+        var thinking = GoogleReasoningConfig.Create(model, integrations.TextGenerationReasoningEffort);
+        if (thinking is not null)
+        {
+            body["generationConfig"] ??= new JsonObject();
+            body["generationConfig"]!["thinkingConfig"] = thinking;
+        }
+
         var modelPath = model.StartsWith("models/", StringComparison.Ordinal) ? model : $"models/{model}";
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"https://generativelanguage.googleapis.com/v1beta/{modelPath}:streamGenerateContent?alt=sse");
@@ -153,6 +175,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
 
             foreach (var part in candidate?["content"]?["parts"]?.AsArray() ?? [])
             {
+                if (part?["thought"]?.GetValue<bool>() == true) continue;
                 var text = part?["text"]?.GetValue<string>();
                 if (!string.IsNullOrEmpty(text))
                 {
@@ -231,11 +254,13 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
             });
         }
 
+        var integrations = await _integrationsService.GetConfigAsync(cancellationToken);
         var response = await client.Models.GenerateContentAsync(
             model,
             conversationMessages,
             new Google.GenAI.Types.GenerateContentConfig
             {
+                ThinkingConfig = GoogleReasoningConfig.CreateSdk(model, integrations.TextGenerationReasoningEffort),
                 SystemInstruction = systemPrompt is null
                     ? null
                     : new Google.GenAI.Types.Content
@@ -248,6 +273,7 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
 
         var text = response.Candidates?
             .SelectMany(c => c.Content?.Parts ?? [])
+            .Where(p => p.Thought != true)
             .Select(p => p.Text)
             .FirstOrDefault(t => !string.IsNullOrWhiteSpace(t));
 
@@ -339,10 +365,12 @@ public class GoogleGenAiTextGenerationService : ITextGenerationService
 
     private static Google.GenAI.Types.GenerateContentConfig CreateGenerateContentConfig(
         PromptMessage? systemPrompt,
-        StructuredOutputOptions? structuredOutputOptions = null)
+        StructuredOutputOptions? structuredOutputOptions = null,
+        string model = "", ReasoningEffort reasoningEffort = ReasoningEffort.ProviderDefault)
     {
         var config = new Google.GenAI.Types.GenerateContentConfig
         {
+            ThinkingConfig = GoogleReasoningConfig.CreateSdk(model, reasoningEffort),
             SystemInstruction = systemPrompt is null
                 ? null
                 : new Google.GenAI.Types.Content

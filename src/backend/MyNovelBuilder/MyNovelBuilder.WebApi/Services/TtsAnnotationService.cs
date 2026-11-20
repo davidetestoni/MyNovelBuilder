@@ -96,7 +96,8 @@ public static class TtsAnnotationService
 
     /// <summary>Adds supported performance directions, falling back to the source on invalid output.</summary>
     public static async Task<string> AnnotateAsync(string source, TtsAnnotationProfile? profile,
-        ITextGenerationService generator, string model, CancellationToken cancellationToken, ILogger? logger = null)
+        ITextGenerationService generator, string model, CancellationToken cancellationToken, ILogger? logger = null,
+        ReasoningEffort reasoningEffort = ReasoningEffort.None)
     {
         if (profile is null) return source;
         for (var attempt = 0; attempt < 2; attempt++)
@@ -105,7 +106,7 @@ public static class TtsAnnotationService
             var messages = profile.Messages(source);
             if (attempt > 0)
                 messages[0].Message += "\nThe previous attempt failed validation. Copy the original text exactly, including its opening and closing quotes and whitespace; insert only supported delivery tags.";
-            var result = await generator.GenerateAsync(model, messages, cancellationToken: cancellationToken);
+            var result = await generator.GenerateWithReasoningAsync(model, messages, reasoningEffort, cancellationToken: cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             if (PreservesSource(source, result, profile)) return result;
             if (TryRestoreOuterQuotes(source, result, profile) is { } restored) return restored;

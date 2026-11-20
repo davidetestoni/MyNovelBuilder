@@ -59,6 +59,17 @@ describe('IntegrationsComponent workflows', () => {
     ...overrides,
   });
 
+  it('loads and saves reasoning effort, including None', () => {
+    integrationsService.getIntegrationsConfig.and.returnValue(of(config({ textGenerationReasoningEffort: 'high' })));
+    component.ngOnInit();
+    expect(component.integrationsForm.controls.textGenerationReasoningEffort.value).toBe('high');
+    component.integrationsForm.controls.textGenerationReasoningEffort.setValue('none');
+    component.onSubmit();
+    expect(integrationsService.updateIntegrationsConfig).toHaveBeenCalledWith(jasmine.objectContaining({
+      textGenerationReasoningEffort: 'none',
+    }));
+  });
+
   const ttsModels = (): TtsModelDto[] => [
     {
       modelId: 'basic',

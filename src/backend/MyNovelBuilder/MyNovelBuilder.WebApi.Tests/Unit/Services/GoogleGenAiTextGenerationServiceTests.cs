@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.DependencyInjection;
 using MyNovelBuilder.WebApi.Enums;
 using MyNovelBuilder.WebApi.Extensions;
@@ -12,6 +13,23 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 
 public class GoogleGenAiTextGenerationServiceTests
 {
+    [Theory]
+    [InlineData("gemini-2.5-flash", ReasoningEffort.None, "thinkingBudget", "0")]
+    [InlineData("gemini-3-flash-preview", ReasoningEffort.Low, "thinkingLevel", "LOW")]
+    [InlineData("gemini-3.1-pro-preview", ReasoningEffort.High, "thinkingLevel", "HIGH")]
+    public async Task StreamingSendsConfiguredEffort(string model, ReasoningEffort effort, string field, string expected)
+    {
+        var handler = new RecordingHandler();
+        var service = new GoogleGenAiTextGenerationService(new FakeIntegrationsService(effort), new HttpClient(handler));
+        var chunks = new List<string>();
+        await foreach (var chunk in service.GenerateStreamedAsync(model,
+            [new PromptMessage { Role = PromptMessageRole.User, Message = "Hello" }]))
+            chunks.Add(chunk);
+        Assert.Equal(["Hello", " world"], chunks);
+        var payload = JsonNode.Parse(handler.RequestBody!)!;
+        Assert.Equal(expected, payload["generationConfig"]!["thinkingConfig"]![field]!.ToString());
+    }
+
     [Fact]
     public async Task KeyedRegistration_ResolvesServiceWithManagedClient()
     {
@@ -103,10 +121,10 @@ public class GoogleGenAiTextGenerationServiceTests
         }
     }
 
-    private sealed class FakeIntegrationsService : IIntegrationsService
+    private sealed class FakeIntegrationsService(ReasoningEffort effort = ReasoningEffort.None) : IIntegrationsService
     {
         public ValueTask<IntegrationsConfig> GetConfigAsync(CancellationToken cancellationToken = default) =>
-            ValueTask.FromResult(new IntegrationsConfig { GoogleGenAiApiKey = "test-key" });
+            ValueTask.FromResult(new IntegrationsConfig { GoogleGenAiApiKey = "test-key", TextGenerationReasoningEffort = effort });
 
         public Task UpdateConfigAsync(IntegrationsConfig config, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;

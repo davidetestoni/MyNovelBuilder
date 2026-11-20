@@ -1,3 +1,4 @@
+import { ReasoningEffort } from '../../types/dtos/integrations/integrations-config.dto';
 import { VoiceSelectorComponent } from '../../components/voice-selector/voice-selector.component';
 import { getVoicePreviewText, getVoicePreviewLanguage } from '../../utils/tts-preview.utils';
 import { Component, OnDestroy, OnInit, inject } from '@angular/core';
@@ -68,6 +69,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
       TextGenerationProvider.OpenRouter,
     ),
     textGenerationModelId: new FormControl<string>(''),
+    textGenerationReasoningEffort: new FormControl<ReasoningEffort>('none', { nonNullable: true }),
     openRouterApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     googleGenAiApiKey: new FormControl<string>('', Validators.maxLength(1000)),
     ttsProvider: new FormControl<TtsProvider>(TtsProvider.Custom),
@@ -127,6 +129,16 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
 
   availableTtsModels: TtsModelDto[] = [];
   availableTextGenerationModels: TextGenerationModelInfoDto[] = [];
+  reasoningEffortOptions: { label: string; value: ReasoningEffort }[] = [
+    { label: 'Provider default', value: 'providerDefault' },
+    { label: 'None (fastest)', value: 'none' },
+    { label: 'Minimal', value: 'minimal' },
+    { label: 'Low', value: 'low' },
+    { label: 'Medium', value: 'medium' },
+    { label: 'High', value: 'high' },
+    { label: 'Extra high', value: 'xHigh' },
+    { label: 'Maximum', value: 'max' },
+  ];
 
   textGenerationProviderOptions = Object.values(TextGenerationProvider).map(
     (provider) => ({
@@ -203,6 +215,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
         this.integrationsForm.patchValue({
           textGenerationProvider: config.textGenerationProvider,
           textGenerationModelId: config.textGenerationModelId,
+          textGenerationReasoningEffort: config.textGenerationReasoningEffort ?? 'none',
           ttsProvider: config.ttsProvider,
           customTtsBaseUrl: config.customTtsBaseUrl,
           pocketTtsBaseUrl: config.pocketTtsBaseUrl,
@@ -680,6 +693,7 @@ export class IntegrationsComponent implements OnInit, OnDestroy {
     const updateDto: UpdateIntegrationsConfigDto = {
       textGenerationProvider:
         this.integrationsForm.value.textGenerationProvider,
+      textGenerationReasoningEffort: this.integrationsForm.controls.textGenerationReasoningEffort.value,
       textGenerationModelId:
         this.integrationsForm.value.textGenerationModelId || undefined,
       openRouterApiKey:

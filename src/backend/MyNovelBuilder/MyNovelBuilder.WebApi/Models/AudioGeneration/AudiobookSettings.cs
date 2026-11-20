@@ -1,4 +1,5 @@
 using MyNovelBuilder.WebApi.Enums;
+using System.Text.Json.Serialization;
 using MyNovelBuilder.WebApi.Models.Tts;
 
 namespace MyNovelBuilder.WebApi.Models.AudioGeneration;
@@ -13,7 +14,8 @@ public sealed record AudiobookSettingsRequest(
     int? ImmersivePauseMs = null,
     TextGenerationProvider? TextGenerationProvider = null,
     string? TextGenerationModelId = null,
-    Guid? ImmersivePromptId = null);
+    Guid? ImmersivePromptId = null,
+    ReasoningEffort? TextGenerationReasoningEffort = null);
 
 /// <summary>All settings that must remain fixed throughout an audiobook run.</summary>
 public sealed record ResolvedAudiobookSettings(
@@ -27,7 +29,9 @@ public sealed record ResolvedAudiobookSettings(
     string TextGenerationModelId,
     Guid? ImmersivePromptId,
     string? TtsEndpointIdentity,
-    string? NarratorVoiceRevision, double GainDb = 0)
+    string? NarratorVoiceRevision, double GainDb = 0,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    ReasoningEffort TextGenerationReasoningEffort = ReasoningEffort.None)
 {
     /// <summary>Builds generic TTS options for the narrator or a frozen character voice.</summary>
     public ResolvedTtsGenerationOptions ToTtsOptions(
@@ -40,5 +44,5 @@ public sealed record ResolvedAudiobookSettings(
         TextGenerationModelId,
         EnableTextEmphasis,
         TtsEndpointIdentity,
-        voiceRevision ?? (voiceId is null || voiceId == VoiceId ? NarratorVoiceRevision : null), gainDb ?? GainDb);
+        voiceRevision ?? (voiceId is null || voiceId == VoiceId ? NarratorVoiceRevision : null), gainDb ?? GainDb, TextGenerationReasoningEffort);
 }

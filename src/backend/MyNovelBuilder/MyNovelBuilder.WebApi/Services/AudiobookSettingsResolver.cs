@@ -19,6 +19,8 @@ public sealed class AudiobookSettingsResolver(
     {
         var defaults = await integrations.GetConfigAsync(cancellationToken);
         var provider = request.Provider ?? defaults.TtsProvider;
+        if (request.TextGenerationReasoningEffort is { } effort && !Enum.IsDefined(effort))
+            throw BadRequest("Reasoning effort is invalid.");
         var modelId = request.ModelId ?? defaults.TtsModelId;
         var voiceId = request.VoiceId ?? defaults.TtsVoiceId;
         var textProvider = request.TextGenerationProvider ?? defaults.TextGenerationProvider;
@@ -80,7 +82,7 @@ public sealed class AudiobookSettingsResolver(
             textProvider, textModelId, request.ImmersivePromptId,
             TtsEndpointIdentity.FromConfig(defaults, provider),
             await voiceRevisions.GetRevisionAsync(
-                provider, voiceId, cancellationToken), defaults.TtsGainDb);
+                provider, voiceId, cancellationToken), defaults.TtsGainDb, request.TextGenerationReasoningEffort ?? defaults.TextGenerationReasoningEffort);
     }
 
     private static ApiException BadRequest(string message) => new(ErrorCodes.BadRequest, message);
