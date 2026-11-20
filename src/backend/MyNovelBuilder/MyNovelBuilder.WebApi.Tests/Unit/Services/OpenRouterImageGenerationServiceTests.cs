@@ -13,10 +13,26 @@ namespace MyNovelBuilder.WebApi.Tests.Unit.Services;
 public class OpenRouterImageGenerationServiceTests
 {
     [Fact]
-    public async Task GetAvailableModelsAsync_MapsImageCapabilitiesPerModel()
+    public async Task GetAvailableModelsAsync_MergesCatalogsAndPrefersImagesCapabilities()
     {
         var handler = new QueueingHttpMessageHandler(
         [
+            CreateJsonResponse(
+                """
+                {
+                  "data": [
+                    {
+                      "id": "black-forest-labs/flux.2-pro",
+                      "name": "Flux Pro",
+                      "architecture": {
+                        "input_modalities": ["text", "image"],
+                        "output_modalities": ["image"]
+                      },
+                      "supported_parameters": {}
+                    }
+                  ]
+                }
+                """),
             CreateJsonResponse(
                 """
                 {
@@ -31,9 +47,9 @@ public class OpenRouterImageGenerationServiceTests
                     },
                     {
                       "id": "black-forest-labs/flux.2-pro",
-                      "name": "Flux Pro",
+                      "name": "Duplicate Flux Pro",
                       "architecture": {
-                        "input_modalities": ["text"],
+                        "input_modalities": ["text", "image"],
                         "output_modalities": ["image"]
                       }
                     }
@@ -45,6 +61,9 @@ public class OpenRouterImageGenerationServiceTests
 
         var models = (await service.GetAvailableModelsAsync()).ToList();
 
+        Assert.Equal(
+            new[] { "/api/v1/images/models", "/api/v1/models?output_modalities=image" },
+            handler.Requests.Select(request => request.RequestUri!.PathAndQuery));
         Assert.Collection(
             models,
             model =>
@@ -69,6 +88,7 @@ public class OpenRouterImageGenerationServiceTests
         var imageBytes = Encoding.ASCII.GetBytes("generated-image");
         var handler = new QueueingHttpMessageHandler(
         [
+            CreateJsonResponse("""{"data": []}"""),
             CreateJsonResponse(
                 """
                 {
@@ -139,7 +159,48 @@ public class OpenRouterImageGenerationServiceTests
     }
 
     [Fact]
-    public async Task EditImageAsync_SendsInputImageContent_ForEditorCapableModels()
+    public async Task GenerateImageAsync_UsesImagesEndpoint_AndDecodesBase64()
+    {
+        var handler = new QueueingHttpMessageHandler(
+        [
+            CreateJsonResponse(
+                """
+                {"data": [{
+                  "id": "bytedance-seed/seedream-4.5",
+                  "supported_parameters": {"aspect_ratio": {"type": "enum", "values": ["2:3"]}}
+                }]}
+                """),
+            CreateJsonResponse("""{"data": [{"b64_json": "AQID", "media_type": "image/png"}]}""")
+        ]);
+        var service = CreateService(handler);
+
+        var result = await service.GenerateImageAsync(new ImageGenerationRequestDto
+        {
+            ModelId = "bytedance-seed/seedream-4.5",
+            Prompt = "A lantern-lit alley in the rain",
+            Width = 832,
+            Height = 1248
+        });
+
+        Assert.Equal(new byte[] { 1, 2, 3 }, result);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.Equal("/api/v1/images/models", handler.Requests[0].RequestUri?.PathAndQuery);
+        var request = Assert.Single(handler.Requests, r => r.Method == HttpMethod.Post);
+        Assert.Equal("/api/v1/images", request.RequestUri?.PathAndQuery);
+        Assert.Equal("Bearer", request.Headers.Authorization?.Scheme);
+        Assert.Equal("test-openrouter-key", request.Headers.Authorization?.Parameter);
+
+        using var requestJson = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
+        var payload = requestJson.RootElement;
+        Assert.Equal("bytedance-seed/seedream-4.5", payload.GetProperty("model").GetString());
+        Assert.Equal("A lantern-lit alley in the rain", payload.GetProperty("prompt").GetString());
+        Assert.Equal("2:3", payload.GetProperty("aspect_ratio").GetString());
+        Assert.False(payload.TryGetProperty("input_references", out _));
+        Assert.False(payload.TryGetProperty("messages", out _));
+    }
+
+    [Fact]
+    public async Task EditImageAsync_SendsInputReferencesToImagesEndpoint()
     {
         var pngBytes = new byte[]
         {
@@ -153,11 +214,14 @@ public class OpenRouterImageGenerationServiceTests
                 {
                   "data": [
                     {
-                      "id": "google/gemini-3.1-flash-image-preview",
-                      "name": "Gemini Image Preview",
+                      "id": "google/gemini-3.1-flash-image",
+                      "name": "Gemini Image",
                       "architecture": {
                         "input_modalities": ["text", "image"],
-                        "output_modalities": ["text", "image"]
+                        "output_modalities": ["image"]
+                      },
+                      "supported_parameters": {
+                        "input_references": {"type": "range", "min": 0, "max": 14}
                       }
                     }
                   ]
@@ -166,19 +230,7 @@ public class OpenRouterImageGenerationServiceTests
             CreateJsonResponse(
                 $$"""
                 {
-                  "choices": [
-                    {
-                      "message": {
-                        "images": [
-                          {
-                            "image_url": {
-                              "url": "data:image/png;base64,{{Convert.ToBase64String(generatedBytes)}}"
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  ]
+                  "data": [{"b64_json": "{{Convert.ToBase64String(generatedBytes)}}"}]
                 }
                 """)
         ]);
@@ -188,7 +240,7 @@ public class OpenRouterImageGenerationServiceTests
             pngBytes,
             new ImageGenerationRequestDto
             {
-                ModelId = "google/gemini-3.1-flash-image-preview",
+                ModelId = "google/gemini-3.1-flash-image",
                 Prompt = "Turn this sketch into a painted portrait",
                 Width = 1024,
                 Height = 1024
@@ -197,17 +249,19 @@ public class OpenRouterImageGenerationServiceTests
         Assert.Equal(generatedBytes, result);
 
         var request = Assert.Single(handler.Requests, r => r.Method == HttpMethod.Post);
+        Assert.Equal("/api/v1/images", request.RequestUri?.PathAndQuery);
         using var requestJson = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
 
-        var content = requestJson.RootElement.GetProperty("messages")[0].GetProperty("content");
-        Assert.Equal("text", content[0].GetProperty("type").GetString());
+        var payload = requestJson.RootElement;
         Assert.Equal(
             "Turn this sketch into a painted portrait",
-            content[0].GetProperty("text").GetString());
-        Assert.Equal("image_url", content[1].GetProperty("type").GetString());
+            payload.GetProperty("prompt").GetString());
+        Assert.False(payload.TryGetProperty("aspect_ratio", out _));
+        var reference = Assert.Single(payload.GetProperty("input_references").EnumerateArray());
+        Assert.Equal("image_url", reference.GetProperty("type").GetString());
         Assert.Equal(
             $"data:image/png;base64,{Convert.ToBase64String(pngBytes)}",
-            content[1].GetProperty("image_url").GetProperty("url").GetString());
+            reference.GetProperty("image_url").GetProperty("url").GetString());
     }
 
     [Fact]

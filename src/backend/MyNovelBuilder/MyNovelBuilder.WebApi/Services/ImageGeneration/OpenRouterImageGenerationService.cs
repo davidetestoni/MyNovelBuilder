@@ -35,6 +35,8 @@ public class OpenRouterImageGenerationService : IImageGenerationService
     ];
 
     private const double AspectRatioTolerance = 0.05;
+    private const string ImageModelsPath = "images/models";
+    private const string ChatImageModelsPath = "models?output_modalities=image";
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<OpenRouterImageGenerationService> _logger;
@@ -75,9 +77,12 @@ public class OpenRouterImageGenerationService : IImageGenerationService
         CancellationToken cancellationToken = default)
     {
         var apiKey = await GetApiKeyAsync(cancellationToken);
-        var models = await GetAvailableModelMetadataAsync(apiKey, cancellationToken);
+        var imageModels = GetAvailableModelMetadataAsync(ImageModelsPath, apiKey, cancellationToken);
+        var chatModels = GetAvailableModelMetadataAsync(ChatImageModelsPath, apiKey, cancellationToken);
+        var catalogs = await Task.WhenAll(imageModels, chatModels);
 
-        return models
+        return catalogs.SelectMany(models => models)
+            .DistinctBy(model => model.ModelId, StringComparer.OrdinalIgnoreCase)
             .Select(model => new ImageGenerationModelInfo
             {
                 ModelId = model.ModelId,
@@ -131,69 +136,61 @@ public class OpenRouterImageGenerationService : IImageGenerationService
                        ErrorCodes.ExternalServiceError,
                        "OpenRouter returned an invalid JSON response for image generation.");
 
+        if (model.UsesImagesEndpoint)
+        {
+            var base64 = root["data"]?.AsArray().FirstOrDefault()?["b64_json"]?.GetValue<string>();
+            return DecodeImageBytes(base64);
+        }
+
         var imageUrl = root["choices"]?.AsArray()
             .FirstOrDefault()?["message"]?["images"]?.AsArray()
             .FirstOrDefault()?["image_url"]?["url"]?.GetValue<string>();
-
-        if (string.IsNullOrWhiteSpace(imageUrl))
-        {
-            throw new ApiException(
-                ErrorCodes.ExternalServiceError,
-                "OpenRouter image generation response did not include any image data.");
-        }
-
         return await ReadImageBytesAsync(imageUrl, cancellationToken);
     }
 
-    private HttpRequestMessage CreateImageGenerationRequest(
+    private static HttpRequestMessage CreateImageGenerationRequest(
         ImageGenerationRequestDto request,
         OpenRouterImageModelMetadata model,
         string apiKey,
         byte[]? imageBytes)
     {
-        object content = imageBytes is null
-            ? request.Prompt
-            : new object[]
-            {
-                new
-                {
-                    type = "text",
-                    text = request.Prompt
-                },
-                new
-                {
-                    type = "image_url",
-                    image_url = new
-                    {
-                        url = CreateImageDataUrl(imageBytes)
-                    }
-                }
-            };
-
-        object[] messages =
-        [
-            new
-            {
-                role = "user",
-                content
-            }
-        ];
-
-        var payload = new Dictionary<string, object?>
+        var imageReference = imageBytes is null ? null : new
         {
-            ["model"] = request.ModelId,
-            ["messages"] = messages,
-            ["modalities"] = model.SupportsTextOutput ? new[] { "image", "text" } : new[] { "image" },
-            ["stream"] = false
+            type = "image_url",
+            image_url = new { url = CreateImageDataUrl(imageBytes) }
         };
+        var payload = new Dictionary<string, object> { ["model"] = request.ModelId };
+        var aspectRatio = ResolveAspectRatio(request.Width, request.Height);
 
-        var imageConfig = CreateImageConfig(request.Width, request.Height);
-        if (imageConfig is not null)
+        if (model.UsesImagesEndpoint)
         {
-            payload["image_config"] = imageConfig;
+            payload["prompt"] = request.Prompt;
+            if (imageReference is not null)
+            {
+                payload["input_references"] = new[] { imageReference };
+            }
+            if (aspectRatio is not null && model.SupportsAspectRatio)
+            {
+                payload["aspect_ratio"] = aspectRatio;
+            }
+        }
+        else
+        {
+            object content = imageReference is null
+                ? request.Prompt
+                : new object[] { new { type = "text", text = request.Prompt }, imageReference };
+
+            payload["messages"] = new[] { new { role = "user", content } };
+            payload["modalities"] = model.SupportsTextOutput ? new[] { "image", "text" } : new[] { "image" };
+            payload["stream"] = false;
+            if (aspectRatio is not null)
+            {
+                payload["image_config"] = new { aspect_ratio = aspectRatio };
+            }
         }
 
-        var httpRequest = new HttpRequestMessage(HttpMethod.Post, "chat/completions")
+        var httpRequest = new HttpRequestMessage(
+            HttpMethod.Post, model.UsesImagesEndpoint ? "images" : "chat/completions")
         {
             Content = new StringContent(
                 JsonSerializer.Serialize(payload),
@@ -205,10 +202,11 @@ public class OpenRouterImageGenerationService : IImageGenerationService
     }
 
     private async Task<IReadOnlyList<OpenRouterImageModelMetadata>> GetAvailableModelMetadataAsync(
+        string path,
         string apiKey,
         CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, "models?output_modalities=image");
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
         using var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -237,7 +235,7 @@ public class OpenRouterImageGenerationService : IImageGenerationService
                              "OpenRouter image models response did not include a data array.");
 
         return modelNodes
-            .Select(ToModelMetadata)
+            .Select(model => ToModelMetadata(model, path == ImageModelsPath))
             .Where(model => model is not null)
             .Select(model => model!)
             .ToList();
@@ -248,11 +246,13 @@ public class OpenRouterImageGenerationService : IImageGenerationService
         string apiKey,
         CancellationToken cancellationToken)
     {
-        var model = (await GetAvailableModelMetadataAsync(apiKey, cancellationToken))
-            .FirstOrDefault(model => string.Equals(
-                model.ModelId,
-                modelId,
-                StringComparison.OrdinalIgnoreCase));
+        bool MatchesModelId(OpenRouterImageModelMetadata model) =>
+            string.Equals(model.ModelId, modelId, StringComparison.OrdinalIgnoreCase);
+
+        var model = (await GetAvailableModelMetadataAsync(ImageModelsPath, apiKey, cancellationToken))
+            .FirstOrDefault(MatchesModelId)
+            ?? (await GetAvailableModelMetadataAsync(ChatImageModelsPath, apiKey, cancellationToken))
+                .FirstOrDefault(MatchesModelId);
 
         if (model is null)
         {
@@ -280,9 +280,16 @@ public class OpenRouterImageGenerationService : IImageGenerationService
     }
 
     private async Task<byte[]> ReadImageBytesAsync(
-        string imageUrl,
+        string? imageUrl,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(imageUrl))
+        {
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                "OpenRouter image generation response did not include any image data.");
+        }
+
         if (imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
         {
             var commaIndex = imageUrl.IndexOf(',');
@@ -293,23 +300,35 @@ public class OpenRouterImageGenerationService : IImageGenerationService
                     "OpenRouter returned an unsupported image data URL.");
             }
 
-            try
-            {
-                return Convert.FromBase64String(imageUrl[(commaIndex + 1)..]);
-            }
-            catch (FormatException ex)
-            {
-                _logger.LogError(ex, "OpenRouter image generation returned invalid base64 image data.");
-                throw new ApiException(
-                    ErrorCodes.ExternalServiceError,
-                    "OpenRouter returned invalid image data.");
-            }
+            return DecodeImageBytes(imageUrl[(commaIndex + 1)..]);
         }
 
         return await _httpClient.GetByteArrayAsync(imageUrl, cancellationToken);
     }
 
-    private static OpenRouterImageModelMetadata? ToModelMetadata(JsonNode? modelNode)
+    private byte[] DecodeImageBytes(string? base64)
+    {
+        if (string.IsNullOrWhiteSpace(base64))
+        {
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                "OpenRouter image generation response did not include any image data.");
+        }
+
+        try
+        {
+            return Convert.FromBase64String(base64);
+        }
+        catch (FormatException ex)
+        {
+            _logger.LogError(ex, "OpenRouter image generation returned invalid base64 image data.");
+            throw new ApiException(
+                ErrorCodes.ExternalServiceError,
+                "OpenRouter returned invalid image data.");
+        }
+    }
+
+    private static OpenRouterImageModelMetadata? ToModelMetadata(JsonNode? modelNode, bool usesImagesEndpoint)
     {
         var modelId = modelNode?["id"]?.GetValue<string>();
         if (string.IsNullOrWhiteSpace(modelId))
@@ -324,13 +343,16 @@ public class OpenRouterImageGenerationService : IImageGenerationService
         var supportsImageOutput = outputModalities?.Any(modality =>
             string.Equals(modality?.GetValue<string>(), "image", StringComparison.OrdinalIgnoreCase)) == true;
 
-        if (!supportsImageOutput)
+        if (!usesImagesEndpoint && !supportsImageOutput)
         {
             return null;
         }
 
-        var supportsImageInput = inputModalities?.Any(modality =>
-            string.Equals(modality?.GetValue<string>(), "image", StringComparison.OrdinalIgnoreCase)) == true;
+        var supportedParameters = usesImagesEndpoint ? modelNode?["supported_parameters"]?.AsObject() : null;
+        var supportsImageInput = usesImagesEndpoint
+            ? supportedParameters?.ContainsKey("input_references") == true
+            : inputModalities?.Any(modality =>
+                string.Equals(modality?.GetValue<string>(), "image", StringComparison.OrdinalIgnoreCase)) == true;
         var supportsTextOutput = outputModalities?.Any(modality =>
             string.Equals(modality?.GetValue<string>(), "text", StringComparison.OrdinalIgnoreCase)) == true;
 
@@ -338,18 +360,9 @@ public class OpenRouterImageGenerationService : IImageGenerationService
             modelId,
             name,
             supportsImageInput,
-            supportsTextOutput);
-    }
-
-    private static object? CreateImageConfig(int width, int height)
-    {
-        var aspectRatio = ResolveAspectRatio(width, height);
-        return aspectRatio is null
-            ? null
-            : new
-            {
-                aspect_ratio = aspectRatio
-            };
+            supportsTextOutput,
+            usesImagesEndpoint,
+            supportedParameters?.ContainsKey("aspect_ratio") == true);
     }
 
     private static string? ResolveAspectRatio(int width, int height)
@@ -451,5 +464,7 @@ public class OpenRouterImageGenerationService : IImageGenerationService
         string ModelId,
         string Name,
         bool SupportsImageInput,
-        bool SupportsTextOutput);
+        bool SupportsTextOutput,
+        bool UsesImagesEndpoint,
+        bool SupportsAspectRatio);
 }
